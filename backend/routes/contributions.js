@@ -51,13 +51,22 @@ module.exports = () => {
       res.json({ status: response.status, data: response.data });
     } catch (err) {
       console.error('Initialize payment error:', err?.message || err);
-        const fwError = err?.response?.data || err?.data || err?.message || err;
-        console.error('Initialize payment error details:', fwError);
-        const payload = {
-          msg: 'Failed to initialize payment',
-          error: fwError,
-        };
-        res.status(500).json(payload);
+      const fwError = err?.response?.data || err?.data || err?.message || err;
+      console.error('Initialize payment error details:', fwError);
+      
+      // Log the payload for debugging
+      console.error('Payment payload:', {
+        tx_ref: `gift-${req.params.link}-${Date.now()}`,
+        amount: parseFloat(amount),
+        currency: 'NGN',
+        redirect_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`,
+      });
+      
+      const errorPayload = {
+        msg: 'Failed to initialize payment',
+        error: typeof fwError === 'object' ? JSON.stringify(fwError) : String(fwError),
+      };
+      res.status(500).json(errorPayload);
     }
   });
 

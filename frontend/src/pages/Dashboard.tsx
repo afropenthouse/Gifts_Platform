@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
-import { Gift, DollarSign, TrendingUp, Users, Copy, Eye } from 'lucide-react';
+import { Gift, DollarSign, TrendingUp, Users, Copy, Eye, ArrowDownToLine } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
@@ -34,7 +34,7 @@ interface Contribution {
 }
 
 const Dashboard: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, updateUser } = useAuth();
   const navigate = useNavigate();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [contributions, setContributions] = useState<Contribution[]>([]);
@@ -49,6 +49,17 @@ const Dashboard: React.FC = () => {
   const [brideName, setBrideName] = useState('');
   const [customType, setCustomType] = useState('');
   const [fileError, setFileError] = useState('');
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawBank, setWithdrawBank] = useState('');
+  const [withdrawAccount, setWithdrawAccount] = useState('');
+  const [withdrawAccountName, setWithdrawAccountName] = useState('');
+
+  useEffect(() => {
+    if (withdrawAccount.length === 10 && withdrawBank) {
+      handleAccountBlur();
+    }
+  }, [withdrawAccount, withdrawBank]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -176,6 +187,77 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleWithdraw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/withdraw`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: withdrawAmount,
+          bank_code: withdrawBank,
+          account_number: withdrawAccount,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Withdrawal initiated successfully!');
+        // Update user data
+        const profileRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (profileRes.ok) {
+          const updatedUser = await profileRes.json();
+          updateUser(updatedUser);
+        }
+      } else {
+        alert(data.msg || 'Withdrawal failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred');
+    }
+    // Reset form
+    setWithdrawAmount('');
+    setWithdrawBank('');
+    setWithdrawAccount('');
+    setWithdrawAccountName('');
+    setIsWithdrawModalOpen(false);
+  };
+
+  const handleAccountBlur = async () => {
+    if (withdrawAccount.length === 10 && withdrawBank) {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/resolve-account`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({
+            bank_code: withdrawBank,
+            account_number: withdrawAccount,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setWithdrawAccountName(data.account_name);
+        } else {
+          setWithdrawAccountName('');
+          alert(data.msg);
+        }
+      } catch (err) {
+        console.error(err);
+        setWithdrawAccountName('');
+        alert('Error resolving account: ' + err.message);
+      }
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (!user) return null;
 
@@ -221,7 +303,10 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-muted-foreground">Wallet Balance</p>
-                  <p className="text-2xl font-bold">₦{user.wallet}</p>
+                  <div className="flex items-center">
+                    <p className="text-2xl font-bold">₦{user.wallet}</p>
+                    <ArrowDownToLine className="w-5 h-5 ml-2 cursor-pointer text-green-600 hover:text-green-800" onClick={() => setIsWithdrawModalOpen(true)} />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -374,6 +459,72 @@ const Dashboard: React.FC = () => {
                   </>
                 )}
                 <Button type="submit" className="w-full">Create Gift</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isWithdrawModalOpen} onOpenChange={(open) => {
+            setIsWithdrawModalOpen(open);
+            if (!open) {
+              setWithdrawAmount('');
+              setWithdrawBank('');
+              setWithdrawAccount('');
+              setWithdrawAccountName('');
+            }
+          }}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Withdraw Funds</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleWithdraw} className="space-y-4">
+                <div>
+                  <Label htmlFor="amount">Amount (₦)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label>Bank</Label>
+                  <Select onValueChange={setWithdrawBank}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select bank" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="044">Access Bank</SelectItem>
+                      <SelectItem value="070">Fidelity Bank</SelectItem>
+                      <SelectItem value="011">First Bank</SelectItem>
+                      <SelectItem value="058">GTBank</SelectItem>
+                      <SelectItem value="057">Zenith Bank</SelectItem>
+                      <SelectItem value="033">UBA</SelectItem>
+                      <SelectItem value="035">Wema Bank</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="account">Account Number</Label>
+                  <Input
+                    id="account"
+                    value={withdrawAccount}
+                    onChange={(e) => setWithdrawAccount(e.target.value)}
+                    placeholder="Enter account number"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="accountName">Account Name</Label>
+                  <Input
+                    id="accountName"
+                    value={withdrawAccountName}
+                    readOnly
+                    placeholder="Account name will appear here"
+                  />
+                </div>
+                <Button type="submit" className="w-full">Withdraw</Button>
               </form>
             </DialogContent>
           </Dialog>
