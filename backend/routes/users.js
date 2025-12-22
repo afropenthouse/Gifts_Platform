@@ -1,7 +1,7 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
-const { initiateTransfer, resolveAccount } = require('../utils/flutterwave');
+const { initiateTransfer, resolveAccount, getBanks } = require('../utils/flutterwave');
 
 module.exports = () => {
   const router = express.Router();
@@ -79,6 +79,22 @@ module.exports = () => {
         console.error('Refund failed:', refundError);
       }
       res.status(500).json({ msg: 'Withdrawal failed', error: error.message });
+    }
+  });
+
+  // Get banks list
+  router.get('/banks', auth(), async (req, res) => {
+    try {
+      const response = await getBanks();
+
+      if (response.status === 'success' || response.status === 'successful') {
+        res.json({ banks: response.data || response });
+      } else {
+        res.status(400).json({ msg: 'Failed to fetch banks' });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ msg: 'Error fetching banks' });
     }
   });
 

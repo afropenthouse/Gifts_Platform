@@ -43,6 +43,37 @@ module.exports = () => {
     }
   });
 
+  // Update gift
+  router.put('/:id', auth(), async (req, res) => {
+    const { type, title, description, date, picture, details, customType } = req.body;
+    const giftId = parseInt(req.params.id);
+
+    try {
+      const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+      if (!gift || gift.userId !== req.user.id) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+
+      const updatedGift = await prisma.gift.update({
+        where: { id: giftId },
+        data: {
+          type,
+          title,
+          description,
+          date: date ? new Date(date) : null,
+          picture,
+          details,
+          customType,
+        },
+      });
+
+      res.json(updatedGift);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
   // Get gift by share link
   router.get('/:link', async (req, res) => {
     try {

@@ -112,9 +112,9 @@ async function initiateTransfer(payload) {
 async function resolveAccount(payload) {
   try {
     console.log('Resolving account:', { account_bank: payload.account_bank, account_number: payload.account_number });
-    
+
     const flw = getClient();
-    
+
     let response;
     if (typeof flw.Misc !== 'undefined' && typeof flw.Misc.resolveAccount === 'function') {
       response = await flw.Misc.resolveAccount(payload);
@@ -125,7 +125,7 @@ async function resolveAccount(payload) {
     } else {
       throw new Error(`Flutterwave resolveAccount method not found. Available methods: ${Object.keys(flw).join(', ')}`);
     }
-    
+
     console.log('Account resolve response:', response?.status);
     return response;
   } catch (error) {
@@ -134,4 +134,19 @@ async function resolveAccount(payload) {
   }
 }
 
-module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount };
+async function getBanks() {
+  try {
+    console.log('Fetching banks list');
+
+    // Use REST API for getting banks
+    const response = await fwRequest('GET', '/banks/NG');
+
+    console.log('Banks fetch response:', response?.status);
+    return response;
+  } catch (error) {
+    console.error('Flutterwave getBanks error:', error?.message || error);
+    throw error;
+  }
+}
+
+module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount, getBanks };
