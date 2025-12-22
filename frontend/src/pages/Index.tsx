@@ -1,22 +1,49 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import WeddingGiftCard, { WeddingGiftGallery } from "@/components/WeddingGiftCard";
-import { Heart } from "lucide-react";
+import { Link, MessageCircle, ChevronRight } from "lucide-react";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <HeroSection />
-      
+
+      {/* How It Works Section */}
+      <section className="py-16 px-6 bg-white">
+        <div className="container mx-auto max-w-4xl">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-rose/10 rounded-full flex items-center justify-center">
+                <Link className="w-6 h-6 text-rose" />
+              </div>
+              <span className="text-lg font-medium text-foreground whitespace-nowrap">Create your gift links</span>
+              <ChevronRight className="w-6 h-6 text-muted-foreground hidden md:block" />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-rose/10 rounded-full flex items-center justify-center">
+                <MessageCircle className="w-6 h-6 text-rose" />
+              </div>
+              <span className="text-lg font-medium text-foreground whitespace-nowrap">Share it on WhatsApp</span>
+              <ChevronRight className="w-6 h-6 text-muted-foreground hidden md:block" />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-rose/10 rounded-full flex items-center justify-center">
+                <span className="text-xl font-bold text-rose">₦</span>
+              </div>
+              <span className="text-lg font-medium text-foreground whitespace-nowrap">Receive cash gifts from different currencies</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Featured Celebrations Section */}
       <section className="py-16 px-6 bg-champagne/30">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-10 opacity-0 animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
             <div className="inline-flex items-center gap-2 mb-3">
-              <Heart className="w-5 h-5 text-rose fill-rose/30" />
               <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Featured Celebrations</span>
-              <Heart className="w-5 h-5 text-rose fill-rose/30" />
+              
             </div>
             <h2 className="font-serif text-3xl md:text-4xl font-semibold text-foreground">
               Celebrate Their Special Day
@@ -29,12 +56,35 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="py-8 px-6 bg-card border-t border-border/50">
-        <div className="container mx-auto text-center">
-          <p className="text-sm text-muted-foreground">
-            © 2025 GiftLink. Made with{" "}
-            <Heart className="w-3.5 h-3.5 inline text-rose fill-rose" />{" "}
-            for celebrating love.
-          </p>
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Brand Section */}
+            <div>
+              <h3 className="font-serif text-lg font-semibold text-foreground mb-4">
+                GiftLink
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Making celebrations memorable with thoughtful gifts and contributions.
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h4 className="font-medium text-foreground mb-4">Quick Links</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How It Works</a></li>
+                <li><a href="/login" className="text-muted-foreground hover:text-foreground transition-colors">Login</a></li>
+                <li><a href="/signup" className="text-muted-foreground hover:text-foreground transition-colors">Sign Up</a></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="mt-8 pt-8 border-t border-border/50 text-center">
+            <p className="text-sm text-muted-foreground">
+              © 2025 GiftLink. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

@@ -25,45 +25,35 @@ const Navbar = () => {
               <Gift className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-serif text-xl font-semibold text-foreground">
-              Gift<span className="text-gold">Link</span>
+              MyCashgift
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link to="/how-it-works" className="text-foreground hover:text-gold transition-colors">
-              How it Works
-            </Link>
-          </div>
+          {/* Desktop middle nav removed */}
 
-          {/* Auth buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Auth links */}
+          <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
                 <Link to="/dashboard">
                   <Button variant="ghost" size="sm" className="hidden sm:flex">
-                    <User className="w-4 h-4 mr-2" />
                     Dashboard
                   </Button>
                 </Link>
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
-                  <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
               </>
             ) : (
               <>
-                <Link to="/login">
-                  <Button variant="ghost" size="sm" className="hidden sm:flex">
-                    <LogIn className="w-4 h-4 mr-2" />
-                    Login
-                  </Button>
+                <Link to="/login" className="text-foreground hover:text-gold transition-colors">
+                  Login
                 </Link>
-                <Link to="/signup">
-                  <Button variant="default" size="sm">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Sign Up
-                  </Button>
+                <Link to="/signup" className="text-foreground hover:text-gold transition-colors">
+                  Sign Up
+                </Link>
+                <Link to="/how-it-works" className="text-foreground hover:text-gold transition-colors">
+                  How it Works
                 </Link>
               </>
             )}

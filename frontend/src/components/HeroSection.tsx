@@ -1,8 +1,70 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const HeroSection = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [type, setType] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [date, setDate] = useState('');
+  const [picture, setPicture] = useState('');
+  const [groomName, setGroomName] = useState('');
+  const [brideName, setBrideName] = useState('');
+  const [customType, setCustomType] = useState('');
+
+  const handleCreateGiftClick = () => {
+    if (!user) {
+      navigate('/login');
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const details = {} as any;
+    if (type === 'wedding') {
+      details.groomName = groomName;
+      details.brideName = brideName;
+    }
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type,
+          title,
+          description,
+          date,
+          picture,
+          details,
+          customType: type === 'other' ? customType : undefined,
+        }),
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
+    <>
     <section className="min-h-[60vh] flex items-center bg-gradient-hero">
       {/* Content */}
       <div className="flex-1 text-left px-6 py-16 max-w-3xl">
@@ -20,22 +82,113 @@ const HeroSection = () => {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-start gap-4 opacity-0 animate-fade-in-up delay-300" style={{ animationFillMode: 'forwards' }}>
-          <Link to="/create-gift">
-            <Button variant="hero" size="lg">
-              Create Your Gift Link
-            </Button>
-          </Link>
+          <Button variant="hero" size="lg" onClick={handleCreateGiftClick}>
+            Create Your Gift Link
+          </Button>
         </div>
       </div>
 
       {/* Images */}
       <div className="flex-1 grid grid-cols-2 gap-4 p-4">
-        <img src="/conv.jpg" alt="" className="w-full h-48 object-cover rounded-lg" />
-        <img src="/Bode.jpg" alt="" className="w-full h-48 object-cover rounded-lg" />
-        <img src="/wedd.jpg" alt="" className="w-full h-48 object-cover rounded-lg" />
-        <img src="/grad.jpg" alt="" className="w-full h-48 object-cover rounded-lg" />
+        <img src="/wedd.jpg" alt="" className="w-full h-48 object-cover object-top rounded-lg" />
+        <img src="/grad.jpg" alt="" className="w-full h-48 object-cover object-top rounded-lg" />
+        <img src="/conv.jpg" alt="" className="w-full h-48 object-cover object-top rounded-lg" />
+        <img src="/Bode.jpg" alt="" className="w-full h-48 object-cover object-top rounded-lg" />
+
+
       </div>
     </section>
+
+    {/* Create Gift Modal */}
+    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create Gift</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label>Event Type</Label>
+            <Select onValueChange={setType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="wedding">Wedding</SelectItem>
+                <SelectItem value="birthday">Birthday</SelectItem>
+                <SelectItem value="graduation">Graduation</SelectItem>
+                <SelectItem value="convocation">Convocation</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {type === 'other' && (
+            <div>
+              <Label htmlFor="customType">Custom Type</Label>
+              <Input
+                id="customType"
+                value={customType}
+                onChange={(e) => setCustomType(e.target.value)}
+              />
+            </div>
+          )}
+          <div>
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="picture">Picture (Base64 or URL)</Label>
+            <Input
+              id="picture"
+              value={picture}
+              onChange={(e) => setPicture(e.target.value)}
+            />
+          </div>
+          {type === 'wedding' && (
+            <>
+              <div>
+                <Label htmlFor="groomName">Groom Name</Label>
+                <Input
+                  id="groomName"
+                  value={groomName}
+                  onChange={(e) => setGroomName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="brideName">Bride Name</Label>
+                <Input
+                  id="brideName"
+                  value={brideName}
+                  onChange={(e) => setBrideName(e.target.value)}
+                />
+              </div>
+            </>
+          )}
+          <Button type="submit">Create Gift</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 

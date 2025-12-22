@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
-import { Gift, DollarSign, TrendingUp, Users, Copy, Eye, ArrowDownToLine } from 'lucide-react';
+import { Gift, DollarSign, TrendingUp, Users, Copy, Eye, ArrowDownToLine, Calendar, Image as ImageIcon, X, Edit } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
@@ -19,6 +19,11 @@ interface Gift {
   id: string;
   type: string;
   title: string;
+  description?: string;
+  date?: string;
+  picture?: string;
+  details?: any;
+  customType?: string;
   shareLink: string;
   createdAt: string;
   contributions?: Contribution[];
@@ -39,6 +44,8 @@ const Dashboard: React.FC = () => {
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingGift, setEditingGift] = useState<Gift | null>(null);
   const [type, setType] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -54,12 +61,34 @@ const Dashboard: React.FC = () => {
   const [withdrawBank, setWithdrawBank] = useState('');
   const [withdrawAccount, setWithdrawAccount] = useState('');
   const [withdrawAccountName, setWithdrawAccountName] = useState('');
+  const [banks, setBanks] = useState([]);
 
   useEffect(() => {
     if (withdrawAccount.length === 10 && withdrawBank) {
       handleAccountBlur();
     }
   }, [withdrawAccount, withdrawBank]);
+
+  useEffect(() => {
+    const fetchBanks = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/banks`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setBanks(data.banks || []);
+        }
+      } catch (err) {
+        console.error('Error fetching banks:', err);
+      }
+    };
+
+    if (user) {
+      fetchBanks();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -95,31 +124,31 @@ const Dashboard: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-            // Reset error
-            setFileError('');
-      
-            // Check file size (5MB = 5 * 1024 * 1024 bytes)
-            const maxSize = 5 * 1024 * 1024; // 5MB
-            if (file.size > maxSize) {
-              const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-              setFileError(`File size (${fileSizeInMB}MB) exceeds the maximum allowed size of 5MB. Please choose a smaller image.`);
-              setPictureFile(null);
-              setPicture('');
-              // Clear the input
-              e.target.value = '';
-              return;
-            }
-      
-            // Check file type
-            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-            if (!validTypes.includes(file.type)) {
-              setFileError('Please upload a valid image file (JPEG, PNG, or GIF).');
-              setPictureFile(null);
-              setPicture('');
-              e.target.value = '';
-              return;
-            }
-      
+      // Reset error
+      setFileError('');
+  
+      // Check file size (5MB = 5 * 1024 * 1024 bytes)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+        setFileError(`File size (${fileSizeInMB}MB) exceeds the maximum allowed size of 5MB. Please choose a smaller image.`);
+        setPictureFile(null);
+        setPicture('');
+        // Clear the input
+        e.target.value = '';
+        return;
+      }
+  
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        setFileError('Please upload a valid image file (JPEG, PNG, or GIF).');
+        setPictureFile(null);
+        setPicture('');
+        e.target.value = '';
+        return;
+      }
+  
       setPictureFile(file);
       const reader = new FileReader();
       reader.onload = () => {
@@ -129,15 +158,37 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleEditGift = (gift: Gift) => {
+    setEditingGift(gift);
+    setType(gift.type);
+    setTitle(gift.title);
+    setDescription(gift.description || '');
+    setDate(gift.date || '');
+    setPicture(gift.picture || '');
+    setPictureFile(null);
+    setFileError('');
+    // Assuming details are stored in gift.details or similar
+    if (gift.details) {
+      setGroomName(gift.details.groomName || '');
+      setBrideName(gift.details.brideName || '');
+      setCustomType(gift.customType || '');
+    } else {
+      setGroomName('');
+      setBrideName('');
+      setCustomType('');
+    }
+    setIsEditModalOpen(true);
+  };
+
   const handleCreateGift = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-        // Validate file size before submission
-        if (fileError) {
-          alert('Please fix the file upload error before submitting.');
-          return;
-        }
-    
+
+    // Validate file size before submission
+    if (fileError) {
+      alert('Please fix the file upload error before submitting.');
+      return;
+    }
+
     const details = {} as any;
     if (type === 'wedding') {
       details.groomName = groomName;
@@ -174,13 +225,74 @@ const Dashboard: React.FC = () => {
         setTitle('');
         setDescription('');
         setDate('');
-          setFileError('');
+        setFileError('');
         setPicture('');
         setPictureFile(null);
         setGroomName('');
         setBrideName('');
         setCustomType('');
         setIsCreateModalOpen(false);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateGift = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingGift) return;
+
+    // Validate file size before submission
+    if (fileError) {
+      alert('Please fix the file upload error before submitting.');
+      return;
+    }
+
+    const details = {} as any;
+    if (type === 'wedding') {
+      details.groomName = groomName;
+      details.brideName = brideName;
+    }
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${editingGift.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type,
+          title,
+          description,
+          date,
+          picture,
+          details,
+          customType: type === 'other' ? customType : undefined,
+        }),
+      });
+      if (res.ok) {
+        // Refresh gifts list
+        const giftsRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const giftsData = await giftsRes.json();
+        setGifts(giftsData);
+
+        // Reset form and close modal
+        setType('');
+        setTitle('');
+        setDescription('');
+        setDate('');
+        setFileError('');
+        setPicture('');
+        setPictureFile(null);
+        setGroomName('');
+        setBrideName('');
+        setCustomType('');
+        setEditingGift(null);
+        setIsEditModalOpen(false);
       }
     } catch (err) {
       console.error(err);
@@ -276,12 +388,12 @@ const Dashboard: React.FC = () => {
             Welcome back, {user.name}!
           </h1>
           <p className="text-muted-foreground">
-            Manage your gifts and track contributions from your dashboard.
+            Manage your gifts and track gifts received from your dashboard.
           </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -289,7 +401,7 @@ const Dashboard: React.FC = () => {
                   <Gift className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Total Gifts</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total Gift Links</p>
                   <p className="text-2xl font-bold">{gifts.length}</p>
                 </div>
               </div>
@@ -303,10 +415,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-muted-foreground">Wallet Balance</p>
-                  <div className="flex items-center">
-                    <p className="text-2xl font-bold">₦{user.wallet}</p>
-                    <ArrowDownToLine className="w-5 h-5 ml-2 cursor-pointer text-green-600 hover:text-green-800" onClick={() => setIsWithdrawModalOpen(true)} />
-                  </div>
+                  <p className="text-2xl font-bold">₦{user.wallet}</p>
                 </div>
               </div>
             </CardContent>
@@ -318,7 +427,7 @@ const Dashboard: React.FC = () => {
                   <TrendingUp className="w-6 h-6 text-purple-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Total Contributions</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total Gift Amount</p>
                   <p className="text-2xl font-bold">₦{totalContributions.toFixed(2)}</p>
                 </div>
               </div>
@@ -333,6 +442,22 @@ const Dashboard: React.FC = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-muted-foreground">Gifters</p>
                   <p className="text-2xl font-bold">{contributions.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <ArrowDownToLine className="w-6 h-6 text-red-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-muted-foreground">Withdraw</p>
+                  <Button variant="destructive" size="sm" onClick={() => setIsWithdrawModalOpen(true)} className="mt-1">
+                    <ArrowDownToLine className="w-4 h-4 mr-1" />
+                    Withdraw
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -360,105 +485,398 @@ const Dashboard: React.FC = () => {
           }}>
             <DialogTrigger asChild>
               <Button size="lg" className="mr-4">
-                Create New Gift
+                Create a Gift Link
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New Gift</DialogTitle>
+            <DialogContent className="sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
+              <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-background z-10">
+                <DialogTitle className="text-xl font-semibold text-foreground">Create a Cash Gift</DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">Share your special moment and receive gifts</p>
               </DialogHeader>
-              <form onSubmit={handleCreateGift} className="space-y-4">
-                <div>
-                  <Label>Event Type</Label>
-                  <Select onValueChange={setType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="wedding">Wedding</SelectItem>
-                      <SelectItem value="birthday">Birthday</SelectItem>
-                      <SelectItem value="graduation">Graduation</SelectItem>
-                      <SelectItem value="convocation">Convocation</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {type === 'other' && (
+              <form onSubmit={handleCreateGift} className="px-6 pb-6">
+                <div className="space-y-5 mt-4">
                   <div>
-                    <Label htmlFor="customType">Custom Type</Label>
+                    <Label className="text-sm font-medium text-foreground mb-2 block">
+                      Event Type
+                    </Label>
+                    <Select onValueChange={setType} value={type}>
+                      <SelectTrigger className="w-full h-11 border-input bg-background hover:bg-accent/50 transition-colors">
+                        <SelectValue placeholder="Select event type" />
+                      </SelectTrigger>
+                      <SelectContent className="border-0 shadow-lg">
+                        <SelectItem value="wedding">Wedding</SelectItem>
+                        <SelectItem value="birthday">Birthday</SelectItem>
+                        <SelectItem value="graduation">Graduation</SelectItem>
+                        <SelectItem value="convocation">Convocation</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {type === 'other' && (
+                    <div>
+                      <Label htmlFor="customType" className="text-sm font-medium text-foreground mb-2 block">
+                        Custom Type
+                      </Label>
+                      <Input
+                        id="customType"
+                        value={customType}
+                        onChange={(e) => setCustomType(e.target.value)}
+                        className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                        placeholder="Enter custom event type"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="title" className="text-sm font-medium text-foreground mb-2 block">
+                      Gift Title
+                    </Label>
                     <Input
-                      id="customType"
-                      value={customType}
-                      onChange={(e) => setCustomType(e.target.value)}
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                      placeholder="e.g., John & Jane's Wedding"
+                      required
                     />
                   </div>
-                )}
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="picture">Picture</Label>
-                  <Input
-                    id="picture"
-                    type="file"
-                    accept="image/jpeg,image/png,image/jpg,image/gif"
-                    onChange={handleFileChange}
-                                      className={fileError ? 'border-red-500' : ''}
-                  />
-                  {fileError && (
-                    <p className="text-sm text-red-600 mt-2 font-medium">
-                      ⚠️ {fileError}
-                    </p>
+
+                  <div>
+                    <Label htmlFor="description" className="text-sm font-medium text-foreground mb-2 block">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="min-h-[100px] border-input focus-visible:ring-2 focus-visible:ring-primary"
+                      placeholder="Tell your story or share details about this special moment..."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="date" className="text-sm font-medium text-foreground mb-2 block">
+                      <Calendar className="inline w-4 h-4 mr-2" />
+                      Event Date
+                    </Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="picture" className="text-sm font-medium text-foreground mb-2 block">
+                      <ImageIcon className="inline w-4 h-4 mr-2" />
+                      Event Picture
+                    </Label>
+                    <div className="mt-2">
+                      {picture ? (
+                        <div className="relative mb-4">
+                          <img 
+                            src={picture} 
+                            alt="Preview" 
+                            className="w-full h-48 object-cover rounded-lg border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPicture('');
+                              setPictureFile(null);
+                            }}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-input rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                          <Input
+                            id="picture"
+                            type="file"
+                            accept="image/jpeg,image/png,image/jpg,image/gif"
+                            onChange={handleFileChange}
+                            className="hidden"
+                          />
+                          <label htmlFor="picture" className="cursor-pointer">
+                            <div className="flex flex-col items-center justify-center">
+                              <ImageIcon className="w-12 h-12 text-muted-foreground mb-3" />
+                              <p className="text-sm font-medium text-foreground mb-1">Click to upload image</p>
+                              <p className="text-xs text-muted-foreground">JPEG, PNG or GIF (Max 5MB)</p>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                      {fileError && (
+                        <p className="text-sm text-red-600 mt-2 font-medium">
+                          ⚠️ {fileError}
+                        </p>
+                      )}
+                      {pictureFile && !fileError && (
+                        <p className="text-sm text-green-600 mt-2 font-medium flex items-center">
+                          ✓ <span className="ml-1">Selected: {pictureFile.name} ({(pictureFile.size / (1024 * 1024)).toFixed(2)}MB)</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {type === 'wedding' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="groomName" className="text-sm font-medium text-foreground mb-2 block">
+                            Groom's Name
+                          </Label>
+                          <Input
+                            id="groomName"
+                            value={groomName}
+                            onChange={(e) => setGroomName(e.target.value)}
+                            className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                            placeholder="Enter groom's name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="brideName" className="text-sm font-medium text-foreground mb-2 block">
+                            Bride's Name
+                          </Label>
+                          <Input
+                            id="brideName"
+                            value={brideName}
+                            onChange={(e) => setBrideName(e.target.value)}
+                            className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                            placeholder="Enter bride's name"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   )}
-                  {pictureFile && !fileError && (
-                    <p className="text-sm text-green-600 mt-2 font-medium">
-                      ✓ Selected: {pictureFile.name} ({(pictureFile.size / (1024 * 1024)).toFixed(2)}MB)
-                    </p>
-                  )}
                 </div>
-                {type === 'wedding' && (
-                  <>
+
+                <div className="flex gap-3 pt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 h-11"
+                    onClick={() => setIsCreateModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 h-11 bg-primary hover:bg-primary/90"
+                  >
+                    Create Gift
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isEditModalOpen} onOpenChange={(open) => {
+            setIsEditModalOpen(open);
+            if (!open) {
+              // Reset form when modal closes
+              setType('');
+              setTitle('');
+              setDescription('');
+              setDate('');
+              setPicture('');
+              setPictureFile(null);
+              setFileError('');
+              setGroomName('');
+              setBrideName('');
+              setCustomType('');
+              setEditingGift(null);
+            }
+          }}>
+            <DialogContent className="sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
+              <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-background z-10">
+                <DialogTitle className="text-xl font-semibold text-foreground">Edit Gift</DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">Update your gift details</p>
+              </DialogHeader>
+              <form onSubmit={handleUpdateGift} className="px-6 pb-6">
+                <div className="space-y-5 mt-4">
+                  <div>
+                    <Label className="text-sm font-medium text-foreground mb-2 block">
+                      Event Type
+                    </Label>
+                    <Select onValueChange={setType} value={type}>
+                      <SelectTrigger className="w-full h-11 border-input bg-background hover:bg-accent/50 transition-colors">
+                        <SelectValue placeholder="Select event type" />
+                      </SelectTrigger>
+                      <SelectContent className="border-0 shadow-lg">
+                        <SelectItem value="wedding">Wedding</SelectItem>
+                        <SelectItem value="birthday">Birthday</SelectItem>
+                        <SelectItem value="graduation">Graduation</SelectItem>
+                        <SelectItem value="convocation">Convocation</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {type === 'other' && (
                     <div>
-                      <Label htmlFor="groomName">Groom Name</Label>
+                      <Label htmlFor="customType" className="text-sm font-medium text-foreground mb-2 block">
+                        Custom Type
+                      </Label>
                       <Input
-                        id="groomName"
-                        value={groomName}
-                        onChange={(e) => setGroomName(e.target.value)}
+                        id="customType"
+                        value={customType}
+                        onChange={(e) => setCustomType(e.target.value)}
+                        className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                        placeholder="Enter custom event type"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="brideName">Bride Name</Label>
-                      <Input
-                        id="brideName"
-                        value={brideName}
-                        onChange={(e) => setBrideName(e.target.value)}
-                      />
+                  )}
+
+                  <div>
+                    <Label htmlFor="title" className="text-sm font-medium text-foreground mb-2 block">
+                      Gift Title
+                    </Label>
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                      placeholder="e.g., John & Jane's Wedding"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description" className="text-sm font-medium text-foreground mb-2 block">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="min-h-[100px] border-input focus-visible:ring-2 focus-visible:ring-primary"
+                      placeholder="Tell your story or share details about this special moment..."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="date" className="text-sm font-medium text-foreground mb-2 block">
+                      <Calendar className="inline w-4 h-4 mr-2" />
+                      Event Date
+                    </Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="picture" className="text-sm font-medium text-foreground mb-2 block">
+                      <ImageIcon className="inline w-4 h-4 mr-2" />
+                      Event Picture
+                    </Label>
+                    <div className="mt-2">
+                      {picture ? (
+                        <div className="relative mb-4">
+                          <img
+                            src={picture}
+                            alt="Preview"
+                            className="w-full h-48 object-cover rounded-lg border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPicture('');
+                              setPictureFile(null);
+                            }}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-input rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                          <Input
+                            id="picture"
+                            type="file"
+                            accept="image/jpeg,image/png,image/jpg,image/gif"
+                            onChange={handleFileChange}
+                            className="hidden"
+                          />
+                          <label htmlFor="picture" className="cursor-pointer">
+                            <div className="flex flex-col items-center justify-center">
+                              <ImageIcon className="w-12 h-12 text-muted-foreground mb-3" />
+                              <p className="text-sm font-medium text-foreground mb-1">Click to upload image</p>
+                              <p className="text-xs text-muted-foreground">JPEG, PNG or GIF (Max 5MB)</p>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                      {fileError && (
+                        <p className="text-sm text-red-600 mt-2 font-medium">
+                          ⚠️ {fileError}
+                        </p>
+                      )}
+                      {pictureFile && !fileError && (
+                        <p className="text-sm text-green-600 mt-2 font-medium flex items-center">
+                          ✓ <span className="ml-1">Selected: {pictureFile.name} ({(pictureFile.size / (1024 * 1024)).toFixed(2)}MB)</span>
+                        </p>
+                      )}
                     </div>
-                  </>
-                )}
-                <Button type="submit" className="w-full">Create Gift</Button>
+                  </div>
+
+                  {type === 'wedding' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="groomName" className="text-sm font-medium text-foreground mb-2 block">
+                            Groom's Name
+                          </Label>
+                          <Input
+                            id="groomName"
+                            value={groomName}
+                            onChange={(e) => setGroomName(e.target.value)}
+                            className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                            placeholder="Enter groom's name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="brideName" className="text-sm font-medium text-foreground mb-2 block">
+                            Bride's Name
+                          </Label>
+                          <Input
+                            id="brideName"
+                            value={brideName}
+                            onChange={(e) => setBrideName(e.target.value)}
+                            className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                            placeholder="Enter bride's name"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 pt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 h-11"
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 h-11 bg-primary hover:bg-primary/90"
+                  >
+                    Update Gift
+                  </Button>
+                </div>
               </form>
             </DialogContent>
           </Dialog>
@@ -472,69 +890,98 @@ const Dashboard: React.FC = () => {
               setWithdrawAccountName('');
             }
           }}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Withdraw Funds</DialogTitle>
+            <DialogContent className="sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
+              <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-background z-10">
+                <DialogTitle className="text-xl font-semibold text-foreground">Withdraw Funds</DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">Transfer money to your bank account</p>
               </DialogHeader>
-              <form onSubmit={handleWithdraw} className="space-y-4">
-                <div>
-                  <Label htmlFor="amount">Amount (₦)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="Enter amount"
-                    required
-                  />
+              <form onSubmit={handleWithdraw} className="px-6 pb-6">
+                <div className="space-y-5 mt-4">
+                  <div>
+                    <Label htmlFor="amount" className="text-sm font-medium text-foreground mb-2 block">
+                      Amount (₦)
+                    </Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      value={withdrawAmount}
+                      onChange={(e) => setWithdrawAmount(e.target.value)}
+                      className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                      placeholder="Enter amount"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-foreground mb-2 block">
+                      Bank
+                    </Label>
+                    <Select onValueChange={setWithdrawBank} value={withdrawBank}>
+                      <SelectTrigger className="w-full h-11 border-input bg-background hover:bg-accent/50 transition-colors">
+                        <SelectValue placeholder="Select your bank" />
+                      </SelectTrigger>
+                      <SelectContent className="border-0 shadow-lg">
+                        {banks.map((bank: any) => (
+                          <SelectItem key={bank.code} value={bank.code}>
+                            {bank.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="account" className="text-sm font-medium text-foreground mb-2 block">
+                      Account Number
+                    </Label>
+                    <Input
+                      id="account"
+                      value={withdrawAccount}
+                      onChange={(e) => setWithdrawAccount(e.target.value)}
+                      className="h-11 border-input focus-visible:ring-2 focus-visible:ring-primary"
+                      placeholder="Enter account number"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="accountName" className="text-sm font-medium text-foreground mb-2 block">
+                      Account Name
+                    </Label>
+                    <Input
+                      id="accountName"
+                      value={withdrawAccountName}
+                      readOnly
+                      className="h-11 bg-muted/50 border-input"
+                      placeholder="Account name will appear here"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>Bank</Label>
-                  <Select onValueChange={setWithdrawBank}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select bank" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="044">Access Bank</SelectItem>
-                      <SelectItem value="070">Fidelity Bank</SelectItem>
-                      <SelectItem value="011">First Bank</SelectItem>
-                      <SelectItem value="058">GTBank</SelectItem>
-                      <SelectItem value="057">Zenith Bank</SelectItem>
-                      <SelectItem value="033">UBA</SelectItem>
-                      <SelectItem value="035">Wema Bank</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                <div className="flex gap-3 pt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 h-11"
+                    onClick={() => setIsWithdrawModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 h-11 bg-green-600 hover:bg-green-700"
+                  >
+                    Withdraw Funds
+                  </Button>
                 </div>
-                <div>
-                  <Label htmlFor="account">Account Number</Label>
-                  <Input
-                    id="account"
-                    value={withdrawAccount}
-                    onChange={(e) => setWithdrawAccount(e.target.value)}
-                    placeholder="Enter account number"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="accountName">Account Name</Label>
-                  <Input
-                    id="accountName"
-                    value={withdrawAccountName}
-                    readOnly
-                    placeholder="Account name will appear here"
-                  />
-                </div>
-                <Button type="submit" className="w-full">Withdraw</Button>
               </form>
             </DialogContent>
           </Dialog>
         </div>
 
+        {/* Rest of the component remains the same */}
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="gifts">My Gifts</TabsTrigger>
-            <TabsTrigger value="contributions">Contributions</TabsTrigger>
+            <TabsTrigger value="contributions">Gifts Received</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
@@ -553,6 +1000,15 @@ const Dashboard: React.FC = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-sm text-muted-foreground">{new Date(gift.createdAt).toLocaleDateString()}</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditGift(gift)}
+                              className="mt-2"
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -572,9 +1028,9 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Recent Contributions Overview */}
+              {/* Recent Gifts Overview */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Recent Contributions</h3>
+                <h3 className="text-lg font-semibold mb-4">Recent Gifts</h3>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {recentContributions.slice(0, 3).map(contribution => (
                     <Card key={contribution.id}>
@@ -597,7 +1053,7 @@ const Dashboard: React.FC = () => {
                     <Card>
                       <CardContent className="p-6 text-center">
                         <TrendingUp className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                        <p className="text-muted-foreground">No contributions yet.</p>
+                        <p className="text-muted-foreground">No gifts yet.</p>
                       </CardContent>
                     </Card>
                   )}
@@ -626,6 +1082,14 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditGift(gift)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Edit
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -686,7 +1150,7 @@ const Dashboard: React.FC = () => {
                 <Card>
                   <CardContent className="p-6 text-center">
                     <TrendingUp className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No contributions yet.</p>
+                    <p className="text-muted-foreground">No gifts yet.</p>
                   </CardContent>
                 </Card>
               )}
