@@ -14,6 +14,7 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface Gift {
   id: string;
@@ -62,6 +63,8 @@ const Dashboard: React.FC = () => {
   const [withdrawAccount, setWithdrawAccount] = useState('');
   const [withdrawAccountName, setWithdrawAccountName] = useState('');
   const [banks, setBanks] = useState([]);
+  const [isShareLinkModalOpen, setIsShareLinkModalOpen] = useState(false);
+  const [createdGiftLink, setCreatedGiftLink] = useState('');
 
   useEffect(() => {
     if (withdrawAccount.length === 10 && withdrawBank) {
@@ -189,30 +192,40 @@ const Dashboard: React.FC = () => {
       return;
     }
 
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('date', date);
+
+    // Add picture file if selected
+    if (pictureFile) {
+      formData.append('picture', pictureFile);
+    }
+
     const details = {} as any;
     if (type === 'wedding') {
       details.groomName = groomName;
       details.brideName = brideName;
     }
+    formData.append('details', JSON.stringify(details));
+
+    if (type === 'other') {
+      formData.append('customType', customType);
+    }
+
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          type,
-          title,
-          description,
-          date,
-          picture,
-          details,
-          customType: type === 'other' ? customType : undefined,
-        }),
+        body: formData,
       });
       if (res.ok) {
+        const createdGift = await res.json();
+        
         // Refresh gifts list
         const giftsRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -232,6 +245,11 @@ const Dashboard: React.FC = () => {
         setBrideName('');
         setCustomType('');
         setIsCreateModalOpen(false);
+
+        // Show share link modal
+        const shareLink = `${window.location.origin}/gift/${createdGift.shareLink}`;
+        setCreatedGiftLink(shareLink);
+        setIsShareLinkModalOpen(true);
       }
     } catch (err) {
       console.error(err);
@@ -249,28 +267,36 @@ const Dashboard: React.FC = () => {
       return;
     }
 
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('date', date);
+
+    // Add picture file if a new one is selected
+    if (pictureFile) {
+      formData.append('picture', pictureFile);
+    }
+
     const details = {} as any;
     if (type === 'wedding') {
       details.groomName = groomName;
       details.brideName = brideName;
     }
+    formData.append('details', JSON.stringify(details));
+
+    if (type === 'other') {
+      formData.append('customType', customType);
+    }
+
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${editingGift.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          type,
-          title,
-          description,
-          date,
-          picture,
-          details,
-          customType: type === 'other' ? customType : undefined,
-        }),
+        body: formData,
       });
       if (res.ok) {
         // Refresh gifts list
@@ -694,6 +720,25 @@ const Dashboard: React.FC = () => {
             }
           }}>
             <DialogContent className="sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
+              {picture && (
+                <div className="relative w-full h-64 overflow-hidden rounded-t-2xl">
+                  <img
+                    src={picture}
+                    alt="Gift Preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPicture('');
+                      setPictureFile(null);
+                    }}
+                    className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
               <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-background z-10">
                 <DialogTitle className="text-xl font-semibold text-foreground">Edit Gift</DialogTitle>
                 <p className="text-sm text-muted-foreground mt-1">Update your gift details</p>
@@ -775,58 +820,36 @@ const Dashboard: React.FC = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="picture" className="text-sm font-medium text-foreground mb-2 block">
+                    <Label className="text-sm font-medium text-foreground mb-3 block">
                       <ImageIcon className="inline w-4 h-4 mr-2" />
-                      Event Picture
+                      Change Picture
                     </Label>
-                    <div className="mt-2">
-                      {picture ? (
-                        <div className="relative mb-4">
-                          <img
-                            src={picture}
-                            alt="Preview"
-                            className="w-full h-48 object-cover rounded-lg border"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPicture('');
-                              setPictureFile(null);
-                            }}
-                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                    <div className="border-2 border-dashed border-input rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                      <Input
+                        id="picture"
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg,image/gif"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <label htmlFor="picture" className="cursor-pointer">
+                        <div className="flex flex-col items-center justify-center">
+                          <ImageIcon className="w-10 h-10 text-muted-foreground mb-2" />
+                          <p className="text-sm font-medium text-foreground mb-1">Click to upload new image</p>
+                          <p className="text-xs text-muted-foreground">JPEG, PNG or GIF (Max 5MB)</p>
                         </div>
-                      ) : (
-                        <div className="border-2 border-dashed border-input rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                          <Input
-                            id="picture"
-                            type="file"
-                            accept="image/jpeg,image/png,image/jpg,image/gif"
-                            onChange={handleFileChange}
-                            className="hidden"
-                          />
-                          <label htmlFor="picture" className="cursor-pointer">
-                            <div className="flex flex-col items-center justify-center">
-                              <ImageIcon className="w-12 h-12 text-muted-foreground mb-3" />
-                              <p className="text-sm font-medium text-foreground mb-1">Click to upload image</p>
-                              <p className="text-xs text-muted-foreground">JPEG, PNG or GIF (Max 5MB)</p>
-                            </div>
-                          </label>
-                        </div>
-                      )}
-                      {fileError && (
-                        <p className="text-sm text-red-600 mt-2 font-medium">
-                          ⚠️ {fileError}
-                        </p>
-                      )}
-                      {pictureFile && !fileError && (
-                        <p className="text-sm text-green-600 mt-2 font-medium flex items-center">
-                          ✓ <span className="ml-1">Selected: {pictureFile.name} ({(pictureFile.size / (1024 * 1024)).toFixed(2)}MB)</span>
-                        </p>
-                      )}
+                      </label>
                     </div>
+                    {fileError && (
+                      <p className="text-sm text-red-600 mt-2 font-medium">
+                        ⚠️ {fileError}
+                      </p>
+                    )}
+                    {pictureFile && !fileError && (
+                      <p className="text-sm text-green-600 mt-2 font-medium flex items-center">
+                        ✓ <span className="ml-1">Selected: {pictureFile.name}</span>
+                      </p>
+                    )}
                   </div>
 
                   {type === 'wedding' && (
@@ -974,6 +997,97 @@ const Dashboard: React.FC = () => {
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* Share Link Modal */}
+          <Dialog open={isShareLinkModalOpen} onOpenChange={setIsShareLinkModalOpen}>
+            <DialogContent className="sm:max-w-lg rounded-2xl border-0 shadow-2xl p-0 overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-6">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-foreground">
+                    Link Created!
+                  </DialogTitle>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    Share your gift link with friends and family
+                  </p>
+                </DialogHeader>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* QR Code Display */}
+                <div className="flex justify-center">
+                  <div className="bg-white p-4 rounded-lg border-2 border-border">
+                    <QRCodeSVG 
+                      value={createdGiftLink}
+                      size={180}
+                      level="H"
+                      includeMargin={true}
+                      fgColor="#000000"
+                      bgColor="#ffffff"
+                    />
+                  </div>
+                </div>
+
+                {/* Link Display */}
+                <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium">Your Gift Link</p>
+                  <p className="text-sm font-mono text-foreground break-all">{createdGiftLink}</p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdGiftLink);
+                      alert('Link copied to clipboard!');
+                    }}
+                    size="lg"
+                    className="w-full"
+                  >
+                    <Copy className="w-5 h-5 mr-2" />
+                    Copy Link
+                  </Button>
+
+                  <Button
+                    onClick={() => {
+                      const svg = document.querySelector('svg');
+                      if (svg) {
+                        const svgData = new XMLSerializer().serializeToString(svg);
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const img = new Image();
+                        
+                        img.onload = () => {
+                          canvas.width = img.width;
+                          canvas.height = img.height;
+                          ctx?.drawImage(img, 0, 0);
+                          
+                          canvas.toBlob((blob) => {
+                            if (blob) {
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'gift-qr-code.png';
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }
+                          });
+                        };
+                        
+                        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                      }
+                    }}
+                    variant="outline"
+                    size="lg"
+                    className="w-full"
+                  >
+                    Download QR
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Rest of the component remains the same */}
@@ -990,7 +1104,7 @@ const Dashboard: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Your Gifts</h3>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {gifts.slice(0, 3).map(gift => (
+                  {gifts.map(gift => (
                     <Card key={gift.id}>
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
@@ -1021,9 +1135,6 @@ const Dashboard: React.FC = () => {
                         <p className="text-muted-foreground">No gifts created yet.</p>
                       </CardContent>
                     </Card>
-                  )}
-                  {gifts.length > 3 && (
-                    <p className="text-sm text-muted-foreground text-center">And {gifts.length - 3} more...</p>
                   )}
                 </div>
               </div>
@@ -1070,44 +1181,60 @@ const Dashboard: React.FC = () => {
               {gifts.map(gift => (
                 <Card key={gift.id}>
                   <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">{gift.title || gift.type}</h3>
-                        <Badge variant="secondary" className="mt-1">{gift.type}</Badge>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Created</p>
-                        <p className="text-sm">{new Date(gift.createdAt).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditGift(gift)}
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const link = `${window.location.origin}/gift/${gift.shareLink}`;
-                            navigator.clipboard.writeText(link);
-                            alert('Link copied to clipboard!');
-                          }}
-                        >
-                          <Copy className="w-4 h-4 mr-1" />
-                          Copy Link
-                        </Button>
-                        <a href={`/gift/${gift.shareLink}`} target="_blank" rel="noopener noreferrer">
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-1" />
-                            View
-                          </Button>
-                        </a>
+                    <div className="flex gap-4">
+                      {/* Gift Image */}
+                      {gift.picture && (
+                        <div className="w-32 h-32 rounded-lg overflow-hidden flex-shrink-0">
+                          <img
+                            src={gift.picture}
+                            alt={gift.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Gift Details */}
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="font-semibold text-lg">{gift.title || gift.type}</h3>
+                            <Badge variant="secondary" className="mt-1">{gift.type}</Badge>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Created</p>
+                            <p className="text-sm">{new Date(gift.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditGift(gift)}
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const link = `${window.location.origin}/gift/${gift.shareLink}`;
+                                navigator.clipboard.writeText(link);
+                                alert('Link copied to clipboard!');
+                              }}
+                            >
+                              <Copy className="w-4 h-4 mr-1" />
+                              Copy Link
+                            </Button>
+                            <a href={`/gift/${gift.shareLink}`} target="_blank" rel="noopener noreferrer">
+                              <Button variant="outline" size="sm">
+                                <Eye className="w-4 h-4 mr-1" />
+                                View
+                              </Button>
+                            </a>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

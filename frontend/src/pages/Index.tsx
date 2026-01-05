@@ -17,21 +17,21 @@ const Index = () => {
               <div className="w-12 h-12 bg-rose/10 rounded-full flex items-center justify-center">
                 <Link className="w-6 h-6 text-rose" />
               </div>
-              <span className="text-lg font-medium text-foreground whitespace-nowrap">Create your gift links</span>
+              <span className="text-lg font-medium text-neutral-700 whitespace-nowrap">Create your gift links</span>
               <ChevronRight className="w-6 h-6 text-muted-foreground hidden md:block" />
             </div>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-rose/10 rounded-full flex items-center justify-center">
                 <MessageCircle className="w-6 h-6 text-rose" />
               </div>
-              <span className="text-lg font-medium text-foreground whitespace-nowrap">Share it on WhatsApp</span>
+              <span className="text-lg font-medium text-neutral-900 whitespace-nowrap">Share it on WhatsApp</span>
               <ChevronRight className="w-6 h-6 text-muted-foreground hidden md:block" />
             </div>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-rose/10 rounded-full flex items-center justify-center">
                 <span className="text-xl font-bold text-rose">₦</span>
               </div>
-              <span className="text-lg font-medium text-foreground whitespace-nowrap">Receive cash gifts from different currencies</span>
+              <span className="text-lg font-medium text-neutral-900 whitespace-nowrap">Receive cash gifts from friends & family globally</span>
             </div>
           </div>
         </div>
@@ -45,9 +45,9 @@ const Index = () => {
               <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Featured Celebrations</span>
               
             </div>
-            <h2 className="font-serif text-3xl md:text-4xl font-semibold text-foreground">
+            {/* <h2 className="font-serif text-3xl md:text-4xl font-semibold text-foreground">
               Celebrate Their Special Day
-            </h2>
+            </h2> */}
           </div>
 
           <WeddingGiftGallery />
@@ -57,7 +57,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-8 px-6 bg-card border-t border-border/50">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Brand Section */}
             <div>
               <h3 className="font-serif text-lg font-semibold text-foreground mb-4">
@@ -77,12 +77,23 @@ const Index = () => {
                 <li><a href="/signup" className="text-muted-foreground hover:text-foreground transition-colors">Sign Up</a></li>
               </ul>
             </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="font-medium text-foreground mb-4">Contact</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="mailto:support@giftlink.com" className="text-muted-foreground hover:text-foreground transition-colors">support@giftlink.com</a></li>
+                <li><span className="text-muted-foreground">+234 805 667 9806</span></li>
+                <li><span className="text-muted-foreground">Chevron Estate, Lekki</span></li>
+                <li><span className="text-muted-foreground">Mon-Fri 9AM-6PM WAT</span></li>
+              </ul>
+            </div>
           </div>
 
           {/* Bottom Section */}
           <div className="mt-8 pt-8 border-t border-border/50 text-center">
             <p className="text-sm text-muted-foreground">
-              © 2025 GiftLink. All rights reserved.
+              © 2026 GiftLink. All rights reserved.
             </p>
           </div>
         </div>

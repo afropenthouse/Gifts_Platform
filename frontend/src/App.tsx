@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import ShareGift from "./pages/ShareGift";
 import VerifyEmail from "./pages/VerifyEmail";
 import ResetPassword from "./pages/ResetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
 import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
 
@@ -24,6 +25,7 @@ const App = () => (
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/gift/:link" element={<ShareGift />} />

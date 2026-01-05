@@ -55,8 +55,10 @@
     --shadow-glow: 0 0 40px hsl(350 60% 55% / 0.2);
 
     /* Fonts */
-    --font-serif: 'Cormorant Garamond', Georgia, serif;
-    --font-sans: 'DM Sans', system-ui, sans-serif;
+    /* --font-serif: 'Cormorant Garamond', Georgia, serif; */
+    /* --font-sans: 'DM Sans', system-ui, sans-seri */
+    --font-serif: 'poppins';
+    --font-sans: 'poppins';
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;

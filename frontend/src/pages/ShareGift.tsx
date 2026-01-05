@@ -6,8 +6,9 @@ import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import Navbar from '../components/Navbar';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Users, Gift } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -25,6 +26,7 @@ interface Gift {
   details: any;
   customType?: string;
   user: { name: string; profilePicture: string };
+  _count?: { contributions: number };
 }
 
 const ShareGift: React.FC = () => {
@@ -36,8 +38,13 @@ const ShareGift: React.FC = () => {
   const [currency, setCurrency] = useState('NGN');
   const [contributorName, setContributorName] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [showAmountModal, setShowAmountModal] = useState(false);
   const [showNameModal, setShowNameModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+
+  const heading = gift?.title || (gift?.details?.groomName && gift?.details?.brideName 
+    ? `${gift.details.groomName} & ${gift.details.brideName}`
+    : gift?.user?.name || "Special Celebration");
 
   // Handle redirect back from Flutterwave: verify payment
   useEffect(() => {
@@ -105,6 +112,7 @@ const ShareGift: React.FC = () => {
       return;
     }
 
+    setShowAmountModal(false);
     setShowNameModal(true);
   };
 
@@ -157,12 +165,12 @@ const ShareGift: React.FC = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 mx-auto border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-            <p className="text-gray-600">Loading gift details...</p>
+            <p className="text-muted-foreground">Loading gift details...</p>
           </div>
         </div>
       </div>
@@ -170,15 +178,15 @@ const ShareGift: React.FC = () => {
 
   if (!gift)
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-center space-y-6">
-            <div className="w-24 h-24 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-4xl text-gray-400">!</span>
+            <div className="w-24 h-24 mx-auto bg-muted rounded-full flex items-center justify-center">
+              <span className="text-4xl text-muted-foreground">!</span>
             </div>
-            <h1 className="text-2xl font-semibold text-gray-800">Gift Not Found</h1>
-            <p className="text-gray-600 max-w-md">
+            <h1 className="text-2xl font-semibold text-foreground">Gift Not Found</h1>
+            <p className="text-muted-foreground max-w-md">
               The gift link you're looking for doesn't exist or has been removed.
             </p>
           </div>
@@ -186,232 +194,180 @@ const ShareGift: React.FC = () => {
       </div>
     );
 
+  const giftersCount = gift._count?.contributions || 0;
+  const formattedDate = gift.date ? new Date(gift.date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }) : '';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-champagne/30 via-white to-rose/10">
+    <div className="min-h-screen bg-background">
       <Navbar />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
         <div className="w-full max-w-md">
-          {/* Gift Card */}
-          <Card className="border-0 shadow-card rounded-2xl overflow-hidden bg-white">
-            <div className="relative h-80 bg-gradient-to-r from-primary/10 to-primary/5">
+          {/* Gift Card - Same style as home page */}
+          <div className="bg-gradient-card rounded-2xl shadow-card overflow-hidden border border-border/50 hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="relative h-[20rem] w-full overflow-hidden">
               {gift.picture && (
                 <img
                   src={gift.picture}
-                  alt="Event"
-                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  alt={heading}
+                  className="w-full h-full object-cover object-top"
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-
-              <div className="absolute bottom-6 left-6 right-6">
-                <h1 className="text-xl font-bold text-white mb-2">
-                  {gift.title || `${gift.user.name}'s ${gift.type === 'other' ? gift.customType : gift.type}`}
-                </h1>
-                <Badge className="bg-white/20 backdrop-blur-sm text-white border-0">
-                  {gift.type === 'other' ? gift.customType : gift.type}
-                </Badge>
-              </div>
             </div>
 
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {gift.description && (
-                  <p className="text-gray-700 leading-relaxed">{gift.description}</p>
-                )}
-
-                <div className="pt-4 border-t border-gray-100">
-                  <div className="space-y-2">
-                    {gift.date && (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        <span className="text-sm text-gray-600">
-                          {new Date(gift.date).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                    )}
-
-                    {gift.type === 'wedding' && gift.details && (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        <span className="text-sm text-gray-600 font-medium">
-                          {gift.details.groomName} & {gift.details.brideName}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <form onSubmit={handleAmountSubmit} className="space-y-4 pt-4">
-                  <div>
-                    <Label className="text-gray-700 font-medium block mb-2">
-                      Select Currency
-                    </Label>
-                    <Select value={currency} onValueChange={setCurrency}>
-                      <SelectTrigger className="w-full h-11 rounded-lg border-gray-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NGN">₦ Nigerian Naira</SelectItem>
-                        <SelectItem value="USD">$ US Dollar</SelectItem>
-                        <SelectItem value="CAD">C$ Canadian Dollar</SelectItem>
-                        <SelectItem value="EUR">€ Euro</SelectItem>
-                        <SelectItem value="GBP">£ British Pound</SelectItem>
-                        <SelectItem value="AUD">A$ Australian Dollar</SelectItem>
-                        <SelectItem value="ZAR">R South African Rand</SelectItem>
-                        <SelectItem value="KES">KSh Kenyan Shilling</SelectItem>
-                        <SelectItem value="GHS">₵ Ghanaian Cedi</SelectItem>
-                        <SelectItem value="UGX">USh Ugandan Shilling</SelectItem>
-                        <SelectItem value="TZS">TSh Tanzanian Shilling</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-gray-700 font-medium block mb-2">
-                      Gift Amount
-                    </Label>
-                    <div className="relative">
-                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg font-medium">
-                        {currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'CAD' ? 'C$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AUD' ? 'A$' : currency === 'ZAR' ? 'R' : currency === 'KES' ? 'KSh' : currency === 'GHS' ? '₵' : currency === 'UGX' ? 'USh' : 'TSh'}
-                      </div>
-                      <Input
-                        id="amount"
-                        type="number"
-                        step="0.01"
-                        min={currency === 'NGN' ? '100' : '1'}
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        placeholder="0.00"
-                        className="pl-12 h-12 text-lg font-semibold rounded-lg border-gray-200"
-                        required
-                      />
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Minimum: {currency === 'NGN' ? '₦100' : currency === 'USD' ? '$1' : currency === 'CAD' ? 'C$1' : currency === 'EUR' ? '€1' : currency === 'GBP' ? '£1' : currency === 'AUD' ? 'A$1' : currency === 'ZAR' ? 'R1' : currency === 'KES' ? 'KSh1' : currency === 'GHS' ? '₵1' : currency === 'UGX' ? 'USh1' : 'TSh1'}
-                    </p>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full h-12 text-lg font-semibold rounded-lg"
-                  >
-                    Send a cash gift
-                  </Button>
-                </form>
+            <div className="p-9 -mt-12">
+              <div className="text-center mb-4">
+                <h2 className="font-serif text-3xl font-semibold text-foreground tracking-wide py-4">
+                  {heading}
+                </h2>
+                <p className="text-muted-foreground text-sm -mt-1 font-sans">{formattedDate}</p>
               </div>
-            </CardContent>
-          </Card>
+
+              <div className="flex justify-center py-4">
+                <div className="inline-flex items-center gap-2 rounded-full bg-card/80 backdrop-blur-sm px-4 py-2 shadow-soft border border-border/50">
+                  <Users className="w-4 h-4 text-rose" />
+                  <span className="font-semibold text-sm font-sans">{giftersCount}</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Gifters</span>
+                </div>
+              </div>
+
+              <div className="mt-1">
+                <Button 
+                  variant="gold" 
+                  className="w-full" 
+                  size="lg" 
+                  onClick={() => setShowAmountModal(true)}
+                >
+                  <Gift className="w-5 h-5 mr-[0.1rem]" />
+                  Send a cash gift
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Description - shown below card if available */}
+          {gift.description && (
+            <div className="mt-6 p-4 bg-card rounded-lg border border-border/50">
+              <p className="text-muted-foreground text-sm">{gift.description}</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Name/Anonymous Modal */}
-      <Dialog open={showNameModal} onOpenChange={setShowNameModal}>
-        <DialogContent className="max-w-md rounded-2xl border-0 shadow-2xl p-0 overflow-hidden">
-          <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-6">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold text-gray-900">
-                How would you like to appear?
-              </DialogTitle>
-              <p className="text-gray-600 text-sm mt-1">
-                Choose how your name will be shown to the recipient
-              </p>
-            </DialogHeader>
-          </div>
-          
-          <form onSubmit={handlePayment} className="p-6 space-y-6">
-            {/* Amount Display */}
-            <div className="text-center p-4 bg-gray-50 rounded-xl">
-              <p className="text-sm text-gray-600 mb-1">Your Gift Amount</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'CAD' ? 'C$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AUD' ? 'A$' : currency === 'ZAR' ? 'R' : currency === 'KES' ? 'KSh' : currency === 'GHS' ? '₵' : currency === 'UGX' ? 'USh' : 'TSh'}
-                {amount}
+      {/* Amount Modal */}
+      <Dialog open={showAmountModal} onOpenChange={setShowAmountModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-serif text-center">{heading}</DialogTitle>
+            <div className="text-center text-muted-foreground text-sm mt-1">
+              Enter the gift amount
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleAmountSubmit} className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Gift Amount</Label>
+              <div className="flex gap-2 mt-2">
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NGN">₦ NGN</SelectItem>
+                    <SelectItem value="USD">$ USD</SelectItem>
+                    <SelectItem value="CAD">C$ CAD</SelectItem>
+                    <SelectItem value="EUR">€ EUR</SelectItem>
+                    <SelectItem value="GBP">£ GBP</SelectItem>
+                    <SelectItem value="AUD">A$ AUD</SelectItem>
+                    <SelectItem value="ZAR">R ZAR</SelectItem>
+                    <SelectItem value="KES">KSh KES</SelectItem>
+                    <SelectItem value="GHS">₵ GHS</SelectItem>
+                    <SelectItem value="UGX">USh UGX</SelectItem>
+                    <SelectItem value="TZS">TSh TZS</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min={currency === 'NGN' ? '100' : '1'}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder={currency === 'NGN' ? '100' : '1'}
+                  className="flex-1 text-lg"
+                  required
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Minimum {currency === 'NGN' ? '₦100' : currency === 'USD' ? '$1' : currency === 'CAD' ? 'C$1' : currency === 'EUR' ? '€1' : currency === 'GBP' ? '£1' : currency === 'AUD' ? 'A$1' : currency === 'ZAR' ? 'R1' : currency === 'KES' ? 'KSh1' : currency === 'GHS' ? '₵1' : currency === 'UGX' ? 'USh1' : 'TSh1'}
               </p>
             </div>
 
-            {/* Gift Amount Summary */}
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+            >
+              Send Gift {currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'CAD' ? 'C$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AUD' ? 'A$' : currency === 'ZAR' ? 'R' : currency === 'KES' ? 'KSh' : currency === 'GHS' ? '₵' : currency === 'UGX' ? 'USh' : 'TSh'}{amount || '0'}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Name/Anonymous Modal */}
+      <Dialog open={showNameModal} onOpenChange={setShowNameModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-serif text-center">How would you like to appear?</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handlePayment} className="space-y-4">
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="name" className="text-sm font-medium">Your Name</Label>
+                <Input
+                  id="name"
+                  value={contributorName}
+                  onChange={(e) => setContributorName(e.target.value)}
+                  placeholder="Enter your name"
+                  disabled={isAnonymous}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="anonymous"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="anonymous" className="text-sm">Give anonymously</Label>
+              </div>
+            </div>
+
             <div className="text-center p-3 bg-muted rounded-lg">
               <p className="text-sm font-medium">
                 Gift Amount: {currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'CAD' ? 'C$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AUD' ? 'A$' : currency === 'ZAR' ? 'R' : currency === 'KES' ? 'KSh' : currency === 'GHS' ? '₵' : currency === 'UGX' ? 'USh' : 'TSh'}{amount}
               </p>
             </div>
 
-            {/* Name Input */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-gray-700 font-medium">
-                  Your Name
-                </Label>
-                <Input
-                  id="name"
-                  value={contributorName}
-                  onChange={(e) => setContributorName(e.target.value)}
-                  placeholder="Enter your full name"
-                  disabled={isAnonymous}
-                  className="h-12 rounded-lg border-gray-200"
-                />
-              </div>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={processingPayment}
+            >
+              {processingPayment ? 'Processing...' : 'Complete Gift'}
+            </Button>
 
-              {/* Anonymous Option */}
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <input
-                  type="checkbox"
-                  id="anonymous"
-                  checked={isAnonymous}
-                  onChange={(e) => setIsAnonymous(e.target.checked)}
-                  className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
-                />
-                <div className="flex-1">
-                  <Label htmlFor="anonymous" className="text-gray-700 font-medium">
-                    Give anonymously
-                  </Label>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Your name will not be shown to the recipient
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full h-12 rounded-lg font-semibold"
-                disabled={processingPayment}
-              >
-                {processingPayment ? (
-                  <span className="flex items-center justify-center">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
-                    Processing...
-                  </span>
-                ) : (
-                  'Complete Your Gift'
-                )}
-              </Button>
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowNameModal(false)}
-                className="w-full h-12 rounded-lg"
-              >
-                Back to Edit Amount
-              </Button>
-            </div>
-
-            {/* Security Note */}
-            <div className="text-center pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-500">
-                You will be redirected to Flutterwave for secure payment processing
-              </p>
-            </div>
+            <p className="text-xs text-center text-muted-foreground">
+              💳 Powered by Flutterwave - Secure payment processing
+            </p>
           </form>
         </DialogContent>
       </Dialog>

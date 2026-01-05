@@ -7,30 +7,25 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Fallback image (lightweight inline SVG) used when no imageUrl is provided
-const fallbackImage =
-  "data:image/svg+xml;charset=utf-8," +
-  encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'>
-      <defs>
-        <linearGradient id='g' x1='0' x2='0' y1='0' y2='1'>
-          <stop offset='0%' stop-color='#fde68a'/>
-          <stop offset='100%' stop-color='#fbcfe8'/>
-        </linearGradient>
-      </defs>
-      <rect width='800' height='400' fill='url(#g)'/>
-      <g fill='#1f2937' font-family='serif' text-anchor='middle'>
-        <text x='400' y='200' font-size='36'>Special Celebration</text>
-      </g>
-    </svg>`
-  );
+// Utility function to check if image is portrait
+const isPortrait = (src: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve(img.naturalHeight >= img.naturalWidth);
+    };
+    img.onerror = () => resolve(true); // Default to show if error loading
+    img.src = src;
+  });
+};
+
 
 interface WeddingGiftCardProps {
   groomName?: string;
   brideName?: string;
   weddingDate: string;
   giftersCount: number;
-  imageUrl?: string;
+  imageUrl: string;
   title?: string;
 }
 
@@ -72,7 +67,9 @@ const WeddingGiftCard = ({
     }
   }, []);
 
-  const handleSendGiftClick = () => {
+  const handleSendGiftClick = (e?: React.MouseEvent) => {
+    // Prevent opening the preview card modal when the CTA is clicked.
+    e?.stopPropagation();
     setIsCardModalOpen(false);
     setIsAmountModalOpen(true);
   };
@@ -158,29 +155,28 @@ const WeddingGiftCard = ({
     <>
       <div
         className="relative w-full max-w-md mx-auto opacity-0 animate-fade-in-up delay-200 cursor-pointer"
-        style={{ animationFillMode: "forwards" }}
+        style={{ animationFillMode: "" }}
         onClick={() => setIsCardModalOpen(true)}
       >
         <div className="bg-gradient-card rounded-2xl shadow-card overflow-hidden border border-border/50 hover:shadow-lg transition-shadow">
-          <div className="relative h-64 overflow-hidden">
+          <div className="relative h-[20rem] w-[22rem] overflow-hidden">
             <img
-              src={imageUrl || fallbackImage}
+              src={imageUrl}
               alt={`${heading} image`}
-              className="w-full h-full object-cover"
+              className="w-full h-[350] object-top"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-transparent to-transparent" />
           </div>
 
-          <div className="p-6 -mt-8 relative">
+          <div className="p-9 -mt-12">
             <div className="text-center mb-4">
               {title ? (
-                <h2 className="font-serif text-3xl font-semibold text-foreground tracking-wide">{title}</h2>
+                <h2 className="font-serif text-3xl font-semibold text-foreground tracking-wide py-4">{title}</h2>
               ) : (
-                <h2 className="font-serif text-3xl font-semibold text-foreground tracking-wide">
+                <h2 className="font-serif text-3xl font-semibold text-foreground tracking-wide py-4">
                   {groomName} <span className="text-gold">&</span> {brideName}
                 </h2>
               )}
-              <p className="text-muted-foreground text-sm mt-1 font-sans">{weddingDate}</p>
+              <p className="text-muted-foreground text-sm -mt-1 font-sans">{weddingDate}</p>
             </div>
 
             <div className="flex justify-center py-4">
@@ -191,10 +187,10 @@ const WeddingGiftCard = ({
               </div>
             </div>
 
-            <div className="mt-5">
+            <div className="mt-1">
               <Button variant="gold" className="w-full" size="lg" onClick={handleSendGiftClick}>
                 <Gift className="w-5 h-5 mr-[0.1rem]" />
-                Send a cash gift
+                Send cash gift
               </Button>
             </div>
           </div>
@@ -207,14 +203,13 @@ const WeddingGiftCard = ({
           <div className="bg-gradient-card rounded-2xl shadow-card overflow-hidden border border-border/50">
             <div className="relative h-64 overflow-hidden">
               <img
-                src={imageUrl || fallbackImage}
+                src={imageUrl}
                 alt={`${heading} image`}
-                className="w-full h-full object-cover"
+                className="w-full h-[350] object-top"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-transparent to-transparent" />
             </div>
 
-            <div className="p-6 -mt-8 relative">
+            <div className="p-6 -mt-3 relative">
               <div className="text-center mb-4">
                 {title ? (
                   <h2 className="font-serif text-3xl font-semibold text-foreground tracking-wide">{title}</h2>
@@ -358,74 +353,96 @@ const WeddingGiftCard = ({
 export default WeddingGiftCard;
 
 export const WeddingGiftGallery = () => {
-  const events = [
-    {
-      title: "Aisha's Birthday",
-      date: "March 5, 2026",
-      gifters: 12,
-      imageUrl: "/Aishas_Birthday.jpg",
-    },
-    {
-      groomName: "James",
-      brideName: "Sade",
-      date: "December 28, 2025",
-      gifters: 4,
-      imageUrl: "/James.jpg",
-    },
-    {
-      groomName: "Tunde",
-      brideName: "Chioma",
-      date: "January 15, 2026",
-      gifters: 8,
-      imageUrl: "/Tunde.jpg",
-    },
-    {
-      title: "Bode's Graduation",
-      date: "July 22, 2026",
-      gifters: 6,
-      imageUrl: "/Bode.jpg",
-    },
-    {
-      title: "Chika's MSc Graduation",
-      date: "August 18, 2026",
-      gifters: 7,
-      imageUrl: "/chika.jpg",
-    },
-    {
-      groomName: "Emeka",
-      brideName: "Ade",
-      date: "November 2, 2026",
-      gifters: 15,
-      imageUrl: "/Emeka.jpg",
-    },
-    {
-      groomName: "Monday",
-      brideName: "Kemi",
-      date: "February 14, 2026",
-      gifters: 5,
-      imageUrl: "/Monday.webp",
-    },
-    {
-      title: "Tope's Birthday",
-      date: "December 12, 2026",
-      gifters: 10,
-      imageUrl: "/Tope.png",
-    },
-  ];
+  const [gifts, setGifts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchFeaturedGifts = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/gifts/public/featured`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch gifts');
+        }
+        const data = await response.json();
+
+        // Filter to only include portrait images
+        const filteredGifts = [];
+        for (const gift of data) {
+          if (gift.picture) {
+            const portrait = await isPortrait(gift.picture);
+            if (portrait) {
+              filteredGifts.push(gift);
+            }
+          } else {
+            // Include gifts without picture (will use fallback)
+            filteredGifts.push(gift);
+          }
+        }
+
+        setGifts(filteredGifts);
+      } catch (err) {
+        console.error('Error fetching featured gifts:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedGifts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="w-full max-w-md mx-auto opacity-0 animate-fade-in-up delay-200">
+            <div className="bg-gradient-card rounded-2xl shadow-card overflow-hidden border border-border/50 h-96">
+              <div className="h-64 bg-muted animate-pulse" />
+              <div className="p-6">
+                <div className="h-6 bg-muted animate-pulse rounded mb-2" />
+                <div className="h-4 bg-muted animate-pulse rounded mb-4" />
+                <div className="h-10 bg-muted animate-pulse rounded" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">Unable to load featured celebrations. Please try again later.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-      {events.map((e, i) => (
-        <WeddingGiftCard
-          key={i}
-          groomName={e.groomName}
-          brideName={e.brideName}
-          title={e.title}
-          weddingDate={e.date}
-          giftersCount={e.gifters}
-          imageUrl={e.imageUrl}
-        />
-      ))}
+      {gifts.filter(gift => gift.picture).map((gift) => {
+        // Determine groom/bride names or title based on gift type and details
+        let groomName, brideName, title;
+        if (gift.type === 'wedding' && gift.details) {
+          groomName = gift.details.groomName;
+          brideName = gift.details.brideName;
+        } else {
+          title = gift.title || `${gift.type.charAt(0).toUpperCase() + gift.type.slice(1)} Celebration`;
+        }
+
+        return (
+          <WeddingGiftCard
+            key={gift.id}
+            groomName={groomName}
+            brideName={brideName}
+            title={title}
+            weddingDate={gift.date}
+            giftersCount={gift.giftersCount}
+            imageUrl={gift.picture}
+          />
+        );
+      })}
     </div>
   );
 };

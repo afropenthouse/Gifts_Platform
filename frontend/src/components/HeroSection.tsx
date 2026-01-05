@@ -16,7 +16,7 @@ const HeroSection = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
-  const [picture, setPicture] = useState('');
+  const [pictureFile, setPictureFile] = useState<File | null>(null);
   const [groomName, setGroomName] = useState('');
   const [brideName, setBrideName] = useState('');
   const [customType, setCustomType] = useState('');
@@ -29,30 +29,47 @@ const HeroSection = () => {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPictureFile(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('date', date);
+
+    // Add picture file if selected
+    if (pictureFile) {
+      formData.append('picture', pictureFile);
+    }
+
+    // Add details
     const details = {} as any;
     if (type === 'wedding') {
       details.groomName = groomName;
       details.brideName = brideName;
     }
+    formData.append('details', JSON.stringify(details));
+
+    if (type === 'other') {
+      formData.append('customType', customType);
+    }
+
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          type,
-          title,
-          description,
-          date,
-          picture,
-          details,
-          customType: type === 'other' ? customType : undefined,
-        }),
+        body: formData,
       });
       if (res.ok) {
         setIsModalOpen(false);
@@ -157,12 +174,14 @@ const HeroSection = () => {
             />
           </div>
           <div>
-            <Label htmlFor="picture">Picture (Base64 or URL)</Label>
+            <Label htmlFor="picture">Picture</Label>
             <Input
               id="picture"
-              value={picture}
-              onChange={(e) => setPicture(e.target.value)}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
             />
+            {pictureFile && <p className="text-sm text-muted-foreground mt-1">Selected: {pictureFile.name}</p>}
           </div>
           {type === 'wedding' && (
             <>

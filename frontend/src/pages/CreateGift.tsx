@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 
 const CreateGift: React.FC = () => {
   const { user, loading } = useAuth();
@@ -14,10 +15,12 @@ const CreateGift: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
-  const [picture, setPicture] = useState('');
+  const [pictureFile, setPictureFile] = useState<File | null>(null);
   const [groomName, setGroomName] = useState('');
   const [brideName, setBrideName] = useState('');
   const [customType, setCustomType] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [shareLink, setShareLink] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -28,33 +31,86 @@ const CreateGift: React.FC = () => {
   if (loading) return <div>Loading...</div>;
   if (!user) return null;
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if image is portrait
+      const img = new Image();
+      img.onload = () => {
+        if (img.naturalHeight >= img.naturalWidth) {
+          setPictureFile(file);
+        } else {
+          alert('Please select a portrait image (height should be greater than or equal to width).');
+          e.target.value = ''; // Reset the input
+        }
+      };
+      img.onerror = () => {
+        alert('Invalid image file.');
+        e.target.value = '';
+      };
+      img.src = URL.createObjectURL(file);
+    }
+  };
+
+  const handleCopyLink = () => {
+    const fullUrl = `${window.location.origin}/gift/${shareLink}`;
+    navigator.clipboard.writeText(fullUrl);
+    alert('Link copied to clipboard!');
+  };
+
+  const handleShareWithFriends = () => {
+    const fullUrl = `${window.location.origin}/gift/${shareLink}`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Check out this gift!',
+        text: 'Join me in celebrating this special occasion.',
+        url: fullUrl,
+      });
+    } else {
+      navigator.clipboard.writeText(fullUrl);
+      alert('Link copied to clipboard! Share it with your friends.');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('date', date);
+
+    // Add picture file if selected
+    if (pictureFile) {
+      formData.append('picture', pictureFile);
+    }
+
+    // Add details
     const details = {} as any;
     if (type === 'wedding') {
       details.groomName = groomName;
       details.brideName = brideName;
     }
+    formData.append('details', JSON.stringify(details));
+
+    if (type === 'other') {
+      formData.append('customType', customType);
+    }
+
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          type,
-          title,
-          description,
-          date,
-          picture,
-          details,
-          customType: type === 'other' ? customType : undefined,
-        }),
+        body: formData,
       });
       if (res.ok) {
-        navigate('/dashboard');
+        const data = await res.json();
+        setShareLink(data.shareLink);
+        setIsModalOpen(true);
       }
     } catch (err) {
       console.error(err);
@@ -116,12 +172,14 @@ const CreateGift: React.FC = () => {
           />
         </div>
         <div>
-          <Label htmlFor="picture">Picture (Base64 or URL)</Label>
+          <Label htmlFor="picture">Picture</Label>
           <Input
             id="picture"
-            value={picture}
-            onChange={(e) => setPicture(e.target.value)}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
           />
+          {pictureFile && <p className="text-sm text-muted-foreground mt-1">Selected: {pictureFile.name}</p>}
         </div>
         {type === 'wedding' && (
           <>
@@ -145,6 +203,25 @@ const CreateGift: React.FC = () => {
         )}
         <Button type="submit">Create Gift</Button>
       </form>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">Link Created!</DialogTitle>
+            <DialogDescription className="text-center">
+              Your gift link has been created successfully. Share it with friends and family to start receiving contributions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-4 mt-4">
+            <Button onClick={handleCopyLink} className="flex-1">
+              Copy Link
+            </Button>
+            <Button onClick={handleShareWithFriends} variant="outline" className="flex-1">
+              Share with Friends
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
