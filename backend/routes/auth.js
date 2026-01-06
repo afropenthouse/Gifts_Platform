@@ -61,64 +61,35 @@ module.exports = () => {
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
-      const verificationToken = crypto.randomBytes(32).toString('hex');
 
-      user = await prisma.user.create({ data: { name, email, password: hashedPassword, verificationToken, verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) } });
+      user = await prisma.user.create({ data: { name, email, password: hashedPassword, isVerified: true } });
 
-      // Send verification email
-      const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verificationToken}`;
-      const mailOptions = {
-        from: mailFrom,
-        to: email,
-        subject: 'Verify Your Email - Wedding Gifts',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; border-radius: 10px;">
-            <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; text-align: center;">Welcome to Wedding Gifts!</h2>
-              <p style="color: #666; text-align: center;">Thank you for signing up. Please verify your email address to get started.</p>
-              <div style="text-align: center; margin: 20px 0;">
-                <a href="${verificationUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email</a>
-              </div>
-              <p style="color: #666; text-align: center;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #007bff; text-align: center;">${verificationUrl}</p>
-              <p style="color: #666; text-align: center;">This link will expire in 24 hours.</p>
-            </div>
-          </div>
-        `,
-      };
-
-      const emailResult = await sendEmail(mailOptions);
-
-      if (!emailResult.delivered) {
-        console.error('Verification email failed to send; user created.');
-      }
-
-      res.json({ msg: 'User registered successfully. Please check your email to verify your account.' });
+      res.json({ msg: 'User registered successfully. You can now log in.' });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
     }
   });
 
-  // Verify email
-  router.get('/verify/:token', async (req, res) => {
-    try {
-      const user = await prisma.user.findFirst({ where: { verificationToken: req.params.token } });
-      if (!user) return res.status(400).json({ msg: 'Invalid verification token' });
-
-      if (user.verificationTokenExpires < new Date()) return res.status(400).json({ msg: 'Verification token has expired' });
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { isVerified: true, verificationToken: null, verificationTokenExpires: null },
-      });
-
-      res.json({ msg: 'Email verified successfully. You can now log in.' });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: 'Server error' });
-    }
-  });
+  // Verify email (disabled for now)
+  // router.get('/verify/:token', async (req, res) => {
+  //   try {
+  //     const user = await prisma.user.findFirst({ where: { verificationToken: req.params.token } });
+  //     if (!user) return res.status(400).json({ msg: 'Invalid verification token' });
+  //
+  //     if (user.verificationTokenExpires < new Date()) return res.status(400).json({ msg: 'Verification token has expired' });
+  //
+  //     await prisma.user.update({
+  //       where: { id: user.id },
+  //       data: { isVerified: true, verificationToken: null, verificationTokenExpires: null },
+  //     });
+  //
+  //     res.json({ msg: 'Email verified successfully. You can now log in.' });
+  //   } catch (err) {
+  //     console.error(err);
+  //     res.status(500).json({ msg: 'Server error' });
+  //   }
+  // });
 
   // Login
   router.post('/login', [
@@ -136,8 +107,6 @@ module.exports = () => {
 
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
-
-      if (!user.isVerified) return res.status(400).json({ msg: 'Please verify your email before logging in' });
 
       const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
