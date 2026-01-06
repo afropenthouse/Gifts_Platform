@@ -101,9 +101,15 @@ const WeddingGiftCard = ({
     try {
       const name = isAnonymous ? 'Anonymous' : contributorName;
 
-      // Flutterwave test configuration
+      const publicKey = import.meta.env.VITE_FLW_PUBLIC_KEY;
+      if (!publicKey) {
+        alert('Payment is unavailable: missing Flutterwave public key.');
+        setProcessingPayment(false);
+        return;
+      }
+
       const config = {
-        public_key: 'FLWPUBK_TEST-b7168749519a53630ecbe8070b06ef4e-X', // Test public key
+        public_key: publicKey,
         tx_ref: `demo-gift-${Date.now()}`,
         amount: parseFloat(amount),
         currency: currency,

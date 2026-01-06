@@ -1,58 +1,12 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-import WeddingGiftCard, { WeddingGiftGallery } from "@/components/WeddingGiftCard";
-import { Link, MessageCircle, ChevronRight } from "lucide-react";
+import { WeddingGiftGallery } from "@/components/WeddingGiftCard";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <HeroSection />
-
-      {/* How It Works Section */}
-      <section className="py-8 px-4 md:py-16 md:px-6 bg-white">
-        <div className="container mx-auto max-w-4xl">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12">
-            {/* Step 1 */}
-            <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 w-full md:w-auto">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-rose/10 rounded-full flex items-center justify-center shrink-0">
-                <Link className="w-5 h-5 md:w-6 md:h-6 text-rose" />
-              </div>
-              <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
-                <span className="text-sm md:text-lg font-medium text-neutral-700 text-center md:text-left">
-                  Create your gift links
-                </span>
-                <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground rotate-90 md:rotate-0" />
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 w-full md:w-auto">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-rose/10 rounded-full flex items-center justify-center shrink-0">
-                <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-rose" />
-              </div>
-              <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
-                <span className="text-sm md:text-lg font-medium text-neutral-900 text-center md:text-left">
-                  Share on WhatsApp
-                </span>
-                <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground rotate-90 md:rotate-0" />
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 w-full md:w-auto">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-rose/10 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-lg md:text-xl font-bold text-rose">₦</span>
-              </div>
-              <div className="flex flex-col md:flex-row items-center gap-2">
-                <span className="text-sm md:text-lg font-medium text-neutral-900 text-center md:text-left">
-                  Receive cash gifts globally
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Steps Section */}
       <section className="py-12 px-4 md:py-16 md:px-6 bg-champagne/20">
@@ -177,8 +131,8 @@ const Index = () => {
           </div>
 
           {/* Bottom Section */}
-          <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-border/50 text-center">
-            <p className="text-xs md:text-sm text-muted-foreground">
+          <div className="mt-8 pt-6 md:pt-8 border-t border-border/50 text-center">
+            <p className="text-sm text-muted-foreground">
               © 2026 GiftLink. All rights reserved.
             </p>
           </div>
@@ -189,3 +143,5 @@ const Index = () => {
 };
 
 export default Index;
+
+

@@ -27,28 +27,34 @@ const Navbar = () => {
           {/* Desktop middle nav removed */}
 
           {/* Auth links */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-5">
+            <Link to="/how-it-works" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+              How it Works
+            </Link>
             {user ? (
               <>
                 <Link to="/dashboard">
-                  <Button variant="ghost" size="sm" className="hidden sm:flex">
+                  <Button variant="ghost" size="sm" className="hidden sm:flex text-base">
                     Dashboard
                   </Button>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-base">
                   Logout
                 </Button>
               </>
             ) : (
               <>
-                <Link to="/login" className="text-foreground hover:text-gold transition-colors">
-                  Login
+                <Link to="/login" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+                  Sign In
                 </Link>
-                <Link to="/signup" className="text-foreground hover:text-gold transition-colors">
-                  Sign Up
-                </Link>
-                <Link to="/how-it-works" className="text-foreground hover:text-gold transition-colors">
-                  How it Works
+                <Link to="/signup">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-4"
+                  >
+                    Sign Up
+                  </Button>
                 </Link>
               </>
             )}
@@ -64,7 +70,7 @@ const Navbar = () => {
               </SheetTrigger>
               <SheetContent side="right" className="w-64">
                 <div className="flex flex-col gap-4 mt-8">
-                  <Link to="/how-it-works" className="text-foreground hover:text-gold transition-colors" onClick={() => setIsOpen(false)}>
+                  <Link to="/how-it-works" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     How it Works
                   </Link>
                   {user ? (
@@ -89,7 +95,11 @@ const Navbar = () => {
                         </Button>
                       </Link>
                       <Link to="/signup" onClick={() => setIsOpen(false)}>
-                        <Button variant="default" size="sm" className="w-full justify-start">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
                           <UserPlus className="w-4 h-4 mr-2" />
                           Sign Up
                         </Button>
