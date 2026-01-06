@@ -407,11 +407,11 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-serif font-semibold text-foreground mb-2">
-            Welcome back, {user.name}!
+          <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-foreground mb-2">
+          Welcome back, {user.name}!
           </h1>
           <p className="text-muted-foreground">
             Manage your gifts and track gifts received from your dashboard.
@@ -419,74 +419,74 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-8">
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Gift className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Total Gift Links</p>
-                  <p className="text-2xl font-bold">{gifts.length}</p>
-                </div>
-              </div>
-            </CardContent>
+          <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-center">
+          <div className="p-1 sm:p-2 bg-blue-100 rounded-lg">
+          <Gift className="w-6 h-6 text-blue-600" />
+          </div>
+          <div className="mt-2 sm:mt-0 sm:ml-4">
+          <p className="text-sm font-medium text-muted-foreground">Total Gift Links</p>
+          <p className="text-2xl font-bold">{gifts.length}</p>
+          </div>
+          </div>
+          </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Wallet Balance</p>
-                  <p className="text-2xl font-bold">₦{user.wallet}</p>
-                </div>
-              </div>
-            </CardContent>
+          <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-center">
+          <div className="p-1 sm:p-2 bg-green-100 rounded-lg">
+          <DollarSign className="w-6 h-6 text-green-600" />
+          </div>
+          <div className="mt-2 sm:mt-0 sm:ml-4">
+          <p className="text-sm font-medium text-muted-foreground">Wallet Balance</p>
+          <p className="text-2xl font-bold">₦{user.wallet}</p>
+          </div>
+          </div>
+          </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Total Gift Amount</p>
-                  <p className="text-2xl font-bold">₦{totalContributions.toFixed(2)}</p>
-                </div>
-              </div>
-            </CardContent>
+          <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-center">
+          <div className="p-1 sm:p-2 bg-purple-100 rounded-lg">
+          <TrendingUp className="w-6 h-6 text-purple-600" />
+          </div>
+          <div className="mt-2 sm:mt-0 sm:ml-4">
+          <p className="text-sm font-medium text-muted-foreground">Total Gift Amount</p>
+          <p className="text-2xl font-bold">₦{totalContributions.toFixed(2)}</p>
+          </div>
+          </div>
+          </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Users className="w-6 h-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Gifters</p>
-                  <p className="text-2xl font-bold">{contributions.length}</p>
-                </div>
-              </div>
-            </CardContent>
+          <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-center">
+          <div className="p-1 sm:p-2 bg-orange-100 rounded-lg">
+          <Users className="w-6 h-6 text-orange-600" />
+          </div>
+          <div className="mt-2 sm:mt-0 sm:ml-4">
+          <p className="text-sm font-medium text-muted-foreground">Gifters</p>
+          <p className="text-2xl font-bold">{contributions.length}</p>
+          </div>
+          </div>
+          </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <ArrowDownToLine className="w-6 h-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Withdraw</p>
-                  <Button variant="destructive" size="sm" onClick={() => setIsWithdrawModalOpen(true)} className="mt-1">
-                    <ArrowDownToLine className="w-4 h-4 mr-1" />
-                    Withdraw
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
+          <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-center">
+          <div className="p-1 sm:p-2 bg-red-100 rounded-lg">
+          <ArrowDownToLine className="w-6 h-6 text-red-600" />
+          </div>
+          <div className="mt-2 sm:mt-0 sm:ml-4">
+          <p className="text-sm font-medium text-muted-foreground">Withdraw</p>
+          <Button variant="destructive" size="sm" onClick={() => setIsWithdrawModalOpen(true)} className="mt-1">
+          <ArrowDownToLine className="w-4 h-4 mr-1" />
+          Withdraw
+          </Button>
+          </div>
+          </div>
+          </CardContent>
           </Card>
         </div>
 
@@ -514,7 +514,7 @@ const Dashboard: React.FC = () => {
                 Create a Gift Link
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
+            <DialogContent className="max-w-[90vw] sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
               <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-background z-10">
                 <DialogTitle className="text-xl font-semibold text-foreground">Create a Cash Gift</DialogTitle>
                 <p className="text-sm text-muted-foreground mt-1">Share your special moment and receive gifts</p>
@@ -719,7 +719,7 @@ const Dashboard: React.FC = () => {
               setEditingGift(null);
             }
           }}>
-            <DialogContent className="sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
+            <DialogContent className="max-w-[90vw] sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
               {picture && (
                 <div className="relative w-full h-64 overflow-hidden rounded-t-2xl">
                   <img
@@ -913,7 +913,7 @@ const Dashboard: React.FC = () => {
               setWithdrawAccountName('');
             }
           }}>
-            <DialogContent className="sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
+            <DialogContent className="max-w-[90vw] sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-background overflow-auto max-h-[80vh]">
               <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-background z-10">
                 <DialogTitle className="text-xl font-semibold text-foreground">Withdraw Funds</DialogTitle>
                 <p className="text-sm text-muted-foreground mt-1">Transfer money to your bank account</p>
@@ -1000,7 +1000,7 @@ const Dashboard: React.FC = () => {
 
           {/* Share Link Modal */}
           <Dialog open={isShareLinkModalOpen} onOpenChange={setIsShareLinkModalOpen}>
-            <DialogContent className="sm:max-w-lg rounded-2xl border-0 shadow-2xl p-0 overflow-hidden">
+            <DialogContent className="max-w-[90vw] sm:max-w-lg rounded-2xl border-0 shadow-2xl p-0 overflow-hidden">
               <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-6">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold text-foreground">
