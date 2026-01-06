@@ -9,14 +9,29 @@ const prisma = require('../prismaClient');
 module.exports = () => {
   const router = express.Router();
 
-  // Email transporter
+  // Email transporter with explicit SMTP config and timeouts for reliability
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT || '465', 10),
+    secure: process.env.EMAIL_SECURE ? process.env.EMAIL_SECURE === 'true' : true,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
+
+  async function sendEmail(mailOptions) {
+    try {
+      await transporter.sendMail(mailOptions);
+      return { delivered: true };
+    } catch (error) {
+      console.error('Email send failed:', error?.message || error);
+      return { delivered: false, error };
+    }
+  }
 
   // Signup
   router.post('/signup', [
@@ -61,7 +76,13 @@ module.exports = () => {
         `,
       };
 
-      await transporter.sendMail(mailOptions);
+      const emailResult = await sendEmail(mailOptions);
+
+      if (!emailResult.delivered) {
+        return res.status(202).json({
+          msg: 'User registered, but we could not send the verification email. Please try resending later.',
+        });
+      }
 
       res.json({ msg: 'User registered successfully. Please check your email to verify your account.' });
     } catch (err) {
