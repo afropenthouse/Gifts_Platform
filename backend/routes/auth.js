@@ -10,13 +10,24 @@ module.exports = () => {
   const router = express.Router();
 
   // Email transporter with explicit SMTP config and timeouts for reliability
+  const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+  const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '465', 10);
+  const smtpSecure = process.env.EMAIL_SECURE
+    ? process.env.EMAIL_SECURE === 'true'
+    : process.env.SMTP_SECURE
+    ? process.env.SMTP_SECURE === 'true'
+    : true;
+  const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+  const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+  const mailFrom = process.env.MAIL_FROM || smtpUser;
+
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT || '465', 10),
-    secure: process.env.EMAIL_SECURE ? process.env.EMAIL_SECURE === 'true' : true,
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: smtpUser,
+      pass: smtpPass,
     },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
@@ -57,7 +68,7 @@ module.exports = () => {
       // Send verification email
       const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verificationToken}`;
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: mailFrom,
         to: email,
         subject: 'Verify Your Email - Wedding Gifts',
         html: `
@@ -160,7 +171,7 @@ module.exports = () => {
 
       const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: mailFrom,
         to: email,
         subject: 'Reset Your Password - Wedding Gifts',
         html: `
