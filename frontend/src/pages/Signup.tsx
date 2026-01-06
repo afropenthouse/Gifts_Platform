@@ -10,6 +10,7 @@ const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [verificationUrl, setVerificationUrl] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -24,6 +25,7 @@ const Signup: React.FC = () => {
       const data = await res.json();
       if (res.ok) {
         setMessage(data.msg);
+        if (data.verificationUrl) setVerificationUrl(data.verificationUrl);
       } else {
         setError(data.msg || 'Signup failed');
       }
@@ -42,7 +44,12 @@ const Signup: React.FC = () => {
         <CardContent>
           {message ? (
             <div className="text-center">
-              <p className="text-green-500">Account created.</p>
+              <p className="text-green-500">{message}</p>
+              {verificationUrl && (
+                <p className="mt-4">
+                  <a href={verificationUrl} className="text-blue-600 underline">Click here to verify now</a>
+                </p>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
