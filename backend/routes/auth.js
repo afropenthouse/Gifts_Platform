@@ -93,10 +93,7 @@ module.exports = () => {
         console.error('Verification email failed to send; user created.');
       }
 
-      res.json({
-        msg: 'User registered successfully. Please check your email to verify your account.',
-        verificationUrl,
-      });
+      res.json({ msg: 'User registered successfully. Please check your email to verify your account.' });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
