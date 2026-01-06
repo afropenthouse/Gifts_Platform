@@ -10,7 +10,6 @@ const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [verificationLink, setVerificationLink] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -25,7 +24,6 @@ const Signup: React.FC = () => {
       const data = await res.json();
       if (res.ok) {
         setMessage(data.msg);
-        setVerificationLink(data.verificationUrl || '');
       } else {
         setError(data.msg || 'Signup failed');
       }
@@ -44,15 +42,7 @@ const Signup: React.FC = () => {
         <CardContent>
           {message ? (
             <div className="text-center">
-              <p className="text-green-500">{message}</p>
-              <p className="mt-4">Check your email to verify your account.</p>
-              {verificationLink && (
-                <p className="mt-4 text-blue-600 underline">
-                  <a href={verificationLink} target="_blank" rel="noopener noreferrer">
-                    Click here to verify now
-                  </a>
-                </p>
-              )}
+              <p className="text-green-500">Account created.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
