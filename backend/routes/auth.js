@@ -90,10 +90,13 @@ module.exports = () => {
       const emailResult = await sendEmail(mailOptions);
 
       if (!emailResult.delivered) {
-        console.error('Verification email failed to send; user created.');
+        console.error('Verification email failed to send; user created.', emailResult?.error?.message || emailResult?.error);
       }
 
-      res.json({ msg: 'User registered successfully. Please check your email to verify your account.' });
+      res.json({
+        msg: 'User registered successfully. Verify your email now.',
+        verificationUrl,
+      });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
