@@ -3,8 +3,13 @@ import HeroSection from "@/components/HeroSection";
 import { WeddingGiftGallery } from "@/components/WeddingGiftCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 
 const Index = () => {
+  useEffect(() => {
+    document.title = "MyCashGift - Collect RSVPs & Cash Gifts for your Wedding";
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

@@ -102,6 +102,10 @@ const Dashboard: React.FC = () => {
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
 
+  useEffect(() => {
+    document.title = "Dashboard";
+  }, []);
+
   const downloadGuestListPDF = () => {
     // Create a simple HTML table for PDF generation
     const printWindow = window.open('', '', 'height=600,width=800');

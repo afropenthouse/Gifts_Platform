@@ -48,6 +48,10 @@ const ShareGift: React.FC = () => {
   const [rsvpLastName, setRsvpLastName] = useState('');
   const [rsvpEmail, setRsvpEmail] = useState('');
   const [rsvpError, setRsvpError] = useState('');
+
+  useEffect(() => {
+    document.title = "MyCashGift - Collect RSVPs & Cash Gifts for your Wedding";
+  }, []);
   const [showRsvpThanks, setShowRsvpThanks] = useState(false);
   const [rsvpThanksMessage, setRsvpThanksMessage] = useState('');
   const [showCashGiftPrompt, setShowCashGiftPrompt] = useState(false);

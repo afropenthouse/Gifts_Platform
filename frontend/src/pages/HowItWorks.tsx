@@ -1,9 +1,14 @@
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import { Heart, Link2, Share2, Gift, Users, ListChecks, Activity } from "lucide-react";
 
 const HowItWorks = () => {
+  useEffect(() => {
+    document.title = "MyCashGift - How It Works";
+  }, []);
+
   const steps = [
     {
       icon: <Link2 className="w-8 h-8" style={{ color: '#2E235C' }} />,
