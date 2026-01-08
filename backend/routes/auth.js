@@ -21,6 +21,15 @@ module.exports = () => {
   const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
   const mailFrom = process.env.MAIL_FROM || smtpUser;
 
+  console.log('📧 Email Configuration:');
+  console.log(`   Host: ${smtpHost}`);
+  console.log(`   Port: ${smtpPort}`);
+  console.log(`   Secure: ${smtpSecure}`);
+  console.log(`   User: ${smtpUser ? '✓ Set' : '✗ NOT SET'}`);
+  console.log(`   Pass: ${smtpPass ? '✓ Set' : '✗ NOT SET'}`);
+  console.log(`   From: ${mailFrom}`);
+  console.log(`   Frontend URL: ${process.env.FRONTEND_URL}`);
+
   const transporter = nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
@@ -36,10 +45,19 @@ module.exports = () => {
 
   async function sendEmail(mailOptions) {
     try {
-      await transporter.sendMail(mailOptions);
+      console.log(`\n📨 Attempting to send email to: ${mailOptions.to}`);
+      console.log(`   From: ${mailOptions.from}`);
+      console.log(`   Subject: ${mailOptions.subject}`);
+      
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`✅ Email sent successfully!`);
+      console.log(`   Response: ${info.response}`);
       return { delivered: true };
     } catch (error) {
-      console.error('Email send failed:', error?.message || error);
+      console.error(`❌ Email send failed!`);
+      console.error(`   Error Code: ${error.code}`);
+      console.error(`   Error Message: ${error?.message || error}`);
+      console.error(`   Full Error:`, error);
       return { delivered: false, error };
     }
   }
@@ -56,17 +74,34 @@ module.exports = () => {
     const { name, email, password } = req.body;
 
     try {
+      console.log(`\n🔐 [SIGNUP] New signup request for: ${email}`);
+      
       let user = await prisma.user.findUnique({ where: { email } });
-      if (user) return res.status(400).json({ msg: 'User already exists' });
+      if (user) {
+        console.log(`⚠️  User already exists: ${email}`);
+        return res.status(400).json({ msg: 'User already exists' });
+      }
 
+      console.log(`👤 Creating new user: ${name} (${email})`);
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
       const verificationToken = crypto.randomBytes(32).toString('hex');
 
-      user = await prisma.user.create({ data: { name, email, password: hashedPassword, verificationToken, verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) } });
+      user = await prisma.user.create({ 
+        data: { 
+          name, 
+          email, 
+          password: hashedPassword, 
+          verificationToken, 
+          verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) 
+        } 
+      });
+      console.log(`✅ User created with ID: ${user.id}`);
 
       // Send verification email
       const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verificationToken}`;
+      console.log(`🔗 Verification URL: ${verificationUrl}`);
+      
       const mailOptions = {
         from: mailFrom,
         to: email,
@@ -90,15 +125,16 @@ module.exports = () => {
       const emailResult = await sendEmail(mailOptions);
 
       if (!emailResult.delivered) {
-        console.error('Verification email failed to send; user created.', emailResult?.error?.message || emailResult?.error);
+        console.error(`⚠️  Verification email failed to send for user ${user.id}:`, emailResult?.error?.message || emailResult?.error);
+      } else {
+        console.log(`✅ Verification email sent successfully to ${email}`);
       }
 
       res.json({
         msg: 'User registered successfully. Verify your email now.',
-        verificationUrl,
       });
     } catch (err) {
-      console.error(err);
+      console.error(`❌ [SIGNUP ERROR]`, err);
       res.status(500).json({ msg: 'Server error' });
     }
   });
