@@ -1,9 +1,110 @@
 const express = require('express');
+const nodemailer = require('nodemailer');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
 
 module.exports = () => {
   const router = express.Router();
+
+  const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+  const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '465', 10);
+  const smtpSecure = process.env.EMAIL_SECURE
+    ? process.env.EMAIL_SECURE === 'true'
+    : process.env.SMTP_SECURE
+    ? process.env.SMTP_SECURE === 'true'
+    : true;
+  const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+  const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+  const mailFrom = process.env.MAIL_FROM || smtpUser;
+  const emailEnabled = Boolean(smtpUser && smtpPass);
+
+  const transporter = emailEnabled
+    ? nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpSecure,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      })
+    : null;
+
+  const formatEventHeading = (gift) => {
+    if (!gift) return 'Event Celebration';
+    if (gift.type === 'wedding' && gift.details?.groomName && gift.details?.brideName) {
+      return `${gift.details.groomName} & ${gift.details.brideName}`;
+    }
+    return gift.title || 'Event Celebration';
+  };
+
+  const formatEventDate = (date) => {
+    if (!date) return null;
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }) => {
+    if (!emailEnabled || !transporter) {
+      console.warn('RSVP email skipped: SMTP configuration is missing');
+      return { delivered: false, skipped: true };
+    }
+
+    if (!recipient) {
+      return { delivered: false, reason: 'No recipient provided' };
+    }
+
+    const heading = formatEventHeading(gift);
+    const eventDate = formatEventDate(gift?.date);
+    const accent = '#2E235C';
+    const muted = '#f6f4ff';
+    const responseLine = attending
+      ? `Thank you for letting us know you will attend. We cannot wait to celebrate with you${eventDate ? ` on ${eventDate}` : ''}.`
+      : 'Thank you for letting us know. If your plans change, reply to this email and we will update your RSVP.';
+    const yesStyles = attending
+      ? `background: ${accent}; color: #ffffff; border-radius: 12px; padding: 12px 0; font-weight: 700; font-size: 14px;`
+      : 'border: 1px solid #d1d5db; color: #4b5563; border-radius: 12px; padding: 12px 0; font-weight: 600; font-size: 14px; background: #ffffff;';
+    const noStyles = attending
+      ? 'border: 1px solid #d1d5db; color: #4b5563; border-radius: 12px; padding: 12px 0; font-weight: 600; font-size: 14px; background: #ffffff;'
+      : `background: ${accent}; color: #ffffff; border-radius: 12px; padding: 12px 0; font-weight: 700; font-size: 14px;`;
+
+    const html = `
+      <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+          <div style="padding: 28px 28px 18px; text-align: center;">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading}</h2>
+            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">We received your RSVP.</p>
+            ${eventDate ? `<p style=\"margin: 0; font-size: 14px; color: #6b7280;\">Date: ${eventDate}</p>` : ''}
+          </div>
+
+          <div style="padding: 0 24px 24px; text-align: center;">
+            <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${guestName || 'there'},</p>
+              <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">${responseLine}</p>
+            </div>
+
+            <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">If you need to update your response, just reply to this email.</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: mailFrom,
+        to: recipient,
+        subject: `${heading} – RSVP confirmed`,
+        html,
+      });
+      return { delivered: true };
+    } catch (error) {
+      console.error('Failed to send RSVP email:', error?.message || error);
+      return { delivered: false, error: error?.message || 'Unknown error' };
+    }
+  };
 
   // Create guest
   router.post('/', auth(), async (req, res) => {
@@ -138,6 +239,16 @@ module.exports = () => {
           attending: attending ? 'yes' : 'no',
           status: attending ? 'confirmed' : 'declined',
         },
+      });
+
+      const guestName = `${guest.firstName} ${guest.lastName}`.trim();
+      const eventUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/gift/${shareLink}` : null;
+      await sendRsvpEmail({
+        recipient: guest.email,
+        guestName,
+        attending: Boolean(attending),
+        gift,
+        eventUrl,
       });
 
       res.json({ msg: 'RSVP submitted successfully', guest });
