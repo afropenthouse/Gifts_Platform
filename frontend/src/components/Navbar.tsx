@@ -20,8 +20,9 @@ const Navbar = () => {
       <div className="container mx-auto px-1 py-2">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <img src="/mcg.png" alt="MyCashgift" className="h-14 w-24" />
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="MyCashgift" className="h-20 w-32" />
+            {/* <span className="text-lg font-bold text-foreground hidden sm:block">mycashgift</span> */}
           </Link>
 
           {/* Desktop middle nav removed */}
@@ -51,7 +52,8 @@ const Navbar = () => {
                   <Button
                     variant="default"
                     size="sm"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-4"
+                    className="text-base px-4"
+                    style={{ backgroundColor: '#2E235C' }}
                   >
                     Sign Up
                   </Button>
@@ -98,7 +100,8 @@ const Navbar = () => {
                         <Button
                           variant="default"
                           size="sm"
-                          className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+                          className="w-full justify-start"
+                          style={{ backgroundColor: '#2E235C' }}
                         >
                           <UserPlus className="w-4 h-4 mr-2" />
                           Sign Up

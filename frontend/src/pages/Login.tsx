@@ -63,7 +63,7 @@ const Login: React.FC = () => {
               />
             </div>
             {error && <p className="text-red-500">{error}</p>}
-            <Button type="submit" className="w-full">Login</Button>
+            <Button type="submit" className="w-full" style={{ backgroundColor: '#2E235C' }}>Login</Button>
           </form>
           <div className="mt-4 text-center">
             <Link to="/forgot-password" className="text-blue-500">Forgot password?</Link>

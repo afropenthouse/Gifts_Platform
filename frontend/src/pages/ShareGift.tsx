@@ -41,10 +41,20 @@ const ShareGift: React.FC = () => {
   const [showAmountModal, setShowAmountModal] = useState(false);
   const [showNameModal, setShowNameModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [showRsvpModal, setShowRsvpModal] = useState(false);
+  const [rsvpStep, setRsvpStep] = useState(1);
+  const [willAttend, setWillAttend] = useState<boolean | null>(null);
+  const [rsvpFirstName, setRsvpFirstName] = useState('');
+  const [rsvpLastName, setRsvpLastName] = useState('');
+  const [rsvpEmail, setRsvpEmail] = useState('');
+  const [rsvpError, setRsvpError] = useState('');
+  const [showRsvpThanks, setShowRsvpThanks] = useState(false);
+  const [rsvpThanksMessage, setRsvpThanksMessage] = useState('');
+  const [showCashGiftPrompt, setShowCashGiftPrompt] = useState(false);
 
-  const heading = gift?.title || (gift?.details?.groomName && gift?.details?.brideName 
+  const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.groomName} & ${gift.details.brideName}`
-    : gift?.user?.name || "Special Celebration");
+    : gift?.title || gift?.user?.name || "Special Celebration";
 
   // Handle redirect back from Flutterwave: verify payment
   useEffect(() => {
@@ -202,59 +212,60 @@ const ShareGift: React.FC = () => {
   }) : '';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navbar />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
         <div className="w-full max-w-md">
           {/* Gift Card - Same style as home page */}
           <div className="bg-gradient-card rounded-2xl shadow-card overflow-hidden border border-border/50 hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="relative h-[20rem] w-full overflow-hidden">
+            <div className="relative w-full overflow-hidden bg-black/5">
               {gift.picture && (
                 <img
                   src={gift.picture}
                   alt={heading}
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-auto object-contain"
                 />
               )}
-            </div>
 
-            <div className="p-9 -mt-12">
-              <div className="text-center mb-4">
-                <h2 className="font-serif text-3xl font-semibold text-foreground tracking-wide py-4">
-                  {heading}
-                </h2>
-                <p className="text-muted-foreground text-sm -mt-1 font-sans">{formattedDate}</p>
-              </div>
+              <div className="absolute inset-0 flex items-end">
+                <div className="w-full p-4 pb-6 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                  <div className="space-y-3">
+                    <Button
+                      className="w-full bg-black text-white border border-black hover:bg-white hover:text-black transition-colors"
+                      size="lg"
+                      onClick={() => {
+                        setShowRsvpModal(true);
+                        setRsvpStep(1);
+                        setWillAttend(null);
+                        setRsvpFirstName('');
+                        setRsvpLastName('');
+                      }}
+                    >
+                      <span className='font-thin'>RSVP</span>
+                    </Button>
 
-              <div className="flex justify-center py-4">
-                <div className="inline-flex items-center gap-2 rounded-full bg-card/80 backdrop-blur-sm px-4 py-2 shadow-soft border border-border/50">
-                  <Users className="w-4 h-4 text-rose" />
-                  <span className="font-semibold text-sm font-sans">{giftersCount}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Gifters</span>
+                    <Button
+                      className="w-full text-white"
+                      size="lg"
+                      onClick={() => setShowAmountModal(true)}
+                      style={{ backgroundColor: '#2E235C' }}
+                    >
+                      <Gift className="w-5 h-5 mr-[0.00007rem]" />
+                      <span className='font-thin'>Send a Cash Gift</span>
+                    </Button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="mt-1">
-                <Button 
-                  variant="gold" 
-                  className="w-full" 
-                  size="lg" 
-                  onClick={() => setShowAmountModal(true)}
-                >
-                  <Gift className="w-5 h-5 mr-[0.1rem]" />
-                  Send a cash gift
-                </Button>
               </div>
             </div>
           </div>
 
           {/* Description - shown below card if available */}
-          {gift.description && (
+          {/* {gift.description && (
             <div className="mt-6 p-4 bg-card rounded-lg border border-border/50">
               <p className="text-muted-foreground text-sm">{gift.description}</p>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 
@@ -262,8 +273,8 @@ const ShareGift: React.FC = () => {
       <Dialog open={showAmountModal} onOpenChange={setShowAmountModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-serif text-center">{heading}</DialogTitle>
-            <div className="text-center text-muted-foreground text-sm mt-1">
+            <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
+            <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
               Enter the gift amount
             </div>
           </DialogHeader>
@@ -312,7 +323,7 @@ const ShareGift: React.FC = () => {
               size="lg"
               className="w-full"
             >
-              Send Gift {currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'CAD' ? 'C$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AUD' ? 'A$' : currency === 'ZAR' ? 'R' : currency === 'KES' ? 'KSh' : currency === 'GHS' ? '₵' : currency === 'UGX' ? 'USh' : 'TSh'}{amount || '0'}
+              Proceed
             </Button>
           </form>
         </DialogContent>
@@ -322,7 +333,7 @@ const ShareGift: React.FC = () => {
       <Dialog open={showNameModal} onOpenChange={setShowNameModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-serif text-center">How would you like to appear?</DialogTitle>
+            <DialogTitle className="text-lg font-playfair text-center">How would you like to appear?</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handlePayment} className="space-y-4">
@@ -350,11 +361,15 @@ const ShareGift: React.FC = () => {
               </div>
             </div>
 
-            <div className="text-center p-3 bg-muted rounded-lg">
+            <div>
+              
+            </div>
+
+            {/* <div className="text-center p-3 bg-muted rounded-lg">
               <p className="text-sm font-medium">
                 Gift Amount: {currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'CAD' ? 'C$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AUD' ? 'A$' : currency === 'ZAR' ? 'R' : currency === 'KES' ? 'KSh' : currency === 'GHS' ? '₵' : currency === 'UGX' ? 'USh' : 'TSh'}{amount}
               </p>
-            </div>
+            </div> */}
 
             <Button
               type="submit"
@@ -369,6 +384,289 @@ const ShareGift: React.FC = () => {
               💳 Powered by Flutterwave - Secure payment processing
             </p>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* RSVP Modal */}
+      <Dialog open={showRsvpModal} onOpenChange={(open) => {
+        setShowRsvpModal(open);
+        if (!open) {
+          setRsvpStep(1);
+          setWillAttend(null);
+          setRsvpFirstName('');
+          setRsvpLastName('');
+          setRsvpEmail('');
+          setRsvpError('');
+        }
+      }}>
+        <DialogContent className="max-w-[19rem]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
+          </DialogHeader>
+
+          {rsvpStep === 1 && (
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setRsvpError('');
+              
+              if (!rsvpFirstName.trim() || !rsvpLastName.trim()) {
+                setRsvpError('Please enter both first and last name');
+                return;
+              }
+              
+              // Check if names are on the guest list
+              try {
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/check/${link}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    firstName: rsvpFirstName,
+                    lastName: rsvpLastName,
+                  }),
+                });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                  setRsvpError(data.msg || 'Failed to verify guest. Please try again.');
+                  return;
+                }
+                
+                // If names are valid, proceed to step 2
+                setRsvpStep(2);
+              } catch (err) {
+                console.error(err);
+                setRsvpError('Error verifying guest. Please try again.');
+              }
+            }} className="py-6">
+              <div className="space-y-4">
+                {rsvpError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm text-red-700 font-medium">{rsvpError}</p>
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor="firstName" className="text-sm font-medium text-gray-900 mb-2 block">
+                    First name
+                  </Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={rsvpFirstName}
+                    onChange={(e) => setRsvpFirstName(e.target.value)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    placeholder="Enter your first name"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Last name
+                  </Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={rsvpLastName}
+                    onChange={(e) => setRsvpLastName(e.target.value)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    placeholder="Enter your last name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 h-11"
+                  onClick={() => {
+                    setShowRsvpModal(false);
+                    setRsvpFirstName('');
+                    setRsvpLastName('');
+                    setRsvpEmail('');
+                  }}
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C]"
+                >
+                  Continue
+                </Button>
+              </div>
+            </form>
+          )}
+
+        
+          {rsvpStep === 2 && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setRsvpStep(3);
+            }} className="py-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Enter your email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={rsvpEmail}
+                    onChange={(e) => setRsvpEmail(e.target.value)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 h-11"
+                  onClick={() => setRsvpStep(1)}
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C]"
+                >
+                  Continue
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {rsvpStep === 3 && (
+            <div className="py-6">
+              <h3 className="text-sm font-medium text-center mb-6">Will you attend?</h3>
+              <div className="flex gap-4">
+                <Button
+                  onClick={async () => {
+                    setWillAttend(true);
+                    // Submit RSVP to backend
+                    try {
+                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${link}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          firstName: rsvpFirstName,
+                          lastName: rsvpLastName,
+                          email: rsvpEmail,
+                          attending: true,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (res.ok) {
+                        setShowRsvpModal(false);
+                        setShowCashGiftPrompt(true);
+                        setRsvpStep(1);
+                        setRsvpFirstName('');
+                        setRsvpLastName('');
+                        setRsvpEmail('');
+                      } else {
+                        alert(data.msg || 'Failed to submit RSVP. Please try again.');
+                      }
+                    } catch (err) {
+                      console.error(err);
+                      alert('Error submitting RSVP');
+                    }
+                  }}
+                  className="flex-1 h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                >
+                  Yes
+                </Button>
+                <Button
+                  onClick={async () => {
+                    setWillAttend(false);
+                    // Submit RSVP to backend
+                    try {
+                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${link}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          firstName: rsvpFirstName,
+                          lastName: rsvpLastName,
+                          email: rsvpEmail,
+                          attending: false,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (res.ok) {
+                        setShowRsvpModal(false);
+                        setShowCashGiftPrompt(true);
+                        setRsvpStep(1);
+                        setRsvpFirstName('');
+                        setRsvpLastName('');
+                        setRsvpEmail('');
+                      } else {
+                        alert(data.msg || 'Failed to submit RSVP. Please try again.');
+                      }
+                    } catch (err) {
+                      console.error(err);
+                      alert('Error submitting RSVP');
+                    }
+                  }}
+                  variant="outline"
+                  className="flex-1 h-12 border-gray-300 hover:bg-gray-100"
+                >
+                  No
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cash Gift Prompt Modal */}
+      <Dialog open={showCashGiftPrompt} onOpenChange={setShowCashGiftPrompt}>
+        <DialogContent className="max-w-[19rem]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            <h3 className="text-sm font-medium text-center mb-6">Will you like to send a cash gift?</h3>
+            <div className="flex gap-4">
+              <Button
+                className="flex-1 h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                onClick={() => {
+                  setShowCashGiftPrompt(false);
+                  setShowAmountModal(true);
+                }}
+              >
+                Yes
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 h-12 border-gray-300 hover:bg-gray-100"
+                onClick={() => {
+                  setShowCashGiftPrompt(false);
+                  setRsvpThanksMessage('Thank you for responding');
+                  setShowRsvpThanks(true);
+                }}
+              >
+                No
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* RSVP Thanks Modal */}
+      <Dialog open={showRsvpThanks} onOpenChange={(open) => setShowRsvpThanks(open)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-playfair text-center">{heading}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-center">
+            <p className="text-base text-muted-foreground">{rsvpThanksMessage}</p>
+          </div>
+          <div className="pt-2">
+            <Button className="w-full" onClick={() => setShowRsvpThanks(false)}>Close</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

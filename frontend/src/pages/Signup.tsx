@@ -44,12 +44,13 @@ const Signup: React.FC = () => {
         <CardContent>
           {message ? (
             <div className="text-center">
-              <p className="text-green-500">{message}</p>
-              {verificationUrl && (
-                <p className="mt-4">
-                  <a href={verificationUrl} className="text-blue-600 underline">Click here to verify now</a>
-                </p>
-              )}
+              <p className="text-green-500 font-semibold">{message}</p>
+              <p className="text-gray-600 mt-4">
+                Please check your email for a verification link to complete your registration.
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                The link will expire in 24 hours.
+              </p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -83,7 +84,7 @@ const Signup: React.FC = () => {
                 />
               </div>
               {error && <p className="text-red-500">{error}</p>}
-              <Button type="submit" className="w-full">Sign Up</Button>
+              <Button type="submit" className="w-full" style={{ backgroundColor: '#2E235C' }}>Sign Up</Button>
             </form>
           )}
           <div className="mt-4 text-center">

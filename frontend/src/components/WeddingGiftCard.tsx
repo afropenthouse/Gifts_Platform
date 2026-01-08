@@ -115,13 +115,13 @@ const WeddingGiftCard = ({
         currency: currency,
         payment_options: 'card,mobilemoney,ussd',
         customer: {
-          email: 'demo@example.com',
+          email: 'traclaapp@gmail.com',
           name: name,
         },
         customizations: {
-          title: `Gift for ${heading}`,
-          description: `Contributing to ${heading}`,
-          logo: 'https://example.com/logo.png',
+          title: heading,
+          description: `Contribution`,
+          logo: '',
         },
         callback: function (data: any) {
           console.log('Payment callback:', data);
@@ -176,9 +176,9 @@ const WeddingGiftCard = ({
           <div className="p-9 -mt-12">
             <div className="text-center mb-4">
               {title ? (
-                <h2 className="font-serif text-3xl font-semibold text-foreground tracking-wide py-4">{title}</h2>
+                <h2 className="font-serif text-3xl font-medium text-foreground tracking-wide py-4">{title}</h2>
               ) : (
-                <h2 className="font-serif text-3xl font-semibold text-foreground tracking-wide py-4">
+                <h2 className="font-serif text-3xl font-medium text-foreground tracking-wide py-4">
                   {groomName} <span className="text-gold">&</span> {brideName}
                 </h2>
               )}

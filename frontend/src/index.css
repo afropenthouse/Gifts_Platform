@@ -15,50 +15,51 @@
     --popover: 0 0% 100%;
     --popover-foreground: 20 15% 15%;
 
-    --primary: 350 60% 55%;
+    --primary: 265 46% 27%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 30% 95%;
-    --secondary-foreground: 20 15% 25%;
+    --secondary: 265 46% 92%;
+    --secondary-foreground: 265 46% 27%;
 
     --muted: 30 20% 94%;
     --muted-foreground: 20 10% 45%;
 
-    --accent: 38 75% 55%;
-    --accent-foreground: 20 15% 15%;
+    --accent: 265 46% 40%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 30 20% 88%;
     --input: 30 20% 88%;
-    --ring: 350 60% 55%;
+    --ring: 265 46% 27%;
 
     --radius: 0.75rem;
 
     /* Custom tokens */
-    --rose: 350 60% 55%;
-    --rose-light: 350 60% 95%;
+    --rose: 265 46% 27%;
+    --rose-light: 265 46% 92%;
     --gold: 38 75% 55%;
     --gold-light: 38 60% 90%;
     --cream: 30 25% 98%;
     --champagne: 35 30% 92%;
 
     /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(350 60% 95%) 0%, hsl(38 60% 95%) 50%, hsl(30 25% 98%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(265 46% 92%) 0%, hsl(38 60% 95%) 50%, hsl(30 25% 98%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(30 20% 98%) 100%);
     --gradient-gold: linear-gradient(135deg, hsl(38 75% 55%) 0%, hsl(35 80% 65%) 100%);
 
     /* Shadows */
-    --shadow-soft: 0 4px 20px -4px hsl(350 30% 50% / 0.1);
-    --shadow-card: 0 8px 32px -8px hsl(350 30% 50% / 0.15);
-    --shadow-glow: 0 0 40px hsl(350 60% 55% / 0.2);
+    --shadow-soft: 0 4px 20px -4px hsl(265 30% 50% / 0.1);
+    --shadow-card: 0 8px 32px -8px hsl(265 30% 50% / 0.15);
+    --shadow-glow: 0 0 40px hsl(265 46% 27% / 0.2);
 
     /* Fonts */
-    /* --font-serif: 'Cormorant Garamond', Georgia, serif; */
+    --font-serif: serif;
+    --font-sans: 'DM Sans', system-ui, sans-seri
     /* --font-sans: 'DM Sans', system-ui, sans-seri */
-    --font-serif: 'poppins';
-    --font-sans: 'poppins';
+    /* --font-serif: 'poppins';
+    --font-sans: 'poppins'; */
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -80,16 +81,16 @@
     --popover: 20 15% 12%;
     --popover-foreground: 30 20% 95%;
 
-    --primary: 350 55% 60%;
+    --primary: 265 46% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 20 15% 18%;
-    --secondary-foreground: 30 20% 90%;
+    --secondary: 265 30% 20%;
+    --secondary-foreground: 265 46% 90%;
 
     --muted: 20 15% 20%;
     --muted-foreground: 30 15% 60%;
 
-    --accent: 38 70% 50%;
+    --accent: 265 46% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
@@ -97,22 +98,22 @@
 
     --border: 20 15% 20%;
     --input: 20 15% 20%;
-    --ring: 350 55% 60%;
+    --ring: 265 46% 55%;
 
-    --rose: 350 55% 60%;
-    --rose-light: 350 40% 20%;
+    --rose: 265 46% 55%;
+    --rose-light: 265 30% 20%;
     --gold: 38 70% 50%;
     --gold-light: 38 50% 20%;
     --cream: 20 15% 8%;
     --champagne: 20 15% 15%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(350 40% 12%) 0%, hsl(38 40% 12%) 50%, hsl(20 15% 8%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(265 30% 12%) 0%, hsl(38 40% 12%) 50%, hsl(20 15% 8%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(20 15% 14%) 0%, hsl(20 15% 10%) 100%);
     --gradient-gold: linear-gradient(135deg, hsl(38 70% 50%) 0%, hsl(35 75% 60%) 100%);
 
     --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
     --shadow-card: 0 8px 32px -8px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 40px hsl(350 55% 60% / 0.15);
+    --shadow-glow: 0 0 40px hsl(265 46% 55% / 0.15);
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
