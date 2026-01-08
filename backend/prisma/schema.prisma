@@ -25,6 +25,7 @@ model User {
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
   gifts                     Gift[]
+  guests                    Guest[]
 }
 
 model Gift {
@@ -42,6 +43,7 @@ model Gift {
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
   contributions Contribution[]
+  guests     Guest[]
 }
 
 model Contribution {
@@ -58,10 +60,33 @@ model Contribution {
   updatedAt        DateTime @updatedAt
 }
 
+model Guest {
+  id         Int         @id @default(autoincrement())
+  userId     Int
+  user       User        @relation(fields: [userId], references: [id])
+  giftId     Int?
+  gift       Gift?       @relation(fields: [giftId], references: [id])
+  firstName  String
+  lastName   String
+  email      String?
+  phone      String?
+  allowed    Int         @default(1)
+  attending  String      @default("yes")
+  status     GuestStatus @default(invited)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
 enum GiftType {
   wedding
   birthday
   graduation
   convocation
   other
+}
+
+enum GuestStatus {
+  invited
+  confirmed
+  declined
 }
