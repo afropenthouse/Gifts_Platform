@@ -76,7 +76,7 @@ module.exports = () => {
         <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
           <div style="padding: 28px 28px 18px; text-align: center;">
             <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading}</h2>
-            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">We received your RSVP.</p>
+            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">We've received your RSVP.</p>
             ${eventDate ? `<p style=\"margin: 0; font-size: 14px; color: #6b7280;\">Date: ${eventDate}</p>` : ''}
           </div>
 

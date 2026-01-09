@@ -217,23 +217,25 @@ module.exports = () => {
   });
 
   // Webhook for Flutterwave
-  router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  router.post('/webhook', async (req, res) => {
     try {
-      const secret = process.env.FLW_WEBHOOK_SECRET || process.env.FLW_SECRET_KEY;
+      const secret = process.env.FLW_SECRET_HASH || process.env.FLW_WEBHOOK_SECRET;
       const signature = req.headers['verif-hash'];
 
       if (!secret) {
-        console.error('FLW_WEBHOOK_SECRET or FLW_SECRET_KEY not set');
+        console.error('FLW_SECRET_HASH not set');
         return res.status(500).send('Server error');
       }
 
-      const payload = req.body.toString();
-      if (!verifyWebhookSignature(payload, signature, secret)) {
+      // rawBody is set in server.js verify hook; fallback to reconstructed body
+      const payloadBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
+
+      if (!verifyWebhookSignature(payloadBuffer, signature, secret)) {
         console.error('Invalid webhook signature');
         return res.status(401).send('Unauthorized');
       }
 
-      const event = JSON.parse(payload);
+      const event = JSON.parse(payloadBuffer.toString());
       console.log('Webhook received:', event.event);
 
       if (event.event === 'charge.completed') {

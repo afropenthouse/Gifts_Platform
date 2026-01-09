@@ -140,9 +140,9 @@ async function getBanks() {
 }
 
 function verifyWebhookSignature(payload, signature, secret) {
-  const crypto = require('crypto');
-  const expectedSignature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-  return signature === expectedSignature;
+  // Flutterwave sends the secret hash directly in the verif-hash header
+  if (!signature || !secret) return false;
+  return signature === secret;
 }
 
 module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount, getBanks, verifyWebhookSignature };

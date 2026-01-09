@@ -29,7 +29,17 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-app.use(express.json({ limit: '50mb' }));
+
+// Keep raw body for Flutterwave webhook signature verification
+app.use(express.json({
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    if (req.originalUrl === '/api/contributions/webhook') {
+      req.rawBody = buf;
+    }
+  }
+}));
+
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Verify Prisma DB connection on startup
