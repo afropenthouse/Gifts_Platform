@@ -1,6 +1,6 @@
 const express = require('express');
 const prisma = require('../prismaClient');
-const { initializePayment, verifyTransaction } = require('../utils/flutterwave');
+const { initializePayment, verifyTransaction, verifyWebhookSignature } = require('../utils/flutterwave');
 
 module.exports = () => {
   const router = express.Router();
@@ -213,6 +213,100 @@ module.exports = () => {
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  // Webhook for Flutterwave
+  router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    try {
+      const secret = process.env.FLW_WEBHOOK_SECRET || process.env.FLW_SECRET_KEY;
+      const signature = req.headers['verif-hash'];
+
+      if (!secret) {
+        console.error('FLW_WEBHOOK_SECRET or FLW_SECRET_KEY not set');
+        return res.status(500).send('Server error');
+      }
+
+      const payload = req.body.toString();
+      if (!verifyWebhookSignature(payload, signature, secret)) {
+        console.error('Invalid webhook signature');
+        return res.status(401).send('Unauthorized');
+      }
+
+      const event = JSON.parse(payload);
+      console.log('Webhook received:', event.event);
+
+      if (event.event === 'charge.completed') {
+        const { id: transactionId, tx_ref, amount, currency, status } = event.data;
+
+        if (status !== 'successful') {
+          console.log('Payment not successful:', status);
+          return res.status(200).send('OK');
+        }
+
+        // Verify transaction
+        const response = await verifyTransaction(transactionId);
+        if (response.status !== 'success' || response.data.status !== 'successful') {
+          console.error('Transaction verification failed');
+          return res.status(200).send('OK');
+        }
+
+        const { giftId, contributorName, contributorEmail, message: contributorMessage } = response.data.meta || {};
+
+        if (!giftId) {
+          console.error('No giftId in webhook meta');
+          return res.status(200).send('OK');
+        }
+
+        // Check if contribution already exists
+        const existingContribution = await prisma.contribution.findFirst({
+          where: {
+            OR: [
+              { transactionId: transactionId.toString() },
+              { transactionId: response.data.flw_ref },
+              { transactionId: response.data.tx_ref }
+            ]
+          }
+        });
+
+        if (existingContribution) {
+          console.log('Contribution already exists');
+          return res.status(200).send('OK');
+        }
+
+        // Get gift
+        const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+        if (!gift) {
+          console.error('Gift not found');
+          return res.status(200).send('OK');
+        }
+
+        // Create contribution
+        const contribution = await prisma.contribution.create({
+          data: {
+            giftId,
+            contributorName: contributorName || 'Anonymous',
+            contributorEmail: contributorEmail || '',
+            amount,
+            message: contributorMessage || '',
+            transactionId: transactionId.toString(),
+            status: 'completed',
+          },
+        });
+
+        // Update user's wallet
+        await prisma.user.update({
+          where: { id: gift.userId },
+          data: { wallet: { increment: amount } },
+        });
+
+        console.log('Webhook processed successfully:', contribution.id);
+      }
+
+      res.status(200).send('OK');
+    } catch (err) {
+      console.error('Webhook error:', err?.message || err);
+      res.status(500).send('Server error');
     }
   });
 

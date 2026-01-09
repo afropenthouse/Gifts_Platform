@@ -139,4 +139,10 @@ async function getBanks() {
   }
 }
 
-module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount, getBanks };
+function verifyWebhookSignature(payload, signature, secret) {
+  const crypto = require('crypto');
+  const expectedSignature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  return signature === expectedSignature;
+}
+
+module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount, getBanks, verifyWebhookSignature };
