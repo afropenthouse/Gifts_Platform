@@ -217,10 +217,13 @@ const Dashboard: React.FC = () => {
         });
         const data = await res.json();
         if (res.ok) {
-          setWithdrawHistory(data);
+          setWithdrawHistory(Array.isArray(data) ? data : []);
+        } else {
+          setWithdrawHistory([]);
         }
       } catch (err) {
         console.error('Error fetching withdrawal history:', err);
+        setWithdrawHistory([]);
       }
     };
 
@@ -239,32 +242,47 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (user) {
       const fetchGifts = async () => {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setGifts(data);
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+          setGifts(Array.isArray(data) ? data : []);
 
-        const allContributions: Contribution[] = [];
-        for (const gift of data) {
-          if (gift.shareLink) {
-            const contribRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contributions/${gift.shareLink}`);
-            const contribData = await contribRes.json();
-            allContributions.push(...contribData);
+          const allContributions: Contribution[] = [];
+          if (Array.isArray(data)) {
+            for (const gift of data) {
+              if (gift.shareLink) {
+                const contribRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contributions/${gift.shareLink}`);
+                const contribData = await contribRes.json();
+                if (Array.isArray(contribData)) {
+                  allContributions.push(...contribData);
+                }
+              }
+            }
           }
+          setContributions(allContributions);
+        } catch (error) {
+          console.error('Error fetching gifts:', error);
+          setGifts([]);
+          setContributions([]);
         }
-        setContributions(allContributions);
       };
       fetchGifts();
 
       const fetchGuests = async () => {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setGuests(data);
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+          setGuests(Array.isArray(data) ? data : []);
+        } catch (error) {
+          console.error('Error fetching guests:', error);
+          setGuests([]);
+        }
       };
       fetchGuests();
     }
@@ -546,6 +564,7 @@ const Dashboard: React.FC = () => {
     .slice(0, 5);
 
   const totalGoalProgress = (totalContributions / goalAmount) * 100;
+  const totalAttending = Array.isArray(guests) ? guests.filter(g => g.attending === 'yes').length : 0;
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -593,8 +612,8 @@ const Dashboard: React.FC = () => {
             {/* Logo/Brand */}
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center gap-3 mb-9">
-                <img src="/logo.png" alt="Logo" className="w-10 h-10" />
-                <h1 className="text-xl font-semibold text-primary">MyCashGift</h1>
+                <img src="/logo.png" alt="Logo" className="h-16 w-32" style={{ transform: 'scale(2)' }} />
+                {/* <h1 className="text-xl font-semibold text-primary">MyCashGift</h1> */}
               </div>
               <h2 className="text-lg font-semi-bold text-gray-900 mt-3">Welcome, {user.name}</h2>
             </div>
@@ -703,10 +722,22 @@ const Dashboard: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center space-x-4">
-                  <Button variant="outline" size="sm" className="hidden lg:flex">
-                    <HelpCircle className="w-4 h-4 mr-2" />
-                    Help
-                  </Button>
+                  {activeTab === 'rsvp' && (
+                    <>
+                      <Button variant="outline" size="sm" className="hidden lg:flex">
+                        <Users className="w-4 h-4 mr-2" />
+                        Total Guests: {guests.length}
+                      </Button>
+                      <Button variant="outline" size="sm" className="hidden lg:flex">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Total Attending: {totalAttending}
+                      </Button>
+                      <Button variant="outline" size="sm" className="hidden lg:flex" onClick={() => window.open('mailto:mycashgiftapp@gmail.com')}>
+                        <HelpCircle className="w-4 h-4 mr-2" />
+                        Help
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1349,7 +1380,7 @@ const Dashboard: React.FC = () => {
                               </TableCell>
                               <TableCell>
                                 <Select
-                                  value={guest.attending || 'yes'}
+                                  value={guest.attending || 'pending'}
                                   onValueChange={async (value) => {
                                     const token = localStorage.getItem('token');
                                     try {
@@ -1382,6 +1413,7 @@ const Dashboard: React.FC = () => {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
+                                    <SelectItem value="pending">Pending</SelectItem>
                                     <SelectItem value="yes">Yes</SelectItem>
                                     <SelectItem value="no">No</SelectItem>
                                   </SelectContent>
@@ -2330,7 +2362,7 @@ const Dashboard: React.FC = () => {
                   firstName,
                   lastName,
                   allowed: parseInt(guestAllowed) || 1,
-                  attending: 'yes',
+                  attending: 'pending',
                   giftId: selectedEventForRSVP
                 };
               });
@@ -2354,7 +2386,7 @@ const Dashboard: React.FC = () => {
                     firstName: guestFirstName,
                     lastName: guestLastName,
                     allowed: parseInt(guestAllowed) || 1,
-                    attending: 'yes',
+                    attending: 'pending',
                     giftId: selectedEventForRSVP,
                   }),
                 });

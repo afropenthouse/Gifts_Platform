@@ -17,11 +17,11 @@ const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border/50">
-      <div className="container mx-auto px-1 py-2">
+      <div className="container mx-auto px-1 py-1">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="MyCashgift" className="h-20 w-32" />
+          <Link to="/" className="flex items-center gap-2 pl-8">
+            <img src="/logo.png" alt="MyCashgift" className="h-16 w-32" style={{ transform: 'scale(2)' }} />
             {/* <span className="text-lg font-bold text-foreground hidden sm:block">mycashgift</span> */}
           </Link>
 

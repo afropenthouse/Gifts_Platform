@@ -73,9 +73,9 @@ export const GiftLinks = ({
               <Card key={gift.id} className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-0 shadow-lg bg-gradient-to-r from-white to-gray-50 overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-black group-hover:w-1.5 transition-all duration-300"></div>
                 <CardContent className="p-6">
-                  <div className="flex gap-8 items-stretch">
+                  <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-stretch">
                     {/* Left Section - Visual Assets */}
-                    <div className="flex gap-4 flex-shrink-0">
+                    <div className="flex flex-col md:flex-row gap-4 flex-shrink-0 items-center md:items-start">
                       {/* Picture with Enhanced Styling */}
                       <div className="flex flex-col items-center gap-3">
                         <div className="relative">
@@ -163,8 +163,8 @@ export const GiftLinks = ({
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2 pt-2 border-t border-gray-100 items-center">
-                        <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-gray-100 items-center">
+                        <div className="flex flex-wrap gap-2">
                           <Button
                             variant="outline"
                             size="sm"
