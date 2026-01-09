@@ -1,45 +1,46 @@
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 import { useEffect } from "react";
-import { Heart, Link2, Share2, Gift, Users, ListChecks, Activity } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const HowItWorks = () => {
+  const { openLoginModal, openSignupModal } = useAuth();
+
   useEffect(() => {
     document.title = "MyCashGift - How It Works";
   }, []);
 
   const steps = [
     {
-      icon: <Link2 className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Create Your Event",
-      description: "Sign up and create a personalized event link for your wedding or celebration in minutes."
+      step: 'Step 1',
+      title: 'Create Your Event',
+      body: 'Sign up and create a personalized event link for your wedding or celebration in minutes.',
     },
     {
-      icon: <Users className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Add Guest List",
-      description: "Import or type guest names with assigned numbers to keep your event organized."
+      step: 'Step 2',
+      title: 'Add Guest List',
+      body: 'Import or type guest names to keep your event organized.',
     },
     {
-      icon: <Share2 className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Share with Loved Ones",
-      description: "Send your unique link to family and friends via WhatsApp, email, or social media."
+      step: 'Step 3',
+      title: 'Share with Loved Ones',
+      body: 'Send your unique link to family and friends via WhatsApp, email, or social media.',
     },
     {
-      icon: <ListChecks className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Manage RSVPs",
-      description: "Guests confirm attendance with their assigned number so you know exactly who is coming."
+      step: 'Step 4',
+      title: 'Manage RSVPs',
+      body: 'Guests confirm attendance with a response so you know exactly who is coming.',
     },
     {
-      icon: <Gift className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Receive Cash Gifts",
-      description: "Friends contribute securely through the link, and you receive every gift in one place."
+      step: 'Step 5',
+      title: 'Receive Cash Gifts',
+      body: 'Friends contribute securely through the link, and you receive every gift in one place.',
     },
     {
-      icon: <Activity className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Track & Manage",
-      description: "Monitor RSVPs, guest details, and incoming contributions from your dashboard in real time."
-    }
+      step: 'Step 6',
+      title: 'Track & Manage',
+      body: 'Monitor RSVPs, guest details, and incoming contributions from your dashboard in real time.',
+    },
   ];
 
   return (
@@ -59,19 +60,31 @@ const HowItWorks = () => {
       </section>
 
       {/* Steps Section */}
-      <section className="py-16 px-6">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {steps.map((step, index) => (
-              <div key={index} className="text-center p-6 bg-card rounded-lg shadow-sm border border-border/50">
-                <div className="flex justify-center mb-4">
-                  {step.icon}
+      <section className="py-12 px-4 md:py-16 md:px-6 bg-champagne/20">
+        <div className="container mx-auto max-w-[90vw] sm:max-w-6xl">
+          <div className="text-center mb-8 md:mb-10">
+            <span className="text-xs md:text-sm font-medium uppercase tracking-wider" style={{ color: '#2E235C' }}>
+              How It Works
+            </span>
+            <h2 className="font-serif text-2xl md:text-4xl font-semibold text-foreground mt-2">
+              6 simple steps to start
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            {steps.map((item) => (
+              <div 
+                key={item.step} 
+                className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-border/50 p-6 md:p-8 text-center hover:shadow-md transition-shadow duration-300"
+              >
+                <div className="inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full font-semibold mb-3 md:mb-4" style={{ backgroundColor: '#2E235C1A', color: '#2E235C' }}>
+                  {item.step.split(' ')[1]}
                 </div>
-                <h3 className="font-serif text-xl font-semibold text-foreground mb-3">
-                  {step.title}
+                <h3 className="font-serif text-xl md:text-2xl font-semibold text-foreground mb-2">
+                  {item.title}
                 </h3>
-                <p className="text-muted-foreground">
-                  {step.description}
+                <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                  {item.body}
                 </p>
               </div>
             ))}
@@ -80,31 +93,86 @@ const HowItWorks = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-6 bg-champagne/30">
-        <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="font-serif text-3xl font-semibold text-foreground mb-4">
-            Ready to Get Started?
-          </h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            Join thousands of people celebrating with ease.
-          </p>
-          <Link to="/create-gift">
-            <Button variant="hero" size="lg" style={{ backgroundColor: '#2E235C' }}>
-              <Heart className="w-5 h-5 mr-2" />
-              Create Your Gift Link
-            </Button>
-          </Link>
+      <section className="py-12 px-4 md:py-16 md:px-6 bg-white">
+        <div className="container mx-auto max-w-3xl text-center">
+          
+          <Button 
+            variant="hero" 
+            size="lg" 
+            className="px-8 py-6 text-base md:text-lg" 
+            style={{ backgroundColor: '#2E235C' }}
+            onClick={openSignupModal}
+          >
+            Create RSVP Link
+          </Button>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="py-8 px-6 bg-card border-t border-border/50">
-        <div className="container mx-auto text-center">
-          <p className="text-sm text-muted-foreground">
-            © 2025 GiftLink. Made with{" "}
-            <Heart className="w-3.5 h-3.5 inline" style={{ color: '#2E235C', fill: '#2E235C' }} />{" "}
-            for celebrating love.
-          </p>
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {/* Brand Section */}
+            <div>
+              <h3 className="font-serif text-lg font-semibold text-foreground mb-3 md:mb-4">
+                MyCashGift
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                One trusted link to RSVP and receive all your cash gifts in one place.
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h4 className="font-medium text-foreground mb-3 md:mb-4">Quick Links</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+                    How It Works
+                  </a>
+                </li>
+                <li>
+                  <button onClick={openLoginModal} className="text-muted-foreground hover:text-foreground transition-colors">
+                    Login
+                  </button>
+                </li>
+                <li>
+                  <button onClick={openSignupModal} className="text-muted-foreground hover:text-foreground transition-colors">
+                    Sign Up
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="font-medium text-foreground mb-3 md:mb-4">Contact</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a 
+                    href="mailto:mycashgiftapp@gmail" 
+                    className="text-muted-foreground hover:text-foreground transition-colors break-words"
+                  >
+                    mycashgiftapp@gmail
+                  </a>
+                </li>
+                <li className="text-muted-foreground">
+                  <a href="tel:+2348056679806" className="hover:text-foreground transition-colors">
+                    +234 805 667 9806
+                  </a>
+                </li>
+                <li className="text-muted-foreground">Chevron Estate, Lekki</li>
+                <li className="text-muted-foreground">Mon-Fri 9AM-6PM WAT</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="mt-8 pt-6 md:pt-8 border-t border-border/50 text-center">
+            <p className="text-sm text-muted-foreground">
+              © 2026 MyCashGift. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

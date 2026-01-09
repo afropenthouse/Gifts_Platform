@@ -40,7 +40,7 @@ const Index = () => {
               {
                 step: 'Step 2',
                 title: 'Add Guest List',
-                body: 'Import or type guest names with assigned numbers to keep your event organized.',
+                body: 'Import or type guest names to keep your event organized.',
               },
               {
                 step: 'Step 3',
@@ -50,7 +50,7 @@ const Index = () => {
               {
                 step: 'Step 4',
                 title: 'Manage RSVPs',
-                body: 'Guests confirm attendance with their assigned number so you know exactly who is coming.',
+                body: 'Guests confirm attendance with a response so you know exactly who is coming.',
               },
               {
                 step: 'Step 5',
@@ -100,11 +100,15 @@ const Index = () => {
       <section className="py-12 px-4 md:py-16 md:px-6 bg-white">
         <div className="container mx-auto max-w-3xl text-center">
           
-          <Link to="/create-gift">
-            <Button variant="hero" size="lg" className="px-8 py-6 text-base md:text-lg" style={{ backgroundColor: '#2E235C' }}>
-              Create Your Gift Link
-            </Button>
-          </Link>
+          <Button 
+            variant="hero" 
+            size="lg" 
+            className="px-8 py-6 text-base md:text-lg" 
+            style={{ backgroundColor: '#2E235C' }}
+            onClick={openSignupModal}
+          >
+            Create RSVP Link
+          </Button>
         </div>
       </section>
 
@@ -115,10 +119,10 @@ const Index = () => {
             {/* Brand Section */}
             <div>
               <h3 className="font-serif text-lg font-semibold text-foreground mb-3 md:mb-4">
-                GiftLink
+                MyCashGift
               </h3>
               <p className="text-sm text-muted-foreground">
-                Making celebrations memorable with thoughtful gifts and contributions.
+                One trusted link to RSVP and receive all your cash gifts in one place.
               </p>
             </div>
 
@@ -170,7 +174,7 @@ const Index = () => {
           {/* Bottom Section */}
           <div className="mt-8 pt-6 md:pt-8 border-t border-border/50 text-center">
             <p className="text-sm text-muted-foreground">
-              © 2026 GiftLink. All rights reserved.
+              © 2026 MyCashGift. All rights reserved.
             </p>
           </div>
         </div>

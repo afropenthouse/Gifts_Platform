@@ -727,7 +727,7 @@ const Dashboard: React.FC = () => {
                         </h1>
                         <p className="text-white/90 max-w-2xl">
                           You've received ₦{totalContributions.toFixed(2)} from {contributions.length} gifters. 
-                          Keep sharing your gift links to receive more!
+                          Keep sharing your event links to receive more!
                         </p>
                       </div>
                       <div className="flex items-center space-x-3 mt-4 lg:mt-0">
@@ -783,14 +783,14 @@ const Dashboard: React.FC = () => {
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="font-semibold text-gray-900">Create Gift</h3>
+                          <h3 className="font-semibold text-gray-900">Create Event</h3>
                           <p className="text-sm text-gray-600">Start a new gift link</p>
                         </div>
                       </div>
                       
                       <div className="space-y-4">
                         <p className="text-center text-gray-600 text-sm">
-                          Create a personalized gift link for your wedding, birthday, or any special occasion
+                          Create a personalized event link for your wedding, birthday, or any special occasion
                         </p>
                       </div>
                       
@@ -1705,7 +1705,7 @@ const Dashboard: React.FC = () => {
                 type="submit"
                 className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
               >
-                Create Gift
+                Create Event
               </Button>
             </div>
           </form>

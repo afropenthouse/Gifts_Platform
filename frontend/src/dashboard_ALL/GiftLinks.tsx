@@ -245,20 +245,18 @@ export const GiftLinks = ({
           })}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 mx-auto mb-6 bg-black to-red-100 rounded-full flex items-center justify-center">
-            <Gift className="w-12 h-12 text-black" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No gifts created yet</h3>
+        <div className="text-center py-16 px-4">
+          <Gift className="w-16 h-16 mx-auto mb-6 text-[#2E235C]/40" />
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">No gifts created yet</h3>
           <p className="text-gray-600 mb-8 max-w-md mx-auto">
             Create your first gift link to start receiving contributions from friends and family
           </p>
           <Button 
             onClick={onCreateGift}
-            className="bg-black px-8"
+            className="bg-[#2E235C] hover:bg-[#2E235C]/90 text-white px-8 font-semibold"
           >
             <Gift className="w-4 h-4 mr-2" />
-            Create Your First Gift
+            Create Your First Event
           </Button>
         </div>
       )}
