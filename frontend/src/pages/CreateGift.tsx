@@ -24,7 +24,7 @@ const CreateGift: React.FC = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/login');
+      navigate('/');
     }
   }, [user, loading, navigate]);
 

@@ -14,6 +14,13 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (user: User) => void;
   loading: boolean;
+  loginModalOpen: boolean;
+  signupModalOpen: boolean;
+  openLoginModal: () => void;
+  openSignupModal: () => void;
+  closeModals: () => void;
+  switchToLogin: () => void;
+  switchToSignup: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +34,23 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [signupModalOpen, setSignupModalOpen] = useState(false);
+
+  const openLoginModal = () => setLoginModalOpen(true);
+  const openSignupModal = () => setSignupModalOpen(true);
+  const closeModals = () => {
+    setLoginModalOpen(false);
+    setSignupModalOpen(false);
+  };
+  const switchToLogin = () => {
+    setSignupModalOpen(false);
+    setLoginModalOpen(true);
+  };
+  const switchToSignup = () => {
+    setLoginModalOpen(false);
+    setSignupModalOpen(true);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -55,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading, loginModalOpen, signupModalOpen, openLoginModal, openSignupModal, closeModals, switchToLogin, switchToSignup }}>
       {children}
     </AuthContext.Provider>
   );

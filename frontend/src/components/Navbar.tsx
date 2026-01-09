@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, openLoginModal, openSignupModal } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -45,19 +45,18 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Link to="/login" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+                <button onClick={openLoginModal} className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
                   Sign In
-                </Link>
-                <Link to="/signup">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="text-base px-4"
-                    style={{ backgroundColor: '#2E235C' }}
-                  >
-                    Sign Up
-                  </Button>
-                </Link>
+                </button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={openSignupModal}
+                  className="text-base px-4"
+                  style={{ backgroundColor: '#2E235C' }}
+                >
+                  Sign Up
+                </Button>
               </>
             )}
           </div>
@@ -90,23 +89,20 @@ const Navbar = () => {
                     </>
                   ) : (
                     <>
-                      <Link to="/login" onClick={() => setIsOpen(false)}>
-                        <Button variant="ghost" size="sm" className="w-full justify-start">
-                          <LogIn className="w-4 h-4 mr-2" />
-                          Login
-                        </Button>
-                      </Link>
-                      <Link to="/signup" onClick={() => setIsOpen(false)}>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="w-full justify-start"
-                          style={{ backgroundColor: '#2E235C' }}
-                        >
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Sign Up
-                        </Button>
-                      </Link>
+                      <Button variant="ghost" size="sm" onClick={() => { openLoginModal(); setIsOpen(false); }} className="w-full justify-start">
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Login
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => { openSignupModal(); setIsOpen(false); }}
+                        className="w-full justify-start"
+                        style={{ backgroundColor: '#2E235C' }}
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Sign Up
+                      </Button>
                     </>
                   )}
                 </div>

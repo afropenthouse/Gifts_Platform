@@ -24,6 +24,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { QRCodeSVG } from 'qrcode.react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Progress } from '../components/ui/progress';
@@ -76,6 +78,8 @@ const Dashboard: React.FC = () => {
   const [withdrawAccount, setWithdrawAccount] = useState('');
   const [withdrawAccountName, setWithdrawAccountName] = useState('');
   const [banks, setBanks] = useState([]);
+  const [bankSearch, setBankSearch] = useState('');
+  const [isBankDropdownOpen, setIsBankDropdownOpen] = useState(false);
   const [isShareLinkModalOpen, setIsShareLinkModalOpen] = useState(false);
   const [createdGiftLink, setCreatedGiftLink] = useState('');
   const [selectedGiftForTable, setSelectedGiftForTable] = useState<Gift | null>(null);
@@ -142,15 +146,17 @@ const Dashboard: React.FC = () => {
             <thead>
               <tr>
                 <th style="width: 60px;">#</th>
-                <th>Guest Name</th>
-                <th style="width: 150px;">Number Allowed</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th style="width: 120px;">Allowed</th>
               </tr>
             </thead>
             <tbody>
               ${guests.map((guest, index) => `
                 <tr>
                   <td>${index + 1}</td>
-                  <td>${guest.firstName} ${guest.lastName}</td>
+                  <td>${guest.firstName}</td>
+                  <td>${guest.lastName}</td>
                   <td>${guest.allowed}</td>
                 </tr>
               `).join('')}
@@ -226,7 +232,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/login');
+      navigate('/');
     }
   }, [user, loading, navigate]);
 
@@ -543,7 +549,7 @@ const Dashboard: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/login');
+    navigate('/');
   };
 
   if (loading) return (
@@ -562,10 +568,18 @@ const Dashboard: React.FC = () => {
       {/* Mobile Sidebar Toggle Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
       >
         {sidebarOpen ? <CloseIcon className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-30 transition-opacity"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       <div className="flex">
         {/* Sidebar */}
@@ -671,7 +685,7 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 min-h-screen overflow-y-auto">
           {/* Navbar */}
           <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-200">
-            <div className="p-4 lg:p-6">
+            <div className="p-4 lg:p-6 pl-16 lg:pl-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">
@@ -699,16 +713,16 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Content Area */}
-          <div className="p-4 lg:p-8">
+          <div className="p-4 lg:p-8 pt-4">
             {/* Overview Section */}
             {activeTab === 'overview' && (
               <div className="space-y-8">
                 {/* Welcome Banner */}
-                <div className="bg-gradient-to-r from-[#2E235C] via-[#2E235C] to-[#2E235C] rounded-2xl p-6 lg:p-8 text-white shadow-lg overflow-hidden relative">
+                <div className="bg-gradient-to-r from-[#2E235C] via-[#2E235C] to-[#2E235C] rounded-2xl p-4 sm:p-6 lg:p-8 text-white shadow-lg overflow-hidden relative">
                   <div className="relative z-10">
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between">
                       <div>
-                        <h1 className="text-2xl lg:text-3xl font-bold mb-2">
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2">
                           Welcome back, {user.name}!
                         </h1>
                         <p className="text-white/90 max-w-2xl">
@@ -737,7 +751,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     
                     {/* Stats Row */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mt-6">
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Wallet Balance</p>
                         <p className="text-2xl font-bold">₦{user.wallet}</p>
@@ -747,7 +761,7 @@ const Dashboard: React.FC = () => {
                         <p className="text-2xl font-bold">₦{totalContributions.toFixed(2)}</p>
                       </div>
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                        <p className="text-sm opacity-90">Active Gifts</p>
+                        <p className="text-sm opacity-90">Active Events</p>
                         <p className="text-2xl font-bold">{gifts.length}</p>
                       </div>
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
@@ -812,7 +826,7 @@ const Dashboard: React.FC = () => {
                       
                       <Button 
                         variant="outline"
-                        className="w-full mt-4 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C]/5"
+                        className="w-full mt-4 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white hover:border-[#2E235C] transition-all duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveTab('rsvp');
@@ -843,7 +857,7 @@ const Dashboard: React.FC = () => {
                       
                       <Button 
                         variant="outline"
-                        className="w-full mt-4 border-green-600 text-green-600 hover:bg-green-50"
+                        className="w-full mt-4 border-green-600 text-green-600 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsWithdrawModalOpen(true);
@@ -1933,18 +1947,51 @@ const Dashboard: React.FC = () => {
                 <Label className="text-sm font-medium text-gray-900 mb-2 block">
                   Bank
                 </Label>
-                <Select onValueChange={setWithdrawBank} value={withdrawBank}>
-                  <SelectTrigger className="w-full h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
-                    <SelectValue placeholder="Select your bank" />
-                  </SelectTrigger>
-                  <SelectContent className="border-0 shadow-lg">
-                    {banks.map((bank: any) => (
-                      <SelectItem key={bank.code} value={bank.code}>
-                        {bank.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={isBankDropdownOpen} onOpenChange={setIsBankDropdownOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={isBankDropdownOpen}
+                      className="w-full h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 justify-between"
+                    >
+                      {withdrawBank
+                        ? banks.find((bank: any) => bank.code === withdrawBank)?.name
+                        : "Select your bank"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" side="bottom" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search banks..." 
+                        value={bankSearch}
+                        onValueChange={setBankSearch}
+                      />
+                      <CommandEmpty>No bank found.</CommandEmpty>
+                      <CommandList className="max-h-[300px]">
+                        <CommandGroup>
+                          {banks
+                            .filter((bank: any) =>
+                              bank.name.toLowerCase().includes(bankSearch.toLowerCase())
+                            )
+                            .map((bank: any) => (
+                              <CommandItem
+                                key={bank.code}
+                                value={bank.name}
+                                onSelect={() => {
+                                  setWithdrawBank(bank.code);
+                                  setBankSearch('');
+                                  setIsBankDropdownOpen(false);
+                                }}
+                              >
+                                {bank.name}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div>
                 <Label htmlFor="account" className="text-sm font-medium text-gray-900 mb-2 block">
@@ -2027,7 +2074,7 @@ const Dashboard: React.FC = () => {
                     Link Created!
                   </DialogTitle>
                   <p className="text-gray-600 text-sm mt-2">
-                    Share your gift link with friends and family
+                    Share your RSVP link with friends and family
                   </p>
                 </div>
               </div>

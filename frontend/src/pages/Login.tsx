@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import Navbar from '../components/Navbar';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -34,8 +35,10 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] py-8">
+        <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Login</CardTitle>
           <CardDescription>Sign in to your account</CardDescription>
@@ -73,6 +76,7 @@ const Login: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

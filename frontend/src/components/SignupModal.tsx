@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import Navbar from '../components/Navbar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 
-const Signup: React.FC = () => {
+const SignupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [verificationUrl, setVerificationUrl] = useState('');
   const [error, setError] = useState('');
+  const { switchToLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,7 +26,6 @@ const Signup: React.FC = () => {
       const data = await res.json();
       if (res.ok) {
         setMessage(data.msg);
-        if (data.verificationUrl) setVerificationUrl(data.verificationUrl);
       } else {
         setError(data.msg || 'Signup failed');
       }
@@ -36,26 +35,24 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] py-8">
-        <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Sign Up</CardTitle>
-          <CardDescription>Create your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {message ? (
-            <div className="text-center">
-              <p className="text-green-500 font-semibold">{message}</p>
-              <p className="text-gray-600 mt-4">
-                Please check your email for a verification link to complete your registration.
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                The link will expire in 24 hours.
-              </p>
-            </div>
-          ) : (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Sign Up</DialogTitle>
+        </DialogHeader>
+        {message ? (
+          <div className="text-center">
+            <p className="text-green-500 font-semibold">{message}</p>
+            <p className="text-gray-600 mt-4">
+              Please check your email for a verification link to complete your registration.
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              The link will expire in 24 hours.
+            </p>
+            <Button onClick={onClose} className="mt-4" style={{ backgroundColor: '#2E235C' }}>Close</Button>
+          </div>
+        ) : (
+          <>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="name">Name</Label>
@@ -89,15 +86,14 @@ const Signup: React.FC = () => {
               {error && <p className="text-red-500">{error}</p>}
               <Button type="submit" className="w-full" style={{ backgroundColor: '#2E235C' }}>Sign Up</Button>
             </form>
-          )}
-          <div className="mt-4 text-center">
-            <p>Already have an account? <Link to="/login" className="text-blue-500">Login</Link></p>
-          </div>
-        </CardContent>
-      </Card>
-      </div>
-    </div>
+            <div className="mt-4 text-center">
+              <p>Already have an account? <button onClick={switchToLogin} className="text-blue-500">Login</button></p>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default Signup;
+export default SignupModal;

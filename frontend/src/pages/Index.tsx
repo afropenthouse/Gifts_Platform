@@ -4,8 +4,11 @@ import { WeddingGiftGallery } from "@/components/WeddingGiftCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
+  const { openLoginModal, openSignupModal } = useAuth();
+  
   useEffect(() => {
     document.title = "MyCashGift - Collect RSVPs & Cash Gifts for your Wedding";
   }, []);
@@ -31,13 +34,13 @@ const Index = () => {
             {[
               {
                 step: 'Step 1',
-                title: 'Create Your Gift Link',
-                body: 'Sign up and create a personalized gift link for your celebration in minutes.',
+                title: 'Create Your Event',
+                body: 'Sign up and create a personalized event link for your wedding or celebration in minutes.',
               },
               {
                 step: 'Step 2',
                 title: 'Add Guest List',
-                body: 'Import or type your guest names and assigned numbers so you stay organized.',
+                body: 'Import or type guest names with assigned numbers to keep your event organized.',
               },
               {
                 step: 'Step 3',
@@ -46,8 +49,8 @@ const Index = () => {
               },
               {
                 step: 'Step 4',
-                title: 'Get RSVPs',
-                body: 'Guests confirm attendance and include their assigned number so you know who is coming.',
+                title: 'Manage RSVPs',
+                body: 'Guests confirm attendance with their assigned number so you know exactly who is coming.',
               },
               {
                 step: 'Step 5',
@@ -56,8 +59,8 @@ const Index = () => {
               },
               {
                 step: 'Step 6',
-                title: 'Track',
-                body: 'Monitor RSVPs, guest details, and incoming gifts from your dashboard in real time.',
+                title: 'Track & Manage',
+                body: 'Monitor RSVPs, guest details, and incoming contributions from your dashboard in real time.',
               },
             ].map((item) => (
               <div 
@@ -129,14 +132,14 @@ const Index = () => {
                   </a>
                 </li>
                 <li>
-                  <a href="/login" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <button onClick={openLoginModal} className="text-muted-foreground hover:text-foreground transition-colors">
                     Login
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="/signup" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <button onClick={openSignupModal} className="text-muted-foreground hover:text-foreground transition-colors">
                     Sign Up
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -147,10 +150,10 @@ const Index = () => {
               <ul className="space-y-2 text-sm">
                 <li>
                   <a 
-                    href="mailto:support@giftlink.com" 
+                    href="mailto:mycashgiftapp@gmail" 
                     className="text-muted-foreground hover:text-foreground transition-colors break-words"
                   >
-                    support@giftlink.com
+                    mycashgiftapp@gmail
                   </a>
                 </li>
                 <li className="text-muted-foreground">

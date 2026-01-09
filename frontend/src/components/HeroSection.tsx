@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Gift, X, AlertCircle, CheckCircle, ImageIcon, Calendar } from "lucide-react";
 
 const HeroSection = () => {
-  const { user } = useAuth();
+  const { user, openLoginModal } = useAuth();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [type, setType] = useState('');
@@ -24,7 +24,7 @@ const HeroSection = () => {
 
   const handleCreateGiftClick = () => {
     if (!user) {
-      navigate('/login');
+      openLoginModal();
     } else {
       setIsModalOpen(true);
     }

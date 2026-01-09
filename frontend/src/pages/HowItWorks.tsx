@@ -12,13 +12,13 @@ const HowItWorks = () => {
   const steps = [
     {
       icon: <Link2 className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Create Your Gift Link",
-      description: "Sign up and create a personalized gift link for your celebration in minutes."
+      title: "Create Your Event",
+      description: "Sign up and create a personalized event link for your wedding or celebration in minutes."
     },
     {
       icon: <Users className="w-8 h-8" style={{ color: '#2E235C' }} />,
       title: "Add Guest List",
-      description: "Import or type in your guest names and their assigned numbers so you stay organized."
+      description: "Import or type guest names with assigned numbers to keep your event organized."
     },
     {
       icon: <Share2 className="w-8 h-8" style={{ color: '#2E235C' }} />,
@@ -27,8 +27,8 @@ const HowItWorks = () => {
     },
     {
       icon: <ListChecks className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Get RSVPs",
-      description: "Guests confirm attendance and share their assigned number so you know who is coming."
+      title: "Manage RSVPs",
+      description: "Guests confirm attendance with their assigned number so you know exactly who is coming."
     },
     {
       icon: <Gift className="w-8 h-8" style={{ color: '#2E235C' }} />,
@@ -37,8 +37,8 @@ const HowItWorks = () => {
     },
     {
       icon: <Activity className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Track",
-      description: "Monitor RSVPs, guest details, and incoming gifts from your dashboard in real time."
+      title: "Track & Manage",
+      description: "Monitor RSVPs, guest details, and incoming contributions from your dashboard in real time."
     }
   ];
 

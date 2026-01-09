@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 
 const ForgotPassword: React.FC = () => {
+  const { openLoginModal } = useAuth();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -32,8 +34,10 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] py-8">
+        <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Forgot Password</CardTitle>
           <CardDescription>Enter your email to receive a password reset link</CardDescription>
@@ -55,10 +59,11 @@ const ForgotPassword: React.FC = () => {
             <Button type="submit" className="w-full">Send Reset Link</Button>
           </form>
           <div className="mt-4 text-center">
-            <Link to="/login" className="text-blue-500">Back to Login</Link>
+            <button onClick={openLoginModal} className="text-blue-500 hover:underline">Back to Login</button>
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

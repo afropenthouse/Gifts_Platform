@@ -3,9 +3,13 @@ import { useParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 
 const ResetPassword: React.FC = () => {
   const { token } = useParams<{ token: string }>();
+  const { openLoginModal } = useAuth();
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
@@ -25,22 +29,34 @@ const ResetPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="password">New Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <Button type="submit" className="w-full">Reset Password</Button>
-        </form>
-        {message && <p className="mt-4 text-center">{message}</p>}
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] py-8">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Reset Password</CardTitle>
+            <CardDescription>Enter your new password</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="password">New Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              {message && <p className="text-center text-sm">{message}</p>}
+              <Button type="submit" className="w-full" style={{ backgroundColor: '#2E235C' }}>Reset Password</Button>
+            </form>
+            <div className="mt-4 text-center">
+              <button onClick={openLoginModal} className="text-blue-500 hover:underline">Back to Login</button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
