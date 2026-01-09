@@ -612,7 +612,7 @@ const Dashboard: React.FC = () => {
             {/* Logo/Brand */}
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center gap-3 mb-9">
-                <img src="/logo.png" alt="Logo" className="h-16 w-32" style={{ transform: 'scale(2)' }} />
+                <img src="/logo.png" alt="Logo" className="h-16 w-32" style={{ transform: 'scale(1.8)' }} />
                 {/* <h1 className="text-xl font-semibold text-primary">MyCashGift</h1> */}
               </div>
               <h2 className="text-lg font-semi-bold text-gray-900 mt-3">Welcome, {user.name}</h2>
