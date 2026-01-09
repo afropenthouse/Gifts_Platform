@@ -247,9 +247,9 @@ export const GiftLinks = ({
       ) : (
         <div className="text-center py-16 px-4">
           <Gift className="w-16 h-16 mx-auto mb-6 text-[#2E235C]/40" />
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">No gifts created yet</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">No event created yet</h3>
           <p className="text-gray-600 mb-8 max-w-md mx-auto">
-            Create your first gift link to start receiving contributions from friends and family
+            Create your first event link to start collecting RSVPs from friends and family
           </p>
           <Button 
             onClick={onCreateGift}

@@ -34,12 +34,12 @@ const HowItWorks = () => {
     {
       step: 'Step 5',
       title: 'Receive Cash Gifts',
-      body: 'Friends contribute securely through the link, and you receive every gift in one place.',
+      body: 'Receive cash gifts from friends in multiple currencies',
     },
     {
       step: 'Step 6',
       title: 'Track & Manage',
-      body: 'Monitor RSVPs, guest details, and incoming contributions from your dashboard in real time.',
+      body: 'Monitor RSVPs, guest details, and incoming cash gifts from your dashboard in real time.',
     },
   ];
 
@@ -93,14 +93,14 @@ const HowItWorks = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 px-4 md:py-16 md:px-6 bg-white">
+      <section className="py-12 px-4 md:py-16 md:px-6 bg-primary">
         <div className="container mx-auto max-w-3xl text-center">
           
           <Button 
             variant="hero" 
             size="lg" 
-            className="px-8 py-6 text-base md:text-lg" 
-            style={{ backgroundColor: '#2E235C' }}
+            className="px-8 py-6 text-primary text-base md:text-lg" 
+            style={{ backgroundColor: '#ffff' }}
             onClick={openSignupModal}
           >
             Create RSVP Link

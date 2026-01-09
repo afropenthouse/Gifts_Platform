@@ -594,9 +594,9 @@ const Dashboard: React.FC = () => {
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center gap-3 mb-9">
                 <img src="/logo.png" alt="Logo" className="w-10 h-10" />
-                <h1 className="text-xl font-semibold text-gray-900">MyCashGift</h1>
+                <h1 className="text-xl font-semibold text-primary">MyCashGift</h1>
               </div>
-              <h2 className="text-lg font-bold text-gray-900 mt-3">Welcome, {user.name}</h2>
+              <h2 className="text-lg font-semi-bold text-gray-900 mt-3">Welcome, {user.name}</h2>
             </div>
 
             {/* User Profile Section */}
@@ -690,13 +690,13 @@ const Dashboard: React.FC = () => {
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">
                     {activeTab === 'overview' && 'Dashboard Overview'}
-                    {activeTab === 'gifts' && 'My Events'}
+                    {activeTab === 'gifts' && 'Events'}
                     {activeTab === 'withdraw' && 'Withdraw Funds'}
                     {activeTab === 'rsvp' && 'RSVP'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
-                    {activeTab === 'gifts' && 'Manage all your gift links and contributions'}
+                    {activeTab === 'gifts' && 'Manage all your event links & cash gifts'}
                     {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
                   </p>
@@ -727,7 +727,7 @@ const Dashboard: React.FC = () => {
                         </h1>
                         <p className="text-white/90 max-w-2xl">
                           You've received ₦{totalContributions.toFixed(2)} from {contributions.length} gifters. 
-                          Keep sharing your event links to receive more!
+                          Keep sharing your RSVP links to receive more!
                         </p>
                       </div>
                       <div className="flex items-center space-x-3 mt-4 lg:mt-0">
@@ -790,7 +790,7 @@ const Dashboard: React.FC = () => {
                       
                       <div className="space-y-4">
                         <p className="text-center text-gray-600 text-sm">
-                          Create a personalized event link for your wedding, birthday, or any special occasion
+                          Create an RSVP link for your wedding, birthday, or any special occasion
                         </p>
                       </div>
                       
@@ -880,7 +880,7 @@ const Dashboard: React.FC = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">My Events</h2>
-                    <p className="text-gray-600 mt-1">Create and manage all your gift collection links</p>
+                    <p className="text-gray-600 mt-1">Create and manage all your events and gift collection links</p>
                   </div>
                   <div className="flex space-x-3">
                     <Button variant="outline" size="sm">
@@ -892,7 +892,7 @@ const Dashboard: React.FC = () => {
                       className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]"
                     >
                       <Gift className="w-4 h-4 mr-2" />
-                      New Gift
+                      Create event
                     </Button>
                   </div>
                 </div>
@@ -1606,7 +1606,7 @@ const Dashboard: React.FC = () => {
               <div>
                 <Label htmlFor="picture" className="text-sm font-medium text-gray-900 mb-2 block">
                   <ImageIcon className="inline w-4 h-4 mr-2 text-gray-600" />
-                  Event Picture
+                  Event Invite
                 </Label>
                 <div className="mt-2">
                   {picture ? (

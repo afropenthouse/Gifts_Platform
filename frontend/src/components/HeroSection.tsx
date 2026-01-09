@@ -255,7 +255,7 @@ const HeroSection = () => {
             <div>
               <Label htmlFor="picture" className="text-sm font-medium text-gray-900 mb-2 block">
                 <ImageIcon className="inline w-4 h-4 mr-2 text-gray-600" />
-                Event Picture
+                Event Invite
               </Label>
               <div className="mt-2">
                 {picture ? (
