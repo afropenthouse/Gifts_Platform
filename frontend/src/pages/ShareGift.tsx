@@ -48,6 +48,9 @@ const ShareGift: React.FC = () => {
   const [rsvpLastName, setRsvpLastName] = useState('');
   const [rsvpEmail, setRsvpEmail] = useState('');
   const [rsvpError, setRsvpError] = useState('');
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
+  const [verifyMessage, setVerifyMessage] = useState('');
 
   useEffect(() => {
     document.title = "MyCashGift - Collect RSVPs & Cash Gifts for your Wedding";
@@ -71,6 +74,10 @@ const ShareGift: React.FC = () => {
     
     if (!link || !transactionIdentifier) return;
 
+    setShowVerifyModal(true);
+    setVerifyStatus('checking');
+    setVerifyMessage('Confirming your payment...');
+
     const verify = async () => {
       try {
         console.log('Verifying payment with:', { transactionIdentifier, status });
@@ -88,13 +95,16 @@ const ShareGift: React.FC = () => {
         );
         const data = await res.json();
         if (!res.ok) {
-          alert(data?.msg || 'Payment verification failed');
+          setVerifyStatus('error');
+          setVerifyMessage(data?.msg || 'Payment verification failed');
           return;
         }
-        alert('Thank you! Your gift was successful.');
+        setVerifyStatus('success');
+        setVerifyMessage('Thank you! Your gift was successful.');
       } catch (err) {
         console.error(err);
-        alert('Could not verify payment.');
+        setVerifyStatus('error');
+        setVerifyMessage('Could not verify payment.');
       }
     };
 
@@ -680,6 +690,49 @@ const ShareGift: React.FC = () => {
           </div>
           <div className="pt-2">
             <Button className="w-full" onClick={() => setShowRsvpThanks(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment verification modal */}
+      <Dialog open={showVerifyModal} onOpenChange={setShowVerifyModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Payment verification</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {verifyStatus === 'checking' && (
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <span>{verifyMessage || 'Confirming your payment...'}</span>
+              </div>
+            )}
+
+            {verifyStatus === 'success' && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800">
+                {verifyMessage || 'Payment verified successfully.'}
+              </div>
+            )}
+
+            {verifyStatus === 'error' && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+                {verifyMessage || 'Payment verification failed.'}
+              </div>
+            )}
+
+            {verifyStatus === 'success' && (
+              <Button className="w-full" onClick={() => setShowVerifyModal(false)}>
+                Continue
+              </Button>
+            )}
+
+            {verifyStatus === 'error' && (
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full" onClick={() => setShowVerifyModal(false)}>
+                  Close
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
