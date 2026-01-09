@@ -26,6 +26,7 @@ model User {
   updatedAt                 DateTime @updatedAt
   gifts                     Gift[]
   guests                    Guest[]
+  withdrawals               Withdrawal[]
 }
 
 model Gift {
@@ -75,6 +76,22 @@ model Guest {
   status     GuestStatus @default(invited)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+}
+
+model Withdrawal {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
+  amount         Decimal  @db.Decimal(10, 2)
+  bankCode       String
+  bankName       String?
+  accountNumber  String
+  accountName    String?
+  reference      String?  @unique
+  status         String   @default("pending")
+  transferId     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 enum GiftType {
