@@ -113,18 +113,8 @@ async function resolveAccount(payload) {
   try {
     console.log('Resolving account:', { account_bank: payload.account_bank, account_number: payload.account_number });
 
-    const flw = getClient();
-
-    let response;
-    if (typeof flw.Misc !== 'undefined' && typeof flw.Misc.resolveAccount === 'function') {
-      response = await flw.Misc.resolveAccount(payload);
-    } else if (typeof flw.resolveAccount === 'function') {
-      response = await flw.resolveAccount(payload);
-    } else if (typeof flw.Transfer !== 'undefined' && typeof flw.Transfer.resolveAccount === 'function') {
-      response = await flw.Transfer.resolveAccount(payload);
-    } else {
-      throw new Error(`Flutterwave resolveAccount method not found. Available methods: ${Object.keys(flw).join(', ')}`);
-    }
+    // Use REST API directly for account resolution
+    const response = await fwRequest('POST', '/accounts/resolve', payload);
 
     console.log('Account resolve response:', response?.status);
     return response;
