@@ -219,8 +219,18 @@ module.exports = () => {
   // Webhook for Flutterwave
   router.post('/webhook', async (req, res) => {
     try {
+      console.log('=== WEBHOOK RECEIVED ===');
+      console.log('Headers:', req.headers);
+      console.log('Body:', JSON.stringify(req.body, null, 2));
+      console.log('Query:', req.query);
+      console.log('Signature (verif-hash):', req.headers['verif-hash']);
+      
       const secret = process.env.FLW_SECRET_HASH || process.env.FLW_WEBHOOK_SECRET;
       const signature = req.headers['verif-hash'];
+
+      console.log('Expected secret:', secret);
+      console.log('Received signature:', signature);
+      console.log('Signatures match:', signature === secret);
 
       if (!secret) {
         console.error('FLW_SECRET_HASH not set');
@@ -232,28 +242,58 @@ module.exports = () => {
 
       if (!verifyWebhookSignature(payloadBuffer, signature, secret)) {
         console.error('Invalid webhook signature');
+        console.error('Verification failed - signature mismatch');
         return res.status(401).send('Unauthorized');
       }
 
+      console.log('✓ Webhook signature verified successfully');
+
       const event = JSON.parse(payloadBuffer.toString());
-      console.log('Webhook received:', event.event);
+      console.log('=== WEBHOOK EVENT ===');
+      console.log('Event type:', event.event);
+      console.log('Event data:', JSON.stringify(event.data, null, 2));
+      console.log('Transaction ID:', event.data?.id);
+      console.log('Status:', event.data?.status);
 
       if (event.event === 'charge.completed') {
+        console.log('=== PROCESSING CHARGE.COMPLETED ===');
         const { id: transactionId, tx_ref, amount, currency, status } = event.data;
+
+        console.log('Transaction details:', {
+          transactionId,
+          tx_ref,
+          amount,
+          currency,
+          status
+        });
 
         if (status !== 'successful') {
           console.log('Payment not successful:', status);
           return res.status(200).send('OK');
         }
 
+        console.log('Verifying transaction with Flutterwave...');
         // Verify transaction
         const response = await verifyTransaction(transactionId);
+        console.log('Verification response:', {
+          status: response.status,
+          dataStatus: response.data?.status,
+          meta: response.data?.meta
+        });
+
         if (response.status !== 'success' || response.data.status !== 'successful') {
           console.error('Transaction verification failed');
           return res.status(200).send('OK');
         }
 
         const { giftId, contributorName, contributorEmail, message: contributorMessage } = response.data.meta || {};
+
+        console.log('Extracted meta data:', {
+          giftId,
+          contributorName,
+          contributorEmail,
+          contributorMessage
+        });
 
         if (!giftId) {
           console.error('No giftId in webhook meta');
@@ -272,17 +312,18 @@ module.exports = () => {
         });
 
         if (existingContribution) {
-          console.log('Contribution already exists');
+          console.log('Contribution already exists:', existingContribution.id);
           return res.status(200).send('OK');
         }
 
         // Get gift
         const gift = await prisma.gift.findUnique({ where: { id: giftId } });
         if (!gift) {
-          console.error('Gift not found');
+          console.error('Gift not found:', giftId);
           return res.status(200).send('OK');
         }
 
+        console.log('Creating contribution...');
         // Create contribution
         const contribution = await prisma.contribution.create({
           data: {
@@ -296,18 +337,24 @@ module.exports = () => {
           },
         });
 
+        console.log('✓ Contribution created:', contribution.id);
+
         // Update user's wallet
         await prisma.user.update({
           where: { id: gift.userId },
           data: { wallet: { increment: amount } },
         });
 
-        console.log('Webhook processed successfully:', contribution.id);
+        console.log('✓ Wallet updated for user:', gift.userId);
+        console.log('=== WEBHOOK SUCCESS ===');
+        console.log('Contribution ID:', contribution.id);
       }
 
       res.status(200).send('OK');
     } catch (err) {
-      console.error('Webhook error:', err?.message || err);
+      console.log('=== WEBHOOK ERROR ===');
+      console.error('Error message:', err?.message || err);
+      console.error('Full error:', err);
       res.status(500).send('Server error');
     }
   });
