@@ -70,12 +70,18 @@ async function initializePayment(payload) {
   }
 }
 
-async function verifyTransaction(id) {
+async function verifyTransaction(idOrRef) {
   try {
-    console.log('Verifying transaction:', id);
-    // Use REST API for verification
-    const response = await fwRequest('GET', `/transactions/${id}/verify`);
-    console.log('Transaction verify response:', response?.status);
+    console.log('Verifying transaction:', idOrRef);
+
+    const isNumericId = /^[0-9]+$/.test(String(idOrRef));
+    const path = isNumericId
+      ? `/transactions/${idOrRef}/verify`
+      : `/transactions/verify_by_reference?tx_ref=${encodeURIComponent(idOrRef)}`;
+
+    // Use REST API for verification (by numeric id or tx_ref)
+    const response = await fwRequest('GET', path);
+    console.log('Transaction verify response:', response?.status, 'via', path);
     return response;
   } catch (error) {
     console.error('Flutterwave Transaction.verify error:', error?.message || error);
