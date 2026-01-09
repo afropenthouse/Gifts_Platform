@@ -63,17 +63,27 @@ const ShareGift: React.FC = () => {
   // Handle redirect back from Flutterwave: verify payment
   useEffect(() => {
     const txId = searchParams.get('transaction_id');
+    const txRef = searchParams.get('tx_ref');
     const status = searchParams.get('status');
-    if (!link || !txId) return;
+    
+    // Use tx_ref if available, otherwise transaction_id
+    const transactionIdentifier = txRef || txId;
+    
+    if (!link || !transactionIdentifier) return;
 
     const verify = async () => {
       try {
+        console.log('Verifying payment with:', { transactionIdentifier, status });
         const res = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${link}/verify-payment`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ transactionId: txId }),
+            body: JSON.stringify({ 
+              transactionId: transactionIdentifier,
+              txRef: txRef,
+              status: status 
+            }),
           }
         );
         const data = await res.json();
