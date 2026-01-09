@@ -72,17 +72,45 @@ module.exports = () => {
 
   // Verify payment and create contribution
   router.post('/:link/verify-payment', async (req, res) => {
-    const { transactionId } = req.body;
+    const { transactionId, txRef, status } = req.body;
 
     try {
-      const response = await verifyTransaction(transactionId);
+      console.log('Verifying payment:', { transactionId, txRef, status });
+      
+      // Try to verify with transactionId first, then with txRef
+      let response;
+      try {
+        response = await verifyTransaction(transactionId);
+      } catch (error) {
+        // If verification fails and we have txRef, try using that
+        if (txRef && txRef !== transactionId) {
+          console.log('First verification failed, trying with txRef:', txRef);
+          response = await verifyTransaction(txRef);
+        } else {
+          throw error;
+        }
+      }
+
+      console.log('Verification response:', { 
+        status: response?.status, 
+        dataStatus: response?.data?.status,
+        meta: response?.data?.meta 
+      });
 
       if (response.status !== 'success' || response.data.status !== 'successful') {
-        return res.status(400).json({ msg: 'Payment verification failed' });
+        return res.status(400).json({ 
+          msg: 'Payment verification failed',
+          details: `Status: ${response?.status}, Data Status: ${response?.data?.status}` 
+        });
       }
 
       const { giftId, giftLink, contributorName, contributorEmail, message: contributorMessage } = response.data.meta || {};
       const amount = response.data.amount;
+
+      if (!giftId) {
+        console.error('No giftId in transaction meta:', response.data.meta);
+        return res.status(400).json({ msg: 'Invalid transaction data - missing gift ID' });
+      }
 
       // Get gift to find userId
       const gift = await prisma.gift.findUnique({
@@ -93,15 +121,34 @@ module.exports = () => {
         return res.status(404).json({ msg: 'Gift not found' });
       }
 
+      // Check if contribution already exists
+      const existingContribution = await prisma.contribution.findFirst({
+        where: { 
+          OR: [
+            { transactionId: response.data.id.toString() },
+            { transactionId: response.data.flw_ref },
+            { transactionId: response.data.tx_ref }
+          ]
+        }
+      });
+
+      if (existingContribution) {
+        console.log('Contribution already exists:', existingContribution.id);
+        return res.json({ 
+          msg: 'Payment already processed', 
+          contribution: existingContribution 
+        });
+      }
+
       // Create contribution record
       const contribution = await prisma.contribution.create({
         data: {
           giftId,
-          contributorName,
-          contributorEmail,
+          contributorName: contributorName || 'Anonymous',
+          contributorEmail: contributorEmail || '',
           amount,
           message: contributorMessage || '',
-          transactionId: response.data.id,
+          transactionId: response.data.id?.toString() || response.data.flw_ref || response.data.tx_ref,
           status: 'completed',
         },
       });
@@ -112,10 +159,15 @@ module.exports = () => {
         data: { wallet: { increment: amount } },
       });
 
+      console.log('Contribution created successfully:', contribution.id);
       res.json({ msg: 'Payment verified and contribution recorded', contribution });
     } catch (err) {
       console.error('Verify payment error:', err?.message || err);
-      res.status(500).json({ msg: 'Payment verification failed', error: err?.message || 'Server error' });
+      console.error('Full error:', err);
+      res.status(500).json({ 
+        msg: 'Payment verification failed', 
+        error: err?.message || 'Server error' 
+      });
     }
   });
 
