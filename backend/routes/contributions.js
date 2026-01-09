@@ -104,11 +104,12 @@ module.exports = () => {
         });
       }
 
-      const { giftId, giftLink, contributorName, contributorEmail, message: contributorMessage } = response.data.meta || {};
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage } = response.data.meta || {};
+      const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const amount = response.data.amount;
 
       if (!giftId) {
-        console.error('No giftId in transaction meta:', response.data.meta);
+        console.error('No giftId in transaction meta or failed to parse as int:', response.data.meta);
         return res.status(400).json({ msg: 'Invalid transaction data - missing gift ID' });
       }
 
