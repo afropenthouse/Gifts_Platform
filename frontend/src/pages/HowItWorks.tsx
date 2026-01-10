@@ -150,10 +150,10 @@ const HowItWorks = () => {
               <ul className="space-y-2 text-sm">
                 <li>
                   <a 
-                    href="mailto:mycashgiftapp@gmail" 
+                    href="mailto:teambethere@gmail.com" 
                     className="text-muted-foreground hover:text-foreground transition-colors break-words"
                   >
-                    mycashgiftapp@gmail
+                    teambethere@gmail.com
                   </a>
                 </li>
                 <li className="text-muted-foreground">

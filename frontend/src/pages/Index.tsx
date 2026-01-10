@@ -119,7 +119,7 @@ const Index = () => {
             {/* Brand Section */}
             <div>
               <h3 className="font-serif text-lg font-semibold text-foreground mb-3 md:mb-4">
-                MyCashGift
+                BeThere
               </h3>
               <p className="text-sm text-muted-foreground">
                 One trusted link to RSVP and receive all your cash gifts in one place.
@@ -154,10 +154,10 @@ const Index = () => {
               <ul className="space-y-2 text-sm">
                 <li>
                   <a 
-                    href="mailto:mycashgiftapp@gmail" 
+                    href="mailto:teambethere@gmail.com" 
                     className="text-muted-foreground hover:text-foreground transition-colors break-words"
                   >
-                    mycashgiftapp@gmail
+                    teambethere@gmail.com
                   </a>
                 </li>
                 <li className="text-muted-foreground">

@@ -12,7 +12,7 @@ import { Users, Gift } from 'lucide-react';
 
 declare global {
   interface Window {
-    FlutterwaveCheckout: any;
+    PaystackPop: any;
   }
 }
 
@@ -112,10 +112,10 @@ const ShareGift: React.FC = () => {
   }, [searchParams, link]);
 
   useEffect(() => {
-    // Load Flutterwave script
-    if (!window.FlutterwaveCheckout) {
+    // Load Paystack script
+    if (!window.PaystackPop) {
       const script = document.createElement('script');
-      script.src = 'https://checkout.flutterwave.com/v3.js';
+      script.src = 'https://js.paystack.co/v1/inline.js';
       document.head.appendChild(script);
     }
   }, []);
@@ -186,9 +186,9 @@ const ShareGift: React.FC = () => {
         throw new Error(msg);
       }
 
-      // Redirect to Flutterwave payment
-      if (initData.data && initData.data.link) {
-        window.location.href = initData.data.link;
+      // Redirect to Paystack payment
+      if (initData.data && initData.data.authorization_url) {
+        window.location.href = initData.data.authorization_url;
       }
     } catch (err: any) {
       console.error(err);
@@ -405,7 +405,7 @@ const ShareGift: React.FC = () => {
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              💳 Powered by Flutterwave - Secure payment processing
+              💳 Powered by Paystack - Secure payment processing
             </p>
           </form>
         </DialogContent>

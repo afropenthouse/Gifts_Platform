@@ -31,7 +31,7 @@ interface WeddingGiftCardProps {
 
 declare global {
   interface Window {
-    FlutterwaveCheckout: any;
+    PaystackPop: any;
   }
 }
 
@@ -58,11 +58,11 @@ const WeddingGiftCard = ({
       ? `${groomName} & ${brideName}`
       : groomName || brideName || "Special Celebration");
 
-  // Load Flutterwave script
+  // Load Paystack script
   useEffect(() => {
-    if (!window.FlutterwaveCheckout) {
+    if (!window.PaystackPop) {
       const script = document.createElement('script');
-      script.src = 'https://checkout.flutterwave.com/v3.js';
+      script.src = 'https://js.paystack.co/v1/inline.js';
       document.head.appendChild(script);
     }
   }, []);
@@ -101,31 +101,22 @@ const WeddingGiftCard = ({
     try {
       const name = isAnonymous ? 'Anonymous' : contributorName;
 
-      const publicKey = import.meta.env.VITE_FLW_PUBLIC_KEY;
+      const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
       if (!publicKey) {
-        alert('Payment is unavailable: missing Flutterwave public key.');
+        alert('Payment is unavailable: missing Paystack public key.');
         setProcessingPayment(false);
         return;
       }
 
       const config = {
-        public_key: publicKey,
-        tx_ref: `demo-gift-${Date.now()}`,
-        amount: parseFloat(amount),
+        key: publicKey,
+        email: 'traclaapp@gmail.com',
+        amount: parseFloat(amount) * 100, // Paystack amount in kobo
         currency: currency,
-        payment_options: 'card,mobilemoney,ussd',
-        customer: {
-          email: 'traclaapp@gmail.com',
-          name: name,
-        },
-        customizations: {
-          title: heading,
-          description: `Contribution`,
-          logo: '',
-        },
+        ref: `demo-gift-${Date.now()}`,
         callback: function (data: any) {
           console.log('Payment callback:', data);
-          if (data.status === 'successful') {
+          if (data.status === 'success') {
             const currencySymbol = currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£';
             alert(`Thank you! Your gift of ${currencySymbol}${amount} to ${heading} was successful.`);
             setIsNameModalOpen(false);
@@ -137,17 +128,17 @@ const WeddingGiftCard = ({
           }
           setProcessingPayment(false);
         },
-        onclose: function () {
+        onClose: function () {
           console.log('Payment modal closed');
           setProcessingPayment(false);
         },
       };
 
-      // Initialize Flutterwave payment
-      if (window.FlutterwaveCheckout) {
-        window.FlutterwaveCheckout(config);
+      // Initialize Paystack payment
+      if (window.PaystackPop) {
+        window.PaystackPop.setup(config).openIframe();
       } else {
-        alert('Flutterwave is not loaded. Please refresh the page and try again.');
+        alert('Paystack is not loaded. Please refresh the page and try again.');
         setProcessingPayment(false);
       }
     } catch (err: any) {
@@ -347,7 +338,7 @@ const WeddingGiftCard = ({
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              💳 Powered by Flutterwave - Secure payment processing
+              💳 Powered by Paystack - Secure payment processing
             </p>
           </form>
         </DialogContent>
