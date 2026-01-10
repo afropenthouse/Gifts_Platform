@@ -1,6 +1,6 @@
 const express = require('express');
 const prisma = require('../prismaClient');
-const { initializePayment, verifyTransaction, verifyWebhookSignature } = require('../utils/flutterwave');
+const { initializePayment, verifyTransaction, verifyWebhookSignature } = require('../utils/paystack');
 
 module.exports = () => {
   const router = express.Router();
@@ -18,32 +18,29 @@ module.exports = () => {
       if (!gift) return res.status(404).json({ msg: 'Gift not found' });
 
       const payload = {
-        tx_ref: `gift-${gift.id}-${Date.now()}`,
-        amount: parseFloat(amount),
+        reference: `gift-${gift.id}-${Date.now()}`,
+        amount: parseFloat(amount) * 100, // Paystack amount in kobo
         currency: 'NGN',
-        redirect_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`,
-        customer: {
-          email: contributorEmail,
-          name: contributorName,
-        },
-        customizations: {
-          title: `Contribution to ${gift.user.name}'s ${gift.type}`,
-          description: gift.title || gift.type,
-        },
-        meta: {
+        callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`,
+        email: contributorEmail,
+        metadata: {
           giftId: gift.id,
           giftLink: req.params.link,
           contributorName,
           contributorEmail,
           message: message || '',
+          customizations: {
+            title: `Contribution to ${gift.user.name}'s ${gift.type}`,
+            description: gift.title || gift.type,
+          }
         },
       };
 
       const response = await initializePayment(payload);
 
-      if (response?.status !== 'success') {
+      if (!response?.status) {
         return res.status(400).json({
-          msg: 'Flutterwave initialization failed',
+          msg: 'Paystack initialization failed',
           error: response?.message || 'Unknown error',
         });
       }
@@ -97,16 +94,16 @@ module.exports = () => {
         meta: response?.data?.meta 
       });
 
-      if (response.status !== 'success' || response.data.status !== 'successful') {
-        return res.status(400).json({ 
+      if (!response.status || response.data.status !== 'success') {
+        return res.status(400).json({
           msg: 'Payment verification failed',
-          details: `Status: ${response?.status}, Data Status: ${response?.data?.status}` 
+          details: `Status: ${response?.status}, Data Status: ${response?.data?.status}`
         });
       }
 
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage } = response.data.meta || {};
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage } = response.data.metadata || {};
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
-      const amount = response.data.amount;
+      const amount = response.data.amount / 100; // Paystack amount in kobo
 
       if (!giftId) {
         console.error('No giftId in transaction meta or failed to parse as int:', response.data.meta);
@@ -124,11 +121,10 @@ module.exports = () => {
 
       // Check if contribution already exists
       const existingContribution = await prisma.contribution.findFirst({
-        where: { 
+        where: {
           OR: [
             { transactionId: response.data.id.toString() },
-            { transactionId: response.data.flw_ref },
-            { transactionId: response.data.tx_ref }
+            { transactionId: response.data.reference }
           ]
         }
       });
@@ -149,7 +145,7 @@ module.exports = () => {
           contributorEmail: contributorEmail || '',
           amount,
           message: contributorMessage || '',
-          transactionId: response.data.id?.toString() || response.data.flw_ref || response.data.tx_ref,
+          transactionId: response.data.id?.toString() || response.data.reference,
           status: 'completed',
         },
       });
@@ -217,24 +213,23 @@ module.exports = () => {
     }
   });
 
-  // Webhook for Flutterwave
+  // Webhook for Paystack
   router.post('/webhook', async (req, res) => {
     try {
       console.log('=== WEBHOOK RECEIVED ===');
       console.log('Headers:', req.headers);
       console.log('Body:', JSON.stringify(req.body, null, 2));
       console.log('Query:', req.query);
-      console.log('Signature (verif-hash):', req.headers['verif-hash']);
-      
-      const secret = process.env.FLW_SECRET_HASH || process.env.FLW_WEBHOOK_SECRET;
-      const signature = req.headers['verif-hash'];
+      console.log('Signature (x-paystack-signature):', req.headers['x-paystack-signature']);
+
+      const secret = process.env.PAYSTACK_WEBHOOK_SECRET;
+      const signature = req.headers['x-paystack-signature'];
 
       console.log('Expected secret:', secret);
       console.log('Received signature:', signature);
-      console.log('Signatures match:', signature === secret);
 
       if (!secret) {
-        console.error('FLW_SECRET_HASH not set');
+        console.error('PAYSTACK_WEBHOOK_SECRET not set');
         return res.status(500).send('Server error');
       }
 
@@ -249,45 +244,45 @@ module.exports = () => {
 
       console.log('✓ Webhook signature verified successfully');
 
-      const event = JSON.parse(payloadBuffer.toString());
+      const event = req.body; // Already parsed
       console.log('=== WEBHOOK EVENT ===');
       console.log('Event type:', event.event);
       console.log('Event data:', JSON.stringify(event.data, null, 2));
       console.log('Transaction ID:', event.data?.id);
       console.log('Status:', event.data?.status);
 
-      if (event.event === 'charge.completed') {
-        console.log('=== PROCESSING CHARGE.COMPLETED ===');
-        const { id: transactionId, tx_ref, amount, currency, status } = event.data;
+      if (event.event === 'charge.success') {
+        console.log('=== PROCESSING CHARGE.SUCCESS ===');
+        const { id: transactionId, reference, amount, currency, status } = event.data;
 
         console.log('Transaction details:', {
           transactionId,
-          tx_ref,
+          reference,
           amount,
           currency,
           status
         });
 
-        if (status !== 'successful') {
+        if (status !== 'success') {
           console.log('Payment not successful:', status);
           return res.status(200).send('OK');
         }
 
-        console.log('Verifying transaction with Flutterwave...');
+        console.log('Verifying transaction with Paystack...');
         // Verify transaction
-        const response = await verifyTransaction(transactionId);
+        const response = await verifyTransaction(reference);
         console.log('Verification response:', {
           status: response.status,
           dataStatus: response.data?.status,
-          meta: response.data?.meta
+          metadata: response.data?.metadata
         });
 
-        if (response.status !== 'success' || response.data.status !== 'successful') {
+        if (!response.status || response.data.status !== 'success') {
           console.error('Transaction verification failed');
           return res.status(200).send('OK');
         }
 
-        const { giftId, contributorName, contributorEmail, message: contributorMessage } = response.data.meta || {};
+        const { giftId, contributorName, contributorEmail, message: contributorMessage } = response.data.metadata || {};
 
         console.log('Extracted meta data:', {
           giftId,
@@ -306,8 +301,7 @@ module.exports = () => {
           where: {
             OR: [
               { transactionId: transactionId.toString() },
-              { transactionId: response.data.flw_ref },
-              { transactionId: response.data.tx_ref }
+              { transactionId: response.data.reference }
             ]
           }
         });
@@ -331,7 +325,7 @@ module.exports = () => {
             giftId,
             contributorName: contributorName || 'Anonymous',
             contributorEmail: contributorEmail || '',
-            amount,
+            amount: amount / 100, // Paystack amount in kobo
             message: contributorMessage || '',
             transactionId: transactionId.toString(),
             status: 'completed',

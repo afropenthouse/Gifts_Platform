@@ -1,7 +1,7 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
-const { initiateTransfer, resolveAccount, getBanks } = require('../utils/flutterwave');
+const { initiateTransfer, resolveAccount, getBanks } = require('../utils/paystack');
 
 module.exports = () => {
   const router = express.Router();
@@ -87,7 +87,7 @@ module.exports = () => {
     try {
       const response = await getBanks();
 
-      if (response.status === 'success' || response.status === 'successful') {
+      if (response.status) {
         res.json({ banks: response.data || response });
       } else {
         res.status(400).json({ msg: 'Failed to fetch banks' });
@@ -110,7 +110,7 @@ module.exports = () => {
 
       console.log('Resolve response:', response);
 
-      if (response.status === 'success' || response.status === 'successful') {
+      if (response.status) {
         const accountName = response.data ? response.data.account_name : response.account_name;
         res.json({ account_name: accountName });
       } else {
