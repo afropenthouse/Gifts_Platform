@@ -22,7 +22,8 @@ interface Gift {
 }
 
 interface Contribution {
-  id: string;
+  id: number;
+  giftId: number;
   contributorName: string;
   contributorEmail: string;
   amount: number;
@@ -65,7 +66,7 @@ export const GiftLinks = ({
         <div className="grid grid-cols-1 gap-6 overflow-y-auto max-h-[800px]">
           {gifts.map((gift) => {
             const giftContributions = contributions.filter((c) => {
-              return gifts.find(g => g.id === gift.id)?.shareLink === gift.shareLink;
+              return String(c.giftId) === gift.id;
             });
             const totalGiftAmount = giftContributions.reduce((sum, c) => sum + Number(c.amount), 0);
 
@@ -231,7 +232,7 @@ export const GiftLinks = ({
                               setGiftToDelete(gift);
                               setDeleteModalOpen(true);
                             }}
-                            title="Delete Gift"
+                            title="Delete Event"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -265,7 +266,7 @@ export const GiftLinks = ({
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-red-600">Delete Gift</DialogTitle>
+            <DialogTitle className="text-red-600">Delete Event</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete "<span className="font-semibold text-gray-900">{giftToDelete?.title}</span>"? This action cannot be undone.
             </DialogDescription>

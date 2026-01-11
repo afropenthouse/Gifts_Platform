@@ -46,7 +46,8 @@ interface Gift {
 }
 
 interface Contribution {
-  id: string;
+  id: number;
+  giftId: number;
   contributorName: string;
   contributorEmail: string;
   amount: number;
@@ -342,8 +343,10 @@ const Dashboard: React.FC = () => {
 
   const handleDeleteGift = async (giftId: string) => {
     try {
-      const response = await fetch(`/api/gifts/${giftId}`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${giftId}`, {
         method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -353,7 +356,7 @@ const Dashboard: React.FC = () => {
           return !deletedGift || c.message !== deletedGift.shareLink;
         }));
       } else {
-        alert('Failed to delete gift');
+        alert('Failed to delete event');
       }
     } catch (error) {
       console.error('Error deleting gift:', error);
@@ -972,7 +975,7 @@ const Dashboard: React.FC = () => {
                       <TableBody>
                         {contributions.length > 0 ? (
                           contributions.map((contribution) => {
-                            const gift = gifts.find(g => g.shareLink === contribution.id.split('_')[0]);
+                            const gift = gifts.find(g => g.id === String(contribution.giftId));
                             return (
                               <TableRow key={contribution.id} className="hover:bg-gray-50/50">
                                 <TableCell>
@@ -1218,7 +1221,7 @@ const Dashboard: React.FC = () => {
                         {['wedding', 'birthday', 'graduation', 'convocation', 'other'].map((type) => {
                           const typeGifts = gifts.filter(g => g.type === type);
                           const typeContributions = contributions.filter(c => 
-                            typeGifts.some(g => g.shareLink === c.id.split('_')[0])
+                            typeGifts.some(g => g.id === String(c.giftId))
                           );
                           const total = typeContributions.reduce((sum, c) => sum + c.amount, 0);
                           const percentage = totalContributions > 0 ? (total / totalContributions) * 100 : 0;
@@ -2190,29 +2193,6 @@ const Dashboard: React.FC = () => {
                 Download QR
               </Button>
             </div>
-
-            {/* Share Options */}
-            <div className="pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-600 mb-3 font-medium">Share via</p>
-              <div className="grid grid-cols-4 gap-2">
-                <Button variant="outline" size="sm" className="flex-col h-auto py-3">
-                  <GlobeIcon className="w-5 h-5 mb-1" />
-                  <span className="text-xs">Copy</span>
-                </Button>
-                <Button variant="outline" size="sm" className="flex-col h-auto py-3">
-                  <MessageSquare className="w-5 h-5 mb-1" />
-                  <span className="text-xs">WhatsApp</span>
-                </Button>
-                <Button variant="outline" size="sm" className="flex-col h-auto py-3">
-                  <Mail className="w-5 h-5 mb-1" />
-                  <span className="text-xs">Email</span>
-                </Button>
-                <Button variant="outline" size="sm" className="flex-col h-auto py-3">
-                  <Smartphone className="w-5 h-5 mb-1" />
-                  <span className="text-xs">SMS</span>
-                </Button>
-              </div>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -2232,7 +2212,7 @@ const Dashboard: React.FC = () => {
           <div className="mt-4">
             {selectedGiftForTable && (() => {
               const giftContributions = contributions.filter((c) => {
-                return selectedGiftForTable.shareLink === selectedGiftForTable.shareLink;
+                return selectedGiftForTable.id === String(c.giftId);
               });
               const totalAmount = giftContributions.reduce((sum, c) => sum + Number(c.amount), 0);
 

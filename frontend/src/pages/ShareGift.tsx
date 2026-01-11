@@ -139,9 +139,9 @@ const ShareGift: React.FC = () => {
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = currency === 'NGN' ? 100 : 1;
+    const minAmount = 100;
     if (!amount || parseFloat(amount) < minAmount) {
-      const currencySymbol = currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'CAD' ? 'C$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AUD' ? 'A$' : currency === 'ZAR' ? 'R' : currency === 'KES' ? 'KSh' : currency === 'GHS' ? '₵' : currency === 'UGX' ? 'USh' : 'TSh';
+      const currencySymbol = '₦';
       alert(`Please enter an amount of at least ${currencySymbol}${minAmount}`);
       return;
     }
@@ -313,26 +313,16 @@ const ShareGift: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NGN">₦ NGN</SelectItem>
-                    <SelectItem value="USD">$ USD</SelectItem>
-                    <SelectItem value="CAD">C$ CAD</SelectItem>
-                    <SelectItem value="EUR">€ EUR</SelectItem>
-                    <SelectItem value="GBP">£ GBP</SelectItem>
-                    <SelectItem value="AUD">A$ AUD</SelectItem>
-                    <SelectItem value="ZAR">R ZAR</SelectItem>
-                    <SelectItem value="KES">KSh KES</SelectItem>
-                    <SelectItem value="GHS">₵ GHS</SelectItem>
-                    <SelectItem value="UGX">USh UGX</SelectItem>
-                    <SelectItem value="TZS">TSh TZS</SelectItem>
                   </SelectContent>
                 </Select>
                 <Input
                   id="amount"
                   type="number"
                   step="0.01"
-                  min={currency === 'NGN' ? '100' : '1'}
+                  min="100"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={currency === 'NGN' ? '100' : '1'}
+                  placeholder="100"
                   className="flex-1 text-lg"
                   required
                 />
