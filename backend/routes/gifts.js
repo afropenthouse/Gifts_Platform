@@ -142,6 +142,35 @@ module.exports = () => {
     }
   });
 
+  // Delete gift
+  router.delete('/:id', auth(), async (req, res) => {
+    const giftId = parseInt(req.params.id);
+
+    try {
+      const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+      
+      if (!gift) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+
+      if (gift.userId !== req.user.id) {
+        return res.status(403).json({ msg: 'Not authorized to delete this gift' });
+      }
+
+      // Delete associated guests and contributions first (cascade delete)
+      await prisma.guest.deleteMany({ where: { giftId } });
+      await prisma.contribution.deleteMany({ where: { giftId } });
+      
+      // Delete the gift
+      await prisma.gift.delete({ where: { id: giftId } });
+
+      res.json({ msg: 'Gift deleted successfully' });
+    } catch (err) {
+      console.error('Error deleting gift:', err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
   // Get gift by share link
   router.get('/:link', async (req, res) => {
     try {
