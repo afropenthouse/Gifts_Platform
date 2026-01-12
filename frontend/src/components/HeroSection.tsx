@@ -37,7 +37,7 @@ const HeroSection = () => {
       const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
         const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-        setFileError(`File size (${fileSizeInMB}MB) exceeds the maximum allowed size of 5MB. Please choose a smaller image.`);
+        setFileError(`File size (${fileSizeInMB}MB) exceeds the maximum allowed size of 6MB. Please choose a smaller image.`);
         setPictureFile(null);
         setPicture('');
         e.target.value = '';
@@ -289,7 +289,7 @@ const HeroSection = () => {
                       <div className="flex flex-col items-center justify-center">
                         <ImageIcon className="w-12 h-12 text-gray-400 mb-3" />
                         <p className="text-sm font-medium text-gray-900 mb-1">Click to upload image</p>
-                        <p className="text-xs text-gray-500">JPEG, PNG or GIF (Max 5MB)</p>
+                        <p className="text-xs text-gray-500">JPEG, PNG or GIF (Max 6MB)</p>
                       </div>
                     </label>
                   </div>
