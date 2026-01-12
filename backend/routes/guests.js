@@ -168,13 +168,33 @@ module.exports = () => {
     const { firstName, lastName, email, phone, allowed, attending, giftId } = req.body;
 
     try {
+      const trimmedFirst = firstName?.trim();
+      const trimmedLast = lastName?.trim();
+
+      if (!trimmedFirst || !trimmedLast) {
+        return res.status(400).json({ msg: 'First name and last name are required' });
+      }
+
+      // Enforce case-insensitive uniqueness per event
+      const existing = await prisma.guest.findFirst({
+        where: {
+          giftId: giftId ? parseInt(giftId) : null,
+          firstName: { equals: trimmedFirst, mode: 'insensitive' },
+          lastName: { equals: trimmedLast, mode: 'insensitive' },
+        },
+      });
+
+      if (existing) {
+        return res.status(409).json({ msg: 'A guest with this name already exists for this event.' });
+      }
+
       const guest = await prisma.guest.create({
         data: {
           userId: req.user.id,
           giftId: giftId ? parseInt(giftId) : null,
-          firstName,
-          lastName,
-          email,
+          firstName: trimmedFirst,
+          lastName: trimmedLast,
+          email: email?.trim().toLowerCase() || null,
           phone,
           allowed: allowed ? parseInt(allowed) : 1,
           attending: attending || 'yes',
@@ -214,6 +234,13 @@ module.exports = () => {
     const guestId = parseInt(req.params.id);
 
     try {
+      const trimmedFirst = firstName?.trim();
+      const trimmedLast = lastName?.trim();
+
+      if (!trimmedFirst || !trimmedLast) {
+        return res.status(400).json({ msg: 'First name and last name are required' });
+      }
+
       const guest = await prisma.guest.findUnique({ 
         where: { id: guestId },
         select: { id: true, userId: true, allowed: true, giftId: true } // Only select needed fields
@@ -223,17 +250,32 @@ module.exports = () => {
         return res.status(404).json({ msg: 'Guest not found' });
       }
 
+      // Enforce case-insensitive uniqueness per event (excluding current guest)
+      const targetGiftId = giftId ? parseInt(giftId) : guest.giftId;
+      const duplicate = await prisma.guest.findFirst({
+        where: {
+          id: { not: guestId },
+          giftId: targetGiftId,
+          firstName: { equals: trimmedFirst, mode: 'insensitive' },
+          lastName: { equals: trimmedLast, mode: 'insensitive' },
+        },
+      });
+
+      if (duplicate) {
+        return res.status(409).json({ msg: 'A guest with this name already exists for this event.' });
+      }
+
       const updatedGuest = await prisma.guest.update({
         where: { id: guestId },
         data: {
-          firstName,
-          lastName,
-          email,
+          firstName: trimmedFirst,
+          lastName: trimmedLast,
+          email: email?.trim().toLowerCase() || null,
           phone,
           allowed: allowed ? parseInt(allowed) : guest.allowed,
           attending,
           status: attending === 'yes' ? 'confirmed' : 'declined',
-          giftId: giftId ? parseInt(giftId) : guest.giftId,
+          giftId: targetGiftId,
         },
       });
 
@@ -286,8 +328,8 @@ module.exports = () => {
       const existingGuest = await prisma.guest.findFirst({
         where: {
           giftId: gift.id,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
+          firstName: { equals: firstName.trim(), mode: 'insensitive' },
+          lastName: { equals: lastName.trim(), mode: 'insensitive' },
         },
       });
 
@@ -353,8 +395,8 @@ module.exports = () => {
       const existingGuest = await prisma.guest.findFirst({
         where: {
           giftId: gift.id,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
+          firstName: { equals: firstName.trim(), mode: 'insensitive' },
+          lastName: { equals: lastName.trim(), mode: 'insensitive' },
         },
       });
 
