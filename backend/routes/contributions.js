@@ -3,19 +3,30 @@ const prisma = require('../prismaClient');
 const { initializePayment, verifyTransaction, verifyWebhookSignature } = require('../utils/paystack');
 const nodemailer = require('nodemailer');
 
-// Email configuration
-const emailEnabled = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD;
-const transporter = emailEnabled ? nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || 587),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-}) : null;
+// Email configuration (aligned with guests route: supports EMAIL_* fallbacks)
+const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '465', 10);
+const smtpSecure = process.env.EMAIL_SECURE
+  ? process.env.EMAIL_SECURE === 'true'
+  : process.env.SMTP_SECURE
+  ? process.env.SMTP_SECURE === 'true'
+  : true;
+const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+const mailFrom = process.env.MAIL_FROM || smtpUser || 'teambethere@gmail.com';
+const emailEnabled = Boolean(smtpUser && smtpPass);
 
-const mailFrom = process.env.MAIL_FROM || 'teambethere@gmail.com';
+const transporter = emailEnabled
+  ? nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    })
+  : null;
 
 const formatEventHeading = (gift) => {
   if (gift?.type === 'wedding') {
@@ -316,16 +327,7 @@ module.exports = () => {
       console.log('💰 Wallet Update Details:', { userId: gift.userId, walletBefore: gift.user.wallet, walletAfter: walletUpdateResult.wallet, amountAdded: amount });
       console.log('=== VERIFY PAYMENT SUCCESS ===\n');
 
-      // Send emails in background without blocking response
-      if (contributorEmail) {
-        sendContributorThankYouEmail({
-          recipientEmail: contributorEmail,
-          contributorName: contributorName || 'Anonymous',
-          amount,
-          gift: gift,
-        }).catch(err => console.error('Background contributor thank you email failed:', err));
-      }
-
+      // Send gift received email to owner in background without blocking response
       sendGiftReceivedEmail({
         recipientEmail: gift.user.email,
         recipientName: gift.user.name,
@@ -447,7 +449,10 @@ module.exports = () => {
         }
 
         // Get gift
-        const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+        const gift = await prisma.gift.findUnique({ 
+          where: { id: giftId },
+          include: { user: true }
+        });
         if (!gift) {
           console.error('Gift not found:', giftId);
           return res.status(200).send('OK');
@@ -477,6 +482,17 @@ module.exports = () => {
         });
 
         console.log('✓ Wallet updated for user:', gift.userId, 'New balance should be:', updateResult.wallet);
+        
+        // Send gift received email to owner in background without blocking response
+        sendGiftReceivedEmail({
+          recipientEmail: gift.user.email,
+          recipientName: gift.user.name,
+          contributorName: contributorName || 'Anonymous',
+          amount: amountInNaira,
+          gift: gift,
+          message: contributorMessage || '',
+        }).catch(err => console.error('Background gift received email failed:', err));
+        
         console.log('=== WEBHOOK SUCCESS ===');
         console.log('Contribution ID:', contribution.id);
       }

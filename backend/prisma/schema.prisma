@@ -67,20 +67,21 @@ model Contribution {
 }
 
 model Guest {
-  id         Int         @id @default(autoincrement())
-  userId     Int
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  giftId     Int?
-  gift       Gift?       @relation(fields: [giftId], references: [id], onDelete: Cascade)
-  firstName  String
-  lastName   String
-  email      String?
-  phone      String?
-  allowed    Int         @default(1)
-  attending  String      @default("yes")
-  status     GuestStatus @default(invited)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id           Int         @id @default(autoincrement())
+  userId       Int
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  giftId       Int?
+  gift         Gift?       @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  firstName    String
+  lastName     String
+  email        String?
+  phone        String?
+  allowed      Int         @default(1)
+  attending    String      @default("yes")
+  status       GuestStatus @default(invited)
+  tableSitting String      @default("Table sitting")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   @@index([userId])
   @@index([giftId])

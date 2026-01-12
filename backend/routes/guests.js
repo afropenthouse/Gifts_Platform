@@ -165,7 +165,7 @@ module.exports = () => {
 
   // Create guest
   router.post('/', auth(), async (req, res) => {
-    const { firstName, lastName, email, phone, allowed, attending, giftId } = req.body;
+    const { firstName, lastName, email, phone, allowed, attending, giftId, tableSitting } = req.body;
 
     try {
       const trimmedFirst = firstName?.trim();
@@ -199,6 +199,7 @@ module.exports = () => {
           allowed: allowed ? parseInt(allowed) : 1,
           attending: attending || 'yes',
           status: attending === 'yes' ? 'confirmed' : 'declined',
+          tableSitting: tableSitting || 'Table sitting',
         },
       });
 
@@ -230,7 +231,7 @@ module.exports = () => {
 
   // Update guest
   router.put('/:id', auth(), async (req, res) => {
-    const { firstName, lastName, email, phone, allowed, attending, giftId } = req.body;
+    const { firstName, lastName, email, phone, allowed, attending, giftId, tableSitting } = req.body;
     const guestId = parseInt(req.params.id);
 
     try {
@@ -265,18 +266,25 @@ module.exports = () => {
         return res.status(409).json({ msg: 'A guest with this name already exists for this event.' });
       }
 
+      const updateData = {
+        firstName: trimmedFirst,
+        lastName: trimmedLast,
+        email: email?.trim().toLowerCase() || null,
+        phone,
+        allowed: allowed ? parseInt(allowed) : guest.allowed,
+        attending,
+        status: attending === 'yes' ? 'confirmed' : 'declined',
+        giftId: targetGiftId,
+      };
+
+      // Only update tableSitting if it's provided in the request
+      if (tableSitting !== undefined) {
+        updateData.tableSitting = tableSitting;
+      }
+
       const updatedGuest = await prisma.guest.update({
         where: { id: guestId },
-        data: {
-          firstName: trimmedFirst,
-          lastName: trimmedLast,
-          email: email?.trim().toLowerCase() || null,
-          phone,
-          allowed: allowed ? parseInt(allowed) : guest.allowed,
-          attending,
-          status: attending === 'yes' ? 'confirmed' : 'declined',
-          giftId: targetGiftId,
-        },
+        data: updateData,
       });
 
       res.json(updatedGuest);
