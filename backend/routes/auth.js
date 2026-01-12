@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../prismaClient');
+const auth = require('../middleware/auth');
 
 module.exports = () => {
   const router = express.Router();
@@ -181,6 +182,22 @@ module.exports = () => {
       const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
       res.json({ token, user: { id: user.id, name: user.name, email: user.email, profilePicture: user.profilePicture, wallet: user.wallet } });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  // Get current user
+  router.get('/me', auth(), async (req, res) => {
+    try {
+      res.json({
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        profilePicture: req.user.profilePicture,
+        wallet: parseFloat(req.user.wallet) || 0
+      });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });

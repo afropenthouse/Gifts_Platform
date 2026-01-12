@@ -32,6 +32,44 @@ module.exports = () => {
     res.json(user);
   });
 
+  // Recalculate wallet based on actual contributions
+  router.post('/recalculate-wallet', auth(), async (req, res) => {
+    try {
+      // Get all gifts for this user
+      const gifts = await prisma.gift.findMany({
+        where: { userId: req.user.id },
+        select: { id: true }
+      });
+
+      const giftIds = gifts.map(g => g.id);
+
+      // Sum all contributions for user's gifts
+      const result = await prisma.contribution.aggregate({
+        where: { giftId: { in: giftIds } },
+        _sum: { amount: true }
+      });
+
+      const correctWalletBalance = parseFloat(result._sum.amount) || 0;
+      const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+      // Update user's wallet
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { wallet: correctWalletBalance }
+      });
+
+      res.json({
+        msg: 'Wallet recalculated',
+        previousWallet: parseFloat(currentUser.wallet),
+        newWallet: correctWalletBalance,
+        user: updatedUser
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
   // Withdraw funds
   router.post('/withdraw', auth(), async (req, res) => {
     const { amount, bank_code, account_number } = req.body;

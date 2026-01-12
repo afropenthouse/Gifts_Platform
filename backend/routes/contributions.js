@@ -218,11 +218,14 @@ module.exports = () => {
     const { transactionId, txRef, status } = req.body;
 
     try {
-      console.log('Verifying payment:', { transactionId, txRef, status });
+      console.log('\n=== VERIFY PAYMENT START ===');
+      console.log('Link:', req.params.link);
+      console.log('Request body:', { transactionId, txRef, status });
       
       // Try to verify with transactionId first, then with txRef
       let response;
       try {
+        console.log('Attempting to verify with transactionId:', transactionId);
         response = await verifyTransaction(transactionId);
       } catch (error) {
         // If verification fails and we have txRef, try using that
@@ -237,10 +240,11 @@ module.exports = () => {
       console.log('Verification response:', { 
         status: response?.status, 
         dataStatus: response?.data?.status,
-        meta: response?.data?.meta 
+        meta: response?.data?.metadata 
       });
 
       if (!response.status || response.data.status !== 'success') {
+        console.error('❌ Payment verification failed - not success');
         return res.status(400).json({
           msg: 'Payment verification failed',
           details: `Status: ${response?.status}, Data Status: ${response?.data?.status}`
@@ -251,8 +255,10 @@ module.exports = () => {
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const amount = response.data.amount / 100; // Paystack amount in kobo
 
+      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount });
+
       if (!giftId) {
-        console.error('No giftId in transaction meta or failed to parse as int:', response.data.meta);
+        console.error('❌ No giftId in transaction meta');
         return res.status(400).json({ msg: 'Invalid transaction data - missing gift ID' });
       }
 
@@ -263,6 +269,7 @@ module.exports = () => {
       });
 
       if (!gift) {
+        console.error('❌ Gift not found:', giftId);
         return res.status(404).json({ msg: 'Gift not found' });
       }
 
@@ -277,7 +284,7 @@ module.exports = () => {
       });
 
       if (existingContribution) {
-        console.log('Contribution already exists:', existingContribution.id);
+        console.log('⚠️  Contribution already exists:', existingContribution.id);
         return res.json({ 
           msg: 'Payment already processed', 
           contribution: existingContribution 
@@ -298,10 +305,13 @@ module.exports = () => {
       });
 
       // Update user's wallet
-      await prisma.user.update({
+      const walletUpdateResult = await prisma.user.update({
         where: { id: gift.userId },
         data: { wallet: { increment: amount } },
       });
+
+      console.log('✅ CONTRIBUTION SAVED:', { id: contribution.id, amount, wallet: walletUpdateResult.wallet });
+      console.log('=== VERIFY PAYMENT SUCCESS ===\n');
 
       // Send emails in background without blocking response
       if (contributorEmail) {
@@ -346,8 +356,8 @@ module.exports = () => {
       const secret = process.env.PAYSTACK_WEBHOOK_SECRET;
       const signature = req.headers['x-paystack-signature'];
 
-      console.log('Expected secret:', secret);
-      console.log('Received signature:', signature);
+      console.log('Expected secret:', secret ? 'SET' : 'NOT SET');
+      console.log('Received signature:', signature ? 'PRESENT' : 'MISSING');
 
       if (!secret) {
         console.error('PAYSTACK_WEBHOOK_SECRET not set');
@@ -403,7 +413,8 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
-        const { giftId, contributorName, contributorEmail, message: contributorMessage } = response.data.metadata || {};
+        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage } = response.data.metadata || {};
+        const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
 
         console.log('Extracted meta data:', {
           giftId,
@@ -413,7 +424,7 @@ module.exports = () => {
         });
 
         if (!giftId) {
-          console.error('No giftId in webhook meta');
+          console.error('No giftId in webhook meta or failed to parse');
           return res.status(200).send('OK');
         }
 
@@ -440,28 +451,29 @@ module.exports = () => {
         }
 
         console.log('Creating contribution...');
+        const amountInNaira = amount / 100; // Convert kobo to Naira
         // Create contribution
         const contribution = await prisma.contribution.create({
           data: {
             giftId,
             contributorName: contributorName || 'Anonymous',
             contributorEmail: contributorEmail || '',
-            amount: amount / 100, // Paystack amount in kobo
+            amount: amountInNaira,
             message: contributorMessage || '',
             transactionId: transactionId.toString(),
             status: 'completed',
           },
         });
 
-        console.log('✓ Contribution created:', contribution.id);
+        console.log('✓ Contribution created:', contribution.id, 'Amount:', amountInNaira);
 
         // Update user's wallet
-        await prisma.user.update({
+        const updateResult = await prisma.user.update({
           where: { id: gift.userId },
-          data: { wallet: { increment: amount } },
+          data: { wallet: { increment: amountInNaira } },
         });
 
-        console.log('✓ Wallet updated for user:', gift.userId);
+        console.log('✓ Wallet updated for user:', gift.userId, 'New balance should be:', updateResult.wallet);
         console.log('=== WEBHOOK SUCCESS ===');
         console.log('Contribution ID:', contribution.id);
       }
