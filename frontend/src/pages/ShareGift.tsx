@@ -53,7 +53,7 @@ const ShareGift: React.FC = () => {
   const [verifyMessage, setVerifyMessage] = useState('');
 
   useEffect(() => {
-    document.title = "MyCashGift - Collect RSVPs & Cash Gifts for your Wedding";
+    document.title = "BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding";
   }, []);
   const [showRsvpThanks, setShowRsvpThanks] = useState(false);
   const [rsvpThanksMessage, setRsvpThanksMessage] = useState('');
@@ -135,6 +135,50 @@ const ShareGift: React.FC = () => {
     };
     if (link) fetchGift();
   }, [link]);
+
+  // Update meta tags for social previews when gift loads
+  useEffect(() => {
+    if (!gift) return;
+
+    const setMeta = (selector: {attr: string; name: string}, value: string) => {
+      const { attr, name } = selector;
+      let el = document.querySelector(`meta[${attr}="${name}"]`);
+      if (el) {
+        el.setAttribute('content', value);
+      } else {
+        el = document.createElement('meta');
+        el.setAttribute(attr, name);
+        el.setAttribute('content', value);
+        document.head.appendChild(el);
+      }
+    };
+
+    const title = heading;
+    const baseDescription = gift.description ? String(gift.description).trim() : '';
+    const description = baseDescription ? `${title} — ${baseDescription}` : `${title} — Join us and send a cash gift using this RSVP link.`;
+    const image = gift.picture || '/logo.png';
+
+    // Title
+    document.title = `${title} — BeThere Weddings`;
+
+    // Standard meta description
+    setMeta({ attr: 'name', name: 'description' }, description);
+
+    // Open Graph
+    setMeta({ attr: 'property', name: 'og:title' }, title);
+    setMeta({ attr: 'property', name: 'og:description' }, description);
+    setMeta({ attr: 'property', name: 'og:image' }, image.startsWith('http') ? image : window.location.origin + image);
+
+    // Twitter
+    setMeta({ attr: 'name', name: 'twitter:title' }, title);
+    setMeta({ attr: 'name', name: 'twitter:description' }, description);
+    setMeta({ attr: 'name', name: 'twitter:image' }, image.startsWith('http') ? image : window.location.origin + image);
+
+    return () => {
+      // Optionally revert to defaults when navigating away (keep simple: reset title)
+      document.title = 'BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding';
+    };
+  }, [gift]);
 
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,7 +284,13 @@ const ShareGift: React.FC = () => {
       <Navbar />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md flex flex-col items-center gap-6">
+          <img
+            src="/logo2.png"
+            alt="BeThere Weddings logo"
+            className="h-12 w-auto"
+          />
+
           {/* Gift Card - Same style as home page */}
           <div className="bg-gradient-card rounded-2xl shadow-card overflow-hidden border border-border/50 hover:shadow-lg transition-shadow cursor-pointer">
             <div className="relative w-full overflow-hidden bg-black/5">

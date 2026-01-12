@@ -10,7 +10,7 @@ const Index = () => {
   const { openLoginModal, openSignupModal } = useAuth();
   
   useEffect(() => {
-    document.title = "MyCashGift - Collect RSVPs & Cash Gifts for your Wedding";
+    document.title = "BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding";
   }, []);
 
   return (

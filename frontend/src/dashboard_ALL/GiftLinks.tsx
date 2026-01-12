@@ -39,6 +39,7 @@ interface GiftLinksProps {
   onViewDetails: (gift: Gift) => void;
   onDeleteGift: (giftId: string) => void;
   onRSVP: (gift: Gift) => void;
+  deletingGiftId?: string | null;
 }
 
 export const GiftLinks = ({
@@ -49,6 +50,7 @@ export const GiftLinks = ({
   onViewDetails,
   onDeleteGift,
   onRSVP,
+  deletingGiftId,
 }: GiftLinksProps) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [giftToDelete, setGiftToDelete] = useState<Gift | null>(null);
@@ -285,9 +287,19 @@ export const GiftLinks = ({
             <Button
               onClick={handleDeleteConfirm}
               className="bg-red-600 hover:bg-red-700 text-white font-medium"
+              disabled={!!deletingGiftId}
             >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
+              {deletingGiftId ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

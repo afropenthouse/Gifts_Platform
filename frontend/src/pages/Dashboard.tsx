@@ -6,6 +6,7 @@ import { Button } from '../components/ui/button';
 import GiftLinks from '../dashboard_ALL/GiftLinks';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
+import { useToast } from '../hooks/use-toast';
 import {
   Gift, DollarSign, TrendingUp, Users, Copy, Eye,
   ArrowDownToLine, Calendar, Image as ImageIcon, X, Edit,
@@ -30,6 +31,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import * as XLSX from 'xlsx';
+import { Toaster } from '../components/ui/toaster';
 
 interface Gift {
   id: string;
@@ -58,6 +61,7 @@ interface Contribution {
 const Dashboard: React.FC = () => {
   const { user, loading, updateUser } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -97,8 +101,19 @@ const Dashboard: React.FC = () => {
   const [guestFirstName, setGuestFirstName] = useState('');
   const [guestLastName, setGuestLastName] = useState('');
   const [guestAllowed, setGuestAllowed] = useState('1');
-  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [guestMode, setGuestMode] = useState<'single' | 'bulk' | 'excel'>('single');
   const [bulkNames, setBulkNames] = useState('');
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [excelParsing, setExcelParsing] = useState(false);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [errorTitle, setErrorTitle] = useState('');
+  const [isCreatingGift, setIsCreatingGift] = useState(false);
+  const [isUpdatingGift, setIsUpdatingGift] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isAddingGuest, setIsAddingGuest] = useState(false);
+  const [deletingGiftId, setDeletingGiftId] = useState<string | null>(null);
+  const [deletingGuestId, setDeletingGuestId] = useState<number | null>(null);
 
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null },
@@ -342,6 +357,12 @@ const Dashboard: React.FC = () => {
   };
 
   const handleDeleteGift = async (giftId: string) => {
+    if (deletingGiftId) return; // Prevent multiple deletions
+    
+    const giftToDelete = gifts.find(g => g.id === giftId);
+    const giftName = giftToDelete?.title || giftToDelete?.type || 'Event';
+    
+    setDeletingGiftId(giftId);
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${giftId}`, {
@@ -355,22 +376,32 @@ const Dashboard: React.FC = () => {
           const deletedGift = gifts.find(g => g.id === giftId);
           return !deletedGift || c.message !== deletedGift.shareLink;
         }));
+        
+        toast({
+          title: "Event deleted",
+          description: `${giftName} has been successfully deleted.`,
+        });
       } else {
         alert('Failed to delete event');
       }
     } catch (error) {
       console.error('Error deleting gift:', error);
       alert('Error deleting gift');
+    } finally {
+      setDeletingGiftId(null);
     }
   };
 
   const handleCreateGift = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCreatingGift) return; // Prevent duplicate submissions
+    
     if (fileError) {
       alert('Please fix the file upload error before submitting.');
       return;
     }
 
+    setIsCreatingGift(true);
     const formData = new FormData();
     formData.append('type', type);
     formData.append('title', title);
@@ -403,11 +434,8 @@ const Dashboard: React.FC = () => {
       if (res.ok) {
         const createdGift = await res.json();
         
-        const giftsRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const giftsData = await giftsRes.json();
-        setGifts(giftsData);
+        // Optimistic update - add the new gift to the list immediately
+        setGifts([...gifts, createdGift]);
 
         setType('');
         setTitle('');
@@ -424,20 +452,27 @@ const Dashboard: React.FC = () => {
         const shareLink = `${window.location.origin}/gift/${createdGift.shareLink}`;
         setCreatedGiftLink(shareLink);
         setIsShareLinkModalOpen(true);
+      } else {
+        alert('Failed to create event');
       }
     } catch (err) {
       console.error(err);
+      alert('An error occurred while creating the event');
+    } finally {
+      setIsCreatingGift(false);
     }
   };
 
   const handleUpdateGift = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingGift) return;
+    if (!editingGift || isUpdatingGift) return; // Prevent duplicate submissions
+    
     if (fileError) {
       alert('Please fix the file upload error before submitting.');
       return;
     }
 
+    setIsUpdatingGift(true);
     const formData = new FormData();
      formData.append('type', type);
      formData.append('title', title);
@@ -468,11 +503,10 @@ const Dashboard: React.FC = () => {
         body: formData,
       });
       if (res.ok) {
-        const giftsRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const giftsData = await giftsRes.json();
-        setGifts(giftsData);
+        const updatedGift = await res.json();
+        
+        // Optimistic update - update the gift in the list immediately
+        setGifts(gifts.map(g => g.id === editingGift.id ? updatedGift : g));
 
         setType('');
         setTitle('');
@@ -486,14 +520,22 @@ const Dashboard: React.FC = () => {
         setCustomType('');
         setEditingGift(null);
         setIsEditModalOpen(false);
+      } else {
+        alert('Failed to update event');
       }
     } catch (err) {
       console.error(err);
+      alert('An error occurred while updating the event');
+    } finally {
+      setIsUpdatingGift(false);
     }
   };
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isWithdrawing) return; // Prevent duplicate submissions
+    
+    setIsWithdrawing(true);
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/withdraw`, {
@@ -518,18 +560,20 @@ const Dashboard: React.FC = () => {
           const updatedUser = await profileRes.json();
           updateUser(updatedUser);
         }
+        setWithdrawAmount('');
+        setWithdrawBank('');
+        setWithdrawAccount('');
+        setWithdrawAccountName('');
+        setIsWithdrawModalOpen(false);
       } else {
         alert(data.msg || 'Withdrawal failed');
       }
     } catch (err) {
       console.error(err);
       alert('An error occurred');
+    } finally {
+      setIsWithdrawing(false);
     }
-    setWithdrawAmount('');
-    setWithdrawBank('');
-    setWithdrawAccount('');
-    setWithdrawAccountName('');
-    setIsWithdrawModalOpen(false);
   };
 
   const handleAccountBlur = async () => {
@@ -590,7 +634,8 @@ const Dashboard: React.FC = () => {
       {/* Mobile Sidebar Toggle Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
+        className={`lg:hidden fixed top-4 ${sidebarOpen ? 'right-4' : 'left-4'} z-50 p-2 bg-white rounded-lg shadow-lg hover:bg-gray-50 transition-colors`}
+        aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
       >
         {sidebarOpen ? <CloseIcon className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
@@ -942,6 +987,7 @@ const Dashboard: React.FC = () => {
                     setSelectedGiftForTable(gift);
                     setIsGiftTableModalOpen(true);
                   }}
+                  deletingGiftId={deletingGiftId}
                 />
               </div>
             )}
@@ -1478,6 +1524,9 @@ const Dashboard: React.FC = () => {
                                     variant="ghost"
                                     size="sm"
                                     onClick={async () => {
+                                      if (deletingGuestId) return; // Prevent multiple deletions
+                                      
+                                      setDeletingGuestId(guest.id);
                                       const token = localStorage.getItem('token');
                                       try {
                                         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
@@ -1494,11 +1543,18 @@ const Dashboard: React.FC = () => {
                                       } catch (err) {
                                         console.error(err);
                                         alert('Error deleting guest');
+                                      } finally {
+                                        setDeletingGuestId(null);
                                       }
                                     }}
-                                    className="text-[#2E235C] hover:text-[#2E235C] hover:bg-[#2E235C]/5"
+                                    disabled={deletingGuestId === guest.id}
+                                    className="text-[#2E235C] hover:text-[#2E235C] hover:bg-[#2E235C]/5 disabled:opacity-50"
                                   >
-                                    <X className="w-4 h-4" />
+                                    {deletingGuestId === guest.id ? (
+                                      <div className="w-4 h-4 border-2 border-[#2E235C] border-t-transparent rounded-full animate-spin"></div>
+                                    ) : (
+                                      <X className="w-4 h-4" />
+                                    )}
                                   </Button>
                                 </div>
                               </TableCell>
@@ -1733,14 +1789,23 @@ const Dashboard: React.FC = () => {
                 variant="outline"
                 className="flex-1 h-11"
                 onClick={() => setIsCreateModalOpen(false)}
+                disabled={isCreatingGift}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                disabled={isCreatingGift}
               >
-                Create Event
+                {isCreatingGift ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Creating...
+                  </>
+                ) : (
+                  'Create Event'
+                )}
               </Button>
             </div>
           </form>
@@ -1924,14 +1989,23 @@ const Dashboard: React.FC = () => {
                 variant="outline"
                 className="flex-1 h-11"
                 onClick={() => setIsEditModalOpen(false)}
+                disabled={isUpdatingGift}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                disabled={isUpdatingGift}
               >
-                Update Gift
+                {isUpdatingGift ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Updating...
+                  </>
+                ) : (
+                  'Update Gift'
+                )}
               </Button>
             </div>
           </form>
@@ -2079,16 +2153,26 @@ const Dashboard: React.FC = () => {
                 variant="outline"
                 className="flex-1 h-11"
                 onClick={() => setIsWithdrawModalOpen(false)}
+                disabled={isWithdrawing}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 className="flex-1 h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                disabled={!withdrawAccountName}
+                disabled={!withdrawAccountName || isWithdrawing}
               >
-                <ArrowDownToLine className="w-5 h-5 mr-2" />
-                Withdraw Funds
+                {isWithdrawing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownToLine className="w-5 h-5 mr-2" />
+                    Withdraw Funds
+                  </>
+                )}
               </Button>
             </div>
           </form>
@@ -2296,65 +2380,232 @@ const Dashboard: React.FC = () => {
           setGuestFirstName('');
           setGuestLastName('');
           setGuestAllowed('1');
-          setIsBulkMode(false);
+          setGuestMode('single');
           setBulkNames('');
+          setExcelFile(null);
+          setExcelParsing(false);
           setEditingGuest(null);
         }
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900">
-              {editingGuest ? 'Edit Guest' : `Add Guest${isBulkMode ? 's' : ''}`}
+              {editingGuest ? 'Edit Guest' : guestMode === 'single' ? 'Add Guest' : 'Add Guests'}
             </DialogTitle>
             <p className="text-sm text-gray-600 mt-1">
-              {editingGuest ? 'Update guest information' : (isBulkMode ? 'Add multiple guests at once' : 'Add a new guest to your RSVP list')}
+              {editingGuest
+                ? 'Update guest information'
+                : guestMode === 'bulk'
+                  ? 'Add multiple guests at once'
+                  : guestMode === 'excel'
+                    ? 'Upload an Excel sheet to add guests'
+                    : 'Add a new guest to your RSVP list'}
             </p>
           </DialogHeader>
           <form onSubmit={async (e) => {
             e.preventDefault();
 
+            if (isAddingGuest) return; // Prevent duplicate submissions
+
             if (editingGuest) {
               // Handle edit mode
               if (!guestFirstName.trim() || !guestLastName.trim()) {
-                alert('Please enter both first and last name');
+                setErrorTitle('Missing Information');
+                setErrorMessage('Please enter both first and last name');
+                setErrorModalOpen(true);
                 return;
               }
-              const updatedGuests = guests.map(g => 
-                g.id === editingGuest.id 
-                  ? {...g, firstName: guestFirstName, lastName: guestLastName, allowed: parseInt(guestAllowed) || 1, attending: g.attending || 'yes'}
-                  : g
-              );
-              setGuests(updatedGuests);
-              setEditingGuest(null);
-            } else if (isBulkMode) {
+
+              setIsAddingGuest(true);
+              try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${editingGuest.id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    firstName: guestFirstName,
+                    lastName: guestLastName,
+                    allowed: parseInt(guestAllowed) || 1,
+                  }),
+                });
+                if (res.ok) {
+                  const updatedGuest = await res.json();
+                  const updatedGuests = guests.map(g => 
+                    g.id === editingGuest.id ? updatedGuest : g
+                  );
+                  setGuests(updatedGuests);
+                  setGuestFirstName('');
+                  setGuestLastName('');
+                  setGuestAllowed('1');
+                  setEditingGuest(null);
+                  setIsAddGuestModalOpen(false);
+                } else {
+                  setErrorTitle('Update Failed');
+                  setErrorMessage('Failed to update guest. Please try again.');
+                  setErrorModalOpen(true);
+                }
+              } catch (err) {
+                console.error(err);
+                setErrorTitle('Error');
+                setErrorMessage('An error occurred while updating the guest.');
+                setErrorModalOpen(true);
+              } finally {
+                setIsAddingGuest(false);
+              }
+            } else if (guestMode === 'bulk') {
               // Handle bulk addition
               const names = bulkNames.split('\n').map(n => n.trim()).filter(n => n);
               if (names.length === 0) {
-                alert('Please enter at least one guest name');
+                setErrorTitle('No Names Entered');
+                setErrorMessage('Please enter at least one guest name');
+                setErrorModalOpen(true);
                 return;
               }
-              const newGuests = names.map(name => {
-                const parts = name.split(' ');
-                const firstName = parts[0] || '';
-                const lastName = parts.slice(1).join(' ') || '';
-                return {
-                  id: Date.now(),
-                  firstName,
-                  lastName,
-                  allowed: parseInt(guestAllowed) || 1,
-                  attending: 'pending',
-                  giftId: selectedEventForRSVP
-                };
-              });
-              setGuests([...guests, ...newGuests]);
-              setBulkNames('');
+
+              setIsAddingGuest(true);
+              const token = localStorage.getItem('token');
+              const createdGuests = [] as any[];
+              
+              try {
+                for (const name of names) {
+                  const parts = name.split(' ');
+                  const firstName = parts[0] || '';
+                  const lastName = parts.slice(1).join(' ') || '';
+                  if (!firstName && !lastName) continue;
+
+                  try {
+                    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({
+                        firstName,
+                        lastName,
+                        allowed: parseInt(guestAllowed) || 1,
+                        attending: 'pending',
+                        giftId: selectedEventForRSVP,
+                      }),
+                    });
+                    if (res.ok) {
+                      const newGuest = await res.json();
+                      createdGuests.push(newGuest);
+                    }
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }
+
+                if (createdGuests.length === 0) {
+                  setErrorTitle('No Guests Added');
+                  setErrorMessage('No guests were added. Please check your entries and try again.');
+                  setErrorModalOpen(true);
+                  return;
+                }
+
+                setGuests([...guests, ...createdGuests]);
+                setBulkNames('');
+                setGuestAllowed('1');
+                setIsAddGuestModalOpen(false);
+              } finally {
+                setIsAddingGuest(false);
+              }
+            } else if (guestMode === 'excel') {
+              if (!excelFile) {
+                setErrorTitle('No File Selected');
+                setErrorMessage('Please upload an Excel file (.xlsx or .xls)');
+                setErrorModalOpen(true);
+                return;
+              }
+
+              setIsAddingGuest(true);
+              setExcelParsing(true);
+              
+              try {
+                const buffer = await excelFile.arrayBuffer();
+                const workbook = XLSX.read(buffer, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+                const parsedGuests = rows.map((row) => {
+                  const firstName = row.firstName || row.FirstName || row['First Name'] || row['First name'] || '';
+                  const lastName = row.lastName || row.LastName || row['Last Name'] || row['Last name'] || '';
+                  const allowedVal = row.allowed || row.Allowed || row['Number Allowed'] || row['Allowed'] || row['allowed'] || '';
+                  const allowed = parseInt(allowedVal) || parseInt(guestAllowed) || 1;
+                  return { firstName: String(firstName).trim(), lastName: String(lastName).trim(), allowed };
+                }).filter((g) => g.firstName || g.lastName);
+
+                if (parsedGuests.length === 0) {
+                  setErrorTitle('Invalid Excel Format');
+                  setErrorMessage('No valid rows found. Please include First Name / Last Name columns in your Excel file.');
+                  setErrorModalOpen(true);
+                  return;
+                }
+
+                const token = localStorage.getItem('token');
+                const createdGuests = [] as any[];
+
+                for (const g of parsedGuests) {
+                  try {
+                    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({
+                        firstName: g.firstName,
+                        lastName: g.lastName,
+                        allowed: g.allowed,
+                        attending: 'pending',
+                        giftId: selectedEventForRSVP,
+                      }),
+                    });
+                    if (res.ok) {
+                      const newGuest = await res.json();
+                      createdGuests.push(newGuest);
+                    }
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }
+
+                if (createdGuests.length === 0) {
+                  setErrorTitle('Upload Failed');
+                  setErrorMessage('No guests were added. Please verify your Excel file columns.');
+                  setErrorModalOpen(true);
+                  return;
+                }
+
+                setGuests([...guests, ...createdGuests]);
+                setExcelFile(null);
+                setGuestAllowed('1');
+                setIsAddGuestModalOpen(false);
+              } catch (err) {
+                console.error(err);
+                setErrorTitle('Processing Error');
+                setErrorMessage('Could not process the Excel file. Please check the format and try again.');
+                setErrorModalOpen(true);
+              } finally {
+                setExcelParsing(false);
+                setIsAddingGuest(false);
+              }
             } else {
               // Handle single addition
               if (!guestFirstName.trim() || !guestLastName.trim()) {
-                alert('Please enter both first and last name');
+                setErrorTitle('Missing Information');
+                setErrorMessage('Please enter both first and last name');
+                setErrorModalOpen(true);
                 return;
               }
+              
+              setIsAddingGuest(true);
               const token = localStorage.getItem('token');
+              
               try {
                 const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
                   method: 'POST',
@@ -2375,42 +2626,55 @@ const Dashboard: React.FC = () => {
                   setGuests([...guests, newGuest]);
                   setGuestFirstName('');
                   setGuestLastName('');
+                  setGuestAllowed('1');
+                  setIsAddGuestModalOpen(false);
                 } else {
-                  alert('Failed to add guest');
+                  setErrorTitle('Failed to Add Guest');
+                  setErrorMessage('Failed to add guest. Please try again.');
+                  setErrorModalOpen(true);
                 }
               } catch (err) {
                 console.error(err);
-                alert('Error adding guest');
+                setErrorTitle('Error');
+                setErrorMessage('Error adding guest. Please try again.');
+                setErrorModalOpen(true);
+              } finally {
+                setIsAddingGuest(false);
               }
             }
-            
-            setGuestAllowed('1');
-            setIsAddGuestModalOpen(false);
           }} className="px-6 pb-6">
-            {/* Toggle between Single and Bulk */}
+            {/* Toggle between Single, Bulk, and Excel upload */}
             {!editingGuest && (
-            <div className="flex gap-2 mb-4 mt-4">
+            <div className="grid grid-cols-3 gap-2 mb-4 mt-4">
               <Button
                 type="button"
-                variant={!isBulkMode ? "default" : "outline"}
-                className={`flex-1 ${!isBulkMode ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
-                onClick={() => setIsBulkMode(false)}
+                variant={guestMode === 'single' ? "default" : "outline"}
+                className={`w-full ${guestMode === 'single' ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
+                onClick={() => setGuestMode('single')}
               >
                 Single Guest
               </Button>
               <Button
                 type="button"
-                variant={isBulkMode ? "default" : "outline"}
-                className={`flex-1 ${isBulkMode ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
-                onClick={() => setIsBulkMode(true)}
+                variant={guestMode === 'bulk' ? "default" : "outline"}
+                className={`w-full ${guestMode === 'bulk' ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
+                onClick={() => setGuestMode('bulk')}
               >
                 Bulk Add
+              </Button>
+              <Button
+                type="button"
+                variant={guestMode === 'excel' ? "default" : "outline"}
+                className={`w-full ${guestMode === 'excel' ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
+                onClick={() => setGuestMode('excel')}
+              >
+                Upload Excel
               </Button>
             </div>
             )}
 
             <div className="space-y-4" style={{marginTop: editingGuest ? '1rem' : '0'}}>
-              {editingGuest || !isBulkMode ? (
+              {editingGuest || guestMode === 'single' ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="guestFirstName" className="text-sm font-medium text-gray-900 mb-2 block">
@@ -2439,7 +2703,7 @@ const Dashboard: React.FC = () => {
                     />
                   </div>
                 </div>
-              ) : (
+              ) : guestMode === 'bulk' ? (
                 <div>
                   <Label htmlFor="bulkNames" className="text-sm font-medium text-gray-900 mb-2 block">
                     Guest Names (one per line)
@@ -2456,11 +2720,28 @@ const Dashboard: React.FC = () => {
                     Enter one name per line. All guests will have the same allowed number.
                   </p>
                 </div>
+              ) : (
+                <div>
+                  <Label htmlFor="excelFile" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Upload Excel (.xlsx or .xls)
+                  </Label>
+                  <Input
+                    id="excelFile"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 cursor-pointer"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Columns supported: First Name &Last Name, Blank rows are ignored.
+                  </p>
+                </div>
               )}
               
               <div>
                 <Label htmlFor="guestAllowed" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Number Allowed{isBulkMode ? ' (for all guests)' : ''}
+                  {guestMode === 'excel' ? 'Default Number Allowed' : 'Number Allowed'}{guestMode === 'bulk' ? ' (for all guests)' : ''}
                 </Label>
                 <Input
                   id="guestAllowed"
@@ -2481,17 +2762,51 @@ const Dashboard: React.FC = () => {
                 variant="outline"
                 className="flex-1 h-11"
                 onClick={() => setIsAddGuestModalOpen(false)}
+                disabled={isAddingGuest || excelParsing}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                disabled={isAddingGuest || excelParsing}
               >
-                {editingGuest ? 'Update Guest' : 'Add Guest'}
+                {isAddingGuest || excelParsing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    {excelParsing ? 'Processing...' : (editingGuest ? 'Updating...' : 'Adding...')}
+                  </>
+                ) : (
+                  editingGuest ? 'Update Guest' : 'Add Guest'
+                )}
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Modal */}
+      <Dialog open={errorModalOpen} onOpenChange={setErrorModalOpen}>
+        <DialogContent className="max-w-md">
+          <div className="flex flex-col items-center text-center p-6">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-gray-900 mb-2">
+                {errorTitle}
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-600 mb-6">
+              {errorMessage}
+            </p>
+            <Button
+              onClick={() => setErrorModalOpen(false)}
+              className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+            >
+              OK
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -2555,6 +2870,7 @@ const Dashboard: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <Toaster />
     </div>
   );
 };
