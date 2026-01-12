@@ -94,13 +94,15 @@ const Dashboard: React.FC = () => {
   const [withdrawHistory, setWithdrawHistory] = useState<any[]>([]);
   const [goalAmount, setGoalAmount] = useState(500000);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number}>>([]);
+  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string}>>([]);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<number | null>(null);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
-  const [editingGuest, setEditingGuest] = useState<{id: number, firstName: string, lastName: string, allowed: number, attending: string} | null>(null);
+  const [editingGuest, setEditingGuest] = useState<{id: number, firstName: string, lastName: string, allowed: number, attending: string, tableSitting?: string} | null>(null);
   const [guestFirstName, setGuestFirstName] = useState('');
   const [guestLastName, setGuestLastName] = useState('');
   const [guestAllowed, setGuestAllowed] = useState('1');
+  const [guestTableSitting, setGuestTableSitting] = useState('Table sitting');
+  const [customTableSitting, setCustomTableSitting] = useState('');
   const [guestMode, setGuestMode] = useState<'single' | 'bulk' | 'excel'>('single');
   const [bulkNames, setBulkNames] = useState('');
   const [excelFile, setExcelFile] = useState<File | null>(null);
@@ -165,6 +167,7 @@ const Dashboard: React.FC = () => {
                 <th>First Name</th>
                 <th>Last Name</th>
                 <th style="width: 120px;">Allowed</th>
+                <th>Table Sitting</th>
               </tr>
             </thead>
             <tbody>
@@ -174,6 +177,7 @@ const Dashboard: React.FC = () => {
                   <td>${guest.firstName}</td>
                   <td>${guest.lastName}</td>
                   <td>${guest.allowed}</td>
+                  <td>${guest.tableSitting || 'Table sitting'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -1458,6 +1462,7 @@ const Dashboard: React.FC = () => {
                             <TableHead className="font-semibold">Last Name</TableHead>
                             <TableHead className="font-semibold">Will you be attending</TableHead>
                             <TableHead className="font-semibold">Allowed</TableHead>
+                            <TableHead className="font-semibold">Table Sitting</TableHead>
                             <TableHead className="font-semibold">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1484,6 +1489,9 @@ const Dashboard: React.FC = () => {
                                           Authorization: `Bearer ${token}`,
                                         },
                                         body: JSON.stringify({
+                                          firstName: guest.firstName,
+                                          lastName: guest.lastName,
+                                          allowed: guest.allowed,
                                           attending: value,
                                         }),
                                       });
@@ -1528,6 +1536,8 @@ const Dashboard: React.FC = () => {
                                           Authorization: `Bearer ${token}`,
                                         },
                                         body: JSON.stringify({
+                                          firstName: guest.firstName,
+                                          lastName: guest.lastName,
                                           allowed: newAllowed,
                                         }),
                                       });
@@ -1549,6 +1559,63 @@ const Dashboard: React.FC = () => {
                                 />
                               </TableCell>
                               <TableCell>
+                                {(() => {
+                                  const tableSitting = guest.tableSitting || 'Table sitting';
+                                  const predefinedOptions = ['Table sitting', 'Groom family', 'Bride family', 'Groom friends', 'Bride friends'];
+                                  const isCustom = !predefinedOptions.includes(tableSitting);
+                                  
+                                  return (
+                                    <Select
+                                      value={tableSitting}
+                                      onValueChange={async (value) => {
+                                        const token = localStorage.getItem('token');
+                                        try {
+                                          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
+                                            method: 'PUT',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              Authorization: `Bearer ${token}`,
+                                            },
+                                            body: JSON.stringify({
+                                              firstName: guest.firstName,
+                                              lastName: guest.lastName,
+                                              allowed: guest.allowed,
+                                              tableSitting: value,
+                                            }),
+                                          });
+                                          if (res.ok) {
+                                            const updatedGuest = await res.json();
+                                            const updatedGuests = guests.map(g =>
+                                              g.id === guest.id ? updatedGuest : g
+                                            );
+                                            setGuests(updatedGuests);
+                                          } else {
+                                            alert('Failed to update table sitting');
+                                          }
+                                        } catch (err) {
+                                          console.error(err);
+                                          alert('Error updating table sitting');
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="w-40 h-8">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Table sitting">Table sitting</SelectItem>
+                                        <SelectItem value="Groom family">Groom family</SelectItem>
+                                        <SelectItem value="Bride family">Bride family</SelectItem>
+                                        <SelectItem value="Groom friends">Groom friends</SelectItem>
+                                        <SelectItem value="Bride friends">Bride friends</SelectItem>
+                                        {isCustom && (
+                                          <SelectItem value={tableSitting}>{tableSitting} (Custom)</SelectItem>
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                  );
+                                })()}
+                              </TableCell>
+                              <TableCell>
                                 <div className="flex items-center gap-1">
                                   <Button 
                                     variant="ghost" 
@@ -1558,6 +1625,15 @@ const Dashboard: React.FC = () => {
                                       setGuestFirstName(guest.firstName);
                                       setGuestLastName(guest.lastName);
                                       setGuestAllowed(guest.allowed.toString());
+                                      const tableSitting = guest.tableSitting || 'Table sitting';
+                                      const predefinedOptions = ['Table sitting', 'Groom family', 'Bride family', 'Groom friends', 'Bride friends'];
+                                      if (predefinedOptions.includes(tableSitting)) {
+                                        setGuestTableSitting(tableSitting);
+                                        setCustomTableSitting('');
+                                      } else {
+                                        setGuestTableSitting('Other');
+                                        setCustomTableSitting(tableSitting);
+                                      }
                                       setIsAddGuestModalOpen(true);
                                     }}
                                     className="text-black hover:text-gray-800 hover:bg-gray-100"
@@ -2424,6 +2500,8 @@ const Dashboard: React.FC = () => {
           setGuestFirstName('');
           setGuestLastName('');
           setGuestAllowed('1');
+          setGuestTableSitting('Table sitting');
+          setCustomTableSitting('');
           setGuestMode('single');
           setBulkNames('');
           setExcelFile(null);
@@ -2473,6 +2551,7 @@ const Dashboard: React.FC = () => {
                     firstName: guestFirstName,
                     lastName: guestLastName,
                     allowed: parseInt(guestAllowed) || 1,
+                    tableSitting: guestTableSitting === 'Other' ? customTableSitting : guestTableSitting,
                   }),
                 });
                 if (res.ok) {
@@ -2484,6 +2563,7 @@ const Dashboard: React.FC = () => {
                   setGuestFirstName('');
                   setGuestLastName('');
                   setGuestAllowed('1');
+                  setGuestTableSitting('Table sitting');
                   setEditingGuest(null);
                   setIsAddGuestModalOpen(false);
                 } else {
@@ -2580,7 +2660,8 @@ const Dashboard: React.FC = () => {
                   const lastName = row.lastName || row.LastName || row['Last Name'] || row['Last name'] || '';
                   const allowedVal = row.allowed || row.Allowed || row['Number Allowed'] || row['Allowed'] || row['allowed'] || '';
                   const allowed = parseInt(allowedVal) || parseInt(guestAllowed) || 1;
-                  return { firstName: String(firstName).trim(), lastName: String(lastName).trim(), allowed };
+                  const tableSitting = row.tableSitting || row.TableSitting || row['Table Sitting'] || row['Table sitting'] || 'Table sitting';
+                  return { firstName: String(firstName).trim(), lastName: String(lastName).trim(), allowed, tableSitting: String(tableSitting).trim() };
                 }).filter((g) => g.firstName || g.lastName);
 
                 if (parsedGuests.length === 0) {
@@ -2607,6 +2688,7 @@ const Dashboard: React.FC = () => {
                         allowed: g.allowed,
                         attending: 'pending',
                         giftId: selectedEventForRSVP,
+                        tableSitting: g.tableSitting || 'Table sitting',
                       }),
                     });
                     if (res.ok) {
@@ -2663,6 +2745,7 @@ const Dashboard: React.FC = () => {
                     allowed: parseInt(guestAllowed) || 1,
                     attending: 'pending',
                     giftId: selectedEventForRSVP,
+                    tableSitting: guestTableSitting === 'Other' ? customTableSitting : guestTableSitting,
                   }),
                 });
                 if (res.ok) {
@@ -2671,6 +2754,7 @@ const Dashboard: React.FC = () => {
                   setGuestFirstName('');
                   setGuestLastName('');
                   setGuestAllowed('1');
+                  setGuestTableSitting('Table sitting');
                   setIsAddGuestModalOpen(false);
                 } else {
                   setErrorTitle('Failed to Add Guest');
@@ -2778,7 +2862,7 @@ const Dashboard: React.FC = () => {
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Columns supported: First Name &Last Name, Blank rows are ignored.
+                    Columns supported: First Name, Last Name, Table Sitting (optional). Blank rows are ignored.
                   </p>
                 </div>
               )}
@@ -2798,6 +2882,50 @@ const Dashboard: React.FC = () => {
                   required
                 />
               </div>
+
+              {(editingGuest || guestMode === 'single') && (
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="guestTableSitting" className="text-sm font-medium text-gray-900 mb-2 block">
+                      Table Sitting
+                    </Label>
+                    <Select value={guestTableSitting} onValueChange={(value) => {
+                      setGuestTableSitting(value);
+                      if (value !== 'Other') {
+                        setCustomTableSitting('');
+                      }
+                    }}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
+                        <SelectValue placeholder="Select table sitting" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Table sitting">Table sitting</SelectItem>
+                        <SelectItem value="Groom family">Groom family</SelectItem>
+                        <SelectItem value="Bride family">Bride family</SelectItem>
+                        <SelectItem value="Groom friends">Groom friends</SelectItem>
+                        <SelectItem value="Bride friends">Bride friends</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {guestTableSitting === 'Other' && (
+                    <div>
+                      <Label htmlFor="customTableSitting" className="text-sm font-medium text-gray-900 mb-2 block">
+                        Custom Table Name
+                      </Label>
+                      <Input
+                        id="customTableSitting"
+                        value={customTableSitting}
+                        onChange={(e) => setCustomTableSitting(e.target.value)}
+                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                        placeholder="Enter custom table name"
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 pt-6">
