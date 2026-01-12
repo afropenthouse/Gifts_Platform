@@ -327,7 +327,7 @@ module.exports = () => {
       console.log('💰 Wallet Update Details:', { userId: gift.userId, walletBefore: gift.user.wallet, walletAfter: walletUpdateResult.wallet, amountAdded: amount });
       console.log('=== VERIFY PAYMENT SUCCESS ===\n');
 
-      // Send gift received email to owner in background without blocking response
+      // Send gift received email to owner and thank you email to contributor in background without blocking response
       sendGiftReceivedEmail({
         recipientEmail: gift.user.email,
         recipientName: gift.user.name,
@@ -336,6 +336,16 @@ module.exports = () => {
         gift: gift,
         message: contributorMessage || '',
       }).catch(err => console.error('Background gift received email failed:', err));
+      
+      // Send thank you email to contributor if email provided
+      if (contributorEmail) {
+        sendContributorThankYouEmail({
+          recipientEmail: contributorEmail,
+          contributorName: contributorName || 'Anonymous',
+          amount,
+          gift: gift,
+        }).catch(err => console.error('Background contributor thank you email failed:', err));
+      }
 
       console.log('Contribution created successfully:', contribution.id);
       res.json({ msg: 'Payment verified and contribution recorded', contribution });
@@ -483,7 +493,7 @@ module.exports = () => {
 
         console.log('✓ Wallet updated for user:', gift.userId, 'New balance should be:', updateResult.wallet);
         
-        // Send gift received email to owner in background without blocking response
+        // Send gift received email to owner and thank you email to contributor in background without blocking response
         sendGiftReceivedEmail({
           recipientEmail: gift.user.email,
           recipientName: gift.user.name,
@@ -492,6 +502,16 @@ module.exports = () => {
           gift: gift,
           message: contributorMessage || '',
         }).catch(err => console.error('Background gift received email failed:', err));
+        
+        // Send thank you email to contributor if email provided
+        if (contributorEmail) {
+          sendContributorThankYouEmail({
+            recipientEmail: contributorEmail,
+            contributorName: contributorName || 'Anonymous',
+            amount: amountInNaira,
+            gift: gift,
+          }).catch(err => console.error('Background contributor thank you email failed:', err));
+        }
         
         console.log('=== WEBHOOK SUCCESS ===');
         console.log('Contribution ID:', contribution.id);
@@ -511,7 +531,7 @@ module.exports = () => {
     const { contributorName, contributorEmail, amount, message } = req.body;
 
     try {
-      const gift = await prisma.gift.findUnique({ where: { shareLink: req.params.link } });
+      const gift = await prisma.gift.findUnique({ where: { shareLink: req.params.link }, include: { user: true } });
       if (!gift) return res.status(404).json({ msg: 'Gift not found' });
 
       await prisma.contribution.create({
@@ -529,6 +549,16 @@ module.exports = () => {
         where: { id: gift.userId },
         data: { wallet: { increment: amount } },
       });
+      
+      // Send thank you email to contributor if email provided in background
+      if (contributorEmail) {
+        sendContributorThankYouEmail({
+          recipientEmail: contributorEmail,
+          contributorName: contributorName || 'Anonymous',
+          amount,
+          gift: gift,
+        }).catch(err => console.error('Background contributor thank you email failed:', err));
+      }
 
       res.json({ msg: 'Contribution successful' });
     } catch (err) {
