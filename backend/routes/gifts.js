@@ -18,6 +18,18 @@ const upload = multer({
   }
 });
 
+function slugify(text) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
+
 module.exports = () => {
   const router = express.Router();
 
@@ -34,7 +46,22 @@ module.exports = () => {
         pictureUrl = uploadResult.secure_url;
       }
 
-      const shareLink = `${req.user.id}-${Date.now()}`;
+      // Generate unique shareLink
+      let shareLink;
+      let attempts = 0;
+      do {
+        const slug = slugify(title);
+        const code = Math.floor(10000 + Math.random() * 90000);
+        shareLink = `${slug}/${code}`;
+        attempts++;
+        if (attempts > 10) {
+          // Fallback to old format if too many collisions
+          shareLink = `${req.user.id}-${Date.now()}`;
+          break;
+        }
+        var existing = await prisma.gift.findUnique({ where: { shareLink } });
+      } while (existing);
+
       const gift = await prisma.gift.create({
         data: {
           userId: req.user.id,
