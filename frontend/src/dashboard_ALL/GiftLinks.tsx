@@ -67,9 +67,7 @@ export const GiftLinks = ({
       {gifts.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 overflow-y-auto max-h-[800px]">
           {gifts.map((gift) => {
-            const giftContributions = contributions.filter((c) => {
-              return String(c.giftId) === gift.id;
-            });
+            const giftContributions = contributions.filter((c) => Number(c.giftId) === Number(gift.id));
             const totalGiftAmount = giftContributions.reduce((sum, c) => sum + Number(c.amount), 0);
 
             return (

@@ -675,7 +675,7 @@ const ShareGift: React.FC = () => {
                     }
                   }}
                   variant="outline"
-                  className="flex-1 h-12 border-gray-300 hover:bg-gray-100"
+                  className="flex-1 h-12 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
                 >
                   No
                 </Button>
@@ -705,7 +705,7 @@ const ShareGift: React.FC = () => {
               </Button>
               <Button
                 variant="outline"
-                className="flex-1 h-12 border-gray-300 hover:bg-gray-100"
+                className="flex-1 h-12 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
                 onClick={() => {
                   setShowCashGiftPrompt(false);
                   setRsvpThanksMessage('Thank you for responding');
