@@ -285,7 +285,29 @@ const Dashboard: React.FC = () => {
           setContributions([]);
         }
       };
+
+      const refreshUserData = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const updatedUser = await res.json();
+            updateUser(updatedUser);
+          }
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      };
+
       fetchGifts();
+
+      // Set up interval to refresh data every 3 seconds for immediate updates
+      const intervalId = setInterval(() => {
+        fetchGifts();
+        refreshUserData();
+      }, 2000);
 
       const fetchGuests = async () => {
         try {
@@ -301,6 +323,9 @@ const Dashboard: React.FC = () => {
         }
       };
       fetchGuests();
+
+      // Clean up interval on unmount
+      return () => clearInterval(intervalId);
     }
   }, [user]);
 
@@ -308,7 +333,7 @@ const Dashboard: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       setFileError('');
-      const maxSize = 5 * 1024 * 1024;
+      const maxSize = 6 * 1024 * 1024;
       if (file.size > maxSize) {
         const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
         setFileError(`File size (${fileSizeInMB}MB) exceeds the maximum allowed size of 6MB. Please choose a smaller image.`);
