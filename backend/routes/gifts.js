@@ -73,7 +73,11 @@ module.exports = () => {
     const giftId = parseInt(req.params.id);
 
     try {
-      const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+      const gift = await prisma.gift.findUnique({ 
+        where: { id: giftId },
+        select: { id: true, userId: true, picture: true } // Only select needed fields
+      });
+      
       if (!gift || gift.userId !== req.user.id) {
         return res.status(404).json({ msg: 'Gift not found' });
       }
@@ -147,7 +151,10 @@ module.exports = () => {
     const giftId = parseInt(req.params.id);
 
     try {
-      const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+      const gift = await prisma.gift.findUnique({ 
+        where: { id: giftId },
+        select: { id: true, userId: true }
+      });
       
       if (!gift) {
         return res.status(404).json({ msg: 'Gift not found' });
@@ -157,11 +164,6 @@ module.exports = () => {
         return res.status(403).json({ msg: 'Not authorized to delete this gift' });
       }
 
-      // Delete associated guests and contributions first (cascade delete)
-      await prisma.guest.deleteMany({ where: { giftId } });
-      await prisma.contribution.deleteMany({ where: { giftId } });
-      
-      // Delete the gift
       await prisma.gift.delete({ where: { id: giftId } });
 
       res.json({ msg: 'Gift deleted successfully' });

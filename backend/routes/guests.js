@@ -106,6 +106,63 @@ module.exports = () => {
     }
   };
 
+  const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, attending, gift }) => {
+    if (!emailEnabled || !transporter) {
+      console.warn('Owner notification email skipped: SMTP configuration is missing');
+      return { delivered: false, skipped: true };
+    }
+
+    if (!ownerEmail) {
+      return { delivered: false, reason: 'No owner email provided' };
+    }
+
+    const heading = formatEventHeading(gift);
+    const eventDate = formatEventDate(gift?.date);
+    const accent = '#2E235C';
+    const muted = '#f6f4ff';
+    const statusText = attending ? 'will attend' : 'cannot attend';
+    const statusColor = attending ? '#10b981' : '#ef4444';
+
+    const html = `
+      <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+          <div style="padding: 28px 28px 18px; text-align: center;">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">New RSVP Response</h2>
+            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
+            ${eventDate ? `<p style=\"margin: 0; font-size: 14px; color: #6b7280;\">Date: ${eventDate}</p>` : ''}
+          </div>
+
+          <div style="padding: 0 24px 24px; text-align: center;">
+            <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${ownerName || 'there'},</p>
+              <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
+                <strong>${guestName}</strong> has responded to your invitation and 
+                <span style="color: ${statusColor}; font-weight: 600;">${statusText}</span> your event.
+              </p>
+            </div>
+
+            <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="color: ${accent}; text-decoration: none; font-weight: 600;">View all RSVPs in your dashboard</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: mailFrom,
+        to: ownerEmail,
+        subject: `${heading} – New RSVP from ${guestName}`,
+        html,
+      });
+      return { delivered: true };
+    } catch (error) {
+      console.error('Failed to send owner notification email:', error?.message || error);
+      return { delivered: false, error: error?.message || 'Unknown error' };
+    }
+  };
+
   // Create guest
   router.post('/', auth(), async (req, res) => {
     const { firstName, lastName, email, phone, allowed, attending, giftId } = req.body;
@@ -157,7 +214,11 @@ module.exports = () => {
     const guestId = parseInt(req.params.id);
 
     try {
-      const guest = await prisma.guest.findUnique({ where: { id: guestId } });
+      const guest = await prisma.guest.findUnique({ 
+        where: { id: guestId },
+        select: { id: true, userId: true, allowed: true, giftId: true } // Only select needed fields
+      });
+      
       if (!guest || guest.userId !== req.user.id) {
         return res.status(404).json({ msg: 'Guest not found' });
       }
@@ -188,7 +249,11 @@ module.exports = () => {
     const guestId = parseInt(req.params.id);
 
     try {
-      const guest = await prisma.guest.findUnique({ where: { id: guestId } });
+      const guest = await prisma.guest.findUnique({ 
+        where: { id: guestId },
+        select: { id: true, userId: true } // Only select needed fields
+      });
+      
       if (!guest || guest.userId !== req.user.id) {
         return res.status(404).json({ msg: 'Guest not found' });
       }
@@ -210,6 +275,7 @@ module.exports = () => {
       // Find the gift by share link
       const gift = await prisma.gift.findUnique({
         where: { shareLink },
+        include: { user: true }
       });
 
       if (!gift) {
@@ -243,13 +309,23 @@ module.exports = () => {
 
       const guestName = `${guest.firstName} ${guest.lastName}`.trim();
       const eventUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/gift/${shareLink}` : null;
-      await sendRsvpEmail({
+      
+      // Send emails in background without blocking response
+      sendRsvpEmail({
         recipient: guest.email,
         guestName,
         attending: Boolean(attending),
         gift,
         eventUrl,
-      });
+      }).catch(err => console.error('Background RSVP email failed:', err));
+
+      sendOwnerNotificationEmail({
+        ownerEmail: gift.user.email,
+        ownerName: gift.user.name,
+        guestName,
+        attending: Boolean(attending),
+        gift,
+      }).catch(err => console.error('Background owner notification failed:', err));
 
       res.json({ msg: 'RSVP submitted successfully', guest });
     } catch (err) {

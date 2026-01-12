@@ -1,9 +1,155 @@
 const express = require('express');
 const prisma = require('../prismaClient');
 const { initializePayment, verifyTransaction, verifyWebhookSignature } = require('../utils/paystack');
+const nodemailer = require('nodemailer');
+
+// Email configuration
+const emailEnabled = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD;
+const transporter = emailEnabled ? nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || 587),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+}) : null;
+
+const mailFrom = process.env.MAIL_FROM || 'teambethere@gmail.com';
+
+const formatEventHeading = (gift) => {
+  if (gift?.type === 'wedding') {
+    return gift.title || 'Wedding Gift';
+  }
+  return gift?.title || gift?.type || 'Gift';
+};
+
+const formatEventDate = (date) => {
+  if (!date) return null;
+  try {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch (error) {
+    return null;
+  }
+};
 
 module.exports = () => {
   const router = express.Router();
+
+  // Send thank you email to gift contributor
+  const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, amount, gift }) => {
+    if (!emailEnabled || !transporter) {
+      console.warn('Contributor thank you email skipped: SMTP configuration is missing');
+      return { delivered: false, skipped: true };
+    }
+
+    if (!recipientEmail) {
+      return { delivered: false, reason: 'No recipient email provided' };
+    }
+
+    const heading = formatEventHeading(gift);
+    const eventDate = formatEventDate(gift?.date);
+    const accent = '#2E235C';
+    const muted = '#f6f4ff';
+
+    const html = `
+      <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+          <div style="padding: 28px 28px 18px; text-align: center;">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">Thank You for Your Gift</h2>
+            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
+            ${eventDate ? `<p style="margin: 0; font-size: 14px; color: #6b7280;">Date: ${eventDate}</p>` : ''}
+          </div>
+
+          <div style="padding: 0 24px 24px; text-align: center;">
+            <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${contributorName || 'there'},</p>
+              <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
+                Thank you for your generous gift of <strong>₦${amount.toLocaleString()}</strong>. Your kindness means so much to us.
+              </p>
+            </div>
+
+            <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">We appreciate your support!</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: mailFrom,
+        to: recipientEmail,
+        subject: `Thank you for your gift to ${heading}`,
+        html,
+      });
+      return { delivered: true };
+    } catch (error) {
+      console.error('Failed to send contributor thank you email:', error?.message || error);
+      return { delivered: false, error: error?.message || 'Unknown error' };
+    }
+  };
+
+  // Send gift received email to gift owner
+  const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributorName, amount, gift, message }) => {
+    if (!emailEnabled || !transporter) {
+      console.warn('Gift received email skipped: SMTP configuration is missing');
+      return { delivered: false, skipped: true };
+    }
+
+    if (!recipientEmail) {
+      return { delivered: false, reason: 'No recipient email provided' };
+    }
+
+    const heading = formatEventHeading(gift);
+    const eventDate = formatEventDate(gift?.date);
+    const accent = '#2E235C';
+    const muted = '#f6f4ff';
+    const isAnonymous = contributorName === 'Anonymous';
+    const senderDisplay = isAnonymous ? 'An anonymous guest' : contributorName;
+
+    const html = `
+      <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+          <div style="padding: 28px 28px 18px; text-align: center;">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">You Received a Gift!</h2>
+            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
+            ${eventDate ? `<p style="margin: 0; font-size: 14px; color: #6b7280;">Date: ${eventDate}</p>` : ''}
+          </div>
+
+          <div style="padding: 0 24px 24px; text-align: center;">
+            <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${recipientName || 'there'},</p>
+              <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
+                ${senderDisplay} has sent you a cash gift of <strong>₦${amount.toLocaleString()}</strong>.
+              </p>
+              ${message && !isAnonymous ? `<p style="margin: 8px 0 0; font-size: 13px; color: #4b5563; font-style: italic; line-height: 20px;">"${message}"</p>` : ''}
+            </div>
+
+            <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="color: ${accent}; text-decoration: none; font-weight: 600;">View your gifts in your dashboard</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: mailFrom,
+        to: recipientEmail,
+        subject: `You received a gift for ${heading}!`,
+        html,
+      });
+      return { delivered: true };
+    } catch (error) {
+      console.error('Failed to send gift received email:', error?.message || error);
+      return { delivered: false, error: error?.message || 'Unknown error' };
+    }
+  };
 
   // Initialize payment
   router.post('/:link/initialize-payment', async (req, res) => {
@@ -110,9 +256,10 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Invalid transaction data - missing gift ID' });
       }
 
-      // Get gift to find userId
+      // Get gift with user info (for wallet update and emails)
       const gift = await prisma.gift.findUnique({
         where: { id: giftId },
+        include: { user: true }
       });
 
       if (!gift) {
@@ -155,6 +302,25 @@ module.exports = () => {
         where: { id: gift.userId },
         data: { wallet: { increment: amount } },
       });
+
+      // Send emails in background without blocking response
+      if (contributorEmail) {
+        sendContributorThankYouEmail({
+          recipientEmail: contributorEmail,
+          contributorName: contributorName || 'Anonymous',
+          amount,
+          gift: gift,
+        }).catch(err => console.error('Background contributor thank you email failed:', err));
+      }
+
+      sendGiftReceivedEmail({
+        recipientEmail: gift.user.email,
+        recipientName: gift.user.name,
+        contributorName: contributorName || 'Anonymous',
+        amount,
+        gift: gift,
+        message: contributorMessage || '',
+      }).catch(err => console.error('Background gift received email failed:', err));
 
       console.log('Contribution created successfully:', contribution.id);
       res.json({ msg: 'Payment verified and contribution recorded', contribution });
