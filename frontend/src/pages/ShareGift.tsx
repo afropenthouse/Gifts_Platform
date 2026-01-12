@@ -30,7 +30,8 @@ interface Gift {
 }
 
 const ShareGift: React.FC = () => {
-  const { link } = useParams<{ link: string }>();
+  const { link, slug, id } = useParams<{ link?: string; slug?: string; id?: string }>();
+  const linkParam = link ?? (slug && id ? `${slug}/${id}` : undefined);
   const [searchParams] = useSearchParams();
   const [gift, setGift] = useState<Gift | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,7 +73,7 @@ const ShareGift: React.FC = () => {
     // Use tx_ref if available, otherwise transaction_id
     const transactionIdentifier = txRef || txId;
     
-    if (!link || !transactionIdentifier) return;
+    if (!linkParam || !transactionIdentifier) return;
 
     setShowVerifyModal(true);
     setVerifyStatus('checking');
@@ -82,7 +83,7 @@ const ShareGift: React.FC = () => {
       try {
         console.log('Verifying payment with:', { transactionIdentifier, status });
         const res = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${link}/verify-payment`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/verify-payment`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -109,7 +110,7 @@ const ShareGift: React.FC = () => {
     };
 
     verify();
-  }, [searchParams, link]);
+  }, [searchParams, linkParam]);
 
   useEffect(() => {
     // Load Paystack script
@@ -123,7 +124,7 @@ const ShareGift: React.FC = () => {
   useEffect(() => {
     const fetchGift = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${link}`);
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${linkParam}`);
         if (!res.ok) throw new Error('Gift not found');
         const data = await res.json();
         setGift(data);
@@ -133,8 +134,8 @@ const ShareGift: React.FC = () => {
         setLoading(false);
       }
     };
-    if (link) fetchGift();
-  }, [link]);
+    if (linkParam) fetchGift();
+  }, [linkParam]);
 
   // Update meta tags for social previews when gift loads
   useEffect(() => {
@@ -197,6 +198,11 @@ const ShareGift: React.FC = () => {
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!linkParam) {
+      alert('Invalid gift link. Please reopen the invitation link.');
+      return;
+    }
+
     if (!isAnonymous && !contributorName.trim()) {
       alert('Please enter your name or choose to give anonymously');
       return;
@@ -210,7 +216,7 @@ const ShareGift: React.FC = () => {
 
       // Initialize payment
       const initRes = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${link}/initialize-payment`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -480,7 +486,7 @@ const ShareGift: React.FC = () => {
               
               // Check if names are on the guest list
               try {
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/check/${link}`, {
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/check/${linkParam}`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -613,7 +619,7 @@ const ShareGift: React.FC = () => {
                     setWillAttend(true);
                     // Submit RSVP to backend
                     try {
-                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${link}`, {
+                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${linkParam}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -648,7 +654,7 @@ const ShareGift: React.FC = () => {
                     setWillAttend(false);
                     // Submit RSVP to backend
                     try {
-                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${link}`, {
+                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${linkParam}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

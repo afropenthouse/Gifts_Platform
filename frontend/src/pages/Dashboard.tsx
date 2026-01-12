@@ -35,7 +35,7 @@ import * as XLSX from 'xlsx';
 import { Toaster } from '../components/ui/toaster';
 
 interface Gift {
-  id: string;
+  id: number;
   type: string;
   title: string;
   description?: string;
@@ -89,7 +89,7 @@ const Dashboard: React.FC = () => {
   const [createdGiftLink, setCreatedGiftLink] = useState('');
   const [selectedGiftForTable, setSelectedGiftForTable] = useState<Gift | null>(null);
   const [isGiftTableModalOpen, setIsGiftTableModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('gifts');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [withdrawHistory, setWithdrawHistory] = useState<any[]>([]);
   const [goalAmount, setGoalAmount] = useState(500000);
@@ -112,7 +112,7 @@ const Dashboard: React.FC = () => {
   const [isUpdatingGift, setIsUpdatingGift] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
-  const [deletingGiftId, setDeletingGiftId] = useState<string | null>(null);
+  const [deletingGiftId, setDeletingGiftId] = useState<number | null>(null);
   const [deletingGuestId, setDeletingGuestId] = useState<number | null>(null);
 
   const sidebarItems = [
@@ -263,26 +263,36 @@ const Dashboard: React.FC = () => {
           const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
             headers: { Authorization: `Bearer ${token}` },
           });
+
+          if (!res.ok) {
+            console.error('Error fetching gifts: HTTP', res.status);
+            return; // Keep previous state on transient errors to prevent UI flicker
+          }
+
           const data = await res.json();
-          setGifts(Array.isArray(data) ? data : []);
+          const safeGifts = Array.isArray(data) ? data : [];
+          setGifts(safeGifts);
 
           const allContributions: Contribution[] = [];
-          if (Array.isArray(data)) {
-            for (const gift of data) {
+          for (const gift of safeGifts) {
+            try {
               if (gift.shareLink) {
-                const contribRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contributions/${gift.shareLink}`);
+                const encodedLink = encodeURIComponent(gift.shareLink);
+                const contribRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contributions/${encodedLink}`);
+                if (!contribRes.ok) continue;
                 const contribData = await contribRes.json();
                 if (Array.isArray(contribData)) {
                   allContributions.push(...contribData);
                 }
               }
+            } catch (err) {
+              console.error('Error fetching contributions for gift', gift.id, err);
             }
           }
           setContributions(allContributions);
         } catch (error) {
           console.error('Error fetching gifts:', error);
-          setGifts([]);
-          setContributions([]);
+          // Keep existing state on failure to avoid disappearing cards
         }
       };
 
@@ -303,11 +313,11 @@ const Dashboard: React.FC = () => {
 
       fetchGifts();
 
-      // Set up interval to refresh data every 3 seconds for immediate updates
+      // Set up interval to refresh data at a calmer cadence to reduce flicker
       const intervalId = setInterval(() => {
         fetchGifts();
         refreshUserData();
-      }, 2000);
+      }, 10000);
 
       const fetchGuests = async () => {
         try {
@@ -381,7 +391,7 @@ const Dashboard: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleDeleteGift = async (giftId: string) => {
+  const handleDeleteGift = async (giftId: number) => {
     if (deletingGiftId) return; // Prevent multiple deletions
     
     const giftToDelete = gifts.find(g => g.id === giftId);
@@ -397,10 +407,7 @@ const Dashboard: React.FC = () => {
 
       if (response.ok) {
         setGifts(gifts.filter(g => g.id !== giftId));
-        setContributions(contributions.filter(c => {
-          const deletedGift = gifts.find(g => g.id === giftId);
-          return !deletedGift || c.message !== deletedGift.shareLink;
-        }));
+        setContributions(contributions.filter(c => Number(c.giftId) !== Number(giftId)));
         
         toast({
           title: "Event deleted",
@@ -757,10 +764,22 @@ const Dashboard: React.FC = () => {
                   </button>
                 ))}
               </div>
+
+              {/* Mobile-visible logout placed after nav items */}
+              <div className="pt-3 lg:hidden">
+                <Button 
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="w-full text-gray-600 hover:text-[#2E235C] justify-start"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
             </nav>
 
             {/* Footer/Create Button */}
-            <div className="p-4 border-t border-gray-100 mb-16">
+            <div className="p-4 border-t border-gray-100 mb-16 hidden lg:block">
               <Button 
                 variant="ghost"
                 onClick={handleLogout}
@@ -1046,7 +1065,7 @@ const Dashboard: React.FC = () => {
                       <TableBody>
                         {contributions.length > 0 ? (
                           contributions.map((contribution) => {
-                            const gift = gifts.find(g => g.id === String(contribution.giftId));
+                            const gift = gifts.find(g => Number(g.id) === Number(contribution.giftId));
                             return (
                               <TableRow key={contribution.id} className="hover:bg-gray-50/50">
                                 <TableCell>
@@ -1292,7 +1311,7 @@ const Dashboard: React.FC = () => {
                         {['wedding', 'birthday', 'graduation', 'convocation', 'other'].map((type) => {
                           const typeGifts = gifts.filter(g => g.type === type);
                           const typeContributions = contributions.filter(c => 
-                            typeGifts.some(g => g.id === String(c.giftId))
+                            typeGifts.some(g => Number(g.id) === Number(c.giftId))
                           );
                           const total = typeContributions.reduce((sum, c) => sum + c.amount, 0);
                           const percentage = totalContributions > 0 ? (total / totalContributions) * 100 : 0;
@@ -2321,7 +2340,7 @@ const Dashboard: React.FC = () => {
           <div className="mt-4">
             {selectedGiftForTable && (() => {
               const giftContributions = contributions.filter((c) => {
-                return selectedGiftForTable.id === String(c.giftId);
+                return Number(selectedGiftForTable.id) === Number(c.giftId);
               });
               const totalAmount = giftContributions.reduce((sum, c) => sum + Number(c.amount), 0);
 

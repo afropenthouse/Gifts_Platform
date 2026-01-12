@@ -30,6 +30,7 @@ const App = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/gift/:link" element={<ShareGift />} />
+          <Route path="/gift/:slug/:id" element={<ShareGift />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />

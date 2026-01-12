@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { QRCodeSVG } from 'qrcode.react';
 
 interface Gift {
-  id: string;
+  id: number;
   type: string;
   title: string;
   description?: string;
@@ -37,9 +37,9 @@ interface GiftLinksProps {
   onCreateGift: () => void;
   onEditGift: (gift: Gift) => void;
   onViewDetails: (gift: Gift) => void;
-  onDeleteGift: (giftId: string) => void;
+  onDeleteGift: (giftId: number) => void;
   onRSVP: (gift: Gift) => void;
-  deletingGiftId?: string | null;
+  deletingGiftId?: number | null;
 }
 
 export const GiftLinks = ({

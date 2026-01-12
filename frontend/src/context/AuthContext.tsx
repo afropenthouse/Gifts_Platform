@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
   profilePicture?: string;
@@ -55,10 +55,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
+
+    // Optimistic rehydrate from localStorage to avoid flicker on refresh
     if (token && userData) {
-      setUser(JSON.parse(userData));
+      try {
+        setUser(JSON.parse(userData));
+      } catch (_) {
+        // If parsing fails, clear corrupted data
+        localStorage.removeItem('user');
+      }
     }
-    setLoading(false);
+
+    const fetchProfile = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const freshUser = await res.json();
+          setUser(freshUser);
+          localStorage.setItem('user', JSON.stringify(freshUser));
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Auth revalidate failed:', err);
+        // Keep optimistic user so UI stays up; user can retry actions to refresh
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
   }, []);
 
   const login = (token: string, user: User) => {
