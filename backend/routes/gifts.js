@@ -173,8 +173,8 @@ module.exports = () => {
     }
   });
 
-  // Get gift by share link
-  router.get('/:link', async (req, res) => {
+  // Get gift by share link (supports slashes in shareLink like "slug/123")
+  router.get('/:link(*)', async (req, res) => {
     try {
       const gift = await prisma.gift.findUnique({
         where: { shareLink: req.params.link },

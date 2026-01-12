@@ -152,7 +152,7 @@ module.exports = () => {
   };
 
   // Initialize payment
-  router.post('/:link/initialize-payment', async (req, res) => {
+  router.post('/:link(*)/initialize-payment', async (req, res) => {
     const { contributorName, contributorEmail, amount, message } = req.body;
 
     try {
@@ -214,7 +214,7 @@ module.exports = () => {
   });
 
   // Verify payment and create contribution
-  router.post('/:link/verify-payment', async (req, res) => {
+  router.post('/:link(*)/verify-payment', async (req, res) => {
     const { transactionId, txRef, status } = req.body;
 
     try {
@@ -331,51 +331,6 @@ module.exports = () => {
         msg: 'Payment verification failed', 
         error: err?.message || 'Server error' 
       });
-    }
-  });
-
-  // Contribute to gift (without payment - optional)
-  router.post('/:link', async (req, res) => {
-    const { contributorName, contributorEmail, amount, message } = req.body;
-
-    try {
-      const gift = await prisma.gift.findUnique({ where: { shareLink: req.params.link } });
-      if (!gift) return res.status(404).json({ msg: 'Gift not found' });
-
-      await prisma.contribution.create({
-        data: {
-          giftId: gift.id,
-          contributorName,
-          contributorEmail,
-          amount,
-          message,
-        },
-      });
-
-      // Update user's wallet atomically
-      await prisma.user.update({
-        where: { id: gift.userId },
-        data: { wallet: { increment: amount } },
-      });
-
-      res.json({ msg: 'Contribution successful' });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: 'Server error' });
-    }
-  });
-
-  // Get contributions for gift
-  router.get('/:link', async (req, res) => {
-    try {
-      const gift = await prisma.gift.findUnique({ where: { shareLink: req.params.link } });
-      if (!gift) return res.status(404).json({ msg: 'Gift not found' });
-
-      const contributions = await prisma.contribution.findMany({ where: { giftId: gift.id } });
-      res.json(contributions);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: 'Server error' });
     }
   });
 
@@ -517,6 +472,51 @@ module.exports = () => {
       console.error('Error message:', err?.message || err);
       console.error('Full error:', err);
       res.status(500).send('Server error');
+    }
+  });
+
+  // Contribute to gift (without payment - optional)
+  router.post('/:link(*)', async (req, res) => {
+    const { contributorName, contributorEmail, amount, message } = req.body;
+
+    try {
+      const gift = await prisma.gift.findUnique({ where: { shareLink: req.params.link } });
+      if (!gift) return res.status(404).json({ msg: 'Gift not found' });
+
+      await prisma.contribution.create({
+        data: {
+          giftId: gift.id,
+          contributorName,
+          contributorEmail,
+          amount,
+          message,
+        },
+      });
+
+      // Update user's wallet atomically
+      await prisma.user.update({
+        where: { id: gift.userId },
+        data: { wallet: { increment: amount } },
+      });
+
+      res.json({ msg: 'Contribution successful' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  // Get contributions for gift
+  router.get('/:link(*)', async (req, res) => {
+    try {
+      const gift = await prisma.gift.findUnique({ where: { shareLink: req.params.link } });
+      if (!gift) return res.status(404).json({ msg: 'Gift not found' });
+
+      const contributions = await prisma.contribution.findMany({ where: { giftId: gift.id } });
+      res.json(contributions);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
     }
   });
 

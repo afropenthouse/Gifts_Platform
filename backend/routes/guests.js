@@ -309,7 +309,7 @@ module.exports = () => {
   });
 
   // Public RSVP endpoint (no auth required)
-  router.post('/rsvp/:shareLink', async (req, res) => {
+  router.post('/rsvp/:shareLink(*)', async (req, res) => {
     const { shareLink } = req.params;
     const { firstName, lastName, email, attending } = req.body;
 
@@ -377,7 +377,7 @@ module.exports = () => {
   });
 
   // Check if guest name is on the list (validation only)
-  router.post('/check/:shareLink', async (req, res) => {
+  router.post('/check/:shareLink(*)', async (req, res) => {
     const { shareLink } = req.params;
     const { firstName, lastName } = req.body;
 
