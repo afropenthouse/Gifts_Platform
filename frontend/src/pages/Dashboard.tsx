@@ -101,7 +101,7 @@ const Dashboard: React.FC = () => {
   const [guestFirstName, setGuestFirstName] = useState('');
   const [guestLastName, setGuestLastName] = useState('');
   const [guestAllowed, setGuestAllowed] = useState('1');
-  const [guestTableSitting, setGuestTableSitting] = useState('Table sitting');
+  const [guestTableSitting, setGuestTableSitting] = useState('Table seating');
   const [customTableSitting, setCustomTableSitting] = useState('');
   const [guestMode, setGuestMode] = useState<'single' | 'bulk' | 'excel'>('single');
   const [bulkNames, setBulkNames] = useState('');
@@ -167,7 +167,7 @@ const Dashboard: React.FC = () => {
                 <th>First Name</th>
                 <th>Last Name</th>
                 <th style="width: 120px;">Allowed</th>
-                <th>Table Sitting</th>
+                <th>Table seating</th>
               </tr>
             </thead>
             <tbody>
@@ -177,7 +177,7 @@ const Dashboard: React.FC = () => {
                   <td>${guest.firstName}</td>
                   <td>${guest.lastName}</td>
                   <td>${guest.allowed}</td>
-                  <td>${guest.tableSitting || 'Table sitting'}</td>
+                  <td>${guest.tableSitting || 'Table seating'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -1462,7 +1462,7 @@ const Dashboard: React.FC = () => {
                             <TableHead className="font-semibold">Last Name</TableHead>
                             <TableHead className="font-semibold">Will you be attending</TableHead>
                             <TableHead className="font-semibold">Allowed</TableHead>
-                            <TableHead className="font-semibold">Table Sitting</TableHead>
+                            <TableHead className="font-semibold">Table seating</TableHead>
                             <TableHead className="font-semibold">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1560,8 +1560,8 @@ const Dashboard: React.FC = () => {
                               </TableCell>
                               <TableCell>
                                 {(() => {
-                                  const tableSitting = guest.tableSitting || 'Table sitting';
-                                  const predefinedOptions = ['Table sitting', 'Groom family', 'Bride family', 'Groom friends', 'Bride friends'];
+                                  const tableSitting = guest.tableSitting || 'Table seating';
+                                  const predefinedOptions = ['Table seating', "Groom's family", "Bride's family", "Groom's friends", "Bride's friends"];
                                   const isCustom = !predefinedOptions.includes(tableSitting);
                                   
                                   return (
@@ -1602,11 +1602,11 @@ const Dashboard: React.FC = () => {
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="Table sitting">Table sitting</SelectItem>
-                                        <SelectItem value="Groom family">Groom family</SelectItem>
-                                        <SelectItem value="Bride family">Bride family</SelectItem>
-                                        <SelectItem value="Groom friends">Groom friends</SelectItem>
-                                        <SelectItem value="Bride friends">Bride friends</SelectItem>
+                                        <SelectItem value="Table seating">Table seating</SelectItem>
+                                        <SelectItem value="Groom's family">Groom's family</SelectItem>
+                                        <SelectItem value="Bride's family">Bride's family</SelectItem>
+                                        <SelectItem value="Groom's friends">Groom's friends</SelectItem>
+                                        <SelectItem value="Bride's friends">Bride's friends</SelectItem>
                                         {isCustom && (
                                           <SelectItem value={tableSitting}>{tableSitting} (Custom)</SelectItem>
                                         )}
@@ -1625,8 +1625,8 @@ const Dashboard: React.FC = () => {
                                       setGuestFirstName(guest.firstName);
                                       setGuestLastName(guest.lastName);
                                       setGuestAllowed(guest.allowed.toString());
-                                      const tableSitting = guest.tableSitting || 'Table sitting';
-                                      const predefinedOptions = ['Table sitting', 'Groom family', 'Bride family', 'Groom friends', 'Bride friends'];
+                                      const tableSitting = guest.tableSitting || 'Table seating';
+                                      const predefinedOptions = ['Table seating', "Groom's family", "Bride's family", "Groom's friends", "Bride's friends"];
                                       if (predefinedOptions.includes(tableSitting)) {
                                         setGuestTableSitting(tableSitting);
                                         setCustomTableSitting('');
@@ -2500,7 +2500,7 @@ const Dashboard: React.FC = () => {
           setGuestFirstName('');
           setGuestLastName('');
           setGuestAllowed('1');
-          setGuestTableSitting('Table sitting');
+          setGuestTableSitting('Table seating');
           setCustomTableSitting('');
           setGuestMode('single');
           setBulkNames('');
@@ -2563,7 +2563,7 @@ const Dashboard: React.FC = () => {
                   setGuestFirstName('');
                   setGuestLastName('');
                   setGuestAllowed('1');
-                  setGuestTableSitting('Table sitting');
+                  setGuestTableSitting('Table seating');
                   setEditingGuest(null);
                   setIsAddGuestModalOpen(false);
                 } else {
@@ -2660,7 +2660,7 @@ const Dashboard: React.FC = () => {
                   const lastName = row.lastName || row.LastName || row['Last Name'] || row['Last name'] || '';
                   const allowedVal = row.allowed || row.Allowed || row['Number Allowed'] || row['Allowed'] || row['allowed'] || '';
                   const allowed = parseInt(allowedVal) || parseInt(guestAllowed) || 1;
-                  const tableSitting = row.tableSitting || row.TableSitting || row['Table Sitting'] || row['Table sitting'] || 'Table sitting';
+                  const tableSitting = row.tableSitting || row.TableSitting || row['Table seating'] || row['Table Seating'] || row['Table sitting'] || 'Table seating';
                   return { firstName: String(firstName).trim(), lastName: String(lastName).trim(), allowed, tableSitting: String(tableSitting).trim() };
                 }).filter((g) => g.firstName || g.lastName);
 
@@ -2688,7 +2688,7 @@ const Dashboard: React.FC = () => {
                         allowed: g.allowed,
                         attending: 'pending',
                         giftId: selectedEventForRSVP,
-                        tableSitting: g.tableSitting || 'Table sitting',
+                        tableSitting: g.tableSitting || 'Table seating',
                       }),
                     });
                     if (res.ok) {
@@ -2754,7 +2754,7 @@ const Dashboard: React.FC = () => {
                   setGuestFirstName('');
                   setGuestLastName('');
                   setGuestAllowed('1');
-                  setGuestTableSitting('Table sitting');
+                  setGuestTableSitting('Table seating');
                   setIsAddGuestModalOpen(false);
                 } else {
                   setErrorTitle('Failed to Add Guest');
@@ -2862,7 +2862,7 @@ const Dashboard: React.FC = () => {
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Columns supported: First Name, Last Name, Table Sitting (optional). Blank rows are ignored.
+                    Columns supported: First Name, Last Name, Table seating (optional). Blank rows are ignored.
                   </p>
                 </div>
               )}
@@ -2887,7 +2887,7 @@ const Dashboard: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="guestTableSitting" className="text-sm font-medium text-gray-900 mb-2 block">
-                      Table Sitting
+                      Table seating
                     </Label>
                     <Select value={guestTableSitting} onValueChange={(value) => {
                       setGuestTableSitting(value);
@@ -2896,14 +2896,14 @@ const Dashboard: React.FC = () => {
                       }
                     }}>
                       <SelectTrigger className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
-                        <SelectValue placeholder="Select table sitting" />
+                        <SelectValue placeholder="Select table seating" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Table sitting">Table sitting</SelectItem>
-                        <SelectItem value="Groom family">Groom family</SelectItem>
-                        <SelectItem value="Bride family">Bride family</SelectItem>
-                        <SelectItem value="Groom friends">Groom friends</SelectItem>
-                        <SelectItem value="Bride friends">Bride friends</SelectItem>
+                        <SelectItem value="Table seating">Table seating</SelectItem>
+                        <SelectItem value="Groom's family">Groom's family</SelectItem>
+                        <SelectItem value="Bride's family">Bride's family</SelectItem>
+                        <SelectItem value="Groom's friends">Groom's friends</SelectItem>
+                        <SelectItem value="Bride's friends">Bride's friends</SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>

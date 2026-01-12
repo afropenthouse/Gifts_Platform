@@ -38,6 +38,7 @@ const ShareGift: React.FC = () => {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('NGN');
   const [contributorName, setContributorName] = useState('');
+  const [contributorEmail, setContributorEmail] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [showAmountModal, setShowAmountModal] = useState(false);
   const [showNameModal, setShowNameModal] = useState(false);
@@ -210,11 +211,21 @@ const ShareGift: React.FC = () => {
       return;
     }
 
+    if (!isAnonymous && !contributorEmail.trim()) {
+      alert('Please enter your email address');
+      return;
+    }
+
+    if (!isAnonymous && !contributorEmail.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
     setProcessingPayment(true);
 
     try {
       const name = isAnonymous ? 'Anonymous Contributor' : contributorName;
-      const email = isAnonymous ? `anonymous-${Date.now()}@giftlink.com` : `contributor-${Date.now()}@giftlink.com`;
+      const email = isAnonymous ? `anonymous-${Date.now()}@giftlink.com` : contributorEmail;
 
       // Initialize payment
       const initRes = await fetch(
@@ -227,7 +238,7 @@ const ShareGift: React.FC = () => {
             contributorEmail: email,
             amount: parseFloat(amount),
             currency: currency,
-            message: isAnonymous ? 'Anonymous contribution' : `Contribution from ${name}`,
+            message: isAnonymous ? 'Anonymous contribution' : `Gifts from ${name}`,
           }),
         }
       );
@@ -421,6 +432,18 @@ const ShareGift: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <Label htmlFor="email" className="text-sm font-medium">Your Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={contributorEmail}
+                  onChange={(e) => setContributorEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  disabled={isAnonymous}
+                />
+              </div>
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -431,10 +454,6 @@ const ShareGift: React.FC = () => {
                 />
                 <Label htmlFor="anonymous" className="text-sm">Give anonymously</Label>
               </div>
-            </div>
-
-            <div>
-              
             </div>
 
             {/* <div className="text-center p-3 bg-muted rounded-lg">
@@ -615,7 +634,7 @@ const ShareGift: React.FC = () => {
           {rsvpStep === 3 && (
             <div className="py-6">
               <h3 className="text-sm font-medium text-center mb-6">Will you attend?</h3>
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-3">
                 <Button
                   onClick={async () => {
                     setWillAttend(true);
@@ -647,9 +666,9 @@ const ShareGift: React.FC = () => {
                       alert('Error submitting RSVP');
                     }
                   }}
-                  className="flex-1 h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                  className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
                 >
-                  Yes
+                  Yes I'm coming
                 </Button>
                 <Button
                   onClick={async () => {
@@ -683,9 +702,9 @@ const ShareGift: React.FC = () => {
                     }
                   }}
                   variant="outline"
-                  className="flex-1 h-12 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
+                  className="w-full h-12 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
                 >
-                  No
+                  No I can't make it
                 </Button>
               </div>
             </div>
