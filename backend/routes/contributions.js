@@ -253,9 +253,9 @@ module.exports = () => {
 
       const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage } = response.data.metadata || {};
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
-      const amount = response.data.amount / 100; // Paystack amount in kobo
+      const amount = parseFloat((response.data.amount / 100).toFixed(2)); // Paystack amount in kobo, convert to Naira
 
-      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount });
+      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: response.data.amount });
 
       if (!giftId) {
         console.error('❌ No giftId in transaction meta');
@@ -304,6 +304,8 @@ module.exports = () => {
         },
       });
 
+      console.log('💾 Contribution created:', { id: contribution.id, amount, giftId });
+
       // Update user's wallet
       const walletUpdateResult = await prisma.user.update({
         where: { id: gift.userId },
@@ -311,6 +313,7 @@ module.exports = () => {
       });
 
       console.log('✅ CONTRIBUTION SAVED:', { id: contribution.id, amount, wallet: walletUpdateResult.wallet });
+      console.log('💰 Wallet Update Details:', { userId: gift.userId, walletBefore: gift.user.wallet, walletAfter: walletUpdateResult.wallet, amountAdded: amount });
       console.log('=== VERIFY PAYMENT SUCCESS ===\n');
 
       // Send emails in background without blocking response
