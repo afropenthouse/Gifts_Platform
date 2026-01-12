@@ -633,7 +633,7 @@ const ShareGift: React.FC = () => {
 
           {rsvpStep === 3 && (
             <div className="py-6">
-              <h3 className="text-sm font-medium text-center mb-6">Will you attend?</h3>
+              <h3 className="text-base font-medium text-center mb-6">Will you attend?</h3>
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={async () => {
@@ -724,6 +724,13 @@ const ShareGift: React.FC = () => {
               <Button
                 className="flex-1 h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
                 onClick={() => {
+                  // Pre-populate contributor info with RSVP data
+                  if (rsvpFirstName && rsvpLastName) {
+                    setContributorName(`${rsvpFirstName} ${rsvpLastName}`);
+                  }
+                  if (rsvpEmail) {
+                    setContributorEmail(rsvpEmail);
+                  }
                   setShowCashGiftPrompt(false);
                   setShowAmountModal(true);
                 }}

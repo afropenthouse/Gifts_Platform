@@ -103,6 +103,7 @@ const Dashboard: React.FC = () => {
   const [guestAllowed, setGuestAllowed] = useState('1');
   const [guestTableSitting, setGuestTableSitting] = useState('Table seating');
   const [customTableSitting, setCustomTableSitting] = useState('');
+  const [customTableOptions, setCustomTableOptions] = useState<string[]>([]);
   const [guestMode, setGuestMode] = useState<'single' | 'bulk' | 'excel'>('single');
   const [bulkNames, setBulkNames] = useState('');
   const [excelFile, setExcelFile] = useState<File | null>(null);
@@ -258,6 +259,22 @@ const Dashboard: React.FC = () => {
       navigate('/');
     }
   }, [user, loading, navigate]);
+
+  // Extract unique custom table sittings from existing guests
+  useEffect(() => {
+    const predefinedOptions = ['Table seating', "Groom's family", "Bride's family", "Groom's friends", "Bride's friends"];
+    const customOptions = guests
+      .map(g => g.tableSitting)
+      .filter((sitting): sitting is string => 
+        sitting !== undefined && 
+        sitting !== null && 
+        sitting.trim() !== '' &&
+        !predefinedOptions.includes(sitting)
+      )
+      .filter((value, index, self) => self.indexOf(value) === index) // unique values only
+      .sort();
+    setCustomTableOptions(customOptions);
+  }, [guests]);
 
   useEffect(() => {
     if (user) {
@@ -770,11 +787,11 @@ const Dashboard: React.FC = () => {
               </div>
 
               {/* Mobile-visible logout placed after nav items */}
-              <div className="pt-3 lg:hidden">
+              <div className="pt-3 lg:hidden mt-6">
                 <Button 
                   variant="ghost"
                   onClick={handleLogout}
-                  className="w-full text-gray-600 hover:text-[#2E235C] justify-start"
+                  className="w-full text-gray-600 hover:text-white hover:bg-[#2E235C] justify-start"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
@@ -787,7 +804,7 @@ const Dashboard: React.FC = () => {
               <Button 
                 variant="ghost"
                 onClick={handleLogout}
-                className="w-full mt-3 text-gray-600 hover:text-[#2E235C]"
+                className="w-full mt-3 text-gray-600 hover:text-white hover:bg-[#2E235C]"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
@@ -1088,7 +1105,7 @@ const Dashboard: React.FC = () => {
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <span className="font-bold text-green-600">₦{contribution.amount.toFixed(2)}</span>
+                                  <span className="font-bold text-green-600">₦{(typeof contribution.amount === 'number' ? contribution.amount : parseFloat(String(contribution.amount))).toFixed(2)}</span>
                                 </TableCell>
                                 <TableCell className="max-w-xs">
                                   <p className="truncate">{contribution.message || '-'}</p>
@@ -1183,10 +1200,6 @@ const Dashboard: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Transaction Fee</p>
                           <p className="font-medium">₦50 flat fee</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Daily Limit</p>
-                          <p className="font-medium">₦1,000,000</p>
                         </div>
                       </div>
                     </CardContent>
@@ -1392,7 +1405,7 @@ const Dashboard: React.FC = () => {
                                 <p className="text-xs text-gray-500">{gifter.count} gift{gifter.count > 1 ? 's' : ''}</p>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-green-600">₦{gifter.amount.toFixed(2)}</p>
+                                <p className="font-bold text-green-600">₦{parseFloat(gifter.amount).toFixed(2)}</p>
                                 <p className="text-xs text-gray-500">Total</p>
                               </div>
                             </div>
@@ -2465,7 +2478,7 @@ const Dashboard: React.FC = () => {
                                 {contrib.contributorEmail || '-'}
                               </TableCell>
                               <TableCell className="text-right font-semibold text-green-600">
-                                ₦{contrib.amount.toFixed(2)}
+                                ₦{(typeof contrib.amount === 'number' ? contrib.amount : parseFloat(String(contrib.amount))).toFixed(2)}
                               </TableCell>
                               <TableCell className="text-sm">
                                 {new Date(contrib.createdAt).toLocaleDateString()}
@@ -2660,7 +2673,7 @@ const Dashboard: React.FC = () => {
                   const lastName = row.lastName || row.LastName || row['Last Name'] || row['Last name'] || '';
                   const allowedVal = row.allowed || row.Allowed || row['Number Allowed'] || row['Allowed'] || row['allowed'] || '';
                   const allowed = parseInt(allowedVal) || parseInt(guestAllowed) || 1;
-                  const tableSitting = row.tableSitting || row.TableSitting || row['Table seating'] || row['Table Seating'] || row['Table sitting'] || 'Table seating';
+                  const tableSitting = row.tableSitting || row.TableSitting || row['Table seating'] || row['Table Seating'] || row['Table Seating'] || 'Table seating';
                   return { firstName: String(firstName).trim(), lastName: String(lastName).trim(), allowed, tableSitting: String(tableSitting).trim() };
                 }).filter((g) => g.firstName || g.lastName);
 
@@ -2904,7 +2917,10 @@ const Dashboard: React.FC = () => {
                         <SelectItem value="Bride's family">Bride's family</SelectItem>
                         <SelectItem value="Groom's friends">Groom's friends</SelectItem>
                         <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
+                        {customTableOptions.map((option) => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                        <SelectItem value="Other">Other (Create New)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
