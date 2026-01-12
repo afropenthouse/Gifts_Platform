@@ -64,14 +64,15 @@ const ShareGift: React.FC = () => {
     ? `${gift.details.groomName} & ${gift.details.brideName}`
     : gift?.title || gift?.user?.name || "Special Celebration";
 
-  // Handle redirect back from Flutterwave: verify payment
+  // Handle redirect back from Paystack: verify payment
   useEffect(() => {
     const txId = searchParams.get('transaction_id');
     const txRef = searchParams.get('tx_ref');
+    const reference = searchParams.get('reference'); // Paystack returns 'reference'
     const status = searchParams.get('status');
     
-    // Use tx_ref if available, otherwise transaction_id
-    const transactionIdentifier = txRef || txId;
+    // Paystack returns 'reference', but also support tx_ref and transaction_id for other payment providers
+    const transactionIdentifier = reference || txRef || txId;
     
     if (!linkParam || !transactionIdentifier) return;
 
@@ -89,6 +90,7 @@ const ShareGift: React.FC = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
               transactionId: transactionIdentifier,
+              reference: transactionIdentifier,
               txRef: txRef,
               status: status 
             }),
