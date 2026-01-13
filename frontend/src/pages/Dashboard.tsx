@@ -2435,7 +2435,7 @@ const Dashboard: React.FC = () => {
 
               return (
                 <>
-                  <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
                     <div className="text-center p-3 bg-white rounded-lg shadow-sm">
                       <p className="text-xs text-gray-600 mb-1">Total Amount</p>
                       <p className="font-bold text-lg text-green-600">₦{totalAmount.toFixed(2)}</p>
@@ -2450,7 +2450,8 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="border rounded-xl overflow-hidden">
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block border rounded-xl overflow-hidden">
                     <Table>
                       <TableHeader className="bg-gray-100">
                         <TableRow>
@@ -2498,6 +2499,53 @@ const Dashboard: React.FC = () => {
                         )}
                       </TableBody>
                     </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-3">
+                    {giftContributions.length > 0 ? (
+                      giftContributions.map((contrib) => (
+                        <div key={contrib.id} className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#2E235C]/20 to-[#2E235C]/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-bold text-[#2E235C]">
+                                {contrib.contributorName?.charAt(0) || 'A'}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-900 text-sm mb-1">
+                                {contrib.contributorName || 'Anonymous'}
+                              </p>
+                              <p className="text-xs text-gray-500 break-all">
+                                {contrib.contributorEmail || '-'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Amount</p>
+                              <p className="font-bold text-green-600 text-base">
+                                ₦{(typeof contrib.amount === 'number' ? contrib.amount : parseFloat(String(contrib.amount))).toFixed(2)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-gray-500 mb-1">Date</p>
+                              <p className="text-xs text-gray-700 font-medium">
+                                {new Date(contrib.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-12 text-gray-500 border rounded-lg bg-gray-50">
+                        <Package className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                        <p>No contributions yet</p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Share your gift link to receive contributions
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </>
               );
