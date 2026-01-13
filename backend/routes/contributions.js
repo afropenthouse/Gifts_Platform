@@ -66,6 +66,7 @@ module.exports = () => {
     const eventDate = formatEventDate(gift?.date);
     const accent = '#2E235C';
     const muted = '#f6f4ff';
+    const cleanName = (contributorName || 'there').trim();
 
     const html = `
       <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
@@ -78,7 +79,7 @@ module.exports = () => {
 
           <div style="padding: 0 24px 24px; text-align: center;">
             <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
-              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${contributorName || 'there'},</p>
+              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${cleanName},</p>
               <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
                 Thank you for your generous gift of <strong>₦${amount.toLocaleString()}</strong>. Your kindness means so much to us.
               </p>
@@ -119,8 +120,9 @@ module.exports = () => {
     const eventDate = formatEventDate(gift?.date);
     const accent = '#2E235C';
     const muted = '#f6f4ff';
+    const cleanRecipientName = (recipientName || 'there').trim();
     const isAnonymous = contributorName === 'Anonymous';
-    const senderDisplay = isAnonymous ? 'An anonymous guest' : contributorName;
+    const senderDisplay = isAnonymous ? 'An anonymous guest' : contributorName.trim();
 
     const html = `
       <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
@@ -133,7 +135,7 @@ module.exports = () => {
 
           <div style="padding: 0 24px 24px; text-align: center;">
             <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
-              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${recipientName || 'there'},</p>
+              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${cleanRecipientName},</p>
               <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
                 ${senderDisplay} has sent you a cash gift of <strong>₦${amount.toLocaleString()}</strong>.
               </p>
