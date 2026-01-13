@@ -131,11 +131,11 @@ async function resolveAccount(payload) {
 
 async function getBanks() {
   try {
-    console.log('Fetching Paystack banks list');
+      // console.log('Fetching Paystack banks list');
+        
+      const response = await psRequest('GET', '/bank?country=nigeria');
 
-    const response = await psRequest('GET', '/bank?country=nigeria');
-
-    console.log('Paystack banks fetch response:', response?.status);
+      // console.log('Paystack banks fetch response:', response?.status);
     return response;
   } catch (error) {
     console.error('Paystack getBanks error:', error?.message || error);
