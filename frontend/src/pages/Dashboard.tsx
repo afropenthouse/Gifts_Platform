@@ -117,6 +117,9 @@ const Dashboard: React.FC = () => {
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [deletingGiftId, setDeletingGiftId] = useState<number | null>(null);
   const [deletingGuestId, setDeletingGuestId] = useState<number | null>(null);
+  const [guestSearch, setGuestSearch] = useState('');
+  const [attendingFilter, setAttendingFilter] = useState('all');
+  const [tableFilter, setTableFilter] = useState('all');
 
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null },
@@ -134,13 +137,18 @@ const Dashboard: React.FC = () => {
     const printWindow = window.open('', '', 'height=600,width=800');
     if (!printWindow) return;
 
-    const totalGuests = guests.reduce((sum, guest) => sum + guest.allowed, 0);
+    // Use filtered guests for the selected event
+    const guestsToExport = filteredGuests;
+    
+    const totalGuests = guestsToExport.reduce((sum, guest) => sum + guest.allowed, 0);
+    const selectedEvent = selectedEventForRSVP ? gifts.find(g => g.id === selectedEventForRSVP) : null;
+    const eventTitle = selectedEvent ? selectedEvent.title : 'All Events';
     
     const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Guest List</title>
+          <title>Guest List - ${eventTitle}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 40px; }
             h1 { color: #2E235C; margin-bottom: 10px; }
@@ -157,7 +165,7 @@ const Dashboard: React.FC = () => {
           </style>
         </head>
         <body>
-          <h1>Guest List</h1>
+          <h1>Guest List - ${eventTitle}</h1>
           <div class="meta">
             <p>Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
           </div>
@@ -172,7 +180,7 @@ const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              ${guests.map((guest, index) => `
+              ${guestsToExport.map((guest, index) => `
                 <tr>
                   <td>${index + 1}</td>
                   <td>${guest.firstName}</td>
@@ -186,7 +194,7 @@ const Dashboard: React.FC = () => {
           <div class="summary">
             <div class="summary-item">
               <strong>Total Guests:</strong>
-              <span>${guests.length}</span>
+              <span>${guestsToExport.length}</span>
             </div>
             <div class="summary-item">
               <strong>Total People Allowed:</strong>
@@ -275,6 +283,19 @@ const Dashboard: React.FC = () => {
       .sort();
     setCustomTableOptions(customOptions);
   }, [guests]);
+
+  //add filter
+  // useEffect(() => {
+  //   if (user) {
+  //     filteredGuests = async () => {
+  //       try (user){
+  //         console.log("Add f")
+  //       }catch{
+
+  //       }
+  //     }
+  //   }
+  // });
 
   useEffect(() => {
     if (user) {
@@ -664,7 +685,35 @@ const Dashboard: React.FC = () => {
     .slice(0, 5);
 
   const totalGoalProgress = (totalContributions / goalAmount) * 100;
-  const totalAttending = Array.isArray(guests) ? guests.filter(g => g.attending === 'yes').length : 0;
+  
+  // Filter guests by selected event for RSVP tab
+  const eventFilteredGuests = selectedEventForRSVP
+    ? guests.filter(g => g.giftId === selectedEventForRSVP)
+    : guests;
+  
+  // Apply additional filters for display
+  let filteredGuests = eventFilteredGuests;
+  
+  // Apply search filter
+  if (guestSearch.trim()) {
+    const searchLower = guestSearch.toLowerCase();
+    filteredGuests = filteredGuests.filter(g =>
+      g.firstName.toLowerCase().includes(searchLower) ||
+      g.lastName.toLowerCase().includes(searchLower)
+    );
+  }
+  
+  // Apply attending filter
+  if (attendingFilter !== 'all') {
+    filteredGuests = filteredGuests.filter(g => g.attending === attendingFilter);
+  }
+  
+  // Apply table filter
+  if (tableFilter !== 'all') {
+    filteredGuests = filteredGuests.filter(g => g.tableSitting === tableFilter);
+  }
+  
+  const totalAttending = Array.isArray(eventFilteredGuests) ? eventFilteredGuests.filter(g => g.attending === 'yes').length : 0;
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -839,7 +888,7 @@ const Dashboard: React.FC = () => {
                     <>
                       <Button variant="outline" size="sm" className="hidden lg:flex">
                         <Users className="w-4 h-4 mr-2" />
-                        Total Guests: {guests.length}
+                        Total Guests: {eventFilteredGuests.length}
                       </Button>
                       <Button variant="outline" size="sm" className="hidden lg:flex">
                         <CheckCircle className="w-4 h-4 mr-2" />
@@ -1442,7 +1491,7 @@ const Dashboard: React.FC = () => {
                     </SelectContent>
                   </Select>
 
-                  {selectedEventForRSVP && guests.filter(g => g.giftId === selectedEventForRSVP).length > 0 && (
+                  {selectedEventForRSVP && eventFilteredGuests.length > 0 && (
                     <Button 
                       onClick={downloadGuestListPDF}
                       variant="outline"
@@ -1460,11 +1509,52 @@ const Dashboard: React.FC = () => {
                     <Users className="w-4 h-4 mr-2" />
                     Add Guest
                   </Button>
+
                 </div>
+
+                <div className="flex gap-4 items-center mt-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search guests by name..."
+                      value={guestSearch}
+                      onChange={(e) => setGuestSearch(e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                  <Select value={attendingFilter} onValueChange={setAttendingFilter}>
+                    <SelectTrigger className="w-40 h-10">
+                      <SelectValue placeholder="Filter by attending" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Attending</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={tableFilter} onValueChange={setTableFilter}>
+                    <SelectTrigger className="w-40 h-10">
+                      <SelectValue placeholder="Filter by table" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Tables</SelectItem>
+                      <SelectItem value="Table seating">Table seating</SelectItem>
+                      <SelectItem value="Groom's family">Groom's family</SelectItem>
+                      <SelectItem value="Bride's family">Bride's family</SelectItem>
+                      <SelectItem value="Groom's friends">Groom's friends</SelectItem>
+                      <SelectItem value="Bride's friends">Bride's friends</SelectItem>
+                      {customTableOptions.map(option => (
+                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <p className="text-sm text-gray-600 mt-2">Showing {filteredGuests.length} of {eventFilteredGuests.length} guests</p>
 
                 <div className="mt-6">
                 {selectedEventForRSVP ? (
-                  guests.filter(g => g.giftId === selectedEventForRSVP).length > 0 ? (
+                  eventFilteredGuests.length > 0 ? (
                   <Card className="border-0 shadow-lg">
                     <CardContent className="p-0">
                       <Table>
@@ -1480,7 +1570,7 @@ const Dashboard: React.FC = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {guests.filter(g => g.giftId === selectedEventForRSVP).map((guest, index) => (
+                          {filteredGuests.map((guest, index) => (
                             <TableRow key={guest.id} className="hover:bg-gray-50/50">
                               <TableCell className="font-medium text-gray-600">{index + 1}</TableCell>
                               <TableCell>
@@ -1621,7 +1711,7 @@ const Dashboard: React.FC = () => {
                                         <SelectItem value="Groom's friends">Groom's friends</SelectItem>
                                         <SelectItem value="Bride's friends">Bride's friends</SelectItem>
                                         {isCustom && (
-                                          <SelectItem value={tableSitting}>{tableSitting} (Custom)</SelectItem>
+                                          <SelectItem value={tableSitting}>{tableSitting}</SelectItem>
                                         )}
                                       </SelectContent>
                                     </Select>
@@ -1944,6 +2034,8 @@ const Dashboard: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+      <div>
+      </div>
 
       {/* Edit Gift Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={(open) => {
