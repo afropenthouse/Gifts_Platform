@@ -160,7 +160,7 @@ const ShareGift: React.FC = () => {
     const title = heading;
     const baseDescription = gift.description ? String(gift.description).trim() : '';
     const description = baseDescription ? `${title} — ${baseDescription}` : `${title} — Join us and send a cash gift using this RSVP link.`;
-    const image = gift.picture || '/logo.png';
+    const image = gift.picture || '/logo2.png';
 
     // Title
     document.title = `${title} — BeThere Weddings`;
