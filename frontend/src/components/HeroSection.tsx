@@ -154,7 +154,7 @@ const HeroSection = () => {
       {/* Images - Hidden on small mobile, shown on medium and up */}
       <div className="flex-1 w-full lg:w-auto mt-8 lg:mt-0 mb-6 lg:mb-0 px-0 lg:px-4 flex items-center justify-center">
         <img 
-          src="/trrf.JPG" 
+          src="/6ty.JPG" 
           alt="Celebration" 
           className="w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[200px] xl:max-w-xs h-auto rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
         />
