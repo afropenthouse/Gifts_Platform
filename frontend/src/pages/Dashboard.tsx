@@ -1512,42 +1512,44 @@ const Dashboard: React.FC = () => {
 
                 </div>
 
-                <div className="flex gap-4 items-center mt-4">
-                  <div className="flex-1">
+                <div className="flex flex-col gap-2 mt-4 sm:flex-row sm:gap-4 sm:items-center">
+                  <div className="flex-1 w-full">
                     <Input
                       placeholder="Search guests by name..."
                       value={guestSearch}
                       onChange={(e) => setGuestSearch(e.target.value)}
-                      className="h-10"
+                      className="h-10 w-full"
                     />
                   </div>
-                  <Select value={attendingFilter} onValueChange={setAttendingFilter}>
-                    <SelectTrigger className="w-40 h-10">
-                      <SelectValue placeholder="Filter by attending" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Attending</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={tableFilter} onValueChange={setTableFilter}>
-                    <SelectTrigger className="w-40 h-10">
-                      <SelectValue placeholder="Filter by table" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Tables</SelectItem>
-                      <SelectItem value="Table seating">Table seating</SelectItem>
-                      <SelectItem value="Groom's family">Groom's family</SelectItem>
-                      <SelectItem value="Bride's family">Bride's family</SelectItem>
-                      <SelectItem value="Groom's friends">Groom's friends</SelectItem>
-                      <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                      {customTableOptions.map(option => (
-                        <SelectItem key={option} value={option}>{option}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Select value={attendingFilter} onValueChange={setAttendingFilter}>
+                      <SelectTrigger className="w-full h-10 sm:w-40">
+                        <SelectValue placeholder="Filter by attending" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Attending</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="yes">Yes</SelectItem>
+                        <SelectItem value="no">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={tableFilter} onValueChange={setTableFilter}>
+                      <SelectTrigger className="w-full h-10 sm:w-40">
+                        <SelectValue placeholder="Filter by table" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Table seating</SelectItem>
+                        {/* <SelectItem value="Table seating">Table seating</SelectItem> */}
+                        <SelectItem value="Groom's family">Groom's family</SelectItem>
+                        <SelectItem value="Bride's family">Bride's family</SelectItem>
+                        <SelectItem value="Groom's friends">Groom's friends</SelectItem>
+                        <SelectItem value="Bride's friends">Bride's friends</SelectItem>
+                        {customTableOptions.map(option => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <p className="text-sm text-gray-600 mt-2">Showing {filteredGuests.length} of {eventFilteredGuests.length} guests</p>
