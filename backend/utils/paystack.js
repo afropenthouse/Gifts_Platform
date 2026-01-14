@@ -1,3 +1,15 @@
+// Create a transfer recipient
+async function createTransferRecipient({ account_number, account_bank, name }) {
+  const payload = {
+    type: 'nuban',
+    name,
+    account_number,
+    bank_code: account_bank,
+    currency: 'NGN',
+  };
+  const response = await psRequest('POST', '/transferrecipient', payload);
+  return response;
+}
 const crypto = require('crypto');
 
 // Minimal REST helper using Node 18+ global fetch
@@ -149,4 +161,4 @@ function verifyWebhookSignature(rawBody, signature, secret) {
   return signature === expectedSignature;
 }
 
-module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount, getBanks, verifyWebhookSignature };
+module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount, getBanks, verifyWebhookSignature, createTransferRecipient };

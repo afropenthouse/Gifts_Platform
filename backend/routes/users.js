@@ -1,7 +1,7 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
-const { initiateTransfer, resolveAccount, getBanks } = require('../utils/paystack');
+const { initiateTransfer, resolveAccount, getBanks, createTransferRecipient } = require('../utils/paystack');
 
 module.exports = () => {
   const router = express.Router();
@@ -80,31 +80,56 @@ module.exports = () => {
         return res.status(404).json({ msg: 'User not found' });
       }
 
-      if (user.wallet < parseFloat(amount)) {
+      const withdrawAmount = parseFloat(amount);
+      if (isNaN(withdrawAmount) || withdrawAmount < 100) {
+        return res.status(400).json({ msg: 'Minimum withdrawal amount is ₦100' });
+      }
+
+      // Calculate 5% fee
+      const fee = Math.ceil(withdrawAmount * 0.05 * 100) / 100; // round up to 2 decimals
+      const totalToReceive = withdrawAmount - fee;
+      if (totalToReceive <= 0) {
+        return res.status(400).json({ msg: 'Withdrawal amount too low after fee deduction.' });
+      }
+
+      if (user.wallet < withdrawAmount) {
         return res.status(400).json({ msg: 'Insufficient balance' });
       }
 
       // Deduct from wallet
       await prisma.user.update({
         where: { id: req.user.id },
-        data: { wallet: { decrement: parseFloat(amount) } }
+        data: { wallet: { decrement: withdrawAmount } }
       });
 
-      // Initiate transfer
-      const transferPayload = {
-        account_bank: bank_code,
+      // 1. Create transfer recipient
+      const recipientRes = await createTransferRecipient({
         account_number,
-        amount: parseFloat(amount),
-        narration: 'Withdrawal from Wedding Gifts',
-        currency: 'NGN',
-        reference: `WD-${Date.now()}-${req.user.id}`,
-        callback_url: process.env.FLW_CALLBACK_URL || '',
-        debit_currency: 'NGN'
+        account_bank: bank_code,
+        name: user.name || 'Recipient',
+      });
+      if (!recipientRes.status || !recipientRes.data || !recipientRes.data.recipient_code) {
+        // Refund wallet if recipient creation fails
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: { wallet: { increment: withdrawAmount } }
+        });
+        return res.status(500).json({ msg: 'Failed to create transfer recipient', error: recipientRes.message || 'Unknown error' });
+      }
+      // 2. Initiate transfer using recipient_code
+      const transferPayload = {
+        amount: totalToReceive,
+        recipient_code: recipientRes.data.recipient_code,
+        narration: `Withdrawal from Wedding Gifts (Fee: ₦${fee.toFixed(2)})`,
       };
-
       const response = await initiateTransfer(transferPayload);
 
-      res.json({ msg: 'Withdrawal initiated successfully', transfer: response });
+      res.json({
+        msg: 'Withdrawal initiated successfully',
+        transfer: response,
+        fee: fee,
+        totalToReceive: totalToReceive
+      });
     } catch (error) {
       console.error(error);
       // If transfer fails, refund the amount

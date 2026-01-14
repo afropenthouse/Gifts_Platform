@@ -59,6 +59,7 @@ module.exports = () => {
 
     const heading = formatEventHeading(gift);
     const eventDate = formatEventDate(gift?.date);
+    const eventAddress = gift?.details?.address;
     const accent = '#2E235C';
     const muted = '#f6f4ff';
     const responseLine = attending
@@ -78,6 +79,7 @@ module.exports = () => {
             <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading}</h2>
             <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">We've received your RSVP.</p>
             ${eventDate ? `<p style=\"margin: 0; font-size: 14px; color: #6b7280;\">Date: ${eventDate}</p>` : ''}
+            ${eventAddress ? `<p style=\"margin: 4px 0 0; font-size: 14px; color: #6b7280;\">Location: ${eventAddress}</p>` : ''}
           </div>
 
           <div style="padding: 0 24px 24px; text-align: center;">
@@ -102,6 +104,60 @@ module.exports = () => {
       return { delivered: true };
     } catch (error) {
       console.error('Failed to send RSVP email:', error?.message || error);
+      return { delivered: false, error: error?.message || 'Unknown error' };
+    }
+  };
+
+  const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
+    if (!emailEnabled || !transporter) {
+      console.warn('Reminder email skipped: SMTP configuration is missing');
+      return { delivered: false, skipped: true };
+    }
+
+    if (!recipient) {
+      return { delivered: false, reason: 'No recipient provided' };
+    }
+
+    const heading = formatEventHeading(gift);
+    const eventDate = formatEventDate(gift?.date);
+    const eventAddress = gift?.details?.address;
+    const accent = '#2E235C';
+    const muted = '#f6f4ff';
+
+    const html = `
+      <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+          <div style="padding: 28px 28px 18px; text-align: center;">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading} Reminder</h2>
+            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">Don't forget this upcoming event!</p>
+            ${eventDate ? `<p style=\"margin: 0; font-size: 14px; color: #6b7280;\">Date: ${eventDate}</p>` : ''}
+            ${eventAddress ? `<p style=\"margin: 4px 0 0; font-size: 14px; color: #6b7280;\">Location: ${eventAddress}</p>` : ''}
+          </div>
+
+          <div style="padding: 0 24px 24px; text-align: center;">
+            <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${guestName || 'there'},</p>
+              <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">This is a friendly reminder about the upcoming event. We hope to see you there!</p>
+            </div>
+
+            <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">
+              <a href="${eventUrl}" style="color: ${accent}; text-decoration: none; font-weight: 600;">View Event Details</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: mailFrom,
+        to: recipient,
+        subject: `${heading} – Event Reminder`,
+        html,
+      });
+      return { delivered: true };
+    } catch (error) {
+      console.error('Failed to send reminder email:', error?.message || error);
       return { delivered: false, error: error?.message || 'Unknown error' };
     }
   };
@@ -378,6 +434,70 @@ module.exports = () => {
       }).catch(err => console.error('Background owner notification failed:', err));
 
       res.json({ msg: 'RSVP submitted successfully', guest });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  // Send reminder emails for events
+  router.post('/send-reminders', async (req, res) => {
+    try {
+      const now = new Date();
+      const gifts = await prisma.gift.findMany({
+        where: {
+          date: { not: null },
+          details: { not: null }
+        },
+        include: { guests: true }
+      });
+
+      let remindersSent = 0;
+
+      for (const gift of gifts) {
+        const reminder = gift.details?.reminder;
+        if (!reminder || reminder === 'none') continue;
+
+        const eventDate = new Date(gift.date);
+        let reminderDate;
+
+        switch (reminder) {
+          case '1week':
+            reminderDate = new Date(eventDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '3days':
+            reminderDate = new Date(eventDate.getTime() - 3 * 24 * 60 * 60 * 1000);
+            break;
+          case '1day':
+            reminderDate = new Date(eventDate.getTime() - 1 * 24 * 60 * 60 * 1000);
+            break;
+          case 'none':
+          default:
+            continue;
+        }
+
+        // Check if today is the reminder date
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const checkDate = new Date(reminderDate.getFullYear(), reminderDate.getMonth(), reminderDate.getDate());
+
+        if (today.getTime() === checkDate.getTime()) {
+          // Send reminders to guests who RSVP'd yes
+          const rsvpGuests = gift.guests.filter(g => g.attending === 'yes' && g.email);
+
+          for (const guest of rsvpGuests) {
+            const eventUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/gift/${gift.shareLink}` : null;
+            await sendReminderEmail({
+              recipient: guest.email,
+              guestName: `${guest.firstName} ${guest.lastName}`,
+              gift,
+              eventUrl,
+            });
+            remindersSent++;
+          }
+        }
+      }
+
+      res.json({ message: `Sent ${remindersSent} reminder emails` });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
