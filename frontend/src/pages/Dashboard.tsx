@@ -7,6 +7,7 @@ import GiftLinks from '../dashboard_ALL/GiftLinks';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
+import { useIsMobile } from '../hooks/use-mobile';
 import {
   Gift, DollarSign, TrendingUp, Users, Copy, Eye,
   ArrowDownToLine, Calendar, Image as ImageIcon, X, Edit,
@@ -142,8 +143,11 @@ const Dashboard: React.FC = () => {
   const [isCustomTableModalOpen, setIsCustomTableModalOpen] = useState(false);
   const [customTableName, setCustomTableName] = useState('');
   const [currentEditingGuestId, setCurrentEditingGuestId] = useState<number | null>(null);
+  const [showAnalyticsButtons, setShowAnalyticsButtons] = useState(false);
+  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
 
   const totalAllowedGuests = guests.reduce((sum, g) => sum + g.allowed, 0);
+  const isMobile = useIsMobile();
 
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null },
@@ -944,18 +948,32 @@ const Dashboard: React.FC = () => {
                 <div className="flex flex-col lg:flex-row items-center space-y-2 lg:space-y-0 lg:space-x-4">
                   {activeTab === 'rsvp' && (
                     <>
-                      <Button variant="outline" size="sm" className="w-full lg:w-auto">
-                        <Users className="w-4 h-4 mr-2" />
-                        Total Guests: {eventFilteredGuests.length}
-                      </Button>
-                      <Button variant="outline" size="sm" className="w-full lg:w-auto">
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Total Attending: {totalAttending}
-                      </Button>
-                      <Button variant="outline" size="sm" className="w-full lg:w-auto" onClick={() => window.open('mailto:teambethere@gmail.com.com')}>
-                        <HelpCircle className="w-4 h-4 mr-2" />
-                        Help
-                      </Button>
+                      {isMobile ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setIsAnalyticsModalOpen(true)}
+                        >
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          Analytics
+                        </Button>
+                      ) : (
+                        <>
+                          <Button variant="outline" size="sm" className="w-auto">
+                            <Users className="w-4 h-4 mr-2" />
+                            Total Guests: {eventFilteredGuests.length}
+                          </Button>
+                          <Button variant="outline" size="sm" className="w-auto">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Total Attending: {totalAttending}
+                          </Button>
+                          <Button variant="outline" size="sm" className="w-auto" onClick={() => window.open('mailto:teambethere@gmail.com.com')}>
+                            <HelpCircle className="w-4 h-4 mr-2" />
+                            Help
+                          </Button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -3476,6 +3494,46 @@ const Dashboard: React.FC = () => {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Analytics Modal */}
+      <Dialog open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen}>
+        <DialogContent className="max-w-[90vw] sm:max-w-[400px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-auto">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-white z-10">
+            <DialogTitle className="text-xl font-semibold text-gray-900">Analytics</DialogTitle>
+            <p className="text-sm text-gray-600 mt-1">Quick overview of your RSVP data</p>
+          </DialogHeader>
+          <div className="px-6 py-6 space-y-4">
+            <Button variant="outline" className="w-full justify-start h-12">
+              <Users className="w-5 h-5 mr-3 text-blue-600" />
+              <div className="text-left">
+                <div className="font-medium">Total Guests</div>
+                <div className="text-sm text-gray-600">{eventFilteredGuests.length}</div>
+              </div>
+            </Button>
+            <Button variant="outline" className="w-full justify-start h-12">
+              <CheckCircle className="w-5 h-5 mr-3 text-green-600" />
+              <div className="text-left">
+                <div className="font-medium">Total Attending</div>
+                <div className="text-sm text-gray-600">{totalAttending}</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start h-12"
+              onClick={() => {
+                window.open('mailto:teambethere@gmail.com.com');
+                setIsAnalyticsModalOpen(false);
+              }}
+            >
+              <HelpCircle className="w-5 h-5 mr-3 text-purple-600" />
+              <div className="text-left">
+                <div className="font-medium">Help</div>
+                <div className="text-sm text-gray-600">Contact support</div>
+              </div>
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
