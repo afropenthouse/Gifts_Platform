@@ -138,6 +138,9 @@ const Dashboard: React.FC = () => {
   const [guestSearch, setGuestSearch] = useState('');
   const [attendingFilter, setAttendingFilter] = useState('all');
   const [tableFilter, setTableFilter] = useState('all');
+  const [isCustomTableModalOpen, setIsCustomTableModalOpen] = useState(false);
+  const [customTableName, setCustomTableName] = useState('');
+  const [currentEditingGuestId, setCurrentEditingGuestId] = useState<number | null>(null);
 
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null },
@@ -288,12 +291,12 @@ const Dashboard: React.FC = () => {
 
   // Extract unique custom table sittings from existing guests
   useEffect(() => {
-    const predefinedOptions = ['Table seating', "Groom's family", "Bride's family", "Groom's friends", "Bride's friends"];
+    const predefinedOptions = ['Table seating', "Groom's family", "Bride's family", "Groom's friends", "Bride's friends", "Other"];
     const customOptions = guests
       .map(g => g.tableSitting)
-      .filter((sitting): sitting is string => 
-        sitting !== undefined && 
-        sitting !== null && 
+      .filter((sitting): sitting is string =>
+        sitting !== undefined &&
+        sitting !== null &&
         sitting.trim() !== '' &&
         !predefinedOptions.includes(sitting)
       )
@@ -1717,13 +1720,16 @@ const Dashboard: React.FC = () => {
                               <TableCell>
                                 {(() => {
                                   const tableSitting = guest.tableSitting || 'Table seating';
-                                  const predefinedOptions = ['Table seating', "Groom's family", "Bride's family", "Groom's friends", "Bride's friends"];
-                                  const isCustom = !predefinedOptions.includes(tableSitting);
-                                  
+
                                   return (
                                     <Select
                                       value={tableSitting}
                                       onValueChange={async (value) => {
+                                        if (value === 'Other') {
+                                          setCurrentEditingGuestId(guest.id);
+                                          setIsCustomTableModalOpen(true);
+                                          return;
+                                        }
                                         const token = localStorage.getItem('token');
                                         try {
                                           const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
@@ -1763,9 +1769,10 @@ const Dashboard: React.FC = () => {
                                         <SelectItem value="Bride's family">Bride's family</SelectItem>
                                         <SelectItem value="Groom's friends">Groom's friends</SelectItem>
                                         <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                                        {isCustom && (
-                                          <SelectItem value={tableSitting}>{tableSitting}</SelectItem>
-                                        )}
+                                        {customTableOptions.map(option => (
+                                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                                        ))}
+                                        <SelectItem value="Other">Other</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   );
@@ -2872,7 +2879,6 @@ const Dashboard: React.FC = () => {
                         allowed: parseInt(guestAllowed) || 1,
                         attending: 'pending',
                         giftId: selectedEventForRSVP,
-                        tableSitting: guestTableSitting === 'Other' ? customTableSitting : guestTableSitting,
                       }),
                     });
                     if (res.ok) {
@@ -3092,64 +3098,21 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               ) : guestMode === 'bulk' ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="bulkNames" className="text-sm font-medium text-gray-900 mb-2 block">
-                      Guest Names (one per line)
-                    </Label>
-                    <Textarea
-                      id="bulkNames"
-                      value={bulkNames}
-                      onChange={(e) => setBulkNames(e.target.value)}
-                      className="min-h-32 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                      placeholder="David & Chizzy"
-                      required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter one name per line. All guests will have the same allowed number and table seating.
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="bulkTableSitting" className="text-sm font-medium text-gray-900 mb-2 block">
-                      Table Seating (for all guests)
-                    </Label>
-                    <Select value={guestTableSitting} onValueChange={(value) => {
-                      setGuestTableSitting(value);
-                      if (value !== 'Other') {
-                        setCustomTableSitting('');
-                      }
-                    }}>
-                      <SelectTrigger className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
-                        <SelectValue placeholder="Select table seating" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Table seating">Table seating</SelectItem>
-                        <SelectItem value="Groom's family">Groom's family</SelectItem>
-                        <SelectItem value="Bride's family">Bride's family</SelectItem>
-                        <SelectItem value="Groom's friends">Groom's friends</SelectItem>
-                        <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                        {customTableOptions.map((option) => (
-                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                        ))}
-                        <SelectItem value="Other">Other (Create New)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {guestTableSitting === 'Other' && (
-                    <div>
-                      <Label htmlFor="bulkCustomTableSitting" className="text-sm font-medium text-gray-900 mb-2 block">
-                        Custom Table Name
-                      </Label>
-                      <Input
-                        id="bulkCustomTableSitting"
-                        value={customTableSitting}
-                        onChange={(e) => setCustomTableSitting(e.target.value)}
-                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                        placeholder="Enter custom table name"
-                        required
-                      />
-                    </div>
-                  )}
+                <div>
+                  <Label htmlFor="bulkNames" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Guest Names (one per line)
+                  </Label>
+                  <Textarea
+                    id="bulkNames"
+                    value={bulkNames}
+                    onChange={(e) => setBulkNames(e.target.value)}
+                    className="min-h-32 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    placeholder="David & Chizzy"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter one name per line. All guests will have the same allowed number.
+                  </p>
                 </div>
               ) : (
                 <div>
@@ -3210,7 +3173,6 @@ const Dashboard: React.FC = () => {
                         {customTableOptions.map((option) => (
                           <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
-                        <SelectItem value="Other">Other (Create New)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -3348,6 +3310,94 @@ const Dashboard: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Custom Table Modal */}
+      <Dialog open={isCustomTableModalOpen} onOpenChange={(open) => {
+        setIsCustomTableModalOpen(open);
+        if (!open) {
+          setCustomTableName('');
+          setCurrentEditingGuestId(null);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Create Custom Table</DialogTitle>
+            <p className="text-sm text-gray-600 mt-1">Enter a name for the custom table seating</p>
+          </DialogHeader>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            if (!customTableName.trim() || !currentEditingGuestId) return;
+
+            const guest = guests.find(g => g.id === currentEditingGuestId);
+            if (!guest) return;
+
+            const token = localStorage.getItem('token');
+            try {
+              const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${currentEditingGuestId}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  firstName: guest.firstName,
+                  lastName: guest.lastName,
+                  tableSitting: customTableName.trim(),
+                }),
+              });
+              if (res.ok) {
+                const updatedGuest = await res.json();
+                const updatedGuests = guests.map(g =>
+                  g.id === currentEditingGuestId ? updatedGuest : g
+                );
+                setGuests(updatedGuests);
+                setIsCustomTableModalOpen(false);
+                setCustomTableName('');
+                setCurrentEditingGuestId(null);
+              } else {
+                alert('Failed to update table sitting');
+              }
+            } catch (err) {
+              console.error(err);
+              alert('Error updating table sitting');
+            }
+          }}>
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label htmlFor="customTableName" className="text-sm font-medium text-gray-900 mb-2 block">
+                  Custom Table Name
+                </Label>
+                <Input
+                  id="customTableName"
+                  value={customTableName}
+                  onChange={(e) => setCustomTableName(e.target.value)}
+                  className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  placeholder="Enter custom table name"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-6">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 h-11"
+                onClick={() => setIsCustomTableModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+              >
+                Create
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Toaster />
     </div>
   );
