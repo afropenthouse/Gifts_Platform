@@ -16,7 +16,8 @@ import {
   BarChart3, MessageSquare, Shield, Globe, Download,
   Star, TrendingDown, CheckCircle, AlertCircle, Wallet,
   CreditCard as CreditCardIcon, Smartphone, Globe as GlobeIcon,
-  Link as LinkIcon, User, Mail, Phone, MapPin, Clock, FileDown
+  Link as LinkIcon, User, Mail, Phone, MapPin, Clock, FileDown,
+  Plus, Minus
 } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
@@ -940,18 +941,18 @@ const Dashboard: React.FC = () => {
                   </p>
                 </div>
                 
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col lg:flex-row items-center space-y-2 lg:space-y-0 lg:space-x-4">
                   {activeTab === 'rsvp' && (
                     <>
-                      <Button variant="outline" size="sm" className="hidden lg:flex">
+                      <Button variant="outline" size="sm" className="w-full lg:w-auto">
                         <Users className="w-4 h-4 mr-2" />
                         Total Guests: {eventFilteredGuests.length}
                       </Button>
-                      <Button variant="outline" size="sm" className="hidden lg:flex">
+                      <Button variant="outline" size="sm" className="w-full lg:w-auto">
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Total Attending: {totalAttending}
                       </Button>
-                      <Button variant="outline" size="sm" className="hidden lg:flex" onClick={() => window.open('mailto:teambethere@gmail.com.com')}>
+                      <Button variant="outline" size="sm" className="w-full lg:w-auto" onClick={() => window.open('mailto:teambethere@gmail.com.com')}>
                         <HelpCircle className="w-4 h-4 mr-2" />
                         Help
                       </Button>
@@ -980,24 +981,26 @@ const Dashboard: React.FC = () => {
                           Keep sharing your RSVP links to receive more!
                         </p>
                       </div>
-                      <div className="flex flex-col space-y-3 mt-4 lg:flex-row lg:space-y-0 lg:space-x-3 lg:items-center">
-                          <Button
-                            variant="outline"
-                            className="bg-white/20 hover:bg-white/30 border-white/30 text-white w-full lg:w-auto"
-                            onClick={() => setIsCreateModalOpen(true)}
-                          >
-                            <Gift className="w-5 h-5 mr-2" />
-                            Create RSVP Link
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            className="bg-white hover:bg-gray-100 text-gray-900 w-full lg:w-auto"
-                            onClick={() => setActiveTab('rsvp')}
-                          >
-                            <Users className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Manage </span>RSVP
-                          </Button>
-                        </div>
+                      <div className="flex flex-row space-x-2 items-center mt-4">
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           className="bg-white/20 hover:bg-white/30 border-white/30 text-white flex-1"
+                           onClick={() => setIsCreateModalOpen(true)}
+                         >
+                           <Gift className="w-4 h-4 mr-2" />
+                           Create RSVP Link
+                         </Button>
+                         <Button
+                           variant="secondary"
+                           size="sm"
+                           className="bg-white hover:bg-gray-100 text-gray-900 flex-1"
+                           onClick={() => setActiveTab('rsvp')}
+                         >
+                           <Users className="w-4 h-4 mr-2" />
+                           Manage RSVP
+                         </Button>
+                       </div>
                     </div>
                     
                     {/* Stats Row */}
@@ -1682,42 +1685,118 @@ const Dashboard: React.FC = () => {
                                 </Select>
                               </TableCell>
                               <TableCell>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  value={guest.allowed}
-                                  onChange={async (e) => {
-                                    const newAllowed = parseInt(e.target.value) || 1;
-                                    const token = localStorage.getItem('token');
-                                    try {
-                                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
-                                        method: 'PUT',
-                                        headers: {
-                                          'Content-Type': 'application/json',
-                                          Authorization: `Bearer ${token}`,
-                                        },
-                                        body: JSON.stringify({
-                                          firstName: guest.firstName,
-                                          lastName: guest.lastName,
-                                          allowed: newAllowed,
-                                        }),
-                                      });
-                                      if (res.ok) {
-                                        const updatedGuest = await res.json();
-                                        const updatedGuests = guests.map(g =>
-                                          g.id === guest.id ? updatedGuest : g
-                                        );
-                                        setGuests(updatedGuests);
-                                      } else {
-                                        alert('Failed to update allowed count');
+                                <div className="flex items-center justify-center space-x-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={async () => {
+                                      const newAllowed = Math.max(1, guest.allowed - 1);
+                                      const token = localStorage.getItem('token');
+                                      try {
+                                        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
+                                          method: 'PUT',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            Authorization: `Bearer ${token}`,
+                                          },
+                                          body: JSON.stringify({
+                                            firstName: guest.firstName,
+                                            lastName: guest.lastName,
+                                            allowed: newAllowed,
+                                          }),
+                                        });
+                                        if (res.ok) {
+                                          const updatedGuest = await res.json();
+                                          const updatedGuests = guests.map(g =>
+                                            g.id === guest.id ? updatedGuest : g
+                                          );
+                                          setGuests(updatedGuests);
+                                        } else {
+                                          alert('Failed to update allowed count');
+                                        }
+                                      } catch (err) {
+                                        console.error(err);
+                                        alert('Error updating allowed count');
                                       }
-                                    } catch (err) {
-                                      console.error(err);
-                                      alert('Error updating allowed count');
-                                    }
-                                  }}
-                                  className="w-20 h-8 text-center border-0 focus:ring-0 focus:outline-none"
-                                />
+                                    }}
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={guest.allowed}
+                                    onChange={async (e) => {
+                                      const newAllowed = parseInt(e.target.value) || 1;
+                                      const token = localStorage.getItem('token');
+                                      try {
+                                        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
+                                          method: 'PUT',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            Authorization: `Bearer ${token}`,
+                                          },
+                                          body: JSON.stringify({
+                                            firstName: guest.firstName,
+                                            lastName: guest.lastName,
+                                            allowed: newAllowed,
+                                          }),
+                                        });
+                                        if (res.ok) {
+                                          const updatedGuest = await res.json();
+                                          const updatedGuests = guests.map(g =>
+                                            g.id === guest.id ? updatedGuest : g
+                                          );
+                                          setGuests(updatedGuests);
+                                        } else {
+                                          alert('Failed to update allowed count');
+                                        }
+                                      } catch (err) {
+                                        console.error(err);
+                                        alert('Error updating allowed count');
+                                      }
+                                    }}
+                                    className="w-12 h-6 text-center border-0 focus:ring-0 focus:outline-none text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={async () => {
+                                      const newAllowed = guest.allowed + 1;
+                                      const token = localStorage.getItem('token');
+                                      try {
+                                        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
+                                          method: 'PUT',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            Authorization: `Bearer ${token}`,
+                                          },
+                                          body: JSON.stringify({
+                                            firstName: guest.firstName,
+                                            lastName: guest.lastName,
+                                            allowed: newAllowed,
+                                          }),
+                                        });
+                                        if (res.ok) {
+                                          const updatedGuest = await res.json();
+                                          const updatedGuests = guests.map(g =>
+                                            g.id === guest.id ? updatedGuest : g
+                                          );
+                                          setGuests(updatedGuests);
+                                        } else {
+                                          alert('Failed to update allowed count');
+                                        }
+                                      } catch (err) {
+                                        console.error(err);
+                                        alert('Error updating allowed count');
+                                      }
+                                    }}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {(() => {
@@ -2757,7 +2836,7 @@ const Dashboard: React.FC = () => {
     setEditingGuest(null);
   }
 }}>
-  <DialogContent className="max-w-[95vw] sm:max-w-md w-full">
+  <DialogContent className="max-w-md w-full">
     <DialogHeader>
       <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900">
         {editingGuest ? 'Edit Guest' : guestMode === 'single' ? 'Add Guest' : 'Add Guests'}
@@ -3041,7 +3120,7 @@ const Dashboard: React.FC = () => {
     }} className="px-4 sm:px-6 pb-4 sm:pb-6">
       {/* Toggle between Single, Bulk, and Excel upload */}
       {!editingGuest && (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4 mt-4">
+      <div className="grid grid-cols-3 gap-2 mb-4 mt-4">
         <Button
           type="button"
           variant={guestMode === 'single' ? "default" : "outline"}
@@ -3071,7 +3150,7 @@ const Dashboard: React.FC = () => {
 
       <div className="space-y-4" style={{marginTop: editingGuest ? '1rem' : '0'}}>
         {editingGuest || guestMode === 'single' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="guestFirstName" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
                 First Name
@@ -3198,7 +3277,7 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 pt-6">
+      <div className="flex flex-row gap-3 pt-6">
         <Button
           type="button"
           variant="outline"
@@ -3229,7 +3308,7 @@ const Dashboard: React.FC = () => {
 
 {/* Error Modal */}
 <Dialog open={errorModalOpen} onOpenChange={setErrorModalOpen}>
-  <DialogContent className="max-w-[95vw] sm:max-w-md w-full">
+  <DialogContent className="max-w-md w-full">
     <div className="flex flex-col items-center text-center p-4 sm:p-6">
       <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
         <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
