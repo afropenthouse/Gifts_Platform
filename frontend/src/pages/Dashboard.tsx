@@ -988,8 +988,8 @@ const Dashboard: React.FC = () => {
                            className="bg-white/20 hover:bg-white/30 border-white/30 text-white flex-1"
                            onClick={() => setIsCreateModalOpen(true)}
                          >
-                           <Gift className="w-4 h-4 mr-2" />
-                           Create RSVP Link
+                           <Gift className="w-4 h-4 mr-1" />
+                           Create Link
                          </Button>
                          <Button
                            variant="secondary"
@@ -997,7 +997,7 @@ const Dashboard: React.FC = () => {
                            className="bg-white hover:bg-gray-100 text-gray-900 flex-1"
                            onClick={() => setActiveTab('rsvp')}
                          >
-                           <Users className="w-4 h-4 mr-2" />
+                           <Users className="w-4 h-4 mr-1" />
                            Manage RSVP
                          </Button>
                        </div>
