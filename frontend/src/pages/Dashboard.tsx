@@ -142,10 +142,12 @@ const Dashboard: React.FC = () => {
   const [customTableName, setCustomTableName] = useState('');
   const [currentEditingGuestId, setCurrentEditingGuestId] = useState<number | null>(null);
 
+  const totalAllowedGuests = guests.reduce((sum, g) => sum + g.allowed, 0);
+
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null },
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length },
-    { id: 'rsvp', label: 'RSVP', icon: Users, color: 'text-[#2E235C]', badge: guests.length },
+    { id: 'rsvp', label: 'RSVP', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
 
@@ -768,7 +770,7 @@ const Dashboard: React.FC = () => {
     filteredGuests = filteredGuests.filter(g => g.tableSitting === tableFilter);
   }
   
-  const totalAttending = Array.isArray(eventFilteredGuests) ? eventFilteredGuests.filter(g => g.attending === 'yes').length : 0;
+  const totalAttending = Array.isArray(eventFilteredGuests) ? eventFilteredGuests.filter(g => g.attending === 'yes').reduce((sum, g) => sum + g.allowed, 0) : 0;
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -1067,8 +1069,8 @@ const Dashboard: React.FC = () => {
                       
                       <div className="space-y-4">
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900 mb-1">{guests.length}</p>
-                          <p className="text-sm text-gray-600">Total Guests</p>
+                          <p className="text-2xl font-bold text-gray-900 mb-1">{totalAllowedGuests}</p>
+                          <p className="text-sm text-gray-600">Total Allowed Guests</p>
                         </div>
                       </div>
                       
