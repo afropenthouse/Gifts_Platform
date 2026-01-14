@@ -311,7 +311,7 @@ const ShareGift: React.FC = () => {
           />
 
           {/* Gift Card - Same style as home page */}
-          <div className="bg-gradient-card rounded-2xl shadow-card overflow-hidden border border-border/50 hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-white rounded-2xl shadow-card overflow-hidden border border-border/50 hover:shadow-lg transition-shadow cursor-pointer">
             <div className="relative w-full overflow-hidden bg-black/5">
               {gift.picture && (
                 <img

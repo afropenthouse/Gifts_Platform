@@ -1312,46 +1312,43 @@ const Dashboard: React.FC = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <Clock className="w-5 h-5 mr-2 text-gray-600" />
-                      Recent Withdrawals
+                      Recent Transactions
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {withdrawHistory.length > 0 ? (
+                    {recentContributions.length > 0 ? (
                       <div className="space-y-4">
-                        {withdrawHistory.slice(0, 5).map((withdrawal, index) => (
-                          <div key={index} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
-                            <div className="flex items-center space-x-3">
-                              <div className={`p-2 rounded-full ${withdrawal.status === 'completed' ? 'bg-green-100' : 'bg-yellow-100'}`}>
-                                {withdrawal.status === 'completed' ? (
+                        {recentContributions.map((contribution, index) => {
+                          const amount = typeof contribution.amount === 'number' ? contribution.amount : parseFloat(String(contribution.amount));
+                          const commission = amount * 0.15;
+                          const amountReceived = amount * 0.85;
+                          const gift = gifts.find(g => Number(g.id) === Number(contribution.giftId));
+                          return (
+                            <div key={index} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+                              <div className="flex items-center space-x-3">
+                                <div className="p-2 rounded-full bg-green-100">
                                   <CheckCircle className="w-5 h-5 text-green-600" />
-                                ) : (
-                                  <Clock className="w-5 h-5 text-yellow-600" />
-                                )}
+                                </div>
+                                <div>
+                                  <p className="font-medium">Gifts {gift?.title || 'Gift'}</p>
+                                  <p className="text-sm text-gray-500">
+                                    {new Date(contribution.createdAt).toLocaleDateString()} • {contribution.contributorName || 'Anonymous'}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium">Withdrawal to {withdrawal.bank_name}</p>
-                                <p className="text-sm text-gray-500">
-                                  {new Date(withdrawal.createdAt).toLocaleDateString()} • {withdrawal.account_number}
-                                </p>
+                              <div className="text-right">
+                                <p className="font-bold text-gray-900">₦{amount.toFixed(2)}</p>
+                                <p className="text-xs text-gray-500">Commission: ₦{commission.toFixed(2)}</p>
+                                <p className="text-xs text-green-600">Received: ₦{amountReceived.toFixed(2)}</p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-bold text-gray-900">₦{withdrawal.amount}</p>
-                              <Badge className={`
-                                ${withdrawal.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                                  withdrawal.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-[#2E235C]/10 text-[#2E235C]'}
-                              `}>
-                                {withdrawal.status}
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-8">
                         <CreditCardIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                        <p className="text-gray-500">No withdrawal history yet</p>
+                        <p className="text-gray-500">No transaction history yet</p>
                       </div>
                     )}
                   </CardContent>
@@ -2369,7 +2366,7 @@ const Dashboard: React.FC = () => {
                   min="100"
                 />
                 <p className="text-xs text-gray-500 mt-2">Available balance: ₦{user.wallet}</p>
-                <p className="text-xs text-red-500 mt-1">Minimum withdrawal amount is ₦100. A 5% processing fee will be deducted.</p>
+                <p className="text-xs text-gray-500 mt-1">Minimum withdrawal amount is ₦100.</p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-900 mb-2 block">
@@ -2455,13 +2452,8 @@ const Dashboard: React.FC = () => {
                   <span className="font-semibold">₦{withdrawAmount || '0.00'}</span>
                 </div>
                 <div className="flex justify-between text-sm mt-2">
-                  <span className="text-gray-600">Processing Fee (5%):</span>
-                  <span className="font-semibold">₦{(withdrawAmount && !isNaN(Number(withdrawAmount)) ? (Math.ceil(Number(withdrawAmount) * 0.05 * 100) / 100).toFixed(2) : '0.00')}</span>
-                </div>
-                <Separator className="my-2" />
-                <div className="flex justify-between font-semibold">
-                  <span>Total to Receive:</span>
-                  <span className="text-green-600">₦{(withdrawAmount && !isNaN(Number(withdrawAmount)) ? (Number(withdrawAmount) - Math.ceil(Number(withdrawAmount) * 0.05 * 100) / 100).toFixed(2) : '0.00')}</span>
+                  <span className="text-gray-600">Amount to Receive:</span>
+                  <span className="text-green-600 font-semibold">₦{withdrawAmount || '0.00'}</span>
                 </div>
               </div>
             </div>
@@ -2880,6 +2872,7 @@ const Dashboard: React.FC = () => {
                         allowed: parseInt(guestAllowed) || 1,
                         attending: 'pending',
                         giftId: selectedEventForRSVP,
+                        tableSitting: guestTableSitting === 'Other' ? customTableSitting : guestTableSitting,
                       }),
                     });
                     if (res.ok) {
@@ -3099,21 +3092,64 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               ) : guestMode === 'bulk' ? (
-                <div>
-                  <Label htmlFor="bulkNames" className="text-sm font-medium text-gray-900 mb-2 block">
-                    Guest Names (one per line)
-                  </Label>
-                  <Textarea
-                    id="bulkNames"
-                    value={bulkNames}
-                    onChange={(e) => setBulkNames(e.target.value)}
-                    className="min-h-32 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                    placeholder="David & Chizzy"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter one name per line. All guests will have the same allowed number.
-                  </p>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="bulkNames" className="text-sm font-medium text-gray-900 mb-2 block">
+                      Guest Names (one per line)
+                    </Label>
+                    <Textarea
+                      id="bulkNames"
+                      value={bulkNames}
+                      onChange={(e) => setBulkNames(e.target.value)}
+                      className="min-h-32 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                      placeholder="David & Chizzy"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter one name per line. All guests will have the same allowed number and table seating.
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="bulkTableSitting" className="text-sm font-medium text-gray-900 mb-2 block">
+                      Table Seating (for all guests)
+                    </Label>
+                    <Select value={guestTableSitting} onValueChange={(value) => {
+                      setGuestTableSitting(value);
+                      if (value !== 'Other') {
+                        setCustomTableSitting('');
+                      }
+                    }}>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
+                        <SelectValue placeholder="Select table seating" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Table seating">Table seating</SelectItem>
+                        <SelectItem value="Groom's family">Groom's family</SelectItem>
+                        <SelectItem value="Bride's family">Bride's family</SelectItem>
+                        <SelectItem value="Groom's friends">Groom's friends</SelectItem>
+                        <SelectItem value="Bride's friends">Bride's friends</SelectItem>
+                        {customTableOptions.map((option) => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                        <SelectItem value="Other">Other (Create New)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {guestTableSitting === 'Other' && (
+                    <div>
+                      <Label htmlFor="bulkCustomTableSitting" className="text-sm font-medium text-gray-900 mb-2 block">
+                        Custom Table Name
+                      </Label>
+                      <Input
+                        id="bulkCustomTableSitting"
+                        value={customTableSitting}
+                        onChange={(e) => setCustomTableSitting(e.target.value)}
+                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                        placeholder="Enter custom table name"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div>
