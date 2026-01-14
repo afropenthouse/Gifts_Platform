@@ -318,6 +318,7 @@ const ShareGift: React.FC = () => {
                   src={gift.picture}
                   alt={heading}
                   className="w-full h-auto object-contain"
+                  style={{ filter: 'none', opacity: 1, transition: 'none' }}
                 />
               )}
 

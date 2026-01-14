@@ -21,6 +21,9 @@ import {
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+// ...existing code...
+
+
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -59,6 +62,8 @@ interface Contribution {
 }
 
 const Dashboard: React.FC = () => {
+  // Success Modal State for withdrawal
+  const [showWithdrawSuccess, setShowWithdrawSuccess] = useState(false);
   const { user, loading, updateUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -105,6 +110,8 @@ const Dashboard: React.FC = () => {
   const [customTableSitting, setCustomTableSitting] = useState('');
   const [customTableOptions, setCustomTableOptions] = useState<string[]>([]);
   const [guestMode, setGuestMode] = useState<'single' | 'bulk' | 'excel'>('single');
+  const [address, setAddress] = useState('');
+  const [reminder, setReminder] = useState('none');
   const [bulkNames, setBulkNames] = useState('');
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [excelParsing, setExcelParsing] = useState(false);
@@ -115,6 +122,17 @@ const Dashboard: React.FC = () => {
   const [isUpdatingGift, setIsUpdatingGift] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
+  // RSVP duplicate error state
+  const [rsvpDuplicateError, setRsvpDuplicateError] = useState('');
+    // Helper to check for duplicate RSVP (case-insensitive, trimmed)
+    const isDuplicateRSVP = (firstName: string, lastName: string, eventId: number | null) => {
+      const normalized = (s: string) => s.trim().toLowerCase();
+      return guests.some(g =>
+        normalized(g.firstName) === normalized(firstName) &&
+        normalized(g.lastName) === normalized(lastName) &&
+        (eventId ? g.giftId === eventId : true)
+      );
+    };
   const [deletingGiftId, setDeletingGiftId] = useState<number | null>(null);
   const [deletingGuestId, setDeletingGuestId] = useState<number | null>(null);
   const [guestSearch, setGuestSearch] = useState('');
@@ -424,10 +442,14 @@ const Dashboard: React.FC = () => {
     if (gift.details) {
       setGroomName(gift.details.groomName || '');
       setBrideName(gift.details.brideName || '');
+      setAddress(gift.details.address || '');
+      setReminder(gift.details.reminder || 'none');
       setCustomType(gift.customType || '');
     } else {
       setGroomName('');
       setBrideName('');
+      setAddress('');
+      setReminder('none');
       setCustomType('');
     }
     setIsEditModalOpen(true);
@@ -489,6 +511,12 @@ const Dashboard: React.FC = () => {
     if (type === 'wedding') {
       details.groomName = groomName;
       details.brideName = brideName;
+    }
+    if (address) {
+      details.address = address;
+    }
+    if (reminder && reminder !== 'none') {
+      details.reminder = reminder;
     }
     formData.append('details', JSON.stringify(details));
 
@@ -561,6 +589,18 @@ const Dashboard: React.FC = () => {
       details.groomName = groomName;
       details.brideName = brideName;
     }
+    if (address) {
+      details.address = address;
+    }
+    if (reminder && reminder !== 'none') {
+      details.reminder = reminder;
+    }
+    if (address) {
+      details.address = address;
+    }
+    if (reminder && reminder !== 'none') {
+      details.reminder = reminder;
+    }
     formData.append('details', JSON.stringify(details));
 
     if (type === 'other') {
@@ -626,7 +666,7 @@ const Dashboard: React.FC = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        alert('Withdrawal initiated successfully!');
+        setShowWithdrawSuccess(true);
         const profileRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -642,6 +682,18 @@ const Dashboard: React.FC = () => {
       } else {
         alert(data.msg || 'Withdrawal failed');
       }
+          {/* Withdraw Success Modal */}
+          <Dialog open={showWithdrawSuccess} onOpenChange={setShowWithdrawSuccess}>
+            <DialogContent className="max-w-[90vw] sm:max-w-[400px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-auto">
+              <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-white z-10">
+                <DialogTitle className="text-xl font-semibold text-gray-900">Withdrawal initiated successfully!</DialogTitle>
+              </DialogHeader>
+              <div className="px-6 py-6 text-center">
+                <p className="text-lg text-gray-700 mb-4">Your withdrawal request has been sent and is being processed.</p>
+                <Button className="w-full mt-2" onClick={() => setShowWithdrawSuccess(false)}>OK</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
     } catch (err) {
       console.error(err);
       alert('An error occurred');
@@ -1552,7 +1604,9 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-600 mt-2">Showing {filteredGuests.length} of {eventFilteredGuests.length} guests</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  {`Showing ${filteredGuests.reduce((sum, guest) => sum + Number(guest.allowed), 0)} allowed guests`}
+                </p>
 
                 <div className="mt-6">
                 {selectedEventForRSVP ? (
@@ -1839,6 +1893,8 @@ const Dashboard: React.FC = () => {
            setFileError('');
            setGroomName('');
            setBrideName('');
+           setAddress('');
+           setReminder('none');
            setCustomType('');
          }
       }}>
@@ -1917,6 +1973,39 @@ const Dashboard: React.FC = () => {
                   onChange={(e) => setDate(e.target.value)}
                   className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                 />
+              </div>
+
+
+              <div>
+                <Label htmlFor="address" className="text-sm font-medium text-gray-900 mb-2 block">
+                  <MapPin className="inline w-4 h-4 mr-2 text-gray-600" />
+                  Event Address
+                </Label>
+                <Textarea
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="min-h-20 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  placeholder="Enter the event location address"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="reminder" className="text-sm font-medium text-gray-900 mb-2 block">
+                  <Clock className="inline w-4 h-4 mr-2 text-gray-600" />
+                  Send Reminder
+                </Label>
+                <Select onValueChange={setReminder} value={reminder}>
+                  <SelectTrigger className="w-full h-11 border-gray-300 bg-white hover:bg-gray-50 transition-colors">
+                    <SelectValue placeholder="Select reminder timing" />
+                  </SelectTrigger>
+                  <SelectContent className="border-0 shadow-lg">
+                    <SelectItem value="none">No reminder</SelectItem>
+                    <SelectItem value="1week">1 week before</SelectItem>
+                    <SelectItem value="3days">3 days before</SelectItem>
+                    <SelectItem value="1day">1 day before</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -2051,6 +2140,8 @@ const Dashboard: React.FC = () => {
           setFileError('');
           setGroomName('');
           setBrideName('');
+          setAddress('');
+          setReminder('none');
           setCustomType('');
           setEditingGift(null);
         }
@@ -2275,9 +2366,10 @@ const Dashboard: React.FC = () => {
                   className="h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                   placeholder="Enter amount"
                   required
-                  min="1000"
+                  min="100"
                 />
                 <p className="text-xs text-gray-500 mt-2">Available balance: ₦{user.wallet}</p>
+                <p className="text-xs text-red-500 mt-1">Minimum withdrawal amount is ₦100. A 5% processing fee will be deducted.</p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-900 mb-2 block">
@@ -2363,13 +2455,13 @@ const Dashboard: React.FC = () => {
                   <span className="font-semibold">₦{withdrawAmount || '0.00'}</span>
                 </div>
                 <div className="flex justify-between text-sm mt-2">
-                  <span className="text-gray-600">Processing Fee:</span>
-                  <span className="font-semibold">₦50.00</span>
+                  <span className="text-gray-600">Processing Fee (5%):</span>
+                  <span className="font-semibold">₦{(withdrawAmount && !isNaN(Number(withdrawAmount)) ? (Math.ceil(Number(withdrawAmount) * 0.05 * 100) / 100).toFixed(2) : '0.00')}</span>
                 </div>
                 <Separator className="my-2" />
                 <div className="flex justify-between font-semibold">
                   <span>Total to Receive:</span>
-                  <span className="text-green-600">₦{(parseFloat(withdrawAmount || '0') - 50).toFixed(2)}</span>
+                  <span className="text-green-600">₦{(withdrawAmount && !isNaN(Number(withdrawAmount)) ? (Number(withdrawAmount) - Math.ceil(Number(withdrawAmount) * 0.05 * 100) / 100).toFixed(2) : '0.00')}</span>
                 </div>
               </div>
             </div>
@@ -2679,10 +2771,30 @@ const Dashboard: React.FC = () => {
                     : 'Add a new guest to your RSVP list'}
             </p>
           </DialogHeader>
+          {/* Show RSVP duplicate error if present */}
+          {rsvpDuplicateError && (
+            <div className="mb-4 text-red-600 text-center font-medium bg-red-50 border border-red-200 rounded p-2">
+              {rsvpDuplicateError}
+            </div>
+          )}
           <form onSubmit={async (e) => {
             e.preventDefault();
-
+            setRsvpDuplicateError('');
             if (isAddingGuest) return; // Prevent duplicate submissions
+
+            if (!editingGuest && guestMode === 'single') {
+              // Check for duplicate RSVP before adding
+              if (!guestFirstName.trim() || !guestLastName.trim()) {
+                setErrorTitle('Missing Information');
+                setErrorMessage('Please enter both first and last name');
+                setErrorModalOpen(true);
+                return;
+              }
+              if (isDuplicateRSVP(guestFirstName, guestLastName, selectedEventForRSVP)) {
+                setRsvpDuplicateError('You have already submitted a response for this event.');
+                return;
+              }
+            }
 
             if (editingGuest) {
               // Handle edit mode

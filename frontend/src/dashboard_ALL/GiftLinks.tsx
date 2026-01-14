@@ -54,12 +54,14 @@ export const GiftLinks = ({
 }: GiftLinksProps) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [giftToDelete, setGiftToDelete] = useState<Gift | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const handleDeleteConfirm = () => {
-    if (giftToDelete) {
+    if (giftToDelete && deleteConfirmText.trim().toLowerCase() === 'delete') {
       onDeleteGift(giftToDelete.id);
       setDeleteModalOpen(false);
       setGiftToDelete(null);
+      setDeleteConfirmText('');
     }
   };
   return (
@@ -268,15 +270,25 @@ export const GiftLinks = ({
           <DialogHeader>
             <DialogTitle className="text-red-600">Delete Event</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "<span className="font-semibold text-gray-900">{giftToDelete?.title}</span>"? This action cannot be undone.
+              Are you sure you want to delete "<span className="font-semibold text-gray-900">{giftToDelete?.title}</span>"? This action cannot be undone.<br />
+              <span className="block mt-3">Please type <span className="font-bold text-red-600">delete</span> to confirm.</span>
             </DialogDescription>
           </DialogHeader>
+          <input
+            type="text"
+            className="w-full border border-gray-300 rounded px-3 py-2 mt-4 mb-2 focus:outline-none focus:ring-2 focus:ring-red-200"
+            placeholder="Type 'delete' to confirm"
+            value={deleteConfirmText}
+            onChange={e => setDeleteConfirmText(e.target.value)}
+            autoFocus
+          />
           <DialogFooter className="flex gap-2 justify-end">
             <Button
               variant="outline"
               onClick={() => {
                 setDeleteModalOpen(false);
                 setGiftToDelete(null);
+                setDeleteConfirmText('');
               }}
               className="font-medium"
             >
@@ -285,7 +297,7 @@ export const GiftLinks = ({
             <Button
               onClick={handleDeleteConfirm}
               className="bg-red-600 hover:bg-red-700 text-white font-medium"
-              disabled={!!deletingGiftId}
+              disabled={!!deletingGiftId || deleteConfirmText.trim().toLowerCase() !== 'delete'}
             >
               {deletingGiftId ? (
                 <>
