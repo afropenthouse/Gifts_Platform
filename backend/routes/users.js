@@ -85,9 +85,9 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Minimum withdrawal amount is ₦100' });
       }
 
-      // Calculate 5% fee
-      const fee = Math.ceil(withdrawAmount * 0.05 * 100) / 100; // round up to 2 decimals
-      const totalToReceive = withdrawAmount - fee;
+      // No fee on withdrawal
+      const fee = 0;
+      const totalToReceive = withdrawAmount;
       if (totalToReceive <= 0) {
         return res.status(400).json({ msg: 'Withdrawal amount too low after fee deduction.' });
       }

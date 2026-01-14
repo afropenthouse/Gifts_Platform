@@ -319,10 +319,14 @@ module.exports = () => {
 
       console.log('💾 Contribution created:', { id: contribution.id, amount, giftId });
 
+      // Deduct 15% commission
+      const commission = amount * 0.15;
+      const amountReceived = amount * 0.85;
+
       // Update user's wallet
       const walletUpdateResult = await prisma.user.update({
         where: { id: gift.userId },
-        data: { wallet: { increment: amount } },
+        data: { wallet: { increment: amountReceived } },
       });
 
       console.log('✅ CONTRIBUTION SAVED:', { id: contribution.id, amount, wallet: walletUpdateResult.wallet });
@@ -487,10 +491,14 @@ module.exports = () => {
 
         console.log('✓ Contribution created:', contribution.id, 'Amount:', amountInNaira);
 
+        // Deduct 15% commission
+        const commission = amountInNaira * 0.15;
+        const amountReceived = amountInNaira * 0.85;
+
         // Update user's wallet
         const updateResult = await prisma.user.update({
           where: { id: gift.userId },
-          data: { wallet: { increment: amountInNaira } },
+          data: { wallet: { increment: amountReceived } },
         });
 
         console.log('✓ Wallet updated for user:', gift.userId, 'New balance should be:', updateResult.wallet);
@@ -546,10 +554,14 @@ module.exports = () => {
         },
       });
 
+      // Deduct 15% commission
+      const commission = amount * 0.15;
+      const amountReceived = amount * 0.85;
+
       // Update user's wallet atomically
       await prisma.user.update({
         where: { id: gift.userId },
-        data: { wallet: { increment: amount } },
+        data: { wallet: { increment: amountReceived } },
       });
       
       // Send thank you email to contributor if email provided in background
