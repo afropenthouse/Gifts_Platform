@@ -323,7 +323,7 @@ const ShareGift: React.FC = () => {
               )}
 
               <div className="absolute inset-0 flex items-end">
-                <div className="w-full p-4 pb-6 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                <div className="w-full p-4 pb-6">
                   <div className="space-y-3">
                     <Button
                       className="w-full bg-black text-white border border-black hover:bg-white hover:text-black transition-colors"

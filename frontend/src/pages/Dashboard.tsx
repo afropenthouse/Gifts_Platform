@@ -978,24 +978,24 @@ const Dashboard: React.FC = () => {
                           Keep sharing your RSVP links to receive more!
                         </p>
                       </div>
-                      <div className="flex items-center space-x-3 mt-4 lg:mt-0">
-                        <Button 
-                          variant="outline" 
-                          className="bg-white/20 hover:bg-white/30 border-white/30 text-white"
-                          onClick={() => setIsCreateModalOpen(true)}
-                        >
-                          <Gift className="w-5 h-5 mr-2" />
-                          Create RSVP Link
-                        </Button>
-                        <Button 
-                          variant="secondary"
-                          className="bg-white hover:bg-gray-100 text-gray-900"
-                          onClick={() => setActiveTab('rsvp')}
-                        >
-                          <Users className="w-4 h-4 mr-2" />
-                          Manage RSVP
-                        </Button>
-                      </div>
+                      <div className="flex flex-col space-y-3 mt-4 lg:flex-row lg:space-y-0 lg:space-x-3 lg:items-center">
+                          <Button
+                            variant="outline"
+                            className="bg-white/20 hover:bg-white/30 border-white/30 text-white w-full lg:w-auto"
+                            onClick={() => setIsCreateModalOpen(true)}
+                          >
+                            <Gift className="w-5 h-5 mr-2" />
+                            Create RSVP Link
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            className="bg-white hover:bg-gray-100 text-gray-900 w-full lg:w-auto"
+                            onClick={() => setActiveTab('rsvp')}
+                          >
+                            <Users className="w-4 h-4 mr-2" />
+                            <span className="hidden sm:inline">Manage </span>RSVP
+                          </Button>
+                        </div>
                     </div>
                     
                     {/* Stats Row */}
@@ -1025,7 +1025,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Quick Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Create Gift Card */}
                   <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer" onClick={() => setIsCreateModalOpen(true)}>
                     <CardContent className="p-6">
@@ -1072,7 +1072,7 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
                       
-                      <Button 
+                      <Button
                         variant="outline"
                         className="w-full mt-4 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white hover:border-[#2E235C] transition-all duration-200"
                         onClick={(e) => {
@@ -1081,7 +1081,7 @@ const Dashboard: React.FC = () => {
                         }}
                       >
                         <Users className="w-4 h-4 mr-2" />
-                        Manage Guests
+                        Manage
                       </Button>
                     </CardContent>
                   </Card>
@@ -2740,576 +2740,576 @@ const Dashboard: React.FC = () => {
       </Dialog>
 
       {/* Add Guest Modal */}
-      <Dialog open={isAddGuestModalOpen} onOpenChange={(open) => {
-        setIsAddGuestModalOpen(open);
-        if (!open) {
-          setGuestFirstName('');
-          setGuestLastName('');
-          setGuestAllowed('1');
-          setGuestTableSitting('Table seating');
-          setCustomTableSitting('');
-          setGuestMode('single');
-          setBulkNames('');
-          setExcelFile(null);
-          setExcelParsing(false);
-          setEditingGuest(null);
+<Dialog open={isAddGuestModalOpen} onOpenChange={(open) => {
+  setIsAddGuestModalOpen(open);
+  if (!open) {
+    setGuestFirstName('');
+    setGuestLastName('');
+    setGuestAllowed('1');
+    setGuestTableSitting('Table seating');
+    setCustomTableSitting('');
+    setGuestMode('single');
+    setBulkNames('');
+    setExcelFile(null);
+    setExcelParsing(false);
+    setEditingGuest(null);
+  }
+}}>
+  <DialogContent className="max-w-[95vw] sm:max-w-md w-full">
+    <DialogHeader>
+      <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900">
+        {editingGuest ? 'Edit Guest' : guestMode === 'single' ? 'Add Guest' : 'Add Guests'}
+      </DialogTitle>
+      <p className="text-xs sm:text-sm text-gray-600 mt-1">
+        {editingGuest
+          ? 'Update guest information'
+          : guestMode === 'bulk'
+            ? 'Add multiple guests at once'
+            : guestMode === 'excel'
+              ? 'Upload an Excel sheet to add guests'
+              : 'Add a new guest to your RSVP list'}
+      </p>
+    </DialogHeader>
+    {/* Show RSVP duplicate error if present */}
+    {rsvpDuplicateError && (
+      <div className="mb-4 text-sm sm:text-base text-red-600 text-center font-medium bg-red-50 border border-red-200 rounded p-2">
+        {rsvpDuplicateError}
+      </div>
+    )}
+    <form onSubmit={async (e) => {
+      e.preventDefault();
+      setRsvpDuplicateError('');
+      if (isAddingGuest) return; // Prevent duplicate submissions
+
+      if (!editingGuest && guestMode === 'single') {
+        // Check for duplicate RSVP before adding
+        if (!guestFirstName.trim() || !guestLastName.trim()) {
+          setErrorTitle('Missing Information');
+          setErrorMessage('Please enter both first and last name');
+          setErrorModalOpen(true);
+          return;
         }
-      }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-gray-900">
-              {editingGuest ? 'Edit Guest' : guestMode === 'single' ? 'Add Guest' : 'Add Guests'}
-            </DialogTitle>
-            <p className="text-sm text-gray-600 mt-1">
-              {editingGuest
-                ? 'Update guest information'
-                : guestMode === 'bulk'
-                  ? 'Add multiple guests at once'
-                  : guestMode === 'excel'
-                    ? 'Upload an Excel sheet to add guests'
-                    : 'Add a new guest to your RSVP list'}
+        if (isDuplicateRSVP(guestFirstName, guestLastName, selectedEventForRSVP)) {
+          setRsvpDuplicateError('You have already submitted a response for this event.');
+          return;
+        }
+      }
+
+      if (editingGuest) {
+        // Handle edit mode
+        if (!guestFirstName.trim() || !guestLastName.trim()) {
+          setErrorTitle('Missing Information');
+          setErrorMessage('Please enter both first and last name');
+          setErrorModalOpen(true);
+          return;
+        }
+
+        setIsAddingGuest(true);
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${editingGuest.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              firstName: guestFirstName,
+              lastName: guestLastName,
+              allowed: parseInt(guestAllowed) || 1,
+              tableSitting: guestTableSitting === 'Other' ? customTableSitting : guestTableSitting,
+            }),
+          });
+          if (res.ok) {
+            const updatedGuest = await res.json();
+            const updatedGuests = guests.map(g => 
+              g.id === editingGuest.id ? updatedGuest : g
+            );
+            setGuests(updatedGuests);
+            setGuestFirstName('');
+            setGuestLastName('');
+            setGuestAllowed('1');
+            setGuestTableSitting('Table seating');
+            setEditingGuest(null);
+            setIsAddGuestModalOpen(false);
+          } else {
+            setErrorTitle('Update Failed');
+            setErrorMessage('Failed to update guest. Please try again.');
+            setErrorModalOpen(true);
+          }
+        } catch (err) {
+          console.error(err);
+          setErrorTitle('Error');
+          setErrorMessage('An error occurred while updating the guest.');
+          setErrorModalOpen(true);
+        } finally {
+          setIsAddingGuest(false);
+        }
+      } else if (guestMode === 'bulk') {
+        // Handle bulk addition
+        const names = bulkNames.split('\n').map(n => n.trim()).filter(n => n);
+        if (names.length === 0) {
+          setErrorTitle('No Names Entered');
+          setErrorMessage('Please enter at least one guest name');
+          setErrorModalOpen(true);
+          return;
+        }
+
+        setIsAddingGuest(true);
+        const token = localStorage.getItem('token');
+        const createdGuests = [] as any[];
+        
+        try {
+          for (const name of names) {
+            const parts = name.split(' ');
+            const firstName = parts[0] || '';
+            const lastName = parts.slice(1).join(' ') || '';
+            if (!firstName && !lastName) continue;
+
+            try {
+              const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  firstName,
+                  lastName,
+                  allowed: parseInt(guestAllowed) || 1,
+                  attending: 'pending',
+                  giftId: selectedEventForRSVP,
+                }),
+              });
+              if (res.ok) {
+                const newGuest = await res.json();
+                createdGuests.push(newGuest);
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+
+          if (createdGuests.length === 0) {
+            setErrorTitle('No Guests Added');
+            setErrorMessage('No guests were added. Please check your entries and try again.');
+            setErrorModalOpen(true);
+            return;
+          }
+
+          setGuests([...guests, ...createdGuests]);
+          setBulkNames('');
+          setGuestAllowed('1');
+          setIsAddGuestModalOpen(false);
+        } finally {
+          setIsAddingGuest(false);
+        }
+      } else if (guestMode === 'excel') {
+        if (!excelFile) {
+          setErrorTitle('No File Selected');
+          setErrorMessage('Please upload an Excel file (.xlsx or .xls)');
+          setErrorModalOpen(true);
+          return;
+        }
+
+        setIsAddingGuest(true);
+        setExcelParsing(true);
+        
+        try {
+          const buffer = await excelFile.arrayBuffer();
+          const workbook = XLSX.read(buffer, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+          const parsedGuests = rows.map((row) => {
+            const firstName = row.firstName || row.FirstName || row['First Name'] || row['First name'] || '';
+            const lastName = row.lastName || row.LastName || row['Last Name'] || row['Last name'] || '';
+            const allowedVal = row.allowed || row.Allowed || row['Number Allowed'] || row['Allowed'] || row['allowed'] || '';
+            const allowed = parseInt(allowedVal) || parseInt(guestAllowed) || 1;
+            const tableSitting = row.tableSitting || row.TableSitting || row['Table seating'] || row['Table Seating'] || row['Table Seating'] || 'Table seating';
+            return { firstName: String(firstName).trim(), lastName: String(lastName).trim(), allowed, tableSitting: String(tableSitting).trim() };
+          }).filter((g) => g.firstName || g.lastName);
+
+          if (parsedGuests.length === 0) {
+            setErrorTitle('Invalid Excel Format');
+            setErrorMessage('No valid rows found. Please include First Name / Last Name columns in your Excel file.');
+            setErrorModalOpen(true);
+            return;
+          }
+
+          const token = localStorage.getItem('token');
+          const createdGuests = [] as any[];
+
+          for (const g of parsedGuests) {
+            try {
+              const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  firstName: g.firstName,
+                  lastName: g.lastName,
+                  allowed: g.allowed,
+                  attending: 'pending',
+                  giftId: selectedEventForRSVP,
+                  tableSitting: g.tableSitting || 'Table seating',
+                }),
+              });
+              if (res.ok) {
+                const newGuest = await res.json();
+                createdGuests.push(newGuest);
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+
+          if (createdGuests.length === 0) {
+            setErrorTitle('Upload Failed');
+            setErrorMessage('No guests were added. Please verify your Excel file columns.');
+            setErrorModalOpen(true);
+            return;
+          }
+
+          setGuests([...guests, ...createdGuests]);
+          setExcelFile(null);
+          setGuestAllowed('1');
+          setIsAddGuestModalOpen(false);
+        } catch (err) {
+          console.error(err);
+          setErrorTitle('Processing Error');
+          setErrorMessage('Could not process the Excel file. Please check the format and try again.');
+          setErrorModalOpen(true);
+        } finally {
+          setExcelParsing(false);
+          setIsAddingGuest(false);
+        }
+      } else {
+        // Handle single addition
+        if (!guestFirstName.trim() || !guestLastName.trim()) {
+          setErrorTitle('Missing Information');
+          setErrorMessage('Please enter both first and last name');
+          setErrorModalOpen(true);
+          return;
+        }
+        
+        setIsAddingGuest(true);
+        const token = localStorage.getItem('token');
+        
+        try {
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              firstName: guestFirstName,
+              lastName: guestLastName,
+              allowed: parseInt(guestAllowed) || 1,
+              attending: 'pending',
+              giftId: selectedEventForRSVP,
+              tableSitting: guestTableSitting === 'Other' ? customTableSitting : guestTableSitting,
+            }),
+          });
+          if (res.ok) {
+            const newGuest = await res.json();
+            setGuests([...guests, newGuest]);
+            setGuestFirstName('');
+            setGuestLastName('');
+            setGuestAllowed('1');
+            setGuestTableSitting('Table seating');
+            setIsAddGuestModalOpen(false);
+          } else {
+            setErrorTitle('Failed to Add Guest');
+            setErrorMessage('Failed to add guest. Please try again.');
+            setErrorModalOpen(true);
+          }
+        } catch (err) {
+          console.error(err);
+          setErrorTitle('Error');
+          setErrorMessage('Error adding guest. Please try again.');
+          setErrorModalOpen(true);
+        } finally {
+          setIsAddingGuest(false);
+        }
+      }
+    }} className="px-4 sm:px-6 pb-4 sm:pb-6">
+      {/* Toggle between Single, Bulk, and Excel upload */}
+      {!editingGuest && (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4 mt-4">
+        <Button
+          type="button"
+          variant={guestMode === 'single' ? "default" : "outline"}
+          className={`w-full text-xs sm:text-sm ${guestMode === 'single' ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
+          onClick={() => setGuestMode('single')}
+        >
+          Single Guest
+        </Button>
+        <Button
+          type="button"
+          variant={guestMode === 'bulk' ? "default" : "outline"}
+          className={`w-full text-xs sm:text-sm ${guestMode === 'bulk' ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
+          onClick={() => setGuestMode('bulk')}
+        >
+          Bulk Add
+        </Button>
+        <Button
+          type="button"
+          variant={guestMode === 'excel' ? "default" : "outline"}
+          className={`w-full text-xs sm:text-sm ${guestMode === 'excel' ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
+          onClick={() => setGuestMode('excel')}
+        >
+          Upload Excel
+        </Button>
+      </div>
+      )}
+
+      <div className="space-y-4" style={{marginTop: editingGuest ? '1rem' : '0'}}>
+        {editingGuest || guestMode === 'single' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="guestFirstName" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+                First Name
+              </Label>
+              <Input
+                id="guestFirstName"
+                value={guestFirstName}
+                onChange={(e) => setGuestFirstName(e.target.value)}
+                className="h-10 sm:h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                placeholder="First name"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="guestLastName" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+                Last Name
+              </Label>
+              <Input
+                id="guestLastName"
+                value={guestLastName}
+                onChange={(e) => setGuestLastName(e.target.value)}
+                className="h-10 sm:h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                placeholder="Last name"
+                required
+              />
+            </div>
+          </div>
+        ) : guestMode === 'bulk' ? (
+          <div>
+            <Label htmlFor="bulkNames" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+              Guest Names (one per line)
+            </Label>
+            <Textarea
+              id="bulkNames"
+              value={bulkNames}
+              onChange={(e) => setBulkNames(e.target.value)}
+              className="min-h-32 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+              placeholder="David & Chizzy"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Enter one name per line. All guests will have the same allowed number.
             </p>
-          </DialogHeader>
-          {/* Show RSVP duplicate error if present */}
-          {rsvpDuplicateError && (
-            <div className="mb-4 text-red-600 text-center font-medium bg-red-50 border border-red-200 rounded p-2">
-              {rsvpDuplicateError}
+          </div>
+        ) : (
+          <div>
+            <Label htmlFor="excelFile" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+              Upload Excel (.xlsx or .xls)
+            </Label>
+            <Input
+              id="excelFile"
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
+              className="h-10 sm:h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 cursor-pointer"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Columns supported: First Name, Last Name, Table seating (optional). Blank rows are ignored.
+            </p>
+          </div>
+        )}
+        
+        <div>
+          <Label htmlFor="guestAllowed" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+            {guestMode === 'excel' ? 'Default Number Allowed' : 'Number Allowed'}{guestMode === 'bulk' ? ' (for all guests)' : ''}
+          </Label>
+          <Input
+            id="guestAllowed"
+            type="number"
+            min="1"
+            value={guestAllowed}
+            onChange={(e) => setGuestAllowed(e.target.value)}
+            className="h-10 sm:h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+            placeholder="How many people allowed"
+            required
+          />
+        </div>
+
+        {(editingGuest || guestMode === 'single') && (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="guestTableSitting" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+                Table seating
+              </Label>
+              <Select value={guestTableSitting} onValueChange={(value) => {
+                setGuestTableSitting(value);
+                if (value !== 'Other') {
+                  setCustomTableSitting('');
+                }
+              }}>
+                <SelectTrigger className="h-10 sm:h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
+                  <SelectValue placeholder="Select table seating" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Table seating">Table seating</SelectItem>
+                  <SelectItem value="Groom's family">Groom's family</SelectItem>
+                  <SelectItem value="Bride's family">Bride's family</SelectItem>
+                  <SelectItem value="Groom's friends">Groom's friends</SelectItem>
+                  <SelectItem value="Bride's friends">Bride's friends</SelectItem>
+                  {customTableOptions.map((option) => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            setRsvpDuplicateError('');
-            if (isAddingGuest) return; // Prevent duplicate submissions
-
-            if (!editingGuest && guestMode === 'single') {
-              // Check for duplicate RSVP before adding
-              if (!guestFirstName.trim() || !guestLastName.trim()) {
-                setErrorTitle('Missing Information');
-                setErrorMessage('Please enter both first and last name');
-                setErrorModalOpen(true);
-                return;
-              }
-              if (isDuplicateRSVP(guestFirstName, guestLastName, selectedEventForRSVP)) {
-                setRsvpDuplicateError('You have already submitted a response for this event.');
-                return;
-              }
-            }
-
-            if (editingGuest) {
-              // Handle edit mode
-              if (!guestFirstName.trim() || !guestLastName.trim()) {
-                setErrorTitle('Missing Information');
-                setErrorMessage('Please enter both first and last name');
-                setErrorModalOpen(true);
-                return;
-              }
-
-              setIsAddingGuest(true);
-              try {
-                const token = localStorage.getItem('token');
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${editingGuest.id}`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                  },
-                  body: JSON.stringify({
-                    firstName: guestFirstName,
-                    lastName: guestLastName,
-                    allowed: parseInt(guestAllowed) || 1,
-                    tableSitting: guestTableSitting === 'Other' ? customTableSitting : guestTableSitting,
-                  }),
-                });
-                if (res.ok) {
-                  const updatedGuest = await res.json();
-                  const updatedGuests = guests.map(g => 
-                    g.id === editingGuest.id ? updatedGuest : g
-                  );
-                  setGuests(updatedGuests);
-                  setGuestFirstName('');
-                  setGuestLastName('');
-                  setGuestAllowed('1');
-                  setGuestTableSitting('Table seating');
-                  setEditingGuest(null);
-                  setIsAddGuestModalOpen(false);
-                } else {
-                  setErrorTitle('Update Failed');
-                  setErrorMessage('Failed to update guest. Please try again.');
-                  setErrorModalOpen(true);
-                }
-              } catch (err) {
-                console.error(err);
-                setErrorTitle('Error');
-                setErrorMessage('An error occurred while updating the guest.');
-                setErrorModalOpen(true);
-              } finally {
-                setIsAddingGuest(false);
-              }
-            } else if (guestMode === 'bulk') {
-              // Handle bulk addition
-              const names = bulkNames.split('\n').map(n => n.trim()).filter(n => n);
-              if (names.length === 0) {
-                setErrorTitle('No Names Entered');
-                setErrorMessage('Please enter at least one guest name');
-                setErrorModalOpen(true);
-                return;
-              }
-
-              setIsAddingGuest(true);
-              const token = localStorage.getItem('token');
-              const createdGuests = [] as any[];
-              
-              try {
-                for (const name of names) {
-                  const parts = name.split(' ');
-                  const firstName = parts[0] || '';
-                  const lastName = parts.slice(1).join(' ') || '';
-                  if (!firstName && !lastName) continue;
-
-                  try {
-                    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                      },
-                      body: JSON.stringify({
-                        firstName,
-                        lastName,
-                        allowed: parseInt(guestAllowed) || 1,
-                        attending: 'pending',
-                        giftId: selectedEventForRSVP,
-                      }),
-                    });
-                    if (res.ok) {
-                      const newGuest = await res.json();
-                      createdGuests.push(newGuest);
-                    }
-                  } catch (err) {
-                    console.error(err);
-                  }
-                }
-
-                if (createdGuests.length === 0) {
-                  setErrorTitle('No Guests Added');
-                  setErrorMessage('No guests were added. Please check your entries and try again.');
-                  setErrorModalOpen(true);
-                  return;
-                }
-
-                setGuests([...guests, ...createdGuests]);
-                setBulkNames('');
-                setGuestAllowed('1');
-                setIsAddGuestModalOpen(false);
-              } finally {
-                setIsAddingGuest(false);
-              }
-            } else if (guestMode === 'excel') {
-              if (!excelFile) {
-                setErrorTitle('No File Selected');
-                setErrorMessage('Please upload an Excel file (.xlsx or .xls)');
-                setErrorModalOpen(true);
-                return;
-              }
-
-              setIsAddingGuest(true);
-              setExcelParsing(true);
-              
-              try {
-                const buffer = await excelFile.arrayBuffer();
-                const workbook = XLSX.read(buffer, { type: 'array' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-                const parsedGuests = rows.map((row) => {
-                  const firstName = row.firstName || row.FirstName || row['First Name'] || row['First name'] || '';
-                  const lastName = row.lastName || row.LastName || row['Last Name'] || row['Last name'] || '';
-                  const allowedVal = row.allowed || row.Allowed || row['Number Allowed'] || row['Allowed'] || row['allowed'] || '';
-                  const allowed = parseInt(allowedVal) || parseInt(guestAllowed) || 1;
-                  const tableSitting = row.tableSitting || row.TableSitting || row['Table seating'] || row['Table Seating'] || row['Table Seating'] || 'Table seating';
-                  return { firstName: String(firstName).trim(), lastName: String(lastName).trim(), allowed, tableSitting: String(tableSitting).trim() };
-                }).filter((g) => g.firstName || g.lastName);
-
-                if (parsedGuests.length === 0) {
-                  setErrorTitle('Invalid Excel Format');
-                  setErrorMessage('No valid rows found. Please include First Name / Last Name columns in your Excel file.');
-                  setErrorModalOpen(true);
-                  return;
-                }
-
-                const token = localStorage.getItem('token');
-                const createdGuests = [] as any[];
-
-                for (const g of parsedGuests) {
-                  try {
-                    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                      },
-                      body: JSON.stringify({
-                        firstName: g.firstName,
-                        lastName: g.lastName,
-                        allowed: g.allowed,
-                        attending: 'pending',
-                        giftId: selectedEventForRSVP,
-                        tableSitting: g.tableSitting || 'Table seating',
-                      }),
-                    });
-                    if (res.ok) {
-                      const newGuest = await res.json();
-                      createdGuests.push(newGuest);
-                    }
-                  } catch (err) {
-                    console.error(err);
-                  }
-                }
-
-                if (createdGuests.length === 0) {
-                  setErrorTitle('Upload Failed');
-                  setErrorMessage('No guests were added. Please verify your Excel file columns.');
-                  setErrorModalOpen(true);
-                  return;
-                }
-
-                setGuests([...guests, ...createdGuests]);
-                setExcelFile(null);
-                setGuestAllowed('1');
-                setIsAddGuestModalOpen(false);
-              } catch (err) {
-                console.error(err);
-                setErrorTitle('Processing Error');
-                setErrorMessage('Could not process the Excel file. Please check the format and try again.');
-                setErrorModalOpen(true);
-              } finally {
-                setExcelParsing(false);
-                setIsAddingGuest(false);
-              }
-            } else {
-              // Handle single addition
-              if (!guestFirstName.trim() || !guestLastName.trim()) {
-                setErrorTitle('Missing Information');
-                setErrorMessage('Please enter both first and last name');
-                setErrorModalOpen(true);
-                return;
-              }
-              
-              setIsAddingGuest(true);
-              const token = localStorage.getItem('token');
-              
-              try {
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                  },
-                  body: JSON.stringify({
-                    firstName: guestFirstName,
-                    lastName: guestLastName,
-                    allowed: parseInt(guestAllowed) || 1,
-                    attending: 'pending',
-                    giftId: selectedEventForRSVP,
-                    tableSitting: guestTableSitting === 'Other' ? customTableSitting : guestTableSitting,
-                  }),
-                });
-                if (res.ok) {
-                  const newGuest = await res.json();
-                  setGuests([...guests, newGuest]);
-                  setGuestFirstName('');
-                  setGuestLastName('');
-                  setGuestAllowed('1');
-                  setGuestTableSitting('Table seating');
-                  setIsAddGuestModalOpen(false);
-                } else {
-                  setErrorTitle('Failed to Add Guest');
-                  setErrorMessage('Failed to add guest. Please try again.');
-                  setErrorModalOpen(true);
-                }
-              } catch (err) {
-                console.error(err);
-                setErrorTitle('Error');
-                setErrorMessage('Error adding guest. Please try again.');
-                setErrorModalOpen(true);
-              } finally {
-                setIsAddingGuest(false);
-              }
-            }
-          }} className="px-6 pb-6">
-            {/* Toggle between Single, Bulk, and Excel upload */}
-            {!editingGuest && (
-            <div className="grid grid-cols-3 gap-2 mb-4 mt-4">
-              <Button
-                type="button"
-                variant={guestMode === 'single' ? "default" : "outline"}
-                className={`w-full ${guestMode === 'single' ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
-                onClick={() => setGuestMode('single')}
-              >
-                Single Guest
-              </Button>
-              <Button
-                type="button"
-                variant={guestMode === 'bulk' ? "default" : "outline"}
-                className={`w-full ${guestMode === 'bulk' ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
-                onClick={() => setGuestMode('bulk')}
-              >
-                Bulk Add
-              </Button>
-              <Button
-                type="button"
-                variant={guestMode === 'excel' ? "default" : "outline"}
-                className={`w-full ${guestMode === 'excel' ? 'bg-gradient-to-r from-[#2E235C] to-[#2E235C]' : ''}`}
-                onClick={() => setGuestMode('excel')}
-              >
-                Upload Excel
-              </Button>
-            </div>
-            )}
-
-            <div className="space-y-4" style={{marginTop: editingGuest ? '1rem' : '0'}}>
-              {editingGuest || guestMode === 'single' ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="guestFirstName" className="text-sm font-medium text-gray-900 mb-2 block">
-                      First Name
-                    </Label>
-                    <Input
-                      id="guestFirstName"
-                      value={guestFirstName}
-                      onChange={(e) => setGuestFirstName(e.target.value)}
-                      className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                      placeholder="First name"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="guestLastName" className="text-sm font-medium text-gray-900 mb-2 block">
-                      Last Name
-                    </Label>
-                    <Input
-                      id="guestLastName"
-                      value={guestLastName}
-                      onChange={(e) => setGuestLastName(e.target.value)}
-                      className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                      placeholder="Last name"
-                      required
-                    />
-                  </div>
-                </div>
-              ) : guestMode === 'bulk' ? (
-                <div>
-                  <Label htmlFor="bulkNames" className="text-sm font-medium text-gray-900 mb-2 block">
-                    Guest Names (one per line)
-                  </Label>
-                  <Textarea
-                    id="bulkNames"
-                    value={bulkNames}
-                    onChange={(e) => setBulkNames(e.target.value)}
-                    className="min-h-32 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                    placeholder="David & Chizzy"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter one name per line. All guests will have the same allowed number.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <Label htmlFor="excelFile" className="text-sm font-medium text-gray-900 mb-2 block">
-                    Upload Excel (.xlsx or .xls)
-                  </Label>
-                  <Input
-                    id="excelFile"
-                    type="file"
-                    accept=".xlsx,.xls"
-                    onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
-                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 cursor-pointer"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Columns supported: First Name, Last Name, Table seating (optional). Blank rows are ignored.
-                  </p>
-                </div>
-              )}
-              
+            
+            {guestTableSitting === 'Other' && (
               <div>
-                <Label htmlFor="guestAllowed" className="text-sm font-medium text-gray-900 mb-2 block">
-                  {guestMode === 'excel' ? 'Default Number Allowed' : 'Number Allowed'}{guestMode === 'bulk' ? ' (for all guests)' : ''}
+                <Label htmlFor="customTableSitting" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+                  Custom Table Name
                 </Label>
                 <Input
-                  id="guestAllowed"
-                  type="number"
-                  min="1"
-                  value={guestAllowed}
-                  onChange={(e) => setGuestAllowed(e.target.value)}
-                  className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                  placeholder="How many people allowed"
+                  id="customTableSitting"
+                  value={customTableSitting}
+                  onChange={(e) => setCustomTableSitting(e.target.value)}
+                  className="h-10 sm:h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  placeholder="Enter custom table name"
                   required
                 />
               </div>
-
-              {(editingGuest || guestMode === 'single') && (
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="guestTableSitting" className="text-sm font-medium text-gray-900 mb-2 block">
-                      Table seating
-                    </Label>
-                    <Select value={guestTableSitting} onValueChange={(value) => {
-                      setGuestTableSitting(value);
-                      if (value !== 'Other') {
-                        setCustomTableSitting('');
-                      }
-                    }}>
-                      <SelectTrigger className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
-                        <SelectValue placeholder="Select table seating" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Table seating">Table seating</SelectItem>
-                        <SelectItem value="Groom's family">Groom's family</SelectItem>
-                        <SelectItem value="Bride's family">Bride's family</SelectItem>
-                        <SelectItem value="Groom's friends">Groom's friends</SelectItem>
-                        <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                        {customTableOptions.map((option) => (
-                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {guestTableSitting === 'Other' && (
-                    <div>
-                      <Label htmlFor="customTableSitting" className="text-sm font-medium text-gray-900 mb-2 block">
-                        Custom Table Name
-                      </Label>
-                      <Input
-                        id="customTableSitting"
-                        value={customTableSitting}
-                        onChange={(e) => setCustomTableSitting(e.target.value)}
-                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                        placeholder="Enter custom table name"
-                        required
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 h-11"
-                onClick={() => setIsAddGuestModalOpen(false)}
-                disabled={isAddingGuest || excelParsing}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
-                disabled={isAddingGuest || excelParsing}
-              >
-                {isAddingGuest || excelParsing ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    {excelParsing ? 'Processing...' : (editingGuest ? 'Updating...' : 'Adding...')}
-                  </>
-                ) : (
-                  editingGuest ? 'Update Guest' : 'Add Guest'
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Error Modal */}
-      <Dialog open={errorModalOpen} onOpenChange={setErrorModalOpen}>
-        <DialogContent className="max-w-md">
-          <div className="flex flex-col items-center text-center p-6">
-            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
-              <AlertCircle className="w-8 h-8 text-red-600" />
-            </div>
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold text-gray-900 mb-2">
-                {errorTitle}
-              </DialogTitle>
-            </DialogHeader>
-            <p className="text-gray-600 mb-6">
-              {errorMessage}
-            </p>
-            <Button
-              onClick={() => setErrorModalOpen(false)}
-              className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
-            >
-              OK
-            </Button>
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
+        )}
+      </div>
 
-      {/* Goal Modal */}
-      <Dialog open={isGoalModalOpen} onOpenChange={setIsGoalModalOpen}>
-        <DialogContent className="max-w-[90vw] sm:max-w-md rounded-2xl border-0 shadow-2xl p-0 bg-white">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b">
-            <DialogTitle className="text-xl font-semibold text-gray-900">Set Fundraising Goal</DialogTitle>
-            <p className="text-sm text-gray-600 mt-1">Set a target amount for your gift collection</p>
-          </DialogHeader>
-          <div className="px-6 pb-6">
-            <div className="space-y-4 mt-4">
-              <div>
-                <Label htmlFor="goalAmount" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Goal Amount (₦)
-                </Label>
-                <Input
-                  id="goalAmount"
-                  type="number"
-                  value={goalAmount}
-                  onChange={(e) => setGoalAmount(parseFloat(e.target.value))}
-                  className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                  placeholder="Enter goal amount"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  Current progress: ₦{totalContributions.toFixed(2)} ({totalGoalProgress.toFixed(1)}%)
-                </p>
-              </div>
-              
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-medium text-blue-900 mb-2">Goal Progress</h4>
-                <Progress value={totalGoalProgress} className="h-2 bg-blue-100">
-                  <div className="h-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] rounded-full" />
-                </Progress>
-                <div className="flex justify-between text-sm mt-2">
-                  <span className="text-blue-700">₦{totalContributions.toFixed(2)} raised</span>
-                  <span className="font-semibold text-[#2E235C]">
-                    ₦{(goalAmount - totalContributions).toLocaleString()} to go
-                  </span>
-                </div>
-              </div>
-            </div>
+      <div className="flex flex-col sm:flex-row gap-3 pt-6">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1 h-10 sm:h-11 text-xs sm:text-sm"
+          onClick={() => setIsAddGuestModalOpen(false)}
+          disabled={isAddingGuest || excelParsing}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          className="flex-1 h-10 sm:h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-xs sm:text-sm"
+          disabled={isAddingGuest || excelParsing}
+        >
+          {isAddingGuest || excelParsing ? (
+            <>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              {excelParsing ? 'Processing...' : (editingGuest ? 'Updating...' : 'Adding...')}
+            </>
+          ) : (
+            editingGuest ? 'Update Guest' : 'Add Guest'
+          )}
+        </Button>
+      </div>
+    </form>
+  </DialogContent>
+</Dialog>
 
-            <div className="flex gap-3 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 h-11"
-                onClick={() => setIsGoalModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
-                onClick={() => setIsGoalModalOpen(false)}
-              >
-                Save Goal
-              </Button>
-            </div>
+{/* Error Modal */}
+<Dialog open={errorModalOpen} onOpenChange={setErrorModalOpen}>
+  <DialogContent className="max-w-[95vw] sm:max-w-md w-full">
+    <div className="flex flex-col items-center text-center p-4 sm:p-6">
+      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+        <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
+      </div>
+      <DialogHeader>
+        <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+          {errorTitle}
+        </DialogTitle>
+      </DialogHeader>
+      <p className="text-sm text-gray-600 mb-6">
+        {errorMessage}
+      </p>
+      <Button
+        onClick={() => setErrorModalOpen(false)}
+        className="w-full h-10 sm:h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+      >
+        OK
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
+
+{/* Goal Modal */}
+<Dialog open={isGoalModalOpen} onOpenChange={setIsGoalModalOpen}>
+  <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-md rounded-2xl border-0 shadow-2xl p-0 bg-white">
+    <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b">
+      <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900">Set Fundraising Goal</DialogTitle>
+      <p className="text-xs sm:text-sm text-gray-600 mt-1">Set a target amount for your gift collection</p>
+    </DialogHeader>
+    <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+      <div className="space-y-4 mt-4">
+        <div>
+          <Label htmlFor="goalAmount" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+            Goal Amount (₦)
+          </Label>
+          <Input
+            id="goalAmount"
+            type="number"
+            value={goalAmount}
+            onChange={(e) => setGoalAmount(parseFloat(e.target.value))}
+            className="h-10 sm:h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+            placeholder="Enter goal amount"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Current progress: ₦{totalContributions.toFixed(2)} ({totalGoalProgress.toFixed(1)}%)
+          </p>
+        </div>
+        
+        <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <h4 className="font-medium text-blue-900 text-sm sm:text-base mb-2">Goal Progress</h4>
+          <Progress value={totalGoalProgress} className="h-2 bg-blue-100">
+            <div className="h-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] rounded-full" />
+          </Progress>
+          <div className="flex flex-col sm:flex-row sm:justify-between text-xs sm:text-sm mt-2">
+            <span className="text-blue-700">₦{totalContributions.toFixed(2)} raised</span>
+            <span className="font-semibold text-[#2E235C] mt-1 sm:mt-0">
+              ₦{(goalAmount - totalContributions).toLocaleString()} to go
+            </span>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 pt-6">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1 h-10 sm:h-11 text-xs sm:text-sm"
+          onClick={() => setIsGoalModalOpen(false)}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          className="flex-1 h-10 sm:h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-xs sm:text-sm"
+          onClick={() => setIsGoalModalOpen(false)}
+        >
+          Save Goal
+        </Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
 
       {/* Custom Table Modal */}
       <Dialog open={isCustomTableModalOpen} onOpenChange={(open) => {
