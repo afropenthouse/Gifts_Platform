@@ -54,6 +54,7 @@ const ShareGift: React.FC = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
   const [verifyMessage, setVerifyMessage] = useState('');
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     document.title = "BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding";
@@ -185,6 +186,14 @@ const ShareGift: React.FC = () => {
     };
   }, [gift]);
 
+  useEffect(() => {
+    if (!loading && gift) {
+      setShowConfetti(true);
+      const timer = setTimeout(() => setShowConfetti(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, gift]);
+
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -301,6 +310,34 @@ const ShareGift: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {showConfetti && (
+        <>
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes fall {
+              0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+              100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+            }
+          ` }} />
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999, overflow: 'hidden' }}>
+            {Array.from({ length: 100 }, (_, i) => (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  left: `${Math.random() * 100}%`,
+                  top: '-10px',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe'][Math.floor(Math.random() * 8)],
+                  borderRadius: '50%',
+                  animation: `fall 10s linear forwards`,
+                  animationDelay: `${Math.random() * 10}s`,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
       <Navbar />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
@@ -553,7 +590,7 @@ const ShareGift: React.FC = () => {
                   </div>
                 )}
 
-                {/* To allow open guest */}
+                
                 {/* {gift?.guestListMode === 'open' && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <p className="text-sm text-blue-700 font-medium">This event allows open RSVPs - anyone can join!</p>
