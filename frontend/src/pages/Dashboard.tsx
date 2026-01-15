@@ -116,6 +116,9 @@ const Dashboard: React.FC = () => {
   const [reminder, setReminder] = useState('none');
   const [bulkNames, setBulkNames] = useState('');
   const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [bulkTableMode, setBulkTableMode] = useState<'same' | 'custom'>('same');
+  const [bulkTableSitting, setBulkTableSitting] = useState('Table seating');
+  const [bulkGuests, setBulkGuests] = useState<Array<{firstName: string, lastName: string, tableSitting: string}>>([]);
   const [excelParsing, setExcelParsing] = useState(false);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -143,6 +146,7 @@ const Dashboard: React.FC = () => {
   const [isCustomTableModalOpen, setIsCustomTableModalOpen] = useState(false);
   const [customTableName, setCustomTableName] = useState('');
   const [currentEditingGuestId, setCurrentEditingGuestId] = useState<number | null>(null);
+  const [currentEditingBulkGuestIndex, setCurrentEditingBulkGuestIndex] = useState<number | null>(null);
   const [showAnalyticsButtons, setShowAnalyticsButtons] = useState(false);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
 
@@ -311,6 +315,22 @@ const Dashboard: React.FC = () => {
       .sort();
     setCustomTableOptions(customOptions);
   }, [guests]);
+
+  // Parse bulk names for custom table seating mode
+  useEffect(() => {
+    if (bulkTableMode === 'custom' && bulkNames.trim()) {
+      const names = bulkNames.split('\n').map(n => n.trim()).filter(n => n);
+      const parsed = names.map(name => {
+        const parts = name.split(' ');
+        const firstName = parts[0] || '';
+        const lastName = parts.slice(1).join(' ') || '';
+        return { firstName, lastName, tableSitting: 'Table seating' };
+      });
+      setBulkGuests(parsed);
+    } else {
+      setBulkGuests([]);
+    }
+  }, [bulkNames, bulkTableMode]);
 
   //add filter
   // useEffect(() => {
@@ -950,9 +970,9 @@ const Dashboard: React.FC = () => {
                     <>
                       {isMobile ? (
                         <Button
-                          variant="outline"
+                          
                           size="sm"
-                          className="w-full"
+                          className="w-full bg-primary"
                           onClick={() => setIsAnalyticsModalOpen(true)}
                         >
                           <BarChart3 className="w-4 h-4 mr-2" />
@@ -2842,17 +2862,21 @@ const Dashboard: React.FC = () => {
 <Dialog open={isAddGuestModalOpen} onOpenChange={(open) => {
   setIsAddGuestModalOpen(open);
   if (!open) {
-    setGuestFirstName('');
-    setGuestLastName('');
-    setGuestAllowed('1');
-    setGuestTableSitting('Table seating');
-    setCustomTableSitting('');
-    setGuestMode('single');
-    setBulkNames('');
-    setExcelFile(null);
-    setExcelParsing(false);
-    setEditingGuest(null);
-  }
+     setGuestFirstName('');
+     setGuestLastName('');
+     setGuestAllowed('1');
+     setGuestTableSitting('Table seating');
+     setCustomTableSitting('');
+     setGuestMode('single');
+     setBulkNames('');
+     setExcelFile(null);
+     setExcelParsing(false);
+     setEditingGuest(null);
+     setBulkTableMode('same');
+     setBulkTableSitting('Table seating');
+     setBulkGuests([]);
+     setCurrentEditingBulkGuestIndex(null);
+   }
 }}>
   <DialogContent className="max-w-md w-full">
     <DialogHeader>
@@ -2945,49 +2969,58 @@ const Dashboard: React.FC = () => {
           setIsAddingGuest(false);
         }
       } else if (guestMode === 'bulk') {
-        // Handle bulk addition
-        const names = bulkNames.split('\n').map(n => n.trim()).filter(n => n);
-        if (names.length === 0) {
-          setErrorTitle('No Names Entered');
-          setErrorMessage('Please enter at least one guest name');
-          setErrorModalOpen(true);
-          return;
-        }
+         // Handle bulk addition
+         let guestsToAdd: Array<{firstName: string, lastName: string, tableSitting: string}>;
+         if (bulkTableMode === 'same') {
+           const names = bulkNames.split('\n').map(n => n.trim()).filter(n => n);
+           guestsToAdd = names.map(name => {
+             const parts = name.split(' ');
+             const firstName = parts[0] || '';
+             const lastName = parts.slice(1).join(' ') || '';
+             return { firstName, lastName, tableSitting: bulkTableSitting };
+           });
+         } else {
+           guestsToAdd = bulkGuests;
+         }
+         if (guestsToAdd.length === 0) {
+           setErrorTitle('No Names Entered');
+           setErrorMessage('Please enter at least one guest name');
+           setErrorModalOpen(true);
+           return;
+         }
 
-        setIsAddingGuest(true);
-        const token = localStorage.getItem('token');
-        const createdGuests = [] as any[];
-        
-        try {
-          for (const name of names) {
-            const parts = name.split(' ');
-            const firstName = parts[0] || '';
-            const lastName = parts.slice(1).join(' ') || '';
-            if (!firstName && !lastName) continue;
+         setIsAddingGuest(true);
+         const token = localStorage.getItem('token');
+         const createdGuests = [] as any[];
 
-            try {
-              const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  firstName,
-                  lastName,
-                  allowed: parseInt(guestAllowed) || 1,
-                  attending: 'pending',
-                  giftId: selectedEventForRSVP,
-                }),
-              });
-              if (res.ok) {
-                const newGuest = await res.json();
-                createdGuests.push(newGuest);
-              }
-            } catch (err) {
-              console.error(err);
-            }
-          }
+         try {
+           for (const guest of guestsToAdd) {
+             if (!guest.firstName && !guest.lastName) continue;
+
+             try {
+               const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests`, {
+                 method: 'POST',
+                 headers: {
+                   'Content-Type': 'application/json',
+                   Authorization: `Bearer ${token}`,
+                 },
+                 body: JSON.stringify({
+                   firstName: guest.firstName,
+                   lastName: guest.lastName,
+                   allowed: parseInt(guestAllowed) || 1,
+                   attending: 'pending',
+                   giftId: selectedEventForRSVP,
+                   tableSitting: guest.tableSitting,
+                 }),
+               });
+               if (res.ok) {
+                 const newGuest = await res.json();
+                 createdGuests.push(newGuest);
+               }
+             } catch (err) {
+               console.error(err);
+             }
+           }
 
           if (createdGuests.length === 0) {
             setErrorTitle('No Guests Added');
@@ -3197,22 +3230,105 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         ) : guestMode === 'bulk' ? (
-          <div>
-            <Label htmlFor="bulkNames" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
-              Guest Names (one per line)
-            </Label>
-            <Textarea
-              id="bulkNames"
-              value={bulkNames}
-              onChange={(e) => setBulkNames(e.target.value)}
-              className="min-h-32 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-              placeholder="David & Chizzy"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Enter one name per line. All guests will have the same allowed number.
-            </p>
-          </div>
+           <div className="space-y-4">
+             <div>
+               <Label htmlFor="bulkNames" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+                 Guest Names (one per line)
+               </Label>
+               <Textarea
+                 id="bulkNames"
+                 value={bulkNames}
+                 onChange={(e) => setBulkNames(e.target.value)}
+                 className="min-h-32 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                 placeholder="David & Chizzy"
+                 required
+               />
+               <p className="text-xs text-gray-500 mt-1">
+                 Enter one name per line. All guests will have the same allowed number.
+               </p>
+             </div>
+             <div>
+               {/* <Label className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+                 Table Seating Mode
+               </Label>
+               <Select value={bulkTableMode} onValueChange={(value: 'same' | 'custom') => setBulkTableMode(value)}>
+                 <SelectTrigger className="h-10 sm:h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
+                   <SelectValue />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="same">Same for all guests</SelectItem>
+                   <SelectItem value="custom">Customize per guest</SelectItem>
+                 </SelectContent>
+               </Select> */}
+             </div>
+             {bulkTableMode === 'same' ? (
+               <div>
+                 <Label className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+                   Table Seating
+                 </Label>
+                 <Select value={bulkTableSitting} onValueChange={(value) => {
+                   if (value === 'Other') {
+                     setIsCustomTableModalOpen(true);
+                     return;
+                   }
+                   setBulkTableSitting(value);
+                 }}>
+                   <SelectTrigger className="h-10 sm:h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
+                     <SelectValue placeholder="Select table seating" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="Table seating">Table seating</SelectItem>
+                     <SelectItem value="Groom's family">Groom's family</SelectItem>
+                     <SelectItem value="Bride's family">Bride's family</SelectItem>
+                     <SelectItem value="Groom's friends">Groom's friends</SelectItem>
+                     <SelectItem value="Bride's friends">Bride's friends</SelectItem>
+                     {customTableOptions.map(option => (
+                       <SelectItem key={option} value={option}>{option}</SelectItem>
+                     ))}
+                     <SelectItem value="Other">Other</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+             ) : (
+               bulkGuests.length > 0 && (
+                 <div className="space-y-2">
+                   <Label className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
+                     Customize Table Seating
+                   </Label>
+                   {bulkGuests.map((guest, index) => (
+                     <div key={index} className="flex items-center space-x-2 p-2 border rounded">
+                       <span className="flex-1 text-sm">{guest.firstName} {guest.lastName}</span>
+                       <Select value={guest.tableSitting} onValueChange={(value) => {
+                         if (value === 'Other') {
+                           setCurrentEditingBulkGuestIndex(index);
+                           setIsCustomTableModalOpen(true);
+                           return;
+                         }
+                         const newGuests = [...bulkGuests];
+                         newGuests[index].tableSitting = value;
+                         setBulkGuests(newGuests);
+                       }}>
+                         <SelectTrigger className="w-40 h-8">
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="Table seating">Table seating</SelectItem>
+                           <SelectItem value="Groom's family">Groom's family</SelectItem>
+                           <SelectItem value="Bride's family">Bride's family</SelectItem>
+                           <SelectItem value="Groom's friends">Groom's friends</SelectItem>
+                           <SelectItem value="Bride's friends">Bride's friends</SelectItem>
+                           {customTableOptions.map(option => (
+                             <SelectItem key={option} value={option}>{option}</SelectItem>
+                           ))}
+                           <SelectItem value="Other">Other</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                   ))}
+                 </div>
+               )
+             )}
+           </div>
         ) : (
           <div>
             <Label htmlFor="excelFile" className="text-xs sm:text-sm font-medium text-gray-900 mb-2 block">
@@ -3412,55 +3528,68 @@ const Dashboard: React.FC = () => {
 
       {/* Custom Table Modal */}
       <Dialog open={isCustomTableModalOpen} onOpenChange={(open) => {
-        setIsCustomTableModalOpen(open);
-        if (!open) {
-          setCustomTableName('');
-          setCurrentEditingGuestId(null);
-        }
-      }}>
+         setIsCustomTableModalOpen(open);
+         if (!open) {
+           setCustomTableName('');
+           setCurrentEditingGuestId(null);
+           setCurrentEditingBulkGuestIndex(null);
+         }
+       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900">Create Custom Table</DialogTitle>
             <p className="text-sm text-gray-600 mt-1">Enter a name for the custom table seating</p>
           </DialogHeader>
           <form onSubmit={async (e) => {
-            e.preventDefault();
-            if (!customTableName.trim() || !currentEditingGuestId) return;
+             e.preventDefault();
+             if (!customTableName.trim()) return;
 
-            const guest = guests.find(g => g.id === currentEditingGuestId);
-            if (!guest) return;
+             if (currentEditingGuestId) {
+               const guest = guests.find(g => g.id === currentEditingGuestId);
+               if (!guest) return;
 
-            const token = localStorage.getItem('token');
-            try {
-              const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${currentEditingGuestId}`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  firstName: guest.firstName,
-                  lastName: guest.lastName,
-                  tableSitting: customTableName.trim(),
-                }),
-              });
-              if (res.ok) {
-                const updatedGuest = await res.json();
-                const updatedGuests = guests.map(g =>
-                  g.id === currentEditingGuestId ? updatedGuest : g
-                );
-                setGuests(updatedGuests);
-                setIsCustomTableModalOpen(false);
-                setCustomTableName('');
-                setCurrentEditingGuestId(null);
-              } else {
-                alert('Failed to update table sitting');
-              }
-            } catch (err) {
-              console.error(err);
-              alert('Error updating table sitting');
-            }
-          }}>
+               const token = localStorage.getItem('token');
+               try {
+                 const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${currentEditingGuestId}`, {
+                   method: 'PUT',
+                   headers: {
+                     'Content-Type': 'application/json',
+                     Authorization: `Bearer ${token}`,
+                   },
+                   body: JSON.stringify({
+                     firstName: guest.firstName,
+                     lastName: guest.lastName,
+                     tableSitting: customTableName.trim(),
+                   }),
+                 });
+                 if (res.ok) {
+                   const updatedGuest = await res.json();
+                   const updatedGuests = guests.map(g =>
+                     g.id === currentEditingGuestId ? updatedGuest : g
+                   );
+                   setGuests(updatedGuests);
+                 } else {
+                   alert('Failed to update table sitting');
+                   return;
+                 }
+               } catch (err) {
+                 console.error(err);
+                 alert('Error updating table sitting');
+                 return;
+               }
+             } else if (currentEditingBulkGuestIndex !== null) {
+               const newGuests = [...bulkGuests];
+               newGuests[currentEditingBulkGuestIndex].tableSitting = customTableName.trim();
+               setBulkGuests(newGuests);
+               setCurrentEditingBulkGuestIndex(null);
+             } else {
+               setBulkTableSitting(customTableName.trim());
+             }
+
+             setIsCustomTableModalOpen(false);
+             setCustomTableName('');
+             setCurrentEditingGuestId(null);
+           }}>
             <div className="space-y-4 mt-4">
               <div>
                 <Label htmlFor="customTableName" className="text-sm font-medium text-gray-900 mb-2 block">
