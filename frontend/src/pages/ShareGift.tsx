@@ -27,6 +27,7 @@ interface Gift {
   customType?: string;
   user: { name: string; profilePicture: string };
   _count?: { contributions: number };
+  guestListMode?: string;
 }
 
 const ShareGift: React.FC = () => {
@@ -317,8 +318,17 @@ const ShareGift: React.FC = () => {
                 <img
                   src={gift.picture}
                   alt={heading}
-                  className="w-full h-auto object-contain"
-                  style={{ filter: 'none', opacity: 1, transition: 'none' }}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    objectFit: 'none', // Do not scale or crop
+                    imageRendering: 'auto', // Render as uploaded
+                    filter: 'none',
+                    opacity: 1,
+                    transition: 'none',
+                    display: 'block',
+                  }}
+                  draggable={false}
                 />
               )}
 
@@ -500,13 +510,19 @@ const ShareGift: React.FC = () => {
             <form onSubmit={async (e) => {
               e.preventDefault();
               setRsvpError('');
-              
+
               if (!rsvpFirstName.trim() || !rsvpLastName.trim()) {
                 setRsvpError('Please enter both first and last name');
                 return;
               }
-              
-              // Check if names are on the guest list
+
+              // For open guest list, skip validation and go to email step
+              if (gift?.guestListMode === 'open') {
+                setRsvpStep(2);
+                return;
+              }
+
+              // Check if names are on the guest list (restricted mode)
               try {
                 const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/check/${linkParam}`, {
                   method: 'POST',
@@ -517,12 +533,12 @@ const ShareGift: React.FC = () => {
                   }),
                 });
                 const data = await res.json();
-                
+
                 if (!res.ok) {
                   setRsvpError(data.msg || 'Failed to verify guest. Please try again.');
                   return;
                 }
-                
+
                 // If names are valid, proceed to step 2
                 setRsvpStep(2);
               } catch (err) {
@@ -536,6 +552,13 @@ const ShareGift: React.FC = () => {
                     <p className="text-sm text-red-700 font-medium">{rsvpError}</p>
                   </div>
                 )}
+
+                {/* To allow open guest */}
+                {/* {gift?.guestListMode === 'open' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-700 font-medium">This event allows open RSVPs - anyone can join!</p>
+                  </div>
+                )} */}
                 <div>
                   <Label htmlFor="firstName" className="text-sm font-medium text-gray-900 mb-2 block">
                     First name

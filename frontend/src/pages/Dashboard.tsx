@@ -51,6 +51,7 @@ interface Gift {
   shareLink: string;
   createdAt: string;
   contributions?: Contribution[];
+  guestListMode?: string;
 }
 
 interface Contribution {
@@ -123,6 +124,8 @@ const Dashboard: React.FC = () => {
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [errorTitle, setErrorTitle] = useState('');
+  const [createGuestListMode, setCreateGuestListMode] = useState('restricted');
+  const [editGuestListMode, setEditGuestListMode] = useState('restricted');
   const [isCreatingGift, setIsCreatingGift] = useState(false);
   const [isUpdatingGift, setIsUpdatingGift] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -482,6 +485,7 @@ const Dashboard: React.FC = () => {
       setReminder('none');
       setCustomType('');
     }
+    setEditGuestListMode(gift.guestListMode || 'restricted');
     setIsEditModalOpen(true);
   };
 
@@ -549,6 +553,7 @@ const Dashboard: React.FC = () => {
       details.reminder = reminder;
     }
     formData.append('details', JSON.stringify(details));
+    formData.append('guestListMode', createGuestListMode);
 
     if (type === 'other') {
       formData.append('customType', customType);
@@ -579,6 +584,7 @@ const Dashboard: React.FC = () => {
         setGroomName('');
         setBrideName('');
         setCustomType('');
+        setCreateGuestListMode('restricted');
         setIsCreateModalOpen(false);
 
         const shareLink = `${window.location.origin}/gift/${createdGift.shareLink}`;
@@ -625,13 +631,8 @@ const Dashboard: React.FC = () => {
     if (reminder && reminder !== 'none') {
       details.reminder = reminder;
     }
-    if (address) {
-      details.address = address;
-    }
-    if (reminder && reminder !== 'none') {
-      details.reminder = reminder;
-    }
     formData.append('details', JSON.stringify(details));
+    formData.append('guestListMode', editGuestListMode);
 
     if (type === 'other') {
       formData.append('customType', customType);
@@ -664,6 +665,7 @@ const Dashboard: React.FC = () => {
         setCustomType('');
         setEditingGift(null);
         setIsEditModalOpen(false);
+        setEditGuestListMode('restricted');
       } else {
         alert('Failed to update event');
       }
@@ -796,6 +798,8 @@ const Dashboard: React.FC = () => {
   }
   
   const totalAttending = Array.isArray(eventFilteredGuests) ? eventFilteredGuests.filter(g => g.attending === 'yes').reduce((sum, g) => sum + g.allowed, 0) : 0;
+  const selectedGift = selectedEventForRSVP ? gifts.find(g => g.id === selectedEventForRSVP) : null;
+  const isOpenGuestList = selectedGift?.guestListMode === 'open';
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -1566,14 +1570,22 @@ const Dashboard: React.FC = () => {
               <div>
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Guest List</h2>
-                    <p className="text-gray-600 mt-1">Manage your event attendees and track RSVPs</p>
+                    <h2 className="text-2xl font-bold text-gray-900">RSVP Management</h2>
+                    <p className="text-gray-600 mt-1">
+                      {isOpenGuestList
+                        ? 'View RSVPs - anyone can join via the event link'
+                        : 'Manage your event guest list and track RSVPs'
+                      }
+                    </p>
                   </div>
                 </div>
 
                 {/* Event Selection and Actions */}
                 <div className="flex gap-2 items-center">
-                  <Select value={selectedEventForRSVP?.toString()} onValueChange={(value) => setSelectedEventForRSVP(value ? parseInt(value) : null)}>
+                  <Select value={selectedEventForRSVP?.toString()} onValueChange={(value) => {
+                    const eventId = value ? parseInt(value) : null;
+                    setSelectedEventForRSVP(eventId);
+                  }}>
                     <SelectTrigger className="w-48 bg-white border-gray-200 hover:border-[#2E235C]/30">
                       <SelectValue placeholder="Choose an event" />
                     </SelectTrigger>
@@ -1607,51 +1619,53 @@ const Dashboard: React.FC = () => {
 
                 </div>
 
-                <div className="flex flex-col gap-2 mt-4 sm:flex-row sm:gap-4 sm:items-center">
-                  <div className="flex-1 w-full">
-                    <Input
-                      placeholder="Search guests by name..."
-                      value={guestSearch}
-                      onChange={(e) => setGuestSearch(e.target.value)}
-                      className="h-10 w-full"
-                    />
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Select value={attendingFilter} onValueChange={setAttendingFilter}>
-                      <SelectTrigger className="w-full h-10 sm:w-40">
-                        <SelectValue placeholder="Filter by attending" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Attending</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={tableFilter} onValueChange={setTableFilter}>
-                      <SelectTrigger className="w-full h-10 sm:w-40">
-                        <SelectValue placeholder="Filter by table" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Table seating</SelectItem>
-                        {/* <SelectItem value="Table seating">Table seating</SelectItem> */}
-                        <SelectItem value="Groom's family">Groom's family</SelectItem>
-                        <SelectItem value="Bride's family">Bride's family</SelectItem>
-                        <SelectItem value="Groom's friends">Groom's friends</SelectItem>
-                        <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                        {customTableOptions.map(option => (
-                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                {selectedEventForRSVP && (
+                  <>
+                    <div className="flex flex-col gap-2 mt-4 sm:flex-row sm:gap-4 sm:items-center">
+                      <div className="flex-1 w-full">
+                        <Input
+                          placeholder="Search guests by name..."
+                          value={guestSearch}
+                          onChange={(e) => setGuestSearch(e.target.value)}
+                          className="h-10 w-full"
+                        />
+                      </div>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <Select value={attendingFilter} onValueChange={setAttendingFilter}>
+                          <SelectTrigger className="w-full h-10 sm:w-40">
+                            <SelectValue placeholder="Filter by attending" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Attending</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="yes">Yes</SelectItem>
+                            <SelectItem value="no">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={tableFilter} onValueChange={setTableFilter}>
+                          <SelectTrigger className="w-full h-10 sm:w-40">
+                            <SelectValue placeholder="Filter by table" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Table seating (All)</SelectItem>
+                            
+                            <SelectItem value="Groom's family">Groom's family</SelectItem>
+                            <SelectItem value="Bride's family">Bride's family</SelectItem>
+                            <SelectItem value="Groom's friends">Groom's friends</SelectItem>
+                            <SelectItem value="Bride's friends">Bride's friends</SelectItem>
+                            {customTableOptions.map(option => (
+                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-                <p className="text-sm text-gray-600 mt-2">
-                  {`Showing ${filteredGuests.reduce((sum, guest) => sum + Number(guest.allowed), 0)} allowed guests`}
-                </p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      {`Showing ${filteredGuests.reduce((sum, guest) => sum + Number(guest.allowed), 0)} allowed guests`}
+                    </p>
 
-                <div className="mt-6">
+                    <div className="mt-6">
                 {selectedEventForRSVP ? (
                   eventFilteredGuests.length > 0 ? (
                   <Card className="border-0 shadow-lg">
@@ -1995,7 +2009,9 @@ const Dashboard: React.FC = () => {
                     </p>
                   </div>
                 )}
-                </div>
+                    </div>
+                  </>
+                )}
 
             </div>
             )}
@@ -2132,6 +2148,24 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div>
+                <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                  Guest List Mode
+                </Label>
+                <Select onValueChange={setCreateGuestListMode} value={createGuestListMode}>
+                  <SelectTrigger className="w-full h-11 border-gray-300 bg-white hover:bg-gray-50 transition-colors">
+                    <SelectValue placeholder="Select guest list mode" />
+                  </SelectTrigger>
+                  <SelectContent className="border-0 shadow-lg">
+                    <SelectItem value="restricted">Restricted - Require guest list</SelectItem>
+                    <SelectItem value="open">Open - Allow anyone to RSVP</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  You can change this later in the RSVP management section.
+                </p>
+              </div>
+
+              <div>
                 <Label htmlFor="picture" className="text-sm font-medium text-gray-900 mb-2 block">
                   <ImageIcon className="inline w-4 h-4 mr-2 text-gray-600" />
                   Event Invite
@@ -2139,10 +2173,20 @@ const Dashboard: React.FC = () => {
                 <div className="mt-2">
                   {picture ? (
                     <div className="relative mb-4">
-                      <img 
-                        src={picture} 
-                        alt="Preview" 
-                        className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                      <img
+                        src={picture}
+                        alt="Preview"
+                        style={{
+                          width: '100%',
+                          height: 'auto',
+                          objectFit: 'none', // Do not crop or scale
+                          imageRendering: 'auto', // Render as uploaded
+                          borderRadius: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          background: '#fff',
+                          display: 'block',
+                        }}
+                        draggable={false}
                       />
                       <button
                         type="button"
@@ -2187,6 +2231,7 @@ const Dashboard: React.FC = () => {
                   )}
                 </div>
               </div>
+
 
               {type === 'wedding' && (
                 <div className="space-y-4">
@@ -2355,6 +2400,24 @@ const Dashboard: React.FC = () => {
                   onChange={(e) => setDate(e.target.value)}
                   className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                 />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                  Guest List Mode
+                </Label>
+                <Select onValueChange={setEditGuestListMode} value={editGuestListMode}>
+                  <SelectTrigger className="w-full h-11 border-gray-300 bg-white hover:bg-gray-50 transition-colors">
+                    <SelectValue placeholder="Select guest list mode" />
+                  </SelectTrigger>
+                  <SelectContent className="border-0 shadow-lg">
+                    <SelectItem value="restricted">Restricted - Require guest list</SelectItem>
+                    <SelectItem value="open">Open - Allow anyone to RSVP</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  You can change this later in the RSVP management section.
+                </p>
               </div>
 
               <div>
