@@ -1,3 +1,4 @@
+
 const express = require('express');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
@@ -35,7 +36,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, details, customType } = req.body;
+    const { type, title, description, date, details, customType, guestListMode } = req.body;
 
     try {
       let pictureUrl = null;
@@ -73,6 +74,7 @@ module.exports = () => {
           details: details ? (typeof details === 'string' ? JSON.parse(details) : details) : null,
           customType,
           shareLink,
+          guestListMode: guestListMode || 'restricted',
         },
       });
 
@@ -96,7 +98,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, details, customType } = req.body;
+    const { type, title, description, date, details, customType, guestListMode } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -127,6 +129,7 @@ module.exports = () => {
           picture: pictureUrl,
           details: details ? (typeof details === 'string' ? JSON.parse(details) : details) : null,
           customType,
+          guestListMode,
         },
       });
 

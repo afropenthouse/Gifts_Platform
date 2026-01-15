@@ -388,34 +388,82 @@ module.exports = () => {
         return res.status(404).json({ msg: 'Gift not found' });
       }
 
-      // Check if guest exists on the list (by firstName and lastName for this gift)
-      const existingGuest = await prisma.guest.findFirst({
-        where: {
-          giftId: gift.id,
-          firstName: { equals: firstName.trim(), mode: 'insensitive' },
-          lastName: { equals: lastName.trim(), mode: 'insensitive' },
-        },
-      });
+      let guest;
 
-      if (!existingGuest) {
-        return res.status(403).json({ 
-          msg: 'Your name is not on the guest list. Please contact the event organizer.' 
+      if (gift.guestListMode === 'open') {
+        // Open guest list: allow anyone to RSVP and add them to the list
+        const trimmedFirst = firstName?.trim();
+        const trimmedLast = lastName?.trim();
+
+        if (!trimmedFirst || !trimmedLast) {
+          return res.status(400).json({ msg: 'First name and last name are required' });
+        }
+
+        // Check if guest already exists (case-insensitive)
+        const existingGuest = await prisma.guest.findFirst({
+          where: {
+            giftId: gift.id,
+            firstName: { equals: trimmedFirst, mode: 'insensitive' },
+            lastName: { equals: trimmedLast, mode: 'insensitive' },
+          },
+        });
+
+        if (existingGuest) {
+          // Update existing guest
+          guest = await prisma.guest.update({
+            where: { id: existingGuest.id },
+            data: {
+              email: email?.trim().toLowerCase() || existingGuest.email,
+              attending: attending ? 'yes' : 'no',
+              status: attending ? 'confirmed' : 'declined',
+            },
+          });
+        } else {
+          // Create new guest
+          guest = await prisma.guest.create({
+            data: {
+              userId: gift.userId,
+              giftId: gift.id,
+              firstName: trimmedFirst,
+              lastName: trimmedLast,
+              email: email?.trim().toLowerCase() || null,
+              attending: attending ? 'yes' : 'no',
+              status: attending ? 'confirmed' : 'declined',
+              allowed: 1, // Default for open RSVPs
+              tableSitting: 'Table seating',
+            },
+          });
+        }
+      } else {
+        // Restricted guest list: check if guest exists
+        const existingGuest = await prisma.guest.findFirst({
+          where: {
+            giftId: gift.id,
+            firstName: { equals: firstName.trim(), mode: 'insensitive' },
+            lastName: { equals: lastName.trim(), mode: 'insensitive' },
+          },
+        });
+
+        if (!existingGuest) {
+          return res.status(403).json({
+            msg: 'Your name is not on the guest list. Please contact the event organizer.'
+          });
+        }
+
+        // Update existing guest with RSVP response and email
+        guest = await prisma.guest.update({
+          where: { id: existingGuest.id },
+          data: {
+            email: email?.trim().toLowerCase() || existingGuest.email,
+            attending: attending ? 'yes' : 'no',
+            status: attending ? 'confirmed' : 'declined',
+          },
         });
       }
 
-      // Update existing guest with RSVP response and email
-      const guest = await prisma.guest.update({
-        where: { id: existingGuest.id },
-        data: {
-          email: email?.trim().toLowerCase() || existingGuest.email,
-          attending: attending ? 'yes' : 'no',
-          status: attending ? 'confirmed' : 'declined',
-        },
-      });
-
       const guestName = `${guest.firstName} ${guest.lastName}`.trim();
       const eventUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/gift/${shareLink}` : null;
-      
+
       // Send emails in background without blocking response
       sendRsvpEmail({
         recipient: guest.email,
@@ -519,7 +567,12 @@ module.exports = () => {
         return res.status(404).json({ msg: 'Gift not found' });
       }
 
-      // Check if guest exists on the list
+      // For open guest list, always allow
+      if (gift.guestListMode === 'open') {
+        return res.json({ msg: 'Open RSVP allowed', exists: true });
+      }
+
+      // Check if guest exists on the list (restricted mode)
       const existingGuest = await prisma.guest.findFirst({
         where: {
           giftId: gift.id,
@@ -529,8 +582,8 @@ module.exports = () => {
       });
 
       if (!existingGuest) {
-        return res.status(403).json({ 
-          msg: 'Your name is not on the guest list. Please contact the event organizer.' 
+        return res.status(403).json({
+          msg: 'Your name is not on the guest list. Please contact the event organizer.'
         });
       }
 
