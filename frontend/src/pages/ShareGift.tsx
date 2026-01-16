@@ -65,6 +65,8 @@ const ShareGift: React.FC = () => {
   const [guestAllowed, setGuestAllowed] = useState<number | null>(null);
   const [hasGuests, setHasGuests] = useState<boolean | null>(null);
   const [additionalGuests, setAdditionalGuests] = useState<number>(0);
+  const [showRsvpErrorModal, setShowRsvpErrorModal] = useState(false);
+  const [rsvpErrorMessage, setRsvpErrorMessage] = useState('');
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.brideName} & ${gift.details.groomName}`
@@ -242,7 +244,8 @@ const ShareGift: React.FC = () => {
         setAdditionalGuests(0);
         setAdditionalGuests(0);
       } else {
-        alert(data.msg || 'Failed to submit RSVP. Please try again.');
+        setRsvpErrorMessage(data.msg || 'Failed to submit RSVP. Please try again.');
+        setShowRsvpErrorModal(true);
       }
     } catch (err) {
       console.error(err);
@@ -735,10 +738,10 @@ const ShareGift: React.FC = () => {
                 <Button
                   onClick={() => {
                     setWillAttend(true);
-                    if (guestAllowed && guestAllowed > 1) {
+                    if (guestAllowed && guestAllowed > 2) {
                       setRsvpStep(4);
                     } else {
-                      // Submit RSVP directly for open or allowed=1
+                      // Submit RSVP directly for open or allowed<=2
                       submitRsvp(true);
                     }
                   }}
@@ -872,6 +875,21 @@ const ShareGift: React.FC = () => {
           </div>
           <div className="pt-2">
             <Button className="w-full" onClick={() => setShowRsvpThanks(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* RSVP Error Modal */}
+      <Dialog open={showRsvpErrorModal} onOpenChange={setShowRsvpErrorModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-playfair text-center">{heading}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-center">
+            <p className="text-base text-red-600">{rsvpErrorMessage}</p>
+          </div>
+          <div className="pt-2">
+            <Button className="w-full" onClick={() => setShowRsvpErrorModal(false)}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>
