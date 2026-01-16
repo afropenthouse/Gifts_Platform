@@ -389,7 +389,7 @@ const ShareGift: React.FC = () => {
                   style={{
                     width: '100%',
                     height: 'auto',
-                    objectFit: 'none', // Do not scale or crop
+                    objectFit: 'contain', // Fit image within container without stretching
                     imageRendering: 'auto', // Render as uploaded
                     filter: 'none',
                     opacity: 1,

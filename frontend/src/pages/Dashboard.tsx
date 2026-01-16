@@ -2231,7 +2231,7 @@ const Dashboard: React.FC = () => {
                         style={{
                           width: '100%',
                           height: 'auto',
-                          objectFit: 'none', // Do not crop or scale
+                          objectFit: 'contain', // Fit image within container without cropping
                           imageRendering: 'auto', // Render as uploaded
                           borderRadius: '0.5rem',
                           border: '1px solid #d1d5db',
@@ -2372,7 +2372,7 @@ const Dashboard: React.FC = () => {
               <img
                 src={picture}
                 alt="Gift Preview"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
               <button
                 type="button"
