@@ -67,7 +67,7 @@ const ShareGift: React.FC = () => {
   const [additionalGuests, setAdditionalGuests] = useState<number>(0);
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
-    ? `${gift.details.groomName} & ${gift.details.brideName}`
+    ? `${gift.details.brideName} & ${gift.details.groomName}`
     : gift?.title || gift?.user?.name || "Special Celebration";
 
   // Handle redirect back from Paystack: verify payment

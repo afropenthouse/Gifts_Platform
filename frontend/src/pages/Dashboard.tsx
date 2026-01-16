@@ -23,7 +23,7 @@ import {
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-// ...existing code...
+
 
 
 import { Input } from '../components/ui/input';
@@ -792,9 +792,11 @@ const Dashboard: React.FC = () => {
   };
 
   const totalContributions = contributions.reduce((sum, c) => sum + Number(c.amount), 0);
-  const recentContributions = contributions
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  const recentTransactions = [
+    ...contributions.map(c => ({ ...c, type: 'contribution' })),
+    ...withdrawHistory.map(w => ({ ...w, type: 'withdrawal' }))
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  .slice(0, 5);
 
   const totalGoalProgress = (totalContributions / goalAmount) * 100;
   
@@ -1400,30 +1402,37 @@ const Dashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {recentContributions.length > 0 ? (
+                    {recentTransactions.length > 0 ? (
                       <div className="space-y-4">
-                        {recentContributions.map((contribution, index) => {
-                          const amount = typeof contribution.amount === 'number' ? contribution.amount : parseFloat(String(contribution.amount));
-                          const commission = amount * 0.15;
-                          const amountReceived = amount * 0.85;
-                          const gift = gifts.find(g => Number(g.id) === Number(contribution.giftId));
+                        {recentTransactions.map((transaction, index) => {
+                          const isContribution = transaction.type === 'contribution';
+                          const amount = typeof transaction.amount === 'number' ? transaction.amount : parseFloat(String(transaction.amount));
+                          const gift = isContribution ? gifts.find(g => Number(g.id) === Number(transaction.giftId)) : null;
                           return (
-                            <div key={index} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+                            <div key={index} className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 ${isContribution ? 'border-gray-100' : 'border-red-200 bg-red-50'}`}>
                               <div className="flex items-center space-x-3">
-                                <div className="p-2 rounded-full bg-green-100">
-                                  <CheckCircle className="w-5 h-5 text-green-600" />
+                                <div className={`p-2 rounded-full ${isContribution ? 'bg-green-100' : 'bg-red-100'}`}>
+                                  {isContribution ? (
+                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                  ) : (
+                                    <ArrowDownToLine className="w-5 h-5 text-red-600" />
+                                  )}
                                 </div>
                                 <div>
-                                  <p className="font-medium">Gifts {gift?.title || 'Gift'}</p>
+                                  <p className="font-medium">{isContribution ? `Gifts ${gift?.title || 'Gift'}` : 'Withdrawal'}</p>
                                   <p className="text-sm text-gray-500">
-                                    {new Date(contribution.createdAt).toLocaleDateString()} • {contribution.contributorName || 'Anonymous'}
+                                    {new Date(transaction.createdAt).toLocaleDateString()} • {isContribution ? (transaction.contributorName || 'Anonymous') : 'Bank Transfer'}
                                   </p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-gray-900">₦{amount.toFixed(2)}</p>
-                                <p className="text-xs text-gray-500">Commission: ₦{commission.toFixed(2)}</p>
-                                <p className="text-xs text-green-600">Received: ₦{amountReceived.toFixed(2)}</p>
+                                <p className={`font-bold ${isContribution ? 'text-gray-900' : 'text-red-600'}`}>{isContribution ? '₦' : '-₦'}{amount.toFixed(2)}</p>
+                                {isContribution && (
+                                  <>
+                                    <p className="text-xs text-gray-500">Commission: ₦{(amount * 0.15).toFixed(2)}</p>
+                                    <p className="text-xs text-green-600">Received: ₦{(amount * 0.85).toFixed(2)}</p>
+                                  </>
+                                )}
                               </div>
                             </div>
                           );
@@ -1713,7 +1722,10 @@ const Dashboard: React.FC = () => {
                             <TableHead className="font-semibold">First Name</TableHead>
                             <TableHead className="font-semibold">Last Name</TableHead>
                             <TableHead className="font-semibold">Will you be attending</TableHead>
-                            <TableHead className="font-semibold">Allowed</TableHead>
+                            <TableHead className="font-semibold text-center">
+                              <div>Allowed</div>
+                              <div className="text-xs text-gray-500">Total including invitee</div>
+                            </TableHead>
                             <TableHead className="font-semibold">Invited</TableHead>
                             <TableHead className="font-semibold">Table seating</TableHead>
                             <TableHead className="font-semibold">Actions</TableHead>
@@ -1887,7 +1899,7 @@ const Dashboard: React.FC = () => {
                                   </Button>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">
                                 <input type="checkbox" className="h-4 w-4" checked={invitedGuests.has(guest.id)} onChange={() => toggleInvited(guest.id)} />
                               </TableCell>
                               <TableCell>
@@ -2415,7 +2427,7 @@ const Dashboard: React.FC = () => {
 
               <div>
                 <Label htmlFor="title" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Gift Link Title
+                  RSVP link Title
                 </Label>
                 <Input
                   id="title"
