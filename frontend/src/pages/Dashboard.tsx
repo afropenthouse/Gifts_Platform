@@ -2387,7 +2387,7 @@ const Dashboard: React.FC = () => {
             </div>
           )}
           <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-white z-10">
-            <DialogTitle className="text-xl font-semibold text-gray-900">Edit Gift</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Edit Event</DialogTitle>
             <p className="text-sm text-gray-600 mt-1">Update your gift details</p>
           </DialogHeader>
           <form onSubmit={handleUpdateGift} className="px-6 pb-6">

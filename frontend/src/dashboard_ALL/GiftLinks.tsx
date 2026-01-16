@@ -222,7 +222,7 @@ export const GiftLinks = ({
                             size="sm"
                             onClick={() => onEditGift(gift)}
                             className="text-gray-600 hover:text-[#E10032] hover:bg-[#E10032]/5 transition-all"
-                            title="Edit Gift"
+                            title="Edit Event"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
