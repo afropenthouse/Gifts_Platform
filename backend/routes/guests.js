@@ -375,7 +375,7 @@ module.exports = () => {
   // Public RSVP endpoint (no auth required)
   router.post('/rsvp/:shareLink(*)', async (req, res) => {
     const { shareLink } = req.params;
-    const { firstName, lastName, email, attending } = req.body;
+    const { firstName, lastName, email, attending, hasGuests } = req.body;
 
     try {
       // Find the gift by share link
@@ -451,13 +451,20 @@ module.exports = () => {
         }
 
         // Update existing guest with RSVP response and email
+        const updateData = {
+          email: email?.trim().toLowerCase() || existingGuest.email,
+          attending: attending ? 'yes' : 'no',
+          status: attending ? 'confirmed' : 'declined',
+        };
+
+        // Adjust allowed based on hasGuests for attending yes
+        if (attending && hasGuests !== undefined) {
+          updateData.allowed = hasGuests ? existingGuest.allowed : 1;
+        }
+
         guest = await prisma.guest.update({
           where: { id: existingGuest.id },
-          data: {
-            email: email?.trim().toLowerCase() || existingGuest.email,
-            attending: attending ? 'yes' : 'no',
-            status: attending ? 'confirmed' : 'declined',
-          },
+          data: updateData,
         });
       }
 
@@ -587,7 +594,7 @@ module.exports = () => {
         });
       }
 
-      res.json({ msg: 'Guest found', exists: true });
+      res.json({ msg: 'Guest found', exists: true, guest: existingGuest });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
