@@ -150,8 +150,36 @@ const Dashboard: React.FC = () => {
   const [customTableName, setCustomTableName] = useState('');
   const [currentEditingGuestId, setCurrentEditingGuestId] = useState<number | null>(null);
   const [currentEditingBulkGuestIndex, setCurrentEditingBulkGuestIndex] = useState<number | null>(null);
+  const [additionalCustomOptions, setAdditionalCustomOptions] = useState<string[]>([]);
+  const [invitedGuests, setInvitedGuests] = useState<Set<number>>(new Set());
   const [showAnalyticsButtons, setShowAnalyticsButtons] = useState(false);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
+
+  // Load invited guests from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('invitedGuests');
+    if (stored) {
+      try {
+        const ids = JSON.parse(stored);
+        setInvitedGuests(new Set(ids));
+      } catch (e) {
+        console.error('Error parsing invitedGuests', e);
+      }
+    }
+  }, []);
+
+  const toggleInvited = (guestId: number) => {
+    setInvitedGuests(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(guestId)) {
+        newSet.delete(guestId);
+      } else {
+        newSet.add(guestId);
+      }
+      localStorage.setItem('invitedGuests', JSON.stringify(Array.from(newSet)));
+      return newSet;
+    });
+  };
 
   const totalAllowedGuests = guests.reduce((sum, g) => sum + g.allowed, 0);
   const isMobile = useIsMobile();
@@ -789,7 +817,13 @@ const Dashboard: React.FC = () => {
   
   // Apply attending filter
   if (attendingFilter !== 'all') {
-    filteredGuests = filteredGuests.filter(g => g.attending === attendingFilter);
+    if (attendingFilter === 'invited') {
+      filteredGuests = filteredGuests.filter(g => invitedGuests.has(g.id));
+    } else if (attendingFilter === 'not invited') {
+      filteredGuests = filteredGuests.filter(g => !invitedGuests.has(g.id));
+    } else {
+      filteredGuests = filteredGuests.filter(g => g.attending === attendingFilter);
+    }
   }
   
   // Apply table filter
@@ -1633,13 +1667,15 @@ const Dashboard: React.FC = () => {
                       <div className="flex gap-2 w-full sm:w-auto">
                         <Select value={attendingFilter} onValueChange={setAttendingFilter}>
                           <SelectTrigger className="w-full h-10 sm:w-40">
-                            <SelectValue placeholder="Filter by attending" />
+                            <SelectValue placeholder="Filter by status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All Attending</SelectItem>
+                            <SelectItem value="all">All</SelectItem>
                             <SelectItem value="pending">Pending</SelectItem>
                             <SelectItem value="yes">Yes</SelectItem>
                             <SelectItem value="no">No</SelectItem>
+                            <SelectItem value="invited">Invited</SelectItem>
+                            <SelectItem value="not invited">Not Invited</SelectItem>
                           </SelectContent>
                         </Select>
                         <Select value={tableFilter} onValueChange={setTableFilter}>
@@ -1648,12 +1684,12 @@ const Dashboard: React.FC = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Table seating (All)</SelectItem>
-                            
+
                             <SelectItem value="Groom's family">Groom's family</SelectItem>
                             <SelectItem value="Bride's family">Bride's family</SelectItem>
                             <SelectItem value="Groom's friends">Groom's friends</SelectItem>
                             <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                            {customTableOptions.map(option => (
+                            {Array.from(new Set([...customTableOptions, ...additionalCustomOptions])).map(option => (
                               <SelectItem key={option} value={option}>{option}</SelectItem>
                             ))}
                           </SelectContent>
@@ -1678,6 +1714,7 @@ const Dashboard: React.FC = () => {
                             <TableHead className="font-semibold">Last Name</TableHead>
                             <TableHead className="font-semibold">Will you be attending</TableHead>
                             <TableHead className="font-semibold">Allowed</TableHead>
+                            <TableHead className="font-semibold">Invited</TableHead>
                             <TableHead className="font-semibold">Table seating</TableHead>
                             <TableHead className="font-semibold">Actions</TableHead>
                           </TableRow>
@@ -1851,6 +1888,9 @@ const Dashboard: React.FC = () => {
                                 </div>
                               </TableCell>
                               <TableCell>
+                                <input type="checkbox" className="h-4 w-4" checked={invitedGuests.has(guest.id)} onChange={() => toggleInvited(guest.id)} />
+                              </TableCell>
+                              <TableCell>
                                 {(() => {
                                   const tableSitting = guest.tableSitting || 'Table seating';
 
@@ -1902,7 +1942,7 @@ const Dashboard: React.FC = () => {
                                         <SelectItem value="Bride's family">Bride's family</SelectItem>
                                         <SelectItem value="Groom's friends">Groom's friends</SelectItem>
                                         <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                                        {customTableOptions.map(option => (
+                                        {Array.from(new Set([...customTableOptions, ...additionalCustomOptions])).map(option => (
                                           <SelectItem key={option} value={option}>{option}</SelectItem>
                                         ))}
                                         <SelectItem value="Other">Other</SelectItem>
@@ -3345,7 +3385,7 @@ const Dashboard: React.FC = () => {
                      <SelectItem value="Bride's family">Bride's family</SelectItem>
                      <SelectItem value="Groom's friends">Groom's friends</SelectItem>
                      <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                     {customTableOptions.map(option => (
+                     {Array.from(new Set([...customTableOptions, ...additionalCustomOptions])).map(option => (
                        <SelectItem key={option} value={option}>{option}</SelectItem>
                      ))}
                      <SelectItem value="Other">Other</SelectItem>
@@ -3380,7 +3420,7 @@ const Dashboard: React.FC = () => {
                            <SelectItem value="Bride's family">Bride's family</SelectItem>
                            <SelectItem value="Groom's friends">Groom's friends</SelectItem>
                            <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                           {customTableOptions.map(option => (
+                           {Array.from(new Set([...customTableOptions, ...additionalCustomOptions])).map(option => (
                              <SelectItem key={option} value={option}>{option}</SelectItem>
                            ))}
                            <SelectItem value="Other">Other</SelectItem>
@@ -3448,9 +3488,10 @@ const Dashboard: React.FC = () => {
                   <SelectItem value="Bride's family">Bride's family</SelectItem>
                   <SelectItem value="Groom's friends">Groom's friends</SelectItem>
                   <SelectItem value="Bride's friends">Bride's friends</SelectItem>
-                  {customTableOptions.map((option) => (
+                  {Array.from(new Set([...customTableOptions, ...additionalCustomOptions])).map((option) => (
                     <SelectItem key={option} value={option}>{option}</SelectItem>
                   ))}
+                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -3598,7 +3639,7 @@ const Dashboard: React.FC = () => {
            setCurrentEditingBulkGuestIndex(null);
          }
        }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[80vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900">Create Custom Table</DialogTitle>
             <p className="text-sm text-gray-600 mt-1">Enter a name for the custom table seating</p>
@@ -3608,46 +3649,73 @@ const Dashboard: React.FC = () => {
              if (!customTableName.trim()) return;
 
              if (currentEditingGuestId) {
-               const guest = guests.find(g => g.id === currentEditingGuestId);
-               if (!guest) return;
-
-               const token = localStorage.getItem('token');
-               try {
-                 const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${currentEditingGuestId}`, {
-                   method: 'PUT',
-                   headers: {
-                     'Content-Type': 'application/json',
-                     Authorization: `Bearer ${token}`,
-                   },
-                   body: JSON.stringify({
-                     firstName: guest.firstName,
-                     lastName: guest.lastName,
-                     tableSitting: customTableName.trim(),
-                   }),
-                 });
-                 if (res.ok) {
-                   const updatedGuest = await res.json();
-                   const updatedGuests = guests.map(g =>
-                     g.id === currentEditingGuestId ? updatedGuest : g
-                   );
-                   setGuests(updatedGuests);
-                 } else {
-                   alert('Failed to update table sitting');
-                   return;
-                 }
-               } catch (err) {
-                 console.error(err);
-                 alert('Error updating table sitting');
-                 return;
-               }
-             } else if (currentEditingBulkGuestIndex !== null) {
-               const newGuests = [...bulkGuests];
-               newGuests[currentEditingBulkGuestIndex].tableSitting = customTableName.trim();
-               setBulkGuests(newGuests);
-               setCurrentEditingBulkGuestIndex(null);
-             } else {
-               setBulkTableSitting(customTableName.trim());
-             }
+                       const guest = guests.find(g => g.id === currentEditingGuestId);
+                       if (!guest) return;
+       
+                       const token = localStorage.getItem('token');
+                       try {
+                         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${currentEditingGuestId}`, {
+                           method: 'PUT',
+                           headers: {
+                             'Content-Type': 'application/json',
+                             Authorization: `Bearer ${token}`,
+                           },
+                           body: JSON.stringify({
+                             firstName: guest.firstName,
+                             lastName: guest.lastName,
+                             tableSitting: customTableName.trim(),
+                           }),
+                         });
+                         if (res.ok) {
+                           const updatedGuest = await res.json();
+                           const updatedGuests = guests.map(g =>
+                             g.id === currentEditingGuestId ? updatedGuest : g
+                           );
+                           setGuests(updatedGuests);
+                           setAdditionalCustomOptions(prev => {
+       
+                             const trimmed = customTableName.trim();
+       
+                             if (customTableOptions.includes(trimmed) || prev.includes(trimmed)) return prev;
+       
+                             return [...prev, trimmed];
+       
+                           });
+                         } else {
+                           alert('Failed to update table sitting');
+                           return;
+                         }
+                       } catch (err) {
+                         console.error(err);
+                         alert('Error updating table sitting');
+                         return;
+                       }
+                     } else if (currentEditingBulkGuestIndex !== null) {
+                       const newGuests = [...bulkGuests];
+                       newGuests[currentEditingBulkGuestIndex].tableSitting = customTableName.trim();
+                       setBulkGuests(newGuests);
+                       setAdditionalCustomOptions(prev => {
+       
+                         const trimmed = customTableName.trim();
+       
+                         if (customTableOptions.includes(trimmed) || prev.includes(trimmed)) return prev;
+       
+                         return [...prev, trimmed];
+       
+                       });
+                       setCurrentEditingBulkGuestIndex(null);
+                     } else {
+                       setBulkTableSitting(customTableName.trim());
+                       setAdditionalCustomOptions(prev => {
+       
+                         const trimmed = customTableName.trim();
+       
+                         if (customTableOptions.includes(trimmed) || prev.includes(trimmed)) return prev;
+       
+                         return [...prev, trimmed];
+       
+                       });
+                     }
 
              setIsCustomTableModalOpen(false);
              setCustomTableName('');

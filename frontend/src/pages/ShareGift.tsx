@@ -759,7 +759,7 @@ const ShareGift: React.FC = () => {
 
           {rsvpStep === 4 && (
             <div className="py-6">
-              <h3 className="text-base font-medium text-center mb-6">Do you have {guestAllowed} guests coming with you?</h3>
+              <h3 className="text-base font-medium text-center mb-6">Are you coming with {guestAllowed - 1} other guest{guestAllowed - 1 === 1 ? '' : 's'}?</h3>
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={() => submitRsvp(true, true)}
@@ -780,17 +780,17 @@ const ShareGift: React.FC = () => {
 
           {rsvpStep === 5 && (
             <div className="py-6">
-              <h3 className="text-base font-medium text-center mb-6">How many guests are you coming with?</h3>
+              <h3 className="text-base font-medium text-center mb-6">How many other guests are you coming with?</h3>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="additionalGuests" className="text-sm font-medium text-gray-900 mb-2 block">
-                    Number of guests (0 - 6)
+                    Number of other guest{guestAllowed - 1 === 1 ? '' : 's'} (0 - {guestAllowed - 1})
                   </Label>
                   <Input
                     id="additionalGuests"
                     type="number"
                     min="0"
-                    max="6"
+                    max={guestAllowed - 1}
                     value={additionalGuests}
                     onChange={(e) => setAdditionalGuests(parseInt(e.target.value) || 0)}
                     className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
