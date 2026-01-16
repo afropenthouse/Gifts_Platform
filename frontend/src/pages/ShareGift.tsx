@@ -64,6 +64,7 @@ const ShareGift: React.FC = () => {
   const [showCashGiftPrompt, setShowCashGiftPrompt] = useState(false);
   const [guestAllowed, setGuestAllowed] = useState<number | null>(null);
   const [hasGuests, setHasGuests] = useState<boolean | null>(null);
+  const [additionalGuests, setAdditionalGuests] = useState<number>(0);
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.groomName} & ${gift.details.brideName}`
@@ -195,30 +196,26 @@ const ShareGift: React.FC = () => {
 
       const interval = setInterval(() => {
         confetti({
-          particleCount: 3,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 },
-          colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe']
-        });
-        confetti({
-          particleCount: 3,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 },
+          particleCount: 15,
+          angle: 90,
+          spread: 70,
+          origin: { x: Math.random(), y: 0 },
+          gravity: 1.5,
+          drift: 0,
+          decay: 0.94,
           colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe']
         });
 
         if (Date.now() > end) {
           clearInterval(interval);
         }
-      }, 150); // Slightly reduced timing
+      }, 100); // More frequent bursts
 
       return () => clearInterval(interval);
     }
   }, [loading, gift]);
 
-  const submitRsvp = async (attending: boolean, hasGuestsParam?: boolean) => {
+  const submitRsvp = async (attending: boolean, hasGuestsParam?: boolean, additionalGuestsParam?: number) => {
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${linkParam}`, {
         method: 'POST',
@@ -229,6 +226,7 @@ const ShareGift: React.FC = () => {
           email: rsvpEmail,
           attending,
           hasGuests: hasGuestsParam,
+          additionalGuests: additionalGuestsParam,
         }),
       });
       const data = await res.json();
@@ -241,6 +239,8 @@ const ShareGift: React.FC = () => {
         setRsvpEmail('');
         setGuestAllowed(null);
         setHasGuests(null);
+        setAdditionalGuests(0);
+        setAdditionalGuests(0);
       } else {
         alert(data.msg || 'Failed to submit RSVP. Please try again.');
       }
@@ -566,6 +566,7 @@ const ShareGift: React.FC = () => {
            setRsvpError('');
            setGuestAllowed(null);
            setHasGuests(null);
+           setAdditionalGuests(0);
          }
       }}>
         <DialogContent className="max-w-[19rem]">
@@ -767,11 +768,51 @@ const ShareGift: React.FC = () => {
                   Yes
                 </Button>
                 <Button
-                  onClick={() => submitRsvp(true, false)}
+                  onClick={() => setRsvpStep(5)}
                   variant="outline"
                   className="w-full h-12 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
                 >
                   No
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {rsvpStep === 5 && (
+            <div className="py-6">
+              <h3 className="text-base font-medium text-center mb-6">How many guests are you coming with?</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="additionalGuests" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Number of guests (0 - 6)
+                  </Label>
+                  <Input
+                    id="additionalGuests"
+                    type="number"
+                    min="0"
+                    max="6"
+                    value={additionalGuests}
+                    onChange={(e) => setAdditionalGuests(parseInt(e.target.value) || 0)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 h-11"
+                  onClick={() => setRsvpStep(4)}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={() => submitRsvp(true, false, additionalGuests)}
+                  className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C]"
+                >
+                  Continue
                 </Button>
               </div>
             </div>
