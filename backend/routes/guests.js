@@ -375,7 +375,7 @@ module.exports = () => {
   // Public RSVP endpoint (no auth required)
   router.post('/rsvp/:shareLink(*)', async (req, res) => {
     const { shareLink } = req.params;
-    const { firstName, lastName, email, attending, hasGuests } = req.body;
+    const { firstName, lastName, email, attending, hasGuests, additionalGuests } = req.body;
 
     try {
       // Find the gift by share link
@@ -459,7 +459,7 @@ module.exports = () => {
 
         // Adjust allowed based on hasGuests for attending yes
         if (attending && hasGuests !== undefined) {
-          updateData.allowed = hasGuests ? existingGuest.allowed : 1;
+          updateData.allowed = hasGuests ? existingGuest.allowed : (additionalGuests !== undefined ? additionalGuests + 1 : 1);
         }
 
         guest = await prisma.guest.update({
