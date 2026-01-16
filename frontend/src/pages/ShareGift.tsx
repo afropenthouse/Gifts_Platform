@@ -738,10 +738,10 @@ const ShareGift: React.FC = () => {
                 <Button
                   onClick={() => {
                     setWillAttend(true);
-                    if (guestAllowed && guestAllowed > 2) {
+                    if (guestAllowed && guestAllowed > 1) {
                       setRsvpStep(4);
                     } else {
-                      // Submit RSVP directly for open or allowed<=2
+                      // Submit RSVP directly for open or allowed=1
                       submitRsvp(true);
                     }
                   }}
@@ -765,13 +765,25 @@ const ShareGift: React.FC = () => {
               <h3 className="text-base font-medium text-center mb-6">Are you coming with {guestAllowed - 1} other guest{guestAllowed - 1 === 1 ? '' : 's'}?</h3>
               <div className="flex flex-col gap-3">
                 <Button
-                  onClick={() => submitRsvp(true, true)}
+                  onClick={() => {
+                    if (guestAllowed === 2) {
+                      submitRsvp(true, true, 1);
+                    } else {
+                      submitRsvp(true, true);
+                    }
+                  }}
                   className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
                 >
                   Yes
                 </Button>
                 <Button
-                  onClick={() => setRsvpStep(5)}
+                  onClick={() => {
+                    if (guestAllowed === 2) {
+                      submitRsvp(true, false, 0);
+                    } else {
+                      setRsvpStep(5);
+                    }
+                  }}
                   variant="outline"
                   className="w-full h-12 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
                 >
