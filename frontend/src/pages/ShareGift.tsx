@@ -9,6 +9,7 @@ import Navbar from '../components/Navbar';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Users, Gift } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 declare global {
   interface Window {
@@ -54,7 +55,6 @@ const ShareGift: React.FC = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
   const [verifyMessage, setVerifyMessage] = useState('');
-  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     document.title = "BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding";
@@ -62,6 +62,8 @@ const ShareGift: React.FC = () => {
   const [showRsvpThanks, setShowRsvpThanks] = useState(false);
   const [rsvpThanksMessage, setRsvpThanksMessage] = useState('');
   const [showCashGiftPrompt, setShowCashGiftPrompt] = useState(false);
+  const [guestAllowed, setGuestAllowed] = useState<number | null>(null);
+  const [hasGuests, setHasGuests] = useState<boolean | null>(null);
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.groomName} & ${gift.details.brideName}`
@@ -188,11 +190,65 @@ const ShareGift: React.FC = () => {
 
   useEffect(() => {
     if (!loading && gift) {
-      setShowConfetti(true);
-      const timer = setTimeout(() => setShowConfetti(false), 10000);
-      return () => clearTimeout(timer);
+      const duration = 15 * 1000; // 15 seconds
+      const end = Date.now() + duration;
+
+      const interval = setInterval(() => {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe']
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe']
+        });
+
+        if (Date.now() > end) {
+          clearInterval(interval);
+        }
+      }, 150); // Slightly reduced timing
+
+      return () => clearInterval(interval);
     }
   }, [loading, gift]);
+
+  const submitRsvp = async (attending: boolean, hasGuestsParam?: boolean) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${linkParam}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: rsvpFirstName,
+          lastName: rsvpLastName,
+          email: rsvpEmail,
+          attending,
+          hasGuests: hasGuestsParam,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShowRsvpModal(false);
+        setShowCashGiftPrompt(true);
+        setRsvpStep(1);
+        setRsvpFirstName('');
+        setRsvpLastName('');
+        setRsvpEmail('');
+        setGuestAllowed(null);
+        setHasGuests(null);
+      } else {
+        alert(data.msg || 'Failed to submit RSVP. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error submitting RSVP');
+    }
+  };
 
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,34 +366,6 @@ const ShareGift: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {showConfetti && (
-        <>
-          <style dangerouslySetInnerHTML={{ __html: `
-            @keyframes fall {
-              0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
-              100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-            }
-          ` }} />
-          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999, overflow: 'hidden' }}>
-            {Array.from({ length: 100 }, (_, i) => (
-              <div
-                key={i}
-                style={{
-                  position: 'absolute',
-                  left: `${Math.random() * 100}%`,
-                  top: '-10px',
-                  width: '10px',
-                  height: '10px',
-                  backgroundColor: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe'][Math.floor(Math.random() * 8)],
-                  borderRadius: '50%',
-                  animation: `fall 10s linear forwards`,
-                  animationDelay: `${Math.random() * 10}s`,
-                }}
-              />
-            ))}
-          </div>
-        </>
-      )}
       <Navbar />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
@@ -530,13 +558,15 @@ const ShareGift: React.FC = () => {
       <Dialog open={showRsvpModal} onOpenChange={(open) => {
         setShowRsvpModal(open);
         if (!open) {
-          setRsvpStep(1);
-          setWillAttend(null);
-          setRsvpFirstName('');
-          setRsvpLastName('');
-          setRsvpEmail('');
-          setRsvpError('');
-        }
+           setRsvpStep(1);
+           setWillAttend(null);
+           setRsvpFirstName('');
+           setRsvpLastName('');
+           setRsvpEmail('');
+           setRsvpError('');
+           setGuestAllowed(null);
+           setHasGuests(null);
+         }
       }}>
         <DialogContent className="max-w-[19rem]">
           <DialogHeader>
@@ -576,7 +606,10 @@ const ShareGift: React.FC = () => {
                   return;
                 }
 
-                // If names are valid, proceed to step 2
+                // If names are valid, store allowed and proceed to step 2
+                if (data.guest) {
+                  setGuestAllowed(data.guest.allowed);
+                }
                 setRsvpStep(2);
               } catch (err) {
                 console.error(err);
@@ -636,6 +669,8 @@ const ShareGift: React.FC = () => {
                     setRsvpFirstName('');
                     setRsvpLastName('');
                     setRsvpEmail('');
+                    setGuestAllowed(null);
+                    setHasGuests(null);
                   }}
                 >
                   Back
@@ -697,34 +732,13 @@ const ShareGift: React.FC = () => {
               <h3 className="text-base font-medium text-center mb-6">Will you attend?</h3>
               <div className="flex flex-col gap-3">
                 <Button
-                  onClick={async () => {
+                  onClick={() => {
                     setWillAttend(true);
-                    // Submit RSVP to backend
-                    try {
-                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${linkParam}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          firstName: rsvpFirstName,
-                          lastName: rsvpLastName,
-                          email: rsvpEmail,
-                          attending: true,
-                        }),
-                      });
-                      const data = await res.json();
-                      if (res.ok) {
-                        setShowRsvpModal(false);
-                        setShowCashGiftPrompt(true);
-                        setRsvpStep(1);
-                        setRsvpFirstName('');
-                        setRsvpLastName('');
-                        setRsvpEmail('');
-                      } else {
-                        alert(data.msg || 'Failed to submit RSVP. Please try again.');
-                      }
-                    } catch (err) {
-                      console.error(err);
-                      alert('Error submitting RSVP');
+                    if (guestAllowed && guestAllowed > 1) {
+                      setRsvpStep(4);
+                    } else {
+                      // Submit RSVP directly for open or allowed=1
+                      submitRsvp(true);
                     }
                   }}
                   className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
@@ -732,40 +746,32 @@ const ShareGift: React.FC = () => {
                   Yes I'm coming
                 </Button>
                 <Button
-                  onClick={async () => {
-                    setWillAttend(false);
-                    // Submit RSVP to backend
-                    try {
-                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${linkParam}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          firstName: rsvpFirstName,
-                          lastName: rsvpLastName,
-                          email: rsvpEmail,
-                          attending: false,
-                        }),
-                      });
-                      const data = await res.json();
-                      if (res.ok) {
-                        setShowRsvpModal(false);
-                        setShowCashGiftPrompt(true);
-                        setRsvpStep(1);
-                        setRsvpFirstName('');
-                        setRsvpLastName('');
-                        setRsvpEmail('');
-                      } else {
-                        alert(data.msg || 'Failed to submit RSVP. Please try again.');
-                      }
-                    } catch (err) {
-                      console.error(err);
-                      alert('Error submitting RSVP');
-                    }
-                  }}
+                  onClick={() => submitRsvp(false)}
                   variant="outline"
                   className="w-full h-12 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
                 >
                   No I can't make it
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {rsvpStep === 4 && (
+            <div className="py-6">
+              <h3 className="text-base font-medium text-center mb-6">Do you have {guestAllowed} guests coming with you?</h3>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => submitRsvp(true, true)}
+                  className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                >
+                  Yes
+                </Button>
+                <Button
+                  onClick={() => submitRsvp(true, false)}
+                  variant="outline"
+                  className="w-full h-12 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
+                >
+                  No
                 </Button>
               </div>
             </div>

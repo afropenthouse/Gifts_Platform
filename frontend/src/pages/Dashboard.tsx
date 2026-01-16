@@ -2160,9 +2160,9 @@ const Dashboard: React.FC = () => {
                     <SelectItem value="open">Open - Allow anyone to RSVP</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500 mt-1">
+                {/* <p className="text-xs text-gray-500 mt-1">
                   You can change this later in the RSVP management section.
-                </p>
+                </p> */}
               </div>
 
               <div>
@@ -2415,9 +2415,9 @@ const Dashboard: React.FC = () => {
                     <SelectItem value="open">Open - Allow anyone to RSVP</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500 mt-1">
+                {/* <p className="text-xs text-gray-500 mt-1">
                   You can change this later in the RSVP management section.
-                </p>
+                </p> */}
               </div>
 
               <div>
