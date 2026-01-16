@@ -408,6 +408,10 @@ module.exports = () => {
           },
         });
 
+        if (existingGuest && existingGuest.attending !== 'pending') {
+          return res.status(409).json({ msg: 'You have already submitted an RSVP for this event.' });
+        }
+
         if (existingGuest) {
           // Update existing guest
           guest = await prisma.guest.update({
@@ -448,6 +452,10 @@ module.exports = () => {
           return res.status(403).json({
             msg: 'Your name is not on the guest list. Please contact the event organizer.'
           });
+        }
+
+        if (existingGuest.attending !== 'pending') {
+          return res.status(409).json({ msg: 'You have already submitted an RSVP for this event.' });
         }
 
         // Update existing guest with RSVP response and email

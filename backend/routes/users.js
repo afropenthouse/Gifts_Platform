@@ -96,6 +96,31 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Insufficient balance' });
       }
 
+      // Get bank name from code (assuming we have it)
+      const banksRes = await getBanks();
+      const bank = banksRes.data ? banksRes.data.find(b => b.code === bank_code) : null;
+      const bankName = bank ? bank.name : bank_code;
+
+      // Resolve account name
+      const resolveRes = await resolveAccount({
+        account_bank: bank_code,
+        account_number,
+      });
+      const accountName = resolveRes.status && resolveRes.data ? resolveRes.data.account_name : null;
+
+      // Create withdrawal record
+      const withdrawal = await prisma.withdrawal.create({
+        data: {
+          userId: req.user.id,
+          amount: withdrawAmount,
+          bankCode: bank_code,
+          bankName: bankName,
+          accountNumber: account_number,
+          accountName: accountName,
+          status: 'pending',
+        },
+      });
+
       // Deduct from wallet
       await prisma.user.update({
         where: { id: req.user.id },
@@ -106,13 +131,18 @@ module.exports = () => {
       const recipientRes = await createTransferRecipient({
         account_number,
         account_bank: bank_code,
-        name: user.name || 'Recipient',
+        name: accountName || user.name || 'Recipient',
       });
       if (!recipientRes.status || !recipientRes.data || !recipientRes.data.recipient_code) {
         // Refund wallet if recipient creation fails
         await prisma.user.update({
           where: { id: req.user.id },
           data: { wallet: { increment: withdrawAmount } }
+        });
+        // Update withdrawal status to failed
+        await prisma.withdrawal.update({
+          where: { id: withdrawal.id },
+          data: { status: 'failed' },
         });
         return res.status(500).json({ msg: 'Failed to create transfer recipient', error: recipientRes.message || 'Unknown error' });
       }
@@ -123,6 +153,16 @@ module.exports = () => {
         narration: `Withdrawal from Wedding Gifts (Fee: ₦${fee.toFixed(2)})`,
       };
       const response = await initiateTransfer(transferPayload);
+
+      // Update withdrawal with transfer details
+      await prisma.withdrawal.update({
+        where: { id: withdrawal.id },
+        data: {
+          reference: response.data ? response.data.reference : null,
+          transferId: response.data ? response.data.id : null,
+          status: response.status ? 'completed' : 'failed',
+        },
+      });
 
       res.json({
         msg: 'Withdrawal initiated successfully',
@@ -138,10 +178,35 @@ module.exports = () => {
           where: { id: req.user.id },
           data: { wallet: { increment: parseFloat(amount) } }
         });
+        // Update withdrawal status to failed if it was created
+        if (req.body.amount) {
+          await prisma.withdrawal.updateMany({
+            where: {
+              userId: req.user.id,
+              amount: parseFloat(amount),
+              status: 'pending',
+            },
+            data: { status: 'failed' },
+          });
+        }
       } catch (refundError) {
         console.error('Refund failed:', refundError);
       }
       res.status(500).json({ msg: 'Withdrawal failed', error: error.message });
+    }
+  });
+
+  // Get withdrawal history
+  router.get('/withdrawals', auth(), async (req, res) => {
+    try {
+      const withdrawals = await prisma.withdrawal.findMany({
+        where: { userId: req.user.id },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.json(withdrawals);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
     }
   });
 
