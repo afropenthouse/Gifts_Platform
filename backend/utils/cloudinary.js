@@ -15,9 +15,10 @@ const uploadImage = async (fileBuffer, folder = 'gifts') => {
         {
           folder,
           resource_type: 'image',
-          transformation: [
-            { quality: 100, format: 'auto' }
-          ]
+          // transformation: [
+          //   { quality: 100, format: 'auto' }
+          // ]
+          overwrite: false,
         },
         (error, result) => {
           if (error) {
