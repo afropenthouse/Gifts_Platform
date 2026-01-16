@@ -198,20 +198,20 @@ const ShareGift: React.FC = () => {
 
       const interval = setInterval(() => {
         confetti({
-          particleCount: 15,
+          particleCount: 20,
           angle: 90,
           spread: 70,
           origin: { x: Math.random(), y: 0 },
-          gravity: 1.5,
+          gravity: 2.5,
           drift: 0,
-          decay: 0.94,
-          colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe']
+          decay: 0.96,
+          colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe', '#fd79a8', '#00b894', '#e17055', '#74b9ff', '#a29bfe', '#ffeaa7', '#fab1a0']
         });
 
         if (Date.now() > end) {
           clearInterval(interval);
         }
-      }, 100); // More frequent bursts
+      }, 50); // More frequent bursts
 
       return () => clearInterval(interval);
     }
