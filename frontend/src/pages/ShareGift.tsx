@@ -430,10 +430,9 @@ const ShareGift: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="text-center text-muted-foreground text-sm mt-2 font-playfair">
-            Strictly by invitation
+            <div className="text-center text-muted-foreground text-sm mt-2 font-playfair">
+              Strictly by invitation
+            </div>
           </div>
 
           {/* Description - shown below card if available */}
