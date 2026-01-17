@@ -432,6 +432,10 @@ const ShareGift: React.FC = () => {
             </div>
           </div>
 
+          <div className="text-center text-muted-foreground text-sm mt-2 font-playfair">
+            Strictly by invitation
+          </div>
+
           {/* Description - shown below card if available */}
           {/* {gift.description && (
             <div className="mt-6 p-4 bg-card rounded-lg border border-border/50">
@@ -575,6 +579,9 @@ const ShareGift: React.FC = () => {
         <DialogContent className="max-w-[19rem]">
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
+            <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
+              Strictly by invitation
+            </div>
           </DialogHeader>
 
           {rsvpStep === 1 && (
