@@ -848,10 +848,9 @@ const ShareGift: React.FC = () => {
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
           </DialogHeader>
           <div className="py-6">
-            <h3 className="text-sm font-medium text-center mb-6">Will you like to send a cash gift?</h3>
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4">
               <Button
-                className="flex-1 h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
                 onClick={() => {
                   // Pre-populate contributor info with RSVP data
                   if (rsvpFirstName && rsvpLastName) {
@@ -864,19 +863,18 @@ const ShareGift: React.FC = () => {
                   setShowAmountModal(true);
                 }}
               >
-                Yes
+                Send the couple a cash gift
               </Button>
-              <Button
-                variant="outline"
-                className="flex-1 h-12 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
+              <p
+                className="text-center text-sm text-gray-600 hover:text-[#2E235C] cursor-pointer"
                 onClick={() => {
                   setShowCashGiftPrompt(false);
                   setRsvpThanksMessage('Thank you for responding');
                   setShowRsvpThanks(true);
                 }}
               >
-                No
-              </Button>
+                No thanks
+              </p>
             </div>
           </div>
         </DialogContent>
