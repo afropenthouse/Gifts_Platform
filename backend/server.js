@@ -62,6 +62,7 @@ app.use('/api/gifts', require('./routes/gifts')());
 app.use('/api/contributions', require('./routes/contributions')());
 app.use('/api/users', require('./routes/users')());
 app.use('/api/guests', require('./routes/guests')());
+app.use('/api/vendors', require('./routes/vendors')());
 
 app.get('/', (req, res) => res.send('API running'));
 

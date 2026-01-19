@@ -23,6 +23,7 @@ model Gift {
   updatedAt      DateTime  @updatedAt
   contributions  Contribution[]
   guests         Guest[]
+  vendors        Vendor[]
   guestListMode  GuestListMode @default(restricted)
 
   @@index([userId])
@@ -108,6 +109,21 @@ model Withdrawal {
   updatedAt      DateTime @updatedAt
 
   @@index([userId])
+}
+
+model Vendor {
+  id           Int      @id @default(autoincrement())
+  eventId      Int
+  event        Gift     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category     String
+  amountAgreed Decimal  @db.Decimal(10, 2)
+  amountPaid   Decimal  @db.Decimal(10, 2) @default(0)
+  dueDate      DateTime @db.Date
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([eventId])
 }
 
 enum GiftType {
