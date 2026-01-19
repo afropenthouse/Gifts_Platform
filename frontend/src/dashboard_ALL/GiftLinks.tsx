@@ -99,56 +99,7 @@ export const GiftLinks = ({
                         <h3 className="font-bold text-base text-gray-900 text-center line-clamp-2">{gift.title}</h3>
                       </div>
 
-                      {/* QR Code with Enhanced Styling */}
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="bg-white rounded-lg p-2 shadow-md border-2 border-black transition-colors" data-gift-id={gift.id}>
-                          <QRCodeSVG
-                            value={`${window.location.origin}/gift/${gift.shareLink}`}
-                            size={80}
-                            level="L"
-                            includeMargin={false}
-                            fgColor="#000000"
-                            bgColor="#ffffff"
-                          />
-                        </div>
-                        <button
-                          onClick={() => {
-                            const svg = document.querySelector(`[data-gift-id="${gift.id}"] svg`);
-                            if (svg) {
-                              const svgData = new XMLSerializer().serializeToString(svg);
-                              const canvas = document.createElement('canvas');
-                              const ctx = canvas.getContext('2d');
-                              const img = new Image();
-
-                              img.onload = () => {
-                                canvas.width = img.width;
-                                canvas.height = img.height;
-                                ctx?.drawImage(img, 0, 0);
-
-                                canvas.toBlob((blob) => {
-                                  if (blob) {
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `${gift.title || gift.type}-qr-code.png`;
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(url);
-                                  }
-                                });
-                              };
-
-                              img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
-                            }
-                          }}
-                          className="text-xs font-medium text-black hover:text-red-700 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-[#E10032]/5 hover:bg-black transition-all"
-                          title="Download QR Code"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Download</span>
-                        </button>
-                      </div>
+                      {/* QR Code and Download button removed as requested */}
                     </div>
 
                     {/* Right Section - Content & Actions */}

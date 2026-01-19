@@ -9,6 +9,7 @@ import SignupModal from './components/SignupModal';
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ShareGift from "./pages/ShareGift";
+import QRGift from "./pages/QRGift";
 import VerifyEmail from "./pages/VerifyEmail";
 import ResetPassword from "./pages/ResetPassword";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -31,6 +32,8 @@ const App = () => {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/gift/:link" element={<ShareGift />} />
           <Route path="/gift/:slug/:id" element={<ShareGift />} />
+          <Route path="/qr-gift/:link" element={<QRGift />} />
+          <Route path="/qr-gift/:slug/:id" element={<QRGift />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import GiftLinks from '../dashboard_ALL/GiftLinks';
+import QRCodePage from '../dashboard_ALL/QRCodePage';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
@@ -189,6 +190,7 @@ const Dashboard: React.FC = () => {
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length },
     { id: 'rsvp', label: 'RSVP', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
+    { id: 'qr', label: 'QR Code for Cash Gifts', icon: QrCode, color: 'text-green-500', badge: null },
   ];
 
   useEffect(() => {
@@ -996,12 +998,14 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'gifts' && 'Events'}
                     {activeTab === 'withdraw' && 'Withdraw Funds'}
                     {activeTab === 'rsvp' && 'RSVP'}
+                    {activeTab === 'qr' && 'QR Code (Cash Gift)'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
                     {activeTab === 'gifts' && 'Manage all your event links & cash gifts'}
                     {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
+                    {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts'}
                   </p>
                 </div>
                 
@@ -1222,7 +1226,7 @@ const Dashboard: React.FC = () => {
                       onClick={() => setIsCreateModalOpen(true)}
                       className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]"
                     >
-                      <Gift className="w-4 h-4 mr-2" />
+                      {/* <Gift className="w-4 h-4 mr-2" /> */}
                       Create event
                     </Button>
                   </div>
@@ -2066,6 +2070,11 @@ const Dashboard: React.FC = () => {
                 )}
 
             </div>
+            )}
+
+            {/* QR Code Section */}
+            {activeTab === 'qr' && (
+              <QRCodePage gifts={gifts} />
             )}
 
           </div>
