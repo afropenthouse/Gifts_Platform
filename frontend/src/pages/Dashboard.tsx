@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import GiftLinks from '../dashboard_ALL/GiftLinks';
 import QRCodePage from '../dashboard_ALL/QRCodePage';
+import VendorPaymentTracker from '../dashboard_ALL/VendorPaymentTracker';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
@@ -189,8 +190,9 @@ const Dashboard: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null },
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length },
     { id: 'rsvp', label: 'RSVP', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests },
-    { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
     { id: 'qr', label: 'QR Code for Cash Gifts', icon: QrCode, color: 'text-green-500', badge: null },
+    { id: 'vendors', label: 'Vendor Payment Tracker', icon: Wallet, color: 'text-orange-500', badge: null },
+    { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
 
   useEffect(() => {
@@ -998,6 +1000,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'gifts' && 'Events'}
                     {activeTab === 'withdraw' && 'Withdraw Funds'}
                     {activeTab === 'rsvp' && 'RSVP'}
+                    {activeTab === 'vendors' && 'Vendor Payment Tracker'}
                     {activeTab === 'qr' && 'QR Code (Cash Gift)'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
@@ -2070,6 +2073,11 @@ const Dashboard: React.FC = () => {
                 )}
 
             </div>
+            )}
+
+            {/* Vendor Payment Tracker Section */}
+            {activeTab === 'vendors' && (
+              <VendorPaymentTracker />
             )}
 
             {/* QR Code Section */}

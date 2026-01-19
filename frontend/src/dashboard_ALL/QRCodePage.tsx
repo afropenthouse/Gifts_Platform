@@ -81,19 +81,20 @@ const QrCodePage: React.FC<QrCodePageProps> = ({ gifts }) => {
             <h2 className="text-2xl font-bold text-gray-900">QR Code for Cash gifts</h2>
             <p className="text-gray-600">Place this QR code at your event to receive cash gifts</p>
         </div>
-        <div className="w-full md:w-64">
-            <Select value={selectedGiftId} onValueChange={setSelectedGiftId}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select an event" />
-                </SelectTrigger>
-                <SelectContent>
-                    {gifts.map(gift => (
-                        <SelectItem key={gift.id} value={gift.id.toString()}>
-                            {gift.title}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+        <div className="w-full md:w-64 flex flex-row items-center gap-2">
+          <span className="text-sm text-gray-600 whitespace-nowrap">Select event</span>
+          <Select value={selectedGiftId} onValueChange={setSelectedGiftId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select event" />
+            </SelectTrigger>
+            <SelectContent>
+              {gifts.map(gift => (
+                <SelectItem key={gift.id} value={gift.id.toString()}>
+                  {gift.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -126,7 +127,7 @@ const QrCodePage: React.FC<QrCodePageProps> = ({ gifts }) => {
                     </Button>
                     <Button variant="ghost" onClick={() => window.open(qrUrl, '_blank')}>
                         <ExternalLink className="w-4 h-4 mr-2" />
-                        Open Page
+                        Preview
                     </Button>
                 </div>
             </CardContent>
