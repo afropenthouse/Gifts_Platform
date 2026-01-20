@@ -123,26 +123,32 @@ module.exports = () => {
     const eventAddress = gift?.details?.address;
     const accent = '#2E235C';
     const muted = '#f6f4ff';
+    const eventPicture = gift?.picture || 'https://placehold.co/600x400?text=Event+Image';
+    const calendarUrl = eventUrl ? `${eventUrl}/calendar` : '#';
+    const directionsUrl = eventAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` : '#';
+    const websiteUrl = eventUrl || '#';
 
     const html = `
       <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
-        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
-          <div style="padding: 28px 28px 18px; text-align: center;">
-            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading} Reminder</h2>
-            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">Don't forget this upcoming event!</p>
-            ${eventDate ? `<p style=\"margin: 0; font-size: 14px; color: #6b7280;\">Date: ${eventDate}</p>` : ''}
-            ${eventAddress ? `<p style=\"margin: 4px 0 0; font-size: 14px; color: #6b7280;\">Location: ${eventAddress}</p>` : ''}
+        <div style="max-width: 420px; margin: 0 auto; background: #fff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46,35,92,0.08); overflow: hidden;">
+          <div style="padding: 24px 24px 0; text-align: center;">
+            <div style="font-size: 22px; font-weight: 700; color: ${accent}; margin-bottom: 8px;">Joy</div>
+            <div style="font-size: 18px; font-weight: 600; color: #222; margin-bottom: 2px;">${heading}</div>
+            ${eventDate ? `<div style=\"font-size: 13px; color: #444; margin-bottom: 12px;\">${eventDate}</div>` : ''}
+            <img src="${eventPicture}" alt="Event" style="width: 100%; max-width: 320px; border-radius: 12px; margin-bottom: 18px; object-fit: cover;" />
+            <div style="font-size: 20px; font-weight: 700; color: #222; margin-bottom: 8px;">The Final Countdown!<br>1 Month Away</div>
+            <div style="font-size: 13px; color: #666; margin-bottom: 18px;">Keep this email for reference. It includes important information about this event.</div>
           </div>
-
-          <div style="padding: 0 24px 24px; text-align: center;">
-            <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
-              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${guestName || 'there'},</p>
-              <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">This is a friendly reminder about the upcoming event. We hope to see you there!</p>
+          <div style="padding: 0 18px 18px;">
+            <ul style="list-style: none; padding: 0; margin: 0;">
+              ${eventAddress ? `<li style=\"margin-bottom: 8px;\"><a href='${directionsUrl}' style='color: ${accent}; text-decoration: underline; font-size: 14px;'>Get Directions</a></li>` : ''}
+              <li style="margin-bottom: 8px;"><a href="${calendarUrl}" style="color: ${accent}; text-decoration: underline; font-size: 14px;">Add To Calendar</a></li>
+              <li style="margin-bottom: 8px;"><a href="${websiteUrl}" style="color: ${accent}; text-decoration: underline; font-size: 14px;">Open Event Website</a></li>
+            </ul>
+            <div style="margin: 18px 0 0; text-align: center;">
+              <span style="font-size: 13px; color: #888;">Planning your own event?</span><br>
+              <a href="https://withjoy.com" style="display: inline-block; margin-top: 8px; padding: 8px 18px; background: ${accent}; color: #fff; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none;">Learn More</a>
             </div>
-
-            <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">
-              <a href="${eventUrl}" style="color: ${accent}; text-decoration: none; font-weight: 600;">View Event Details</a>
-            </p>
           </div>
         </div>
       </div>
