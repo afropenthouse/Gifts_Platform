@@ -519,36 +519,41 @@ module.exports = () => {
 
       for (const gift of gifts) {
         const reminder = gift.details?.reminder;
-        if (!reminder || reminder === 'none') continue;
+        console.log('DEBUG: Checking gift', gift.id, 'reminder:', reminder);
+
+        if (!reminder || reminder === 'none') {
+          console.log('DEBUG: Skipping gift', gift.id, '- no reminder set');
+          continue;
+        }
 
         const eventDate = new Date(gift.date);
         let reminderDate;
 
-        switch (reminder) {
-          case '1week':
-            reminderDate = new Date(eventDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-            break;
-          case '3days':
-            reminderDate = new Date(eventDate.getTime() - 3 * 24 * 60 * 60 * 1000);
-            break;
-          case '1day':
-            reminderDate = new Date(eventDate.getTime() - 1 * 24 * 60 * 60 * 1000);
-            break;
-          case 'none':
-          default:
-            continue;
+        let reminderDateTime;
+        if (reminder === 'custom') {
+          reminderDateTime = new Date(gift.details?.reminderDateTime);
+        } else {
+          // For predefined, use the stored datetime
+          reminderDateTime = new Date(gift.details?.reminderDateTime);
         }
 
-        // Check if today is the reminder date
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const checkDate = new Date(reminderDate.getFullYear(), reminderDate.getMonth(), reminderDate.getDate());
+        console.log('DEBUG: Gift', gift.id, 'reminderDateTime:', reminderDateTime, 'now:', now);
 
-        if (today.getTime() === checkDate.getTime()) {
+        if (!reminderDateTime || isNaN(reminderDateTime.getTime())) {
+          console.log('DEBUG: Invalid reminderDateTime for gift', gift.id);
+          continue;
+        }
+
+        // Check if current time is past the reminder time
+        if (now >= reminderDateTime) {
+          console.log('DEBUG: Sending scheduled reminders for gift', gift.id, 'at', reminderDateTime);
           // Send reminders to guests who RSVP'd yes
           const rsvpGuests = gift.guests.filter(g => g.attending === 'yes' && g.email);
+          console.log('DEBUG: Found', rsvpGuests.length, 'attending guests with emails for gift', gift.id);
 
           for (const guest of rsvpGuests) {
             const eventUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/gift/${gift.shareLink}` : null;
+            console.log('DEBUG: Sending reminder to', guest.email, 'for gift', gift.id);
             await sendReminderEmail({
               recipient: guest.email,
               guestName: `${guest.firstName} ${guest.lastName}`,
@@ -557,7 +562,56 @@ module.exports = () => {
             });
             remindersSent++;
           }
+
+          // Clear the reminder after sending to prevent duplicates
+          await prisma.gift.update({
+            where: { id: gift.id },
+            data: {
+              details: {
+                ...gift.details,
+                reminder: 'none',
+                reminderDateTime: null,
+              }
+            }
+          });
         }
+      }
+
+      res.json({ message: `Sent ${remindersSent} reminder emails` });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  // Send reminder emails for a specific gift
+  router.post('/send-reminders/:giftId', auth(), async (req, res) => {
+    const giftId = parseInt(req.params.giftId);
+
+    try {
+      const gift = await prisma.gift.findUnique({
+        where: { id: giftId },
+        include: { guests: true }
+      });
+
+      if (!gift || gift.userId !== req.user.id) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+
+      let remindersSent = 0;
+
+      // Send reminders to guests who RSVP'd yes
+      const rsvpGuests = gift.guests.filter(g => g.attending === 'yes' && g.email);
+
+      for (const guest of rsvpGuests) {
+        const eventUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/gift/${gift.shareLink}` : null;
+        await sendReminderEmail({
+          recipient: guest.email,
+          guestName: `${guest.firstName} ${guest.lastName}`,
+          gift,
+          eventUrl,
+        });
+        remindersSent++;
       }
 
       res.json({ message: `Sent ${remindersSent} reminder emails` });

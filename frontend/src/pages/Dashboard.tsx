@@ -156,6 +156,13 @@ const Dashboard: React.FC = () => {
   const [invitedGuests, setInvitedGuests] = useState<Set<number>>(new Set());
   const [showAnalyticsButtons, setShowAnalyticsButtons] = useState(false);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
+  const [isSetRemindersModalOpen, setIsSetRemindersModalOpen] = useState(false);
+  const [reminderType, setReminderType] = useState('1week');
+  const [customReminderDate, setCustomReminderDate] = useState('');
+  const [customHour, setCustomHour] = useState('9');
+  const [customMinute, setCustomMinute] = useState('00');
+  const [customAmpm, setCustomAmpm] = useState('AM');
+  const [isSettingReminders, setIsSettingReminders] = useState(false);
 
   // Load invited guests from localStorage
   useEffect(() => {
@@ -794,6 +801,57 @@ const Dashboard: React.FC = () => {
       }
     }
   };
+
+  const handleSetReminders = async () => {
+    if (!selectedEventForRSVP) return;
+
+    setIsSettingReminders(true);
+    try {
+      const token = localStorage.getItem('token');
+      const body: any = { reminder: reminderType };
+      if (reminderType === 'custom') {
+        // Convert 12-hour to 24-hour
+        let hour24 = parseInt(customHour);
+        if (customAmpm === 'PM' && hour24 !== 12) hour24 += 12;
+        if (customAmpm === 'AM' && hour24 === 12) hour24 = 0;
+        const time24 = `${hour24.toString().padStart(2, '0')}:${customMinute}`;
+        // Combine date and time into ISO string
+        const dateTime = new Date(`${customReminderDate}T${time24}`);
+        body.reminderDateTime = dateTime.toISOString();
+      }
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${selectedEventForRSVP}/set-reminder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Update the gifts state
+        setGifts(gifts.map(g => g.id === selectedEventForRSVP ? data : g));
+        toast({
+          title: "Reminders set",
+          description: "Reminder emails will be sent automatically at the scheduled time.",
+        });
+        setIsSetRemindersModalOpen(false);
+        setReminderType('1week');
+        setCustomReminderDate('');
+        setCustomHour('9');
+        setCustomMinute('00');
+        setCustomAmpm('AM');
+      } else {
+        alert(data.msg || 'Failed to set reminders');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error setting reminders');
+    } finally {
+      setIsSettingReminders(false);
+    }
+  };
+
 
   const totalContributions = contributions.reduce((sum, c) => sum + Number(c.amount), 0);
   const recentTransactions = [
@@ -1649,7 +1707,7 @@ const Dashboard: React.FC = () => {
                   </Select>
 
                   {selectedEventForRSVP && eventFilteredGuests.length > 0 && (
-                    <Button 
+                    <Button
                       onClick={downloadGuestListPDF}
                       variant="outline"
                       className="border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
@@ -1658,7 +1716,17 @@ const Dashboard: React.FC = () => {
                       Download PDF
                     </Button>
                   )}
-                  <Button 
+                  {selectedEventForRSVP && eventFilteredGuests.length > 0 && (
+                    <Button
+                      onClick={() => setIsSetRemindersModalOpen(true)}
+                      variant="outline"
+                      className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Set Reminders
+                    </Button>
+                  )}
+                  <Button
                     onClick={() => setIsAddGuestModalOpen(true)}
                     disabled={!selectedEventForRSVP}
                     className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] disabled:opacity-50"
@@ -3821,6 +3889,124 @@ const Dashboard: React.FC = () => {
                 <div className="font-medium">Help</div>
                 <div className="text-sm text-gray-600">Contact support</div>
               </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Set Reminders Modal */}
+      <Dialog open={isSetRemindersModalOpen} onOpenChange={(open) => {
+        setIsSetRemindersModalOpen(open);
+        if (!open) {
+          setReminderType('1week');
+          setCustomReminderDate('');
+          setCustomHour('9');
+          setCustomMinute('00');
+          setCustomAmpm('AM');
+        }
+      }}>
+        <DialogContent className="max-w-md w-full">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Set Reminder Schedule</DialogTitle>
+            <p className="text-sm text-gray-600 mt-1">Choose when to send reminder emails to attending guests</p>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                Reminder Timing
+              </Label>
+              <Select value={reminderType} onValueChange={setReminderType}>
+                <SelectTrigger className="w-full h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20">
+                  <SelectValue placeholder="Select timing" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1week">1 week before event</SelectItem>
+                  <SelectItem value="3days">3 days before event</SelectItem>
+                  <SelectItem value="1day">1 day before event</SelectItem>
+                  <SelectItem value="custom">Custom date</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {reminderType === 'custom' && (
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="customReminderDate" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Custom Reminder Date
+                  </Label>
+                  <Input
+                    id="customReminderDate"
+                    type="date"
+                    value={customReminderDate}
+                    onChange={(e) => setCustomReminderDate(e.target.value)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                    Custom Reminder Time
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Select value={customHour} onValueChange={setCustomHour}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Hour" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
+                          <SelectItem key={hour} value={hour.toString()}>{hour}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={customMinute} onValueChange={setCustomMinute}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Minute" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="00">00</SelectItem>
+                        <SelectItem value="15">15</SelectItem>
+                        <SelectItem value="30">30</SelectItem>
+                        <SelectItem value="45">45</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={customAmpm} onValueChange={setCustomAmpm}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="AM/PM" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AM">AM</SelectItem>
+                        <SelectItem value="PM">PM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 h-11"
+              onClick={() => setIsSetRemindersModalOpen(false)}
+              disabled={isSettingReminders}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSetReminders}
+              className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+              disabled={isSettingReminders || (reminderType === 'custom' && !customReminderDate)}
+            >
+              {isSettingReminders ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Setting...
+                </>
+              ) : (
+                'Set Reminder'
+              )}
             </Button>
           </div>
         </DialogContent>
