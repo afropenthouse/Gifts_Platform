@@ -626,7 +626,7 @@ const VendorPaymentTracker: React.FC = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-sm text-gray-600">Total Budget</p>
+              <p className="text-sm text-gray-600">Total Cost</p>
               <p className="text-2xl font-bold text-gray-900">₦{totalBudget.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
             </div>
           </CardContent>

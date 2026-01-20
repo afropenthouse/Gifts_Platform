@@ -1001,7 +1001,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'withdraw' && 'Withdraw Funds'}
                     {activeTab === 'rsvp' && 'RSVP'}
                     {activeTab === 'vendors' && 'Vendor Payment Tracker'}
-                    {activeTab === 'qr' && 'QR Code (Cash Gift)'}
+                    {activeTab === 'qr' && 'QR Code'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
