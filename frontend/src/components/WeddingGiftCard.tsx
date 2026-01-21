@@ -114,6 +114,7 @@ const WeddingGiftCard = ({
         amount: parseFloat(amount) * 100, // Paystack amount in kobo
         currency: currency,
         ref: `demo-gift-${Date.now()}`,
+        channels: ['bank_transfer'],
         callback: function (data: any) {
           console.log('Payment callback:', data);
           if (data.status === 'success') {

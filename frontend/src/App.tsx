@@ -14,6 +14,11 @@ import VerifyEmail from "./pages/VerifyEmail";
 import ResetPassword from "./pages/ResetPassword";
 import ForgotPassword from "./pages/ForgotPassword";
 import HowItWorks from "./pages/HowItWorks";
+import WeddingRSVP from "./pages/landing/WeddingRSVP";
+import CollectCashGifts from "./pages/landing/CollectCashGifts";
+import WeddingQRCode from "./pages/landing/WeddingQRCode";
+import VendorPaymentTracker from "./pages/landing/VendorPaymentTracker";
+import ScheduleVendorPayments from "./pages/landing/ScheduleVendorPayments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +35,11 @@ const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/wedding-rsvp" element={<WeddingRSVP />} />
+          <Route path="/collect-cash-gifts" element={<CollectCashGifts />} />
+          <Route path="/wedding-qr-code" element={<WeddingQRCode />} />
+          <Route path="/vendor-payment-tracker" element={<VendorPaymentTracker />} />
+          <Route path="/schedule-vendor-payments" element={<ScheduleVendorPayments />} />
           <Route path="/gift/:link" element={<ShareGift />} />
           <Route path="/gift/:slug/:id" element={<ShareGift />} />
           <Route path="/qr-gift/:link" element={<QRGift />} />

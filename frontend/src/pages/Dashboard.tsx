@@ -1294,18 +1294,22 @@ const Dashboard: React.FC = () => {
                 </div>
 
 <GiftLinks
-                  gifts={gifts}
-                  contributions={contributions}
-                  onCreateGift={() => setIsCreateModalOpen(true)}
-                  onEditGift={handleEditGift}
-                  onDeleteGift={handleDeleteGift}
-                  onRSVP={() => setActiveTab('rsvp')}
-                  onViewDetails={(gift) => {
-                    setSelectedGiftForTable(gift);
-                    setIsGiftTableModalOpen(true);
-                  }}
-                  deletingGiftId={deletingGiftId}
-                />
+  gifts={gifts}
+  contributions={contributions}
+  onCreateGift={() => setIsCreateModalOpen(true)}
+  onEditGift={handleEditGift}
+  onDeleteGift={handleDeleteGift}
+  onRSVP={() => setActiveTab('rsvp')}
+  onSetReminder={(gift) => {
+    setSelectedEventForRSVP(gift.id);
+    setIsSetRemindersModalOpen(true);
+  }}
+  onViewDetails={(gift) => {
+    setSelectedGiftForTable(gift);
+    setIsGiftTableModalOpen(true);
+  }}
+  deletingGiftId={deletingGiftId}
+/>
               </div>
             )}
 
@@ -1714,16 +1718,6 @@ const Dashboard: React.FC = () => {
                     >
                       <FileDown className="w-4 h-4 mr-2" />
                       Download PDF
-                    </Button>
-                  )}
-                  {selectedEventForRSVP && eventFilteredGuests.length > 0 && (
-                    <Button
-                      onClick={() => setIsSetRemindersModalOpen(true)}
-                      variant="outline"
-                      className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Set Reminders
                     </Button>
                   )}
                   <Button

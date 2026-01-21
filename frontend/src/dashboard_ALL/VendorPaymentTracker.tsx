@@ -67,6 +67,7 @@ const VendorPaymentTracker: React.FC = () => {
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [bankCode, setBankCode] = useState('');
+  const [bankName, setBankName] = useState('');
   const [banks, setBanks] = useState<any[]>([]);
 
   const { toast } = useToast();
@@ -350,6 +351,15 @@ const VendorPaymentTracker: React.FC = () => {
     e.preventDefault();
     if (!schedulingVendor || isSubmitting) return;
 
+    if (!vendorEmail.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Vendor email is required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
@@ -365,6 +375,7 @@ const VendorPaymentTracker: React.FC = () => {
           accountName,
           accountNumber,
           bankCode,
+          bankName,
         }),
       });
 
@@ -478,6 +489,7 @@ const VendorPaymentTracker: React.FC = () => {
     setAccountName('');
     setAccountNumber('');
     setBankCode('');
+    setBankName('');
   };
 
   const filteredVendors = filterEvent
@@ -504,7 +516,7 @@ const VendorPaymentTracker: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Vendor Payment Tracker</h2>
           <p className="text-gray-600 mt-1">Track payments for your wedding vendors</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Select value={filterEvent ? filterEvent.toString() : 'all'} onValueChange={(value) => {
             setFilterEvent(value === 'all' ? null : parseInt(value));
           }}>
@@ -526,7 +538,7 @@ const VendorPaymentTracker: React.FC = () => {
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]">
-                <Plus className="w-4 h-4 mr-2" />
+                {/* <Plus className="w-4 h-4 mr-2" /> */}
                 Add Vendor
               </Button>
             </DialogTrigger>
@@ -583,7 +595,7 @@ const VendorPaymentTracker: React.FC = () => {
                   </div>
                 )}
                 <div>
-                  <Label htmlFor="vendorEmail">Vendor Email Address</Label>
+                  <Label htmlFor="vendorEmail">Vendor Email Address <span className="text-gray-400 text-xs">(optional)</span></Label>
                   <Input
                     id="vendorEmail"
                     type="email"
@@ -829,6 +841,8 @@ const VendorPaymentTracker: React.FC = () => {
                   <Label htmlFor="bankCode">Bank</Label>
                   <Select value={bankCode} onValueChange={(value) => {
                     setBankCode(value);
+                    const selectedBank = banks.find(b => b.code === value);
+                    setBankName(selectedBank ? selectedBank.name : '');
                     setAccountName(''); // Reset when bank changes
                   }}>
                     <SelectTrigger>
@@ -908,14 +922,8 @@ const VendorPaymentTracker: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <Label>Status</Label>
-                    <p className="text-sm">
-                      {selectedVendor.status === 'Not Scheduled' ? (
-                        <span>{selectedVendor.status}</span>
-                      ) : (
-                        <Badge variant="outline">
-                          {selectedVendor.status}
-                        </Badge>
-                      )}
+                    <p className="text-sm text-gray-900">
+                      {(selectedVendor.amountAgreed - selectedVendor.amountPaid - (selectedVendor.scheduledAmount || 0)) <= 0 ? 'Paid' : 'Outstanding'}
                     </p>
                   </div>
                   <div>
@@ -925,6 +933,10 @@ const VendorPaymentTracker: React.FC = () => {
                   <div>
                     <Label>Outstanding Balance</Label>
                     <p className="text-sm">₦{(selectedVendor.amountAgreed - selectedVendor.amountPaid - (selectedVendor.scheduledAmount || 0)).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <Label>Release Date</Label>
+                    <p className="text-sm">{selectedVendor.releaseDate ? new Date(selectedVendor.releaseDate).toLocaleDateString() : '-'}</p>
                   </div>
                   <div className="flex gap-3 pt-4">
                     {(selectedVendor.amountAgreed - selectedVendor.amountPaid - (selectedVendor.scheduledAmount || 0)) > 0 && (
@@ -955,50 +967,79 @@ const VendorPaymentTracker: React.FC = () => {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] border-0">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-sm text-white/80">Total Cost</p>
+              <p className="text-2xl font-bold text-white">₦{totalBudget.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] border-0">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-sm text-white/80">Total Paid</p>
+              <p className="text-2xl font-bold text-white">₦{totalPaid.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] border-0">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-sm text-white/80">Total<br className="md:hidden" /> Scheduled</p>
+              <p className="text-2xl font-bold text-white">₦{totalScheduled.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] border-0">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-sm text-white/80">Outstanding<br className="md:hidden" /> Balance</p>
+              <p className="text-2xl font-bold text-white">₦{totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Paid</TableHead>
-                <TableHead>Scheduled</TableHead>
-                <TableHead>Balance</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Release Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="font-semibold">Category</TableHead>
+                <TableHead className="font-semibold">Total (₦)</TableHead>
+                <TableHead className="font-semibold">Paid (₦)</TableHead>
+                <TableHead className="font-semibold">Scheduled (₦)</TableHead>
+                <TableHead className="font-semibold">Balance (₦)</TableHead>
+                <TableHead className="font-semibold">Due Date</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredVendors.length > 0 ? (
                 filteredVendors.map((vendor) => (
                   <TableRow key={vendor.id}>
-                    <TableCell>{vendor.category}</TableCell>
-                    <TableCell>₦{vendor.amountAgreed.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>₦{vendor.amountPaid.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>₦{(vendor.scheduledAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>₦{(vendor.amountAgreed - vendor.amountPaid - (vendor.scheduledAmount || 0)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell><span className="font-semibold">{vendor.category}</span></TableCell>
+                    <TableCell>{Number(vendor.amountAgreed).toLocaleString()}</TableCell>
+                    <TableCell>{Number(vendor.amountPaid).toLocaleString()}</TableCell>
+                    <TableCell>{Number(vendor.scheduledAmount || 0).toLocaleString()}</TableCell>
+                    <TableCell>{Number(vendor.amountAgreed - vendor.amountPaid - (vendor.scheduledAmount || 0)).toLocaleString()}</TableCell>
                     <TableCell>{new Date(vendor.dueDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{vendor.releaseDate ? new Date(vendor.releaseDate).toLocaleDateString() : '-'}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="link"
-                        className="p-0 h-auto"
+                      <button
+                        type="button"
+                        className="p-0 h-auto text-left font-normal text-black hover:underline focus:outline-none"
+                        style={{ fontWeight: 'normal', fontSize: 'inherit' }}
                         onClick={() => {
                           setSelectedVendor(vendor);
                           setIsVendorDetailsModalOpen(true);
                         }}
                       >
-                        {vendor.status === 'Not Scheduled' ? (
-                          <span>{vendor.status}</span>
-                        ) : (
-                          <Badge variant="outline">
-                            {vendor.status}
-                          </Badge>
-                        )}
-                      </Button>
+                        View
+                      </button>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -1022,7 +1063,7 @@ const VendorPaymentTracker: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <p className="text-gray-500">No vendors found</p>
                     <p className="text-sm text-gray-400 mt-1">
                       Add your first vendor to start tracking payments
@@ -1031,44 +1072,10 @@ const VendorPaymentTracker: React.FC = () => {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </CardContent>
       </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Cost</p>
-              <p className="text-2xl font-bold text-gray-900">₦{totalBudget.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Paid</p>
-              <p className="text-2xl font-bold text-green-600">₦{totalPaid.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Scheduled</p>
-              <p className="text-2xl font-bold text-blue-600">₦{totalScheduled.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Outstanding Balance</p>
-              <p className="text-2xl font-bold text-red-600">₦{totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };

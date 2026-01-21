@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import {
-  Gift, Copy, Eye, Edit, Download, Filter, Trash2, Users, ExternalLink
+  Gift, Copy, Eye, Edit, Download, Filter, Trash2, Users, ExternalLink, Mail
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
@@ -39,6 +39,7 @@ interface GiftLinksProps {
   onViewDetails: (gift: Gift) => void;
   onDeleteGift: (giftId: number) => void;
   onRSVP: (gift: Gift) => void;
+  onSetReminder: (gift: Gift) => void;
   deletingGiftId?: number | null;
 }
 
@@ -50,6 +51,7 @@ export const GiftLinks = ({
   onViewDetails,
   onDeleteGift,
   onRSVP,
+  onSetReminder,
   deletingGiftId,
 }: GiftLinksProps) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -162,6 +164,16 @@ export const GiftLinks = ({
                           >
                             <Users className="w-3.5 h-3.5 mr-1" />
                             RSVP
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-9 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all font-medium"
+                            onClick={() => onSetReminder(gift)}
+                            title="Set Reminder"
+                          >
+                            <Mail className="w-3.5 h-3.5 mr-1" />
+                            Set Reminder
                           </Button>
                         </div>
 
