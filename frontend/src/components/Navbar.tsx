@@ -33,6 +33,21 @@ const Navbar = () => {
             <Link to="/how-it-works" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               How it Works
             </Link>
+            <Link to="/wedding-rsvp" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+              RSVP
+            </Link>
+            <Link to="/collect-cash-gifts" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+              Cash Gifts
+            </Link>
+            <Link to="/wedding-qr-code" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+              QR Code
+            </Link>
+            <Link to="/vendor-payment-tracker" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+              Payments
+            </Link>
+            <Link to="/schedule-vendor-payments" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+              Schedule
+            </Link>
             {user ? (
               <>
                 <Link to="/dashboard">
@@ -74,6 +89,21 @@ const Navbar = () => {
                 <div className="flex flex-col gap-4 mt-8">
                   <Link to="/how-it-works" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     How it Works
+                  </Link>
+                  <Link to="/wedding-rsvp" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
+                    Wedding RSVP
+                  </Link>
+                  <Link to="/collect-cash-gifts" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
+                    Collect Cash Gifts
+                  </Link>
+                  <Link to="/wedding-qr-code" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
+                    Wedding QR Code
+                  </Link>
+                  <Link to="/vendor-payment-tracker" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
+                    Vendor Payment Tracker
+                  </Link>
+                  <Link to="/schedule-vendor-payments" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
+                    Schedule Vendor Payments
                   </Link>
                   {user ? (
                     <>

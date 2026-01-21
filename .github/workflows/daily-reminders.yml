@@ -1,8 +1,12 @@
 name: Daily Reminders
 
+# Disabled cron job
+# on:
+#   schedule:
+#     - cron: '0 0 * * *'  # Daily at midnight UTC
+#   workflow_dispatch:     # Manual trigger for testing
+
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Daily at midnight UTC
   workflow_dispatch:     # Manual trigger for testing
 
 jobs:

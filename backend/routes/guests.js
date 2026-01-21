@@ -525,10 +525,8 @@ module.exports = () => {
 
       for (const gift of gifts) {
         const reminder = gift.details?.reminder;
-        console.log('DEBUG: Checking gift', gift.id, 'reminder:', reminder);
 
         if (!reminder || reminder === 'none') {
-          console.log('DEBUG: Skipping gift', gift.id, '- no reminder set');
           continue;
         }
 
@@ -543,23 +541,17 @@ module.exports = () => {
           reminderDateTime = new Date(gift.details?.reminderDateTime);
         }
 
-        console.log('DEBUG: Gift', gift.id, 'reminderDateTime:', reminderDateTime, 'now:', now);
-
         if (!reminderDateTime || isNaN(reminderDateTime.getTime())) {
-          console.log('DEBUG: Invalid reminderDateTime for gift', gift.id);
           continue;
         }
 
         // Check if current time is past the reminder time
         if (now >= reminderDateTime) {
-          console.log('DEBUG: Sending scheduled reminders for gift', gift.id, 'at', reminderDateTime);
           // Send reminders to guests who RSVP'd yes
           const rsvpGuests = gift.guests.filter(g => g.attending === 'yes' && g.email);
-          console.log('DEBUG: Found', rsvpGuests.length, 'attending guests with emails for gift', gift.id);
 
           for (const guest of rsvpGuests) {
             const eventUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/gift/${gift.shareLink}` : null;
-            console.log('DEBUG: Sending reminder to', guest.email, 'for gift', gift.id);
             await sendReminderEmail({
               recipient: guest.email,
               guestName: `${guest.firstName} ${guest.lastName}`,

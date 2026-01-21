@@ -39,11 +39,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Keep raw body for Flutterwave webhook signature verification
+// Keep raw body for webhook signature verification
 app.use(express.json({
   limit: '50mb',
   verify: (req, res, buf) => {
-    if (req.originalUrl === '/api/contributions/webhook') {
+    if (req.originalUrl === '/api/contributions/webhook' || req.originalUrl === '/api/vendors/webhook') {
       req.rawBody = buf;
     }
   }
@@ -69,23 +69,3 @@ app.get('/', (req, res) => res.send('API running'));
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-// Development cron job for testing reminders
-if (process.env.NODE_ENV !== 'production' && process.env.DEV_CRON === 'true') {
-  console.log('DEV CRON: Starting reminder check every 30 seconds');
-  setInterval(async () => {
-    try {
-      const response = await fetch(`http://localhost:${PORT}/api/guests/send-reminders`, {
-        method: 'POST'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.message && data.message !== 'Sent 0 reminder emails') {
-          console.log('DEV CRON:', data.message);
-        }
-      }
-    } catch (err) {
-      console.error('DEV CRON: Error:', err.message);
-    }
-  }, 30000); // Every 30 seconds
-}

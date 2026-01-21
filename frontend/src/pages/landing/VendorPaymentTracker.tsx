@@ -1,5 +1,8 @@
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Users, DollarSign, Calendar, BarChart3, CheckCircle, TrendingUp, Plus, Eye } from "lucide-react";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -10,149 +13,204 @@ const VendorPaymentTracker = () => {
     document.title = "Wedding Vendor Payment Tracker - BeThere Weddings";
   }, []);
 
+  const features = [
+    {
+      icon: <Plus className="w-8 h-8" style={{ color: '#2E235C' }} />,
+      title: "Add vendors by category",
+      description: "Organize planners, photographers, decorators, and more"
+    },
+    {
+      icon: <DollarSign className="w-8 h-8" style={{ color: '#2E235C' }} />,
+      title: "Record total vendor charges",
+      description: "Keep track of all agreed costs and fees"
+    },
+    {
+      icon: <BarChart3 className="w-8 h-8" style={{ color: '#2E235C' }} />,
+      title: "Track payment progress",
+      description: "See exactly how much has been paid vs. owed"
+    },
+    {
+      icon: <Calendar className="w-8 h-8" style={{ color: '#2E235C' }} />,
+      title: "Monitor due dates",
+      description: "Never miss important payment deadlines"
+    },
+    {
+      icon: <Eye className="w-8 h-8" style={{ color: '#2E235C' }} />,
+      title: "View outstanding balances",
+      description: "Clear visibility into remaining payments"
+    },
+    {
+      icon: <TrendingUp className="w-8 h-8" style={{ color: '#2E235C' }} />,
+      title: "Calculate total wedding spend",
+      description: "Automatic budget tracking and summaries"
+    },
+  ];
+
+  const benefits = [
+    "No more confusion with spreadsheets",
+    "Never forget payment deadlines",
+    "Clear communication with vendors",
+    "Better budget management",
+    "Professional payment tracking",
+    "Peace of mind throughout planning"
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-champagne/10">
       <Navbar />
 
-      {/* Main Content */}
-      <section className="py-12 px-4 md:py-16 md:px-6">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-8 md:mb-10">
-            <h1 className="font-serif text-3xl md:text-5xl font-semibold text-foreground mb-4">
+      {/* Hero Section */}
+      <section className="relative py-20 px-4 md:py-32 md:px-6 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20"></div>
+        <div className="container mx-auto max-w-6xl relative">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-primary/10 rounded-full">
+              <span className="text-sm font-medium" style={{ color: '#2E235C' }}>
+                Smart Budget Management
+              </span>
+            </div>
+            <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
               Wedding Vendor Payment Tracker
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Track all your wedding vendor payments in one place.
             </p>
           </div>
 
-          <div className="prose prose-lg mx-auto text-center mb-8">
-            <p className="text-muted-foreground leading-relaxed mb-6">
-              Managing wedding vendors often means juggling payments, balances, and due dates across different conversations and spreadsheets.
-            </p>
-            <p className="text-muted-foreground leading-relaxed mb-6">
-              Be There Weddings gives couples and event planners a simple way to track vendor costs and payments in one dashboard.
-            </p>
-            <p className="text-muted-foreground leading-relaxed mb-6">
-              With the Vendor Payment Tracker, you can:
-            </p>
-            <ul className="list-disc list-inside text-muted-foreground leading-relaxed mb-6 text-left max-w-2xl mx-auto">
-              <li>Add vendors by category (planner, photographer, decorator, etc.)</li>
-              <li>Record total vendor charges</li>
-              <li>Track how much has been paid</li>
-              <li>See outstanding balances</li>
-              <li>Monitor due dates at a glance</li>
-              <li>Automatically calculate total wedding spend</li>
-            </ul>
-            <p className="text-muted-foreground leading-relaxed mb-8">
-              No more confusion. No more forgotten balances. Just clear visibility into your wedding expenses.
-            </p>
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="prose prose-lg max-w-none">
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  Managing wedding vendors often means juggling payments, balances, and due dates across different conversations and spreadsheets.
+                </p>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  Be There Weddings gives couples and event planners a simple way to track vendor costs and payments in one organized dashboard.
+                </p>
+              </div>
 
-          <div className="text-center">
-            <Button
-              variant="hero"
-              size="lg"
-              className="px-8 py-6 text-primary text-base md:text-lg"
-              style={{ backgroundColor: '#ffff' }}
-              onClick={openSignupModal}
-            >
-              Track Vendor Payments
-            </Button>
+              <div className="pt-4">
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="px-10 py-4 text-primary text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  style={{ backgroundColor: '#ffff' }}
+                  onClick={openSignupModal}
+                >
+                  Track Vendor Payments
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/20">
+                <div className="flex items-center gap-3 mb-6">
+                  <BarChart3 className="w-6 h-6" style={{ color: '#2E235C' }} />
+                  <h3 className="text-xl font-semibold text-foreground">Complete Visibility</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/70 rounded-xl p-4 text-center">
+                      <div className="text-2xl font-bold" style={{ color: '#2E235C' }}>100%</div>
+                      <div className="text-sm text-muted-foreground">Payment Tracking</div>
+                    </div>
+                    <div className="bg-white/70 rounded-xl p-4 text-center">
+                      <div className="text-2xl font-bold" style={{ color: '#2E235C' }}>0</div>
+                      <div className="text-sm text-muted-foreground">Missed Deadlines</div>
+                    </div>
+                  </div>
+                  <div className="bg-white/70 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Budget Overview</span>
+                      <span className="text-sm text-muted-foreground">85% Complete</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-primary h-2 rounded-full" style={{ width: '85%' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-4 md:px-6 bg-card border-t border-border/50">
+      {/* Features Grid */}
+      <section className="py-16 px-4 md:py-24 md:px-6 bg-white/50 backdrop-blur-sm">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            {/* Brand Section */}
-            <div>
-              <img src="/logo2.png" alt="BeThere" className="h-10 w-auto mb-3 md:mb-4" />
-              <p className="text-sm text-muted-foreground">
-                One trusted link to RSVP and receive all your cash gifts in one place.
-              </p>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h4 className="font-medium text-foreground mb-3 md:mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-                    How It Works
-                  </a>
-                </li>
-                <li>
-                  <a href="/wedding-rsvp" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Wedding RSVP
-                  </a>
-                </li>
-                <li>
-                  <a href="/collect-cash-gifts" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Collect Cash Gifts
-                  </a>
-                </li>
-                <li>
-                  <a href="/wedding-qr-code" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Wedding QR Code
-                  </a>
-                </li>
-                <li>
-                  <a href="/vendor-payment-tracker" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Vendor Payment Tracker
-                  </a>
-                </li>
-                <li>
-                  <a href="/schedule-vendor-payments" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Schedule Vendor Payments
-                  </a>
-                </li>
-                <li>
-                  <button onClick={() => window.location.href = '/'} className="text-muted-foreground hover:text-foreground transition-colors">
-                    Login
-                  </button>
-                </li>
-                <li>
-                  <button onClick={openSignupModal} className="text-muted-foreground hover:text-foreground transition-colors">
-                    Sign Up
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-medium text-foreground mb-3 md:mb-4">Contact</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a
-                    href="mailto:teambethere@gmail.com"
-                    className="text-muted-foreground hover:text-foreground transition-colors break-words"
-                  >
-                    teambethere@gmail.com
-                  </a>
-                </li>
-                <li className="text-muted-foreground">
-                  <a href="tel:+2348056679806" className="hover:text-foreground transition-colors">
-                    +234 805 667 9806
-                  </a>
-                </li>
-                <li className="text-muted-foreground">Chevy- View Estate, Lekki</li>
-                <li className="text-muted-foreground">Mon-Fri 9AM-6PM WAT</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom Section */}
-          <div className="mt-8 pt-6 md:pt-8 border-t border-border/50 text-center">
-            <p className="text-sm text-muted-foreground">
-              © 2026 BeThere Weddings. All rights reserved.
+          <div className="text-center mb-16">
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Everything You Can Track
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Comprehensive vendor payment management at your fingertips
             </p>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <Card key={index} className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 mt-1">
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-2">{feature.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </footer>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-16 px-4 md:py-24 md:px-6">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-16">
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Why Track Payments?
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Professional payment tracking brings peace of mind to your wedding planning
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {benefits.map((benefit, index) => (
+              <div key={index} className="flex items-center gap-4 p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-white/20">
+                <CheckCircle className="w-6 h-6 flex-shrink-0" style={{ color: '#2E235C' }} />
+                <span className="text-foreground font-medium">{benefit}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 px-4 md:py-24 md:px-6 bg-gradient-to-r from-primary/10 to-secondary/10">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-6">
+            Ready to Organize Your Vendor Payments?
+          </h2>
+          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Take control of your wedding budget with professional payment tracking
+          </p>
+          <Button
+            variant="hero"
+            size="lg"
+            className="px-10 py-4 text-primary text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+            style={{ backgroundColor: '#ffff' }}
+            onClick={openSignupModal}
+          >
+            Start Tracking Today
+          </Button>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 };

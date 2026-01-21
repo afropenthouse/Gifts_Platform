@@ -2,6 +2,7 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
 const { resolveAccount, getBanks, initializePayment } = require('../utils/paystack');
+const { sendEmail, mailFrom } = require('../utils/email');
 
 function calculateStatus(amountAgreed, amountPaid, scheduledAmount, dueDate, status) {
   // Use stored status if it's the new ones
@@ -184,7 +185,7 @@ module.exports = () => {
   // Schedule payment for a vendor
   router.post('/:id/schedule-payment', auth(), async (req, res) => {
     const vendorId = parseInt(req.params.id);
-    const { amount, vendorEmail, accountName, accountNumber, bankCode } = req.body;
+    const { amount, vendorEmail, accountName, accountNumber, bankCode, bankName } = req.body;
 
     try {
       // Check ownership
@@ -213,7 +214,8 @@ module.exports = () => {
           vendorEmail,
           accountName,
           accountNumber,
-          bankCode
+          bankCode,
+          bankName
         }
       });
 
@@ -242,6 +244,7 @@ module.exports = () => {
         balance: updatedVendor.amountAgreed - updatedVendor.amountPaid - updatedVendor.scheduledAmount,
         paymentUrl: payment.data.authorization_url
       };
+
 
       res.json(vendorWithCalculated);
     } catch (err) {

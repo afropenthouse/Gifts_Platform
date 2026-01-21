@@ -78,6 +78,7 @@ async function initializePayment(payload) {
       reference,
       callback_url,
       metadata,
+      channels: ['bank_transfer'],
     };
 
     const response = await psRequest('POST', '/transaction/initialize', psPayload);
