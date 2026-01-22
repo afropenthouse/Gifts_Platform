@@ -958,11 +958,26 @@ const ShareGift: React.FC = () => {
               >
                 Send the couple a cash gift
               </Button>
+
+              {gift?.isSellingAsoebi && (
+                <Button
+                  className="w-full h-12 bg-white text-[#2E235C] border border-[#2E235C] hover:bg-gray-50"
+                  onClick={() => {
+                    setShowCashGiftPrompt(false);
+                    setShowRsvpThanks(true);
+                    setShowAsoebiConfirm(true);
+                    setAsoebiQuantity(1);
+                  }}
+                >
+                  Get Asoebi
+                </Button>
+              )}
+
               <p
                 className="text-center text-sm text-gray-600 hover:text-[#2E235C] cursor-pointer"
                 onClick={() => {
                   setShowCashGiftPrompt(false);
-                  setRsvpThanksMessage('Thank you for responding');
+                  setRsvpThanksMessage('Thank you for responding, we will send you a confirmation email');
                   setShowRsvpThanks(true);
                 }}
               >
