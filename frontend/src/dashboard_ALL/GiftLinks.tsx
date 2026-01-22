@@ -19,6 +19,8 @@ interface Gift {
   shareLink: string;
   createdAt: string;
   contributions?: Contribution[];
+  isSellingAsoebi?: boolean;
+  asoebiPrice?: number | string;
 }
 
 interface Contribution {

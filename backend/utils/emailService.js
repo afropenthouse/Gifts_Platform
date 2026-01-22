@@ -253,4 +253,142 @@ const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
   }
 };
 
-module.exports = { sendRsvpEmail, sendOwnerNotificationEmail, sendReminderEmail, sendRsvpCancellationEmail };
+const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, amount, gift, isAsoebi }) => {
+  if (!emailEnabled || !transporter) {
+    console.warn('Contributor thank you email skipped: SMTP configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipientEmail) {
+    return { delivered: false, reason: 'No recipient email provided' };
+  }
+
+  const heading = formatEventHeading(gift);
+  const eventDate = formatEventDate(gift?.date);
+  const accent = '#2E235C';
+  const muted = '#f6f4ff';
+  const cleanName = (contributorName || 'there').trim();
+  
+  const subject = isAsoebi 
+    ? `Thank you for your Asoebi purchase for ${heading}` 
+    : `Thank you for your gift to ${heading}`;
+
+  const title = isAsoebi ? 'Thank You for Your Purchase' : 'Thank You for Your Gift';
+  
+  const messageBody = isAsoebi
+    ? `Thank you for purchasing Asoebi for <strong>${heading}</strong>. We have received your payment of <strong>₦${amount.toLocaleString()}</strong>.`
+    : `Thank you for your generous gift of <strong>₦${amount.toLocaleString()}</strong>. Your kindness means so much to us.`;
+
+  const html = `
+    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+        <div style="padding: 28px 28px 18px; text-align: center;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${title}</h2>
+          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
+          ${eventDate ? `<p style="margin: 0; font-size: 14px; color: #6b7280;">Date: ${eventDate}</p>` : ''}
+        </div>
+
+        <div style="padding: 0 24px 24px; text-align: center;">
+          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+            <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${cleanName},</p>
+            <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
+              ${messageBody}
+            </p>
+          </div>
+
+          <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">We appreciate your support!</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: mailFrom,
+      to: recipientEmail,
+      subject,
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send contributor thank you email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
+const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributorName, amount, gift, message, isAsoebi }) => {
+  if (!emailEnabled || !transporter) {
+    console.warn('Gift received email skipped: SMTP configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipientEmail) {
+    return { delivered: false, reason: 'No recipient email provided' };
+  }
+
+  const heading = formatEventHeading(gift);
+  const eventDate = formatEventDate(gift?.date);
+  const accent = '#2E235C';
+  const muted = '#f6f4ff';
+  const cleanRecipientName = (recipientName || 'there').trim();
+  const isAnonymous = contributorName === 'Anonymous';
+  const senderDisplay = isAnonymous ? 'An anonymous guest' : contributorName.trim();
+  
+  const subject = isAsoebi 
+    ? `New Asoebi Payment for ${heading}` 
+    : `You received a gift for ${heading}!`;
+    
+  const title = isAsoebi ? 'New Asoebi Payment' : 'You Received a Gift!';
+  
+  const messageBody = isAsoebi
+    ? `${senderDisplay} has paid for Asoebi (<strong>₦${amount.toLocaleString()}</strong>).`
+    : `${senderDisplay} has sent you a cash gift of <strong>₦${amount.toLocaleString()}</strong>.`;
+
+  const html = `
+    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+        <div style="padding: 28px 28px 18px; text-align: center;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${title}</h2>
+          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
+          ${eventDate ? `<p style="margin: 0; font-size: 14px; color: #6b7280;">Date: ${eventDate}</p>` : ''}
+        </div>
+
+        <div style="padding: 0 24px 24px; text-align: center;">
+          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+            <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${cleanRecipientName},</p>
+            <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
+              ${messageBody}
+            </p>
+            ${message && !isAnonymous ? `<p style="margin: 8px 0 0; font-size: 13px; color: #4b5563; font-style: italic; line-height: 20px;">"${message}"</p>` : ''}
+          </div>
+
+          <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="color: ${accent}; text-decoration: none; font-weight: 600;">View your gifts in your dashboard</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: mailFrom,
+      to: recipientEmail,
+      subject,
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send gift received email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
+module.exports = { 
+  sendRsvpEmail, 
+  sendOwnerNotificationEmail, 
+  sendReminderEmail, 
+  sendRsvpCancellationEmail,
+  sendContributorThankYouEmail,
+  sendGiftReceivedEmail
+};

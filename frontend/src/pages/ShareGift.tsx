@@ -29,6 +29,8 @@ interface Gift {
   user: { name: string; profilePicture: string };
   _count?: { contributions: number };
   guestListMode?: string;
+  isSellingAsoebi?: boolean;
+  asoebiPrice?: string | number;
 }
 
 const ShareGift: React.FC = () => {
@@ -51,6 +53,7 @@ const ShareGift: React.FC = () => {
   const [rsvpFirstName, setRsvpFirstName] = useState('');
   const [rsvpLastName, setRsvpLastName] = useState('');
   const [rsvpEmail, setRsvpEmail] = useState('');
+  const [lastRsvpData, setLastRsvpData] = useState<{firstName: string, lastName: string, email: string} | null>(null);
   const [rsvpError, setRsvpError] = useState('');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
@@ -68,6 +71,8 @@ const ShareGift: React.FC = () => {
   const [showRsvpErrorModal, setShowRsvpErrorModal] = useState(false);
   const [rsvpErrorMessage, setRsvpErrorMessage] = useState('');
   const [rsvpGuestId, setRsvpGuestId] = useState<number | null>(null);
+  const [showAsoebiConfirm, setShowAsoebiConfirm] = useState(false);
+  const [asoebiQuantity, setAsoebiQuantity] = useState(1);
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.brideName} & ${gift.details.groomName}`
@@ -236,6 +241,11 @@ const ShareGift: React.FC = () => {
       if (res.ok) {
         if (data.guest && data.guest.id) {
           setRsvpGuestId(data.guest.id);
+          setLastRsvpData({
+            firstName: rsvpFirstName,
+            lastName: rsvpLastName,
+            email: rsvpEmail
+          });
         }
         setShowRsvpModal(false);
         setShowCashGiftPrompt(true);
@@ -260,6 +270,57 @@ const ShareGift: React.FC = () => {
   const handleAsoebi = async () => {
     if (!rsvpGuestId || !linkParam) return;
 
+    // If Asoebi is being sold with a price, initiate payment
+    if (gift?.isSellingAsoebi && gift.asoebiPrice && Number(gift.asoebiPrice) > 0) {
+      setProcessingPayment(true);
+      try {
+        const name = lastRsvpData ? `${lastRsvpData.firstName} ${lastRsvpData.lastName}` : 'Guest';
+        const email = lastRsvpData?.email;
+
+        if (!email) {
+          alert("We need your email for the receipt. Please RSVP again with a valid email.");
+          setProcessingPayment(false);
+          return;
+        }
+
+        const price = Number(gift.asoebiPrice);
+        const totalAmount = (price * asoebiQuantity) + 1000;
+
+        const initRes = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contributorName: name,
+              contributorEmail: email,
+              amount: totalAmount,
+              currency: 'NGN',
+              message: `Asoebi Payment (Qty: ${asoebiQuantity})`,
+              isAsoebi: true,
+              guestId: rsvpGuestId,
+              asoebiQuantity: asoebiQuantity
+            }),
+          }
+        );
+
+        const initData = await initRes.json();
+        if (!initRes.ok) {
+          throw new Error(initData?.msg || 'Failed to initialize payment');
+        }
+
+        if (initData.data && initData.data.authorization_url) {
+          window.location.href = initData.data.authorization_url;
+        }
+      } catch (err: any) {
+        console.error(err);
+        alert(err?.message || 'Payment initialization failed');
+        setProcessingPayment(false);
+      }
+      return;
+    }
+
+    // Default: Just mark as interested (if no price set)
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/asoebi-update`, {
         method: 'POST',
@@ -268,6 +329,7 @@ const ShareGift: React.FC = () => {
           shareLink: linkParam,
           guestId: rsvpGuestId,
           asoebi: true,
+          asoebiQuantity: asoebiQuantity
         }),
       });
 
@@ -912,25 +974,74 @@ const ShareGift: React.FC = () => {
       </Dialog>
       
       {/* RSVP Thanks Modal */}
-      <Dialog open={showRsvpThanks} onOpenChange={(open) => setShowRsvpThanks(open)}>
+      <Dialog open={showRsvpThanks} onOpenChange={(open) => {
+        setShowRsvpThanks(open);
+        if (!open) setShowAsoebiConfirm(false);
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-lg font-playfair text-center">{heading}</DialogTitle>
           </DialogHeader>
-          <div className="py-4 text-center">
-            <p className="text-base text-muted-foreground">{rsvpThanksMessage}</p>
-          </div>
-          <div className="pt-2 flex flex-col gap-3">
-            {rsvpGuestId && (
-              <Button 
-                className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C]" 
-                onClick={handleAsoebi}
-              >
-                I want asoebi
-              </Button>
-            )}
-            <Button className="w-full" variant="outline" onClick={() => setShowRsvpThanks(false)}>Close</Button>
-          </div>
+
+          {!showAsoebiConfirm ? (
+            <>
+              <div className="py-4 text-center">
+                <p className="text-base text-muted-foreground">{rsvpThanksMessage}</p>
+              </div>
+              <div className="pt-2 flex flex-col gap-3">
+                {rsvpGuestId && (
+                  <Button 
+                    className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C]" 
+                    onClick={() => {
+                        setAsoebiQuantity(1); // Reset quantity when opening
+                        setShowAsoebiConfirm(true);
+                    }}
+                  >
+                    Tap to get asoebi
+                  </Button>
+                )}
+                <Button className="w-full" variant="outline" onClick={() => setShowRsvpThanks(false)}>Close</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="py-4 text-center space-y-4">
+                <p className="text-base text-muted-foreground">
+                  {gift?.asoebiPrice && Number(gift.asoebiPrice) > 0 
+                     ? "How many do you want to get?"
+                     : "Confirm your interest in Asoebi?"}
+                </p>
+                
+                {gift?.asoebiPrice && Number(gift.asoebiPrice) > 0 && (
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-3 justify-center">
+                             <Label htmlFor="asoebi-qty" className="whitespace-nowrap">Quantity:</Label>
+                             <Input 
+                                id="asoebi-qty"
+                                type="number" 
+                                min={1}
+                                value={asoebiQuantity}
+                                onChange={(e) => setAsoebiQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                className="w-24 text-center h-10"
+                             />
+                        </div>
+                        <p className="text-lg font-semibold text-[#2E235C]">
+                            Total: ₦{((Number(gift.asoebiPrice) * asoebiQuantity) + 1000).toLocaleString()}
+                        </p>
+                    </div>
+                )}
+              </div>
+              <div className="pt-2">
+                <Button 
+                  className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C]" 
+                  onClick={handleAsoebi}
+                  disabled={processingPayment}
+                >
+                  {processingPayment ? 'Processing...' : (gift?.asoebiPrice && Number(gift.asoebiPrice) > 0 ? 'Proceed to Payment' : 'Yes')}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

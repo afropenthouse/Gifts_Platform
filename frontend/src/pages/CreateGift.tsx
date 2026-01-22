@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
+import { Checkbox } from '../components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 
 const CreateGift: React.FC = () => {
@@ -171,6 +172,32 @@ const CreateGift: React.FC = () => {
             onChange={(e) => setDate(e.target.value)}
           />
         </div>
+        
+        <div className="flex items-center space-x-2 border p-4 rounded-lg">
+          <Checkbox 
+            id="sellAsoebi" 
+            checked={isSellingAsoebi}
+            onCheckedChange={(checked) => setIsSellingAsoebi(checked as boolean)}
+          />
+          <Label htmlFor="sellAsoebi" className="text-sm font-medium text-gray-900">
+            Sell Asoebi for this event?
+          </Label>
+        </div>
+
+        {isSellingAsoebi && (
+          <div>
+            <Label htmlFor="asoebiPrice">Asoebi Price (₦)</Label>
+            <Input
+              id="asoebiPrice"
+              type="number"
+              value={asoebiPrice}
+              onChange={(e) => setAsoebiPrice(e.target.value)}
+              placeholder="Enter price per Asoebi"
+              required={isSellingAsoebi}
+            />
+          </div>
+        )}
+
         <div>
           <Label htmlFor="picture">Picture</Label>
           <Input

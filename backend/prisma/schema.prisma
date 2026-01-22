@@ -25,6 +25,8 @@ model Gift {
   guests         Guest[]
   vendors        Vendor[]
   guestListMode  GuestListMode @default(restricted)
+  isSellingAsoebi Boolean   @default(false)
+  asoebiPrice    Decimal?  @db.Decimal(10, 2)
 
   @@index([userId])
   @@index([createdAt])
@@ -86,6 +88,7 @@ model Guest {
   status       GuestStatus @default(invited)
   tableSitting String      @default("Table sitting")
   asoebi       Boolean     @default(false)
+  asoebiPaid   Boolean     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 

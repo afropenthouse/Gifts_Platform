@@ -55,6 +55,8 @@ interface Gift {
   createdAt: string;
   contributions?: Contribution[];
   guestListMode?: string;
+  isSellingAsoebi?: boolean;
+  asoebiPrice?: number | string;
 }
 
 interface Contribution {
@@ -105,7 +107,7 @@ const Dashboard: React.FC = () => {
   const [withdrawHistory, setWithdrawHistory] = useState<any[]>([]);
   const [goalAmount, setGoalAmount] = useState(500000);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string, asoebi?: boolean}>>([]);
+  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string, asoebi?: boolean, asoebiPaid?: boolean}>>([]);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<number | null>(null);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<{id: number, firstName: string, lastName: string, allowed: number, attending: string, tableSitting?: string} | null>(null);
@@ -479,11 +481,14 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const [isSellingAsoebi, setIsSellingAsoebi] = useState(false);
+  const [asoebiPrice, setAsoebiPrice] = useState('');
+
   const handleEditGift = (gift: Gift) => {
     setEditingGift(gift);
     setType(gift.type);
     setTitle(gift.title);
-    setDate(gift.date || '');
+    setDate(gift.date ? gift.date.split('T')[0] : '');
     setPicture(gift.picture || '');
     setPictureFile(null);
     setFileError('');
@@ -500,6 +505,11 @@ const Dashboard: React.FC = () => {
       setReminder('none');
       setCustomType('');
     }
+    // Access isSellingAsoebi and asoebiPrice directly from gift object (updated backend returns these)
+    // Note: TypeScript interface needs update, but for now accessing as any
+    const g = gift as any;
+    setIsSellingAsoebi(g.isSellingAsoebi || false);
+    setAsoebiPrice(g.asoebiPrice ? g.asoebiPrice.toString() : '');
     setEditGuestListMode(gift.guestListMode || 'restricted');
     setIsEditModalOpen(true);
   };
@@ -569,6 +579,10 @@ const Dashboard: React.FC = () => {
     }
     formData.append('details', JSON.stringify(details));
     formData.append('guestListMode', createGuestListMode);
+    formData.append('isSellingAsoebi', isSellingAsoebi.toString());
+    if (isSellingAsoebi && asoebiPrice) {
+      formData.append('asoebiPrice', asoebiPrice);
+    }
 
     if (type === 'other') {
       formData.append('customType', customType);
@@ -600,6 +614,8 @@ const Dashboard: React.FC = () => {
         setBrideName('');
         setCustomType('');
         setCreateGuestListMode('restricted');
+        setIsSellingAsoebi(false);
+        setAsoebiPrice('');
         setIsCreateModalOpen(false);
 
         const shareLink = `${window.location.origin}/gift/${createdGift.shareLink}`;
@@ -648,6 +664,10 @@ const Dashboard: React.FC = () => {
     }
     formData.append('details', JSON.stringify(details));
     formData.append('guestListMode', editGuestListMode);
+    formData.append('isSellingAsoebi', isSellingAsoebi.toString());
+    if (isSellingAsoebi && asoebiPrice) {
+      formData.append('asoebiPrice', asoebiPrice);
+    }
 
     if (type === 'other') {
       formData.append('customType', customType);
@@ -681,6 +701,8 @@ const Dashboard: React.FC = () => {
         setEditingGift(null);
         setIsEditModalOpen(false);
         setEditGuestListMode('restricted');
+        setIsSellingAsoebi(false);
+        setAsoebiPrice('');
       } else {
         alert('Failed to update event');
       }
@@ -1956,41 +1978,50 @@ const Dashboard: React.FC = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="text-center">
-                                <div className="flex flex-col items-center justify-center gap-1">
-                                  <Checkbox 
-                                    checked={guest.asoebi || false}
-                                    onCheckedChange={async (checked) => {
-                                      const token = localStorage.getItem('token');
-                                      try {
-                                        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
-                                          method: 'PUT',
-                                          headers: {
-                                            'Content-Type': 'application/json',
-                                            Authorization: `Bearer ${token}`,
-                                          },
-                                          body: JSON.stringify({
-                                            firstName: guest.firstName,
-                                            lastName: guest.lastName,
-                                            allowed: guest.allowed,
-                                            asoebi: checked
-                                          }),
-                                        });
-                                        if (res.ok) {
-                                          const updatedGuest = await res.json();
-                                          const updatedGuests = guests.map(g =>
-                                            g.id === guest.id ? updatedGuest : g
-                                          );
-                                          setGuests(updatedGuests);
+                                {guest.asoebiPaid ? (
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <div className="inline-flex items-center px-2 py-1 rounded-full border-2 border-green-500 bg-green-50 text-green-800">
+                                      <CheckCircle className="w-4 h-4 mr-1" />
+                                      <span className="text-xs font-medium">Paid</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <Checkbox 
+                                      checked={guest.asoebi || false}
+                                      onCheckedChange={async (checked) => {
+                                        const token = localStorage.getItem('token');
+                                        try {
+                                          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
+                                            method: 'PUT',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              Authorization: `Bearer ${token}`,
+                                            },
+                                            body: JSON.stringify({
+                                              firstName: guest.firstName,
+                                              lastName: guest.lastName,
+                                              allowed: guest.allowed,
+                                              asoebi: checked
+                                            }),
+                                          });
+                                          if (res.ok) {
+                                            const updatedGuest = await res.json();
+                                            const updatedGuests = guests.map(g =>
+                                              g.id === guest.id ? updatedGuest : g
+                                            );
+                                            setGuests(updatedGuests);
+                                          }
+                                        } catch (err) {
+                                          console.error(err);
                                         }
-                                      } catch (err) {
-                                        console.error(err);
-                                      }
-                                    }}
-                                  />
-                                  <span className="text-xs text-gray-500 whitespace-nowrap">
-                                    {guest.asoebi ? 'Yes' : 'Not responded'}
-                                  </span>
-                                </div>
+                                      }}
+                                    />
+                                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                                      {guest.asoebi ? 'Yes' : 'Not responded'}
+                                    </span>
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell>
                                 {(() => {
@@ -2317,6 +2348,34 @@ const Dashboard: React.FC = () => {
                 </p> */}
               </div>
 
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="sellAsoebi" 
+                  checked={isSellingAsoebi}
+                  onCheckedChange={(checked) => setIsSellingAsoebi(checked as boolean)}
+                />
+                <Label htmlFor="sellAsoebi" className="text-sm font-medium text-gray-900">
+                  Sell Asoebi for this event?
+                </Label>
+              </div>
+
+              {isSellingAsoebi && (
+                <div>
+                  <Label htmlFor="asoebiPrice" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Asoebi Price (₦)
+                  </Label>
+                  <Input
+                    id="asoebiPrice"
+                    type="number"
+                    value={asoebiPrice}
+                    onChange={(e) => setAsoebiPrice(e.target.value)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    placeholder="Enter price per Asoebi"
+                    required={isSellingAsoebi}
+                  />
+                </div>
+              )}
+
               <div>
                 <Label htmlFor="picture" className="text-sm font-medium text-gray-900 mb-2 block">
                   <ImageIcon className="inline w-4 h-4 mr-2 text-gray-600" />
@@ -2571,6 +2630,34 @@ const Dashboard: React.FC = () => {
                   You can change this later in the RSVP management section.
                 </p> */}
               </div>
+
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="editSellAsoebi" 
+                  checked={isSellingAsoebi}
+                  onCheckedChange={(checked) => setIsSellingAsoebi(checked as boolean)}
+                />
+                <Label htmlFor="editSellAsoebi" className="text-sm font-medium text-gray-900">
+                  Sell Asoebi for this event?
+                </Label>
+              </div>
+
+              {isSellingAsoebi && (
+                <div>
+                  <Label htmlFor="editAsoebiPrice" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Asoebi Price (₦)
+                  </Label>
+                  <Input
+                    id="editAsoebiPrice"
+                    type="number"
+                    value={asoebiPrice}
+                    onChange={(e) => setAsoebiPrice(e.target.value)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    placeholder="Enter price per Asoebi"
+                    required={isSellingAsoebi}
+                  />
+                </div>
+              )}
 
               <div>
                 <Label className="text-sm font-medium text-gray-900 mb-3 block">

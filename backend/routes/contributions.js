@@ -1,172 +1,14 @@
 const express = require('express');
 const prisma = require('../prismaClient');
 const { initializePayment, verifyTransaction, verifyWebhookSignature } = require('../utils/paystack');
-const nodemailer = require('nodemailer');
-
-// Email configuration (aligned with guests route: supports EMAIL_* fallbacks)
-const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
-const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '465', 10);
-const smtpSecure = process.env.EMAIL_SECURE
-  ? process.env.EMAIL_SECURE === 'true'
-  : process.env.SMTP_SECURE
-  ? process.env.SMTP_SECURE === 'true'
-  : true;
-const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
-const mailFrom = process.env.MAIL_FROM || smtpUser || 'teambethere@gmail.com';
-const emailEnabled = Boolean(smtpUser && smtpPass);
-
-const transporter = emailEnabled
-  ? nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpSecure,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    })
-  : null;
-
-const formatEventHeading = (gift) => {
-  if (gift?.type === 'wedding') {
-    return gift.title || 'Wedding Gift';
-  }
-  return gift?.title || gift?.type || 'Gift';
-};
-
-const formatEventDate = (date) => {
-  if (!date) return null;
-  try {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  } catch (error) {
-    return null;
-  }
-};
+const { sendContributorThankYouEmail, sendGiftReceivedEmail } = require('../utils/emailService');
 
 module.exports = () => {
   const router = express.Router();
 
-  // Send thank you email to gift contributor
-  const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, amount, gift }) => {
-    if (!emailEnabled || !transporter) {
-      console.warn('Contributor thank you email skipped: SMTP configuration is missing');
-      return { delivered: false, skipped: true };
-    }
-
-    if (!recipientEmail) {
-      return { delivered: false, reason: 'No recipient email provided' };
-    }
-
-    const heading = formatEventHeading(gift);
-    const eventDate = formatEventDate(gift?.date);
-    const accent = '#2E235C';
-    const muted = '#f6f4ff';
-    const cleanName = (contributorName || 'there').trim();
-
-    const html = `
-      <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
-        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
-          <div style="padding: 28px 28px 18px; text-align: center;">
-            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">Thank You for Your Gift</h2>
-            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
-            ${eventDate ? `<p style="margin: 0; font-size: 14px; color: #6b7280;">Date: ${eventDate}</p>` : ''}
-          </div>
-
-          <div style="padding: 0 24px 24px; text-align: center;">
-            <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
-              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${cleanName},</p>
-              <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
-                Thank you for your generous gift of <strong>₦${amount.toLocaleString()}</strong>. Your kindness means so much to us.
-              </p>
-            </div>
-
-            <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">We appreciate your support!</p>
-          </div>
-        </div>
-      </div>
-    `;
-
-    try {
-      await transporter.sendMail({
-        from: mailFrom,
-        to: recipientEmail,
-        subject: `Thank you for your gift to ${heading}`,
-        html,
-      });
-      return { delivered: true };
-    } catch (error) {
-      console.error('Failed to send contributor thank you email:', error?.message || error);
-      return { delivered: false, error: error?.message || 'Unknown error' };
-    }
-  };
-
-  // Send gift received email to gift owner
-  const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributorName, amount, gift, message }) => {
-    if (!emailEnabled || !transporter) {
-      console.warn('Gift received email skipped: SMTP configuration is missing');
-      return { delivered: false, skipped: true };
-    }
-
-    if (!recipientEmail) {
-      return { delivered: false, reason: 'No recipient email provided' };
-    }
-
-    const heading = formatEventHeading(gift);
-    const eventDate = formatEventDate(gift?.date);
-    const accent = '#2E235C';
-    const muted = '#f6f4ff';
-    const cleanRecipientName = (recipientName || 'there').trim();
-    const isAnonymous = contributorName === 'Anonymous';
-    const senderDisplay = isAnonymous ? 'An anonymous guest' : contributorName.trim();
-
-    const html = `
-      <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
-        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
-          <div style="padding: 28px 28px 18px; text-align: center;">
-            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">You Received a Gift!</h2>
-            <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
-            ${eventDate ? `<p style="margin: 0; font-size: 14px; color: #6b7280;">Date: ${eventDate}</p>` : ''}
-          </div>
-
-          <div style="padding: 0 24px 24px; text-align: center;">
-            <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
-              <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${cleanRecipientName},</p>
-              <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
-                ${senderDisplay} has sent you a cash gift of <strong>₦${amount.toLocaleString()}</strong>.
-              </p>
-              ${message && !isAnonymous ? `<p style="margin: 8px 0 0; font-size: 13px; color: #4b5563; font-style: italic; line-height: 20px;">"${message}"</p>` : ''}
-            </div>
-
-            <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="color: ${accent}; text-decoration: none; font-weight: 600;">View your gifts in your dashboard</a>
-            </p>
-          </div>
-        </div>
-      </div>
-    `;
-
-    try {
-      await transporter.sendMail({
-        from: mailFrom,
-        to: recipientEmail,
-        subject: `You received a gift for ${heading}!`,
-        html,
-      });
-      return { delivered: true };
-    } catch (error) {
-      console.error('Failed to send gift received email:', error?.message || error);
-      return { delivered: false, error: error?.message || 'Unknown error' };
-    }
-  };
-
   // Initialize payment
   router.post('/:link(*)/initialize-payment', async (req, res) => {
-    const { contributorName, contributorEmail, amount, message } = req.body;
+    const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity } = req.body;
 
     try {
       const gift = await prisma.gift.findUnique({ 
@@ -188,6 +30,9 @@ module.exports = () => {
           contributorName,
           contributorEmail,
           message: message || '',
+          isAsoebi,
+          guestId,
+          asoebiQuantity,
           customizations: {
             title: `Contribution to ${gift.user.name}'s ${gift.type}`,
             description: gift.title || gift.type,
@@ -264,11 +109,11 @@ module.exports = () => {
         });
       }
 
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage } = response.data.metadata || {};
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId } = response.data.metadata || {};
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const amount = parseFloat((response.data.amount / 100).toFixed(2)); // Paystack amount in kobo, convert to Naira
 
-      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: response.data.amount });
+      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: response.data.amount, isAsoebi, guestId });
 
       if (!giftId) {
         console.error('❌ No giftId in transaction meta');
@@ -311,7 +156,7 @@ module.exports = () => {
           contributorName: contributorName || 'Anonymous',
           contributorEmail: contributorEmail || '',
           amount,
-          message: contributorMessage || '',
+          message: contributorMessage || (isAsoebi ? 'Asoebi Payment' : ''),
           transactionId: response.data.id?.toString() || response.data.reference,
           status: 'completed',
         },
@@ -319,9 +164,33 @@ module.exports = () => {
 
       console.log('💾 Contribution created:', { id: contribution.id, amount, giftId });
 
-      // Deduct 15% commission
-      const commission = amount * 0.15;
-      const amountReceived = amount * 0.85;
+      // If this is an Asoebi payment, update the guest record
+      if (isAsoebi && guestId) {
+        try {
+          await prisma.guest.update({
+            where: { id: parseInt(guestId) },
+            data: { asoebiPaid: true, asoebi: true }
+          });
+          console.log('✅ Updated guest asoebi status for guest:', guestId);
+        } catch (err) {
+          console.error('❌ Failed to update guest asoebi status:', err);
+        }
+      }
+
+      // Deduct 15% commission or Asoebi fee
+      let commission;
+      let amountReceived;
+      
+      if (isAsoebi) {
+        // For Asoebi, we charge a flat 1000 fee, user gets the rest
+        commission = 1000;
+        amountReceived = amount - commission;
+        if (amountReceived < 0) amountReceived = 0; // Safety check
+      } else {
+        // Standard 15% commission
+        commission = amount * 0.15;
+        amountReceived = amount * 0.85;
+      }
 
       // Update user's wallet
       const walletUpdateResult = await prisma.user.update({
@@ -341,6 +210,7 @@ module.exports = () => {
         amount,
         gift: gift,
         message: contributorMessage || '',
+        isAsoebi,
       }).catch(err => console.error('Background gift received email failed:', err));
       
       // Send thank you email to contributor if email provided
@@ -350,6 +220,7 @@ module.exports = () => {
           contributorName: contributorName || 'Anonymous',
           amount,
           gift: gift,
+          isAsoebi,
         }).catch(err => console.error('Background contributor thank you email failed:', err));
       }
 
@@ -434,14 +305,16 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
-        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage } = response.data.metadata || {};
+        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId } = response.data.metadata || {};
         const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
 
         console.log('Extracted meta data:', {
           giftId,
           contributorName,
           contributorEmail,
-          contributorMessage
+          contributorMessage,
+          isAsoebi,
+          guestId
         });
 
         if (!giftId) {
@@ -483,7 +356,7 @@ module.exports = () => {
             contributorName: contributorName || 'Anonymous',
             contributorEmail: contributorEmail || '',
             amount: amountInNaira,
-            message: contributorMessage || '',
+            message: contributorMessage || (isAsoebi ? 'Asoebi Payment' : ''),
             transactionId: transactionId.toString(),
             status: 'completed',
           },
@@ -491,9 +364,33 @@ module.exports = () => {
 
         console.log('✓ Contribution created:', contribution.id, 'Amount:', amountInNaira);
 
-        // Deduct 15% commission
-        const commission = amountInNaira * 0.15;
-        const amountReceived = amountInNaira * 0.85;
+        // If this is an Asoebi payment, update the guest record
+        if (isAsoebi && guestId) {
+          try {
+            await prisma.guest.update({
+              where: { id: parseInt(guestId) },
+              data: { asoebiPaid: true, asoebi: true }
+            });
+            console.log('✅ Updated guest asoebi status for guest:', guestId);
+          } catch (err) {
+            console.error('❌ Failed to update guest asoebi status:', err);
+          }
+        }
+
+        // Deduct 15% commission or Asoebi fee
+        let commission;
+        let amountReceived;
+        
+        if (isAsoebi) {
+          // For Asoebi, we charge a flat 1000 fee, user gets the rest
+          commission = 1000;
+          amountReceived = amountInNaira - commission;
+          if (amountReceived < 0) amountReceived = 0; // Safety check
+        } else {
+          // Standard 15% commission
+          commission = amountInNaira * 0.15;
+          amountReceived = amountInNaira * 0.85;
+        }
 
         // Update user's wallet
         const updateResult = await prisma.user.update({
@@ -511,6 +408,7 @@ module.exports = () => {
           amount: amountInNaira,
           gift: gift,
           message: contributorMessage || '',
+          isAsoebi,
         }).catch(err => console.error('Background gift received email failed:', err));
         
         // Send thank you email to contributor if email provided
@@ -520,6 +418,7 @@ module.exports = () => {
             contributorName: contributorName || 'Anonymous',
             amount: amountInNaira,
             gift: gift,
+            isAsoebi,
           }).catch(err => console.error('Background contributor thank you email failed:', err));
         }
         
