@@ -67,6 +67,7 @@ const ShareGift: React.FC = () => {
   const [additionalGuests, setAdditionalGuests] = useState<number>(0);
   const [showRsvpErrorModal, setShowRsvpErrorModal] = useState(false);
   const [rsvpErrorMessage, setRsvpErrorMessage] = useState('');
+  const [rsvpGuestId, setRsvpGuestId] = useState<number | null>(null);
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.brideName} & ${gift.details.groomName}`
@@ -233,6 +234,9 @@ const ShareGift: React.FC = () => {
       });
       const data = await res.json();
       if (res.ok) {
+        if (data.guest && data.guest.id) {
+          setRsvpGuestId(data.guest.id);
+        }
         setShowRsvpModal(false);
         setShowCashGiftPrompt(true);
         setRsvpStep(1);
@@ -250,6 +254,33 @@ const ShareGift: React.FC = () => {
     } catch (err) {
       console.error(err);
       alert('Error submitting RSVP');
+    }
+  };
+
+  const handleAsoebi = async () => {
+    if (!rsvpGuestId || !linkParam) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/asoebi-update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shareLink: linkParam,
+          guestId: rsvpGuestId,
+          asoebi: true,
+        }),
+      });
+
+      if (res.ok) {
+        setRsvpThanksMessage("Asoebi request received! We'll be in touch.");
+        setRsvpGuestId(null); // Hide the button
+      } else {
+        const data = await res.json();
+        alert(`Failed to update asoebi request: ${data.msg || data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error updating asoebi request");
     }
   };
 
@@ -889,8 +920,16 @@ const ShareGift: React.FC = () => {
           <div className="py-4 text-center">
             <p className="text-base text-muted-foreground">{rsvpThanksMessage}</p>
           </div>
-          <div className="pt-2">
-            <Button className="w-full" onClick={() => setShowRsvpThanks(false)}>Close</Button>
+          <div className="pt-2 flex flex-col gap-3">
+            {rsvpGuestId && (
+              <Button 
+                className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C]" 
+                onClick={handleAsoebi}
+              >
+                I want asoebi
+              </Button>
+            )}
+            <Button className="w-full" variant="outline" onClick={() => setShowRsvpThanks(false)}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>

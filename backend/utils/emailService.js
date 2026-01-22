@@ -1,0 +1,256 @@
+const nodemailer = require('nodemailer');
+
+const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '465', 10);
+const smtpSecure = process.env.EMAIL_SECURE
+  ? process.env.EMAIL_SECURE === 'true'
+  : process.env.SMTP_SECURE
+  ? process.env.SMTP_SECURE === 'true'
+  : true;
+const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+const mailFrom = process.env.MAIL_FROM || smtpUser;
+const emailEnabled = Boolean(smtpUser && smtpPass);
+
+const transporter = emailEnabled
+  ? nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    })
+  : null;
+
+const formatEventHeading = (gift) => {
+  if (!gift) return 'Event Celebration';
+  if (gift.type === 'wedding' && gift.details?.groomName && gift.details?.brideName) {
+    return `${gift.details.groomName} & ${gift.details.brideName}`;
+  }
+  return gift.title || 'Event Celebration';
+};
+
+const formatEventDate = (date) => {
+  if (!date) return null;
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }) => {
+  if (!emailEnabled || !transporter) {
+    console.warn('RSVP email skipped: SMTP configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipient) {
+    return { delivered: false, reason: 'No recipient provided' };
+  }
+
+  const heading = formatEventHeading(gift);
+  const eventDate = formatEventDate(gift?.date);
+  const eventAddress = gift?.details?.address;
+  const accent = '#2E235C';
+  const muted = '#f6f4ff';
+  const responseLine = attending
+    ? `Thank you for letting us know you will attend. We cannot wait to celebrate with you${eventDate ? ` on ${eventDate}` : ''}.`
+    : 'Thank you for letting us know. If your plans change, reply to this email and we will update your RSVP.';
+  const googleMapsUrl = eventAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` : null;
+  
+  const html = `
+    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+        <div style="padding: 28px 28px 18px; text-align: center;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading}</h2>
+          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">We've received your RSVP.</p>
+        </div>
+
+        <div style="padding: 0 24px 24px; text-align: center;">
+          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+            <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${guestName || 'there'},</p>
+            <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">${responseLine}</p>
+            ${eventAddress ? `<p style="margin: 12px 0 0; font-size: 14px; color: #6b7280;">Location: <a href='${googleMapsUrl}' style='color: ${accent}; text-decoration: underline;'>${eventAddress}</a></p>` : ''}
+          </div>
+
+          <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">If you need to update your response, just reply to this email.</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: mailFrom,
+      to: recipient,
+      subject: `${heading} – RSVP Confirmation`,
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send RSVP email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
+const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, attending, gift }) => {
+  if (!emailEnabled || !transporter) {
+    return { delivered: false, skipped: true };
+  }
+
+  const heading = formatEventHeading(gift);
+  const status = attending ? 'accepted' : 'declined';
+  const accent = '#2E235C';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #333;">
+      <h2 style="color: ${accent};">${heading}</h2>
+      <p>Hi ${ownerName},</p>
+      <p><strong>${guestName}</strong> has just <strong>${status}</strong> your invitation.</p>
+      <p>Check your dashboard for more details.</p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: mailFrom,
+      to: ownerEmail,
+      subject: `New RSVP: ${guestName} ${status}`,
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send owner notification:', error);
+    return { delivered: false, error: error.message };
+  }
+};
+
+const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
+  if (!emailEnabled || !transporter) {
+    console.warn('Reminder email skipped: SMTP configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipient) {
+    return { delivered: false, reason: 'No recipient provided' };
+  }
+
+  const heading = formatEventHeading(gift);
+  const eventDate = formatEventDate(gift?.date);
+  const eventAddress = gift?.details?.address;
+  const accent = '#2E235C';
+  const muted = '#f6f4ff';
+  const eventPicture = gift?.picture || 'https://placehold.co/600x400?text=Event+Image';
+  const calendarUrl = eventUrl ? `${eventUrl}/calendar` : '#';
+  const directionsUrl = eventAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` : '#';
+  const websiteUrl = eventUrl || '#';
+
+  const html = `
+    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+      <div style="max-width: 420px; margin: 0 auto; background: #fff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46,35,92,0.08); overflow: hidden;">
+        <div style="padding: 24px 24px 0; text-align: center;">
+          <div style="font-size: 22px; font-weight: 700; color: ${accent}; margin-bottom: 8px;">${heading}</div>
+          <p style="margin: 0; font-size: 15px; color: #4b5563;">is coming up soon!</p>
+        </div>
+
+        <div style="padding: 20px;">
+          <div style="position: relative; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
+             ${eventPicture ? `<img src="${eventPicture}" alt="Event" style="width: 100%; height: 200px; object-fit: cover; display: block;">` : ''}
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); padding: 20px 16px 12px;">
+              <div style="color: #fff; font-weight: 700; font-size: 18px;">${eventDate || 'Date TBA'}</div>
+              ${eventAddress ? `<div style="color: rgba(255,255,255,0.9); font-size: 13px; margin-top: 4px;">${eventAddress}</div>` : ''}
+            </div>
+          </div>
+
+          <div style="background: ${muted}; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+            <p style="margin: 0 0 12px; font-size: 14px; color: #374151;">Hi ${guestName},</p>
+            <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.5;">
+              We're so excited to see you! Here are the details for the big day.
+            </p>
+          </div>
+
+          <div style="display: grid; gap: 10px;">
+            <a href="${websiteUrl}" style="display: block; background: ${accent}; color: #fff; text-decoration: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; text-align: center;">
+              View Event Details
+            </a>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <a href="${directionsUrl}" style="display: block; background: #fff; border: 1px solid #e5e7eb; color: #374151; text-decoration: none; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13px; text-align: center;">
+                Get Directions
+              </a>
+              
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #fafafa; padding: 16px; text-align: center; border-top: 1px solid #f3f4f6;">
+          <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+            Can't make it anymore? <a href="${websiteUrl}" style="color: ${accent}; text-decoration: underline;">Update your RSVP</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: mailFrom,
+      to: recipient,
+      subject: `${heading} – Event Reminder`,
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send reminder email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
+const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
+  if (!emailEnabled || !transporter) {
+    console.warn('RSVP cancellation email skipped: SMTP configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+  if (!recipient) return { delivered: false, reason: 'No recipient provided' };
+  
+  const heading = formatEventHeading(gift);
+  const eventDate = formatEventDate(gift?.date);
+  const accent = '#2E235C';
+  const muted = '#f6f4ff';
+  
+  const html = `
+    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+        <div style="padding: 28px 28px 18px; text-align: center;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">Event Cancelled</h2>
+          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
+          ${eventDate ? `<p style="margin: 0; font-size: 14px; color: #6b7280;">Date: ${eventDate}</p>` : ''}
+        </div>
+        <div style="padding: 0 24px 24px; text-align: center;">
+          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+            <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${guestName || 'there'},</p>
+            <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">We regret to inform you that this event has been cancelled. Thank you for your RSVP and understanding.</p>
+          </div>
+          <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">If you have any questions, please reply to this email.</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  try {
+    await transporter.sendMail({
+      from: mailFrom,
+      to: recipient,
+      subject: `${heading} – Event Cancelled`,
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send RSVP cancellation email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
+module.exports = { sendRsvpEmail, sendOwnerNotificationEmail, sendReminderEmail, sendRsvpCancellationEmail };

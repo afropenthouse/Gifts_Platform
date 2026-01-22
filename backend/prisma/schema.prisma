@@ -85,6 +85,7 @@ model Guest {
   attending    String      @default("yes")
   status       GuestStatus @default(invited)
   tableSitting String      @default("Table sitting")
+  asoebi       Boolean     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 

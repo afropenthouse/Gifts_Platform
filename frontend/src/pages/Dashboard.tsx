@@ -36,6 +36,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { QRCodeSVG } from 'qrcode.react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Checkbox } from '../components/ui/checkbox';
 import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import * as XLSX from 'xlsx';
@@ -104,7 +105,7 @@ const Dashboard: React.FC = () => {
   const [withdrawHistory, setWithdrawHistory] = useState<any[]>([]);
   const [goalAmount, setGoalAmount] = useState(500000);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string}>>([]);
+  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string, asoebi?: boolean}>>([]);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<number | null>(null);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<{id: number, firstName: string, lastName: string, allowed: number, attending: string, tableSitting?: string} | null>(null);
@@ -147,13 +148,13 @@ const Dashboard: React.FC = () => {
   const [deletingGuestId, setDeletingGuestId] = useState<number | null>(null);
   const [guestSearch, setGuestSearch] = useState('');
   const [attendingFilter, setAttendingFilter] = useState('all');
+  const [asoebiFilter, setAsoebiFilter] = useState('all');
   const [tableFilter, setTableFilter] = useState('all');
   const [isCustomTableModalOpen, setIsCustomTableModalOpen] = useState(false);
   const [customTableName, setCustomTableName] = useState('');
   const [currentEditingGuestId, setCurrentEditingGuestId] = useState<number | null>(null);
   const [currentEditingBulkGuestIndex, setCurrentEditingBulkGuestIndex] = useState<number | null>(null);
   const [additionalCustomOptions, setAdditionalCustomOptions] = useState<string[]>([]);
-  const [invitedGuests, setInvitedGuests] = useState<Set<number>>(new Set());
   const [showAnalyticsButtons, setShowAnalyticsButtons] = useState(false);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [isSetRemindersModalOpen, setIsSetRemindersModalOpen] = useState(false);
@@ -163,32 +164,6 @@ const Dashboard: React.FC = () => {
   const [customMinute, setCustomMinute] = useState('00');
   const [customAmpm, setCustomAmpm] = useState('AM');
   const [isSettingReminders, setIsSettingReminders] = useState(false);
-
-  // Load invited guests from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('invitedGuests');
-    if (stored) {
-      try {
-        const ids = JSON.parse(stored);
-        setInvitedGuests(new Set(ids));
-      } catch (e) {
-        console.error('Error parsing invitedGuests', e);
-      }
-    }
-  }, []);
-
-  const toggleInvited = (guestId: number) => {
-    setInvitedGuests(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(guestId)) {
-        newSet.delete(guestId);
-      } else {
-        newSet.add(guestId);
-      }
-      localStorage.setItem('invitedGuests', JSON.stringify(Array.from(newSet)));
-      return newSet;
-    });
-  };
 
   const totalAllowedGuests = guests.reduce((sum, g) => sum + g.allowed, 0);
   const isMobile = useIsMobile();
@@ -443,14 +418,6 @@ const Dashboard: React.FC = () => {
         }
       };
 
-      fetchGifts();
-
-      // Set up interval to refresh data at a calmer cadence to reduce flicker
-      const intervalId = setInterval(() => {
-        fetchGifts();
-        refreshUserData();
-      }, 10000);
-
       const fetchGuests = async () => {
         try {
           const token = localStorage.getItem('token');
@@ -464,7 +431,16 @@ const Dashboard: React.FC = () => {
           setGuests([]);
         }
       };
+
+      fetchGifts();
       fetchGuests();
+
+      // Set up interval to refresh data at a calmer cadence to reduce flicker
+      const intervalId = setInterval(() => {
+        fetchGifts();
+        fetchGuests();
+        refreshUserData();
+      }, 5000);
 
       // Clean up interval on unmount
       return () => clearInterval(intervalId);
@@ -881,18 +857,21 @@ const Dashboard: React.FC = () => {
   
   // Apply attending filter
   if (attendingFilter !== 'all') {
-    if (attendingFilter === 'invited') {
-      filteredGuests = filteredGuests.filter(g => invitedGuests.has(g.id));
-    } else if (attendingFilter === 'not invited') {
-      filteredGuests = filteredGuests.filter(g => !invitedGuests.has(g.id));
-    } else {
-      filteredGuests = filteredGuests.filter(g => g.attending === attendingFilter);
-    }
+    filteredGuests = filteredGuests.filter(g => g.attending === attendingFilter);
   }
   
   // Apply table filter
   if (tableFilter !== 'all') {
     filteredGuests = filteredGuests.filter(g => g.tableSitting === tableFilter);
+  }
+
+  // Apply asoebi filter
+  if (asoebiFilter !== 'all') {
+    if (asoebiFilter === 'yes') {
+      filteredGuests = filteredGuests.filter(g => g.asoebi === true);
+    } else if (asoebiFilter === 'not responded') {
+      filteredGuests = filteredGuests.filter(g => !g.asoebi);
+    }
   }
   
   const totalAttending = Array.isArray(eventFilteredGuests) ? eventFilteredGuests.filter(g => g.attending === 'yes').reduce((sum, g) => sum + g.allowed, 0) : 0;
@@ -1752,8 +1731,16 @@ const Dashboard: React.FC = () => {
                             <SelectItem value="pending">Pending</SelectItem>
                             <SelectItem value="yes">Yes</SelectItem>
                             <SelectItem value="no">No</SelectItem>
-                            <SelectItem value="invited">Invited</SelectItem>
-                            <SelectItem value="not invited">Not Invited</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={asoebiFilter} onValueChange={setAsoebiFilter}>
+                          <SelectTrigger className="w-full h-10 sm:w-40">
+                            <SelectValue placeholder="Filter by asoebi" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All (Asoebi)</SelectItem>
+                            <SelectItem value="yes">Yes</SelectItem>
+                            <SelectItem value="not responded">Not Responded</SelectItem>
                           </SelectContent>
                         </Select>
                         <Select value={tableFilter} onValueChange={setTableFilter}>
@@ -1795,7 +1782,7 @@ const Dashboard: React.FC = () => {
                               <div>Allowed</div>
                               <div className="text-xs text-gray-500">Total including invitee</div>
                             </TableHead>
-                            <TableHead className="font-semibold">Invited</TableHead>
+                            <TableHead className="font-semibold">Asoebi</TableHead>
                             <TableHead className="font-semibold">Table seating</TableHead>
                             <TableHead className="font-semibold">Actions</TableHead>
                           </TableRow>
@@ -1969,7 +1956,41 @@ const Dashboard: React.FC = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="text-center">
-                                <input type="checkbox" className="h-4 w-4" checked={invitedGuests.has(guest.id)} onChange={() => toggleInvited(guest.id)} />
+                                <div className="flex flex-col items-center justify-center gap-1">
+                                  <Checkbox 
+                                    checked={guest.asoebi || false}
+                                    onCheckedChange={async (checked) => {
+                                      const token = localStorage.getItem('token');
+                                      try {
+                                        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guest.id}`, {
+                                          method: 'PUT',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            Authorization: `Bearer ${token}`,
+                                          },
+                                          body: JSON.stringify({
+                                            firstName: guest.firstName,
+                                            lastName: guest.lastName,
+                                            allowed: guest.allowed,
+                                            asoebi: checked
+                                          }),
+                                        });
+                                        if (res.ok) {
+                                          const updatedGuest = await res.json();
+                                          const updatedGuests = guests.map(g =>
+                                            g.id === guest.id ? updatedGuest : g
+                                          );
+                                          setGuests(updatedGuests);
+                                        }
+                                      } catch (err) {
+                                        console.error(err);
+                                      }
+                                    }}
+                                  />
+                                  <span className="text-xs text-gray-500 whitespace-nowrap">
+                                    {guest.asoebi ? 'Yes' : 'Not responded'}
+                                  </span>
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {(() => {

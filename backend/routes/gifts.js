@@ -4,6 +4,8 @@ const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
 const multer = require('multer');
 const { uploadImage } = require('../utils/cloudinary');
+const { sendReminderEmail, sendRsvpCancellationEmail } = require('../utils/emailService');
+const { sendRemindersForGift } = require('../utils/reminderService');
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -162,6 +164,9 @@ module.exports = () => {
         details.reminderDateTime = reminderDateTime;
         scheduledDateTime = new Date(reminderDateTime);
       } else if (reminder !== 'custom' && reminder !== 'none') {
+        if (!gift.date) {
+          return res.status(400).json({ msg: 'Event date is required for this reminder type' });
+        }
         // For predefined, set default time 09:00 on the calculated date
         const eventDate = new Date(gift.date);
         let reminderDate;
@@ -190,110 +195,10 @@ module.exports = () => {
 
       // If the scheduled time is now or in the past, send reminders immediately
       if (scheduledDateTime && new Date() >= scheduledDateTime) {
-        // Import the sendReminderEmail function
-        const { sendReminderEmail } = require('./guests'); // Assuming it's exported, but it's not, wait.
-
-        // Actually, since it's in the same module, but to avoid circular, let's duplicate the logic or call the endpoint.
-
-        // For simplicity, duplicate the sending logic here
-        const guests = await prisma.guest.findMany({
-          where: { giftId: gift.id, attending: 'yes' },
-          select: { email: true, firstName: true, lastName: true }
-        });
-
-        const eventUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/gift/${gift.shareLink}` : null;
-
-        // Import the function from guests.js - but since it's not exported, let's copy the code
-        const nodemailer = require('nodemailer');
-        const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
-        const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '465', 10);
-        const smtpSecure = process.env.EMAIL_SECURE ? process.env.EMAIL_SECURE === 'true' : process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : true;
-        const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-        const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
-        const mailFrom = process.env.MAIL_FROM || smtpUser;
-        const emailEnabled = Boolean(smtpUser && smtpPass);
-
-        if (emailEnabled) {
-          const transporter = nodemailer.createTransport({
-            host: smtpHost,
-            port: smtpPort,
-            secure: smtpSecure,
-            auth: { user: smtpUser, pass: smtpPass },
-          });
-
-          const formatEventHeading = (gift) => {
-            if (!gift) return 'Event Celebration';
-            if (gift.type === 'wedding' && gift.details?.groomName && gift.details?.brideName) {
-              return `${gift.details.groomName} & ${gift.details.brideName}`;
-            }
-            return gift.title || 'Event Celebration';
-          };
-
-          const formatEventDate = (date) => {
-            if (!date) return null;
-            return new Date(date).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            });
-          };
-
-          const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
-            if (!recipient) return { delivered: false, reason: 'No recipient provided' };
-
-            const heading = formatEventHeading(gift);
-            const eventDate = formatEventDate(gift?.date);
-            const eventAddress = gift?.details?.address;
-            const accent = '#2E235C';
-            const muted = '#f6f4ff';
-
-            const html = `
-              <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
-                <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
-                  <div style="padding: 28px 28px 18px; text-align: center;">
-                    <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading} Reminder</h2>
-                    <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">Don't forget this upcoming event!</p>
-                    ${eventDate ? `<p style=\"margin: 0; font-size: 14px; color: #6b7280;\">Date: ${eventDate}</p>` : ''}
-                    ${eventAddress ? `<p style=\"margin: 4px 0 0; font-size: 14px; color: #6b7280;\">Location: ${eventAddress}</p>` : ''}
-                  </div>
-                  <div style="padding: 0 24px 24px; text-align: center;">
-                    <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
-                      <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${guestName || 'there'},</p>
-                      <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">This is a friendly reminder about the upcoming event. We hope to see you there!</p>
-                    </div>
-                    <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">
-                      <a href="${eventUrl}" style="color: ${accent}; text-decoration: none; font-weight: 600;">View Event Details</a>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            `;
-
-            try {
-              await transporter.sendMail({
-                from: mailFrom,
-                to: recipient,
-                subject: `${heading} – Event Reminder`,
-                html,
-              });
-              return { delivered: true };
-            } catch (error) {
-              console.error('Failed to send reminder email:', error?.message || error);
-              return { delivered: false, error: error?.message || 'Unknown error' };
-            }
-          };
-
-          for (const guest of guests) {
-            if (guest.email) {
-              await sendReminderEmail({
-                recipient: guest.email,
-                guestName: `${guest.firstName} ${guest.lastName}`,
-                gift: updatedGift,
-                eventUrl,
-              });
-            }
-          }
-        }
+        await sendRemindersForGift(updatedGift);
+        // Fetch updated gift to return correct details (reminder cleared)
+        const finalGift = await prisma.gift.findUnique({ where: { id: giftId } });
+        return res.json(finalGift);
       }
 
       res.json(updatedGift);
@@ -343,84 +248,7 @@ module.exports = () => {
   router.delete('/:id', auth(), async (req, res) => {
     const giftId = parseInt(req.params.id);
 
-    // Import nodemailer and email config from contributions.js for consistency
-    const nodemailer = require('nodemailer');
-    const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '465', 10);
-    const smtpSecure = process.env.EMAIL_SECURE
-      ? process.env.EMAIL_SECURE === 'true'
-      : process.env.SMTP_SECURE
-      ? process.env.SMTP_SECURE === 'true'
-      : true;
-    const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-    const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
-    const mailFrom = process.env.MAIL_FROM || smtpUser || 'teambethere@gmail.com';
-    const emailEnabled = Boolean(smtpUser && smtpPass);
-    const transporter = emailEnabled
-      ? nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpSecure,
-          auth: { user: smtpUser, pass: smtpPass },
-        })
-      : null;
 
-    function formatEventHeading(gift) {
-      if (gift?.type === 'wedding') {
-        return gift.title || 'Wedding Gift';
-      }
-      return gift?.title || gift?.type || 'Gift';
-    }
-    function formatEventDate(date) {
-      if (!date) return null;
-      try {
-        return new Date(date).toLocaleDateString('en-US', {
-          month: 'long', day: 'numeric', year: 'numeric',
-        });
-      } catch (error) { return null; }
-    }
-
-    async function sendRsvpCancellationEmail({ recipient, guestName, gift }) {
-      if (!emailEnabled || !transporter) {
-        console.warn('RSVP cancellation email skipped: SMTP configuration is missing');
-        return { delivered: false, skipped: true };
-      }
-      if (!recipient) return { delivered: false, reason: 'No recipient provided' };
-      const heading = formatEventHeading(gift);
-      const eventDate = formatEventDate(gift?.date);
-      const accent = '#2E235C';
-      const muted = '#f6f4ff';
-      const html = `
-        <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
-          <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
-            <div style="padding: 28px 28px 18px; text-align: center;">
-              <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">Event Cancelled</h2>
-              <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
-              ${eventDate ? `<p style=\"margin: 0; font-size: 14px; color: #6b7280;\">Date: ${eventDate}</p>` : ''}
-            </div>
-            <div style="padding: 0 24px 24px; text-align: center;">
-              <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
-                <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${guestName || 'there'},</p>
-                <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">We regret to inform you that this event has been cancelled. Thank you for your RSVP and understanding.</p>
-              </div>
-              <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">If you have any questions, please reply to this email.</p>
-            </div>
-          </div>
-        </div>
-      `;
-      try {
-        await transporter.sendMail({
-          from: mailFrom,
-          to: recipient,
-          subject: `${heading} – Event Cancelled`,
-          html,
-        });
-        return { delivered: true };
-      } catch (error) {
-        console.error('Failed to send RSVP cancellation email:', error?.message || error);
-        return { delivered: false, error: error?.message || 'Unknown error' };
-      }
-    }
 
     try {
       const gift = await prisma.gift.findUnique({
