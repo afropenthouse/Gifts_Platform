@@ -1980,7 +1980,7 @@ const Dashboard: React.FC = () => {
                               <TableCell className="text-center">
                                 {guest.asoebiPaid ? (
                                   <div className="flex flex-col items-center justify-center gap-1">
-                                    <div className="inline-flex items-center px-2 py-1 rounded-full border-2 border-green-500 bg-green-50 text-green-800">
+                                    <div className="inline-flex items-center px-2 py-1 rounded-full bg-green-50 text-green-800">
                                       <CheckCircle className="w-4 h-4 mr-1" />
                                       <span className="text-xs font-medium">Paid</span>
                                     </div>

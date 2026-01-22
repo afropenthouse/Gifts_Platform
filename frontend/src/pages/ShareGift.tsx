@@ -989,7 +989,7 @@ const ShareGift: React.FC = () => {
                 <p className="text-base text-muted-foreground">{rsvpThanksMessage}</p>
               </div>
               <div className="pt-2 flex flex-col gap-3">
-                {rsvpGuestId && (
+                {rsvpGuestId && gift?.isSellingAsoebi && (
                   <Button 
                     className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C]" 
                     onClick={() => {
@@ -1000,7 +1000,7 @@ const ShareGift: React.FC = () => {
                     Tap to get asoebi
                   </Button>
                 )}
-                <Button className="w-full" variant="outline" onClick={() => setShowRsvpThanks(false)}>Close</Button>
+                <Button className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90" onClick={() => setShowRsvpThanks(false)}>Close</Button>
               </div>
             </>
           ) : (
