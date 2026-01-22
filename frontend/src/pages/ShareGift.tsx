@@ -942,6 +942,20 @@ const ShareGift: React.FC = () => {
           </DialogHeader>
           <div className="py-6">
             <div className="flex flex-col gap-4">
+              {gift?.isSellingAsoebi && (
+                <Button
+                  className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                  onClick={() => {
+                    setShowCashGiftPrompt(false);
+                    setShowRsvpThanks(true);
+                    setShowAsoebiConfirm(true);
+                    setAsoebiQuantity(1);
+                  }}
+                >
+                  Get Asoebi
+                </Button>
+              )}
+
               <Button
                 className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
                 onClick={() => {
@@ -956,22 +970,8 @@ const ShareGift: React.FC = () => {
                   setShowAmountModal(true);
                 }}
               >
-                Send the couple a cash gift
+                Send the Couple a Cash Gift
               </Button>
-
-              {gift?.isSellingAsoebi && (
-                <Button
-                  className="w-full h-12 bg-white text-[#2E235C] border border-[#2E235C] hover:bg-gray-50"
-                  onClick={() => {
-                    setShowCashGiftPrompt(false);
-                    setShowRsvpThanks(true);
-                    setShowAsoebiConfirm(true);
-                    setAsoebiQuantity(1);
-                  }}
-                >
-                  Get Asoebi
-                </Button>
-              )}
 
               <p
                 className="text-center text-sm text-gray-600 hover:text-[#2E235C] cursor-pointer"
