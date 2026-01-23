@@ -226,6 +226,30 @@ const ShareGift: React.FC = () => {
     }
   }, [loading, gift]);
 
+  // Auto-mark asoebi interest when the modal opens
+  useEffect(() => {
+    if (showAsoebiConfirm && rsvpGuestId && linkParam) {
+      const markInterest = async () => {
+        try {
+          // Just mark as interested (true) without quantity for now
+          // This ensures "Yes" appears in the guest table as soon as they reach the modal
+          await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/asoebi-update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              shareLink: linkParam,
+              guestId: rsvpGuestId,
+              asoebi: true,
+            }),
+          });
+        } catch (err) {
+          console.error("Failed to mark asoebi interest", err);
+        }
+      };
+      markInterest();
+    }
+  }, [showAsoebiConfirm, rsvpGuestId, linkParam]);
+
   const submitRsvp = async (attending: boolean, hasGuestsParam?: boolean, additionalGuestsParam?: number) => {
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/rsvp/${linkParam}`, {

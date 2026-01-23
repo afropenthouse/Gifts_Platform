@@ -6,6 +6,7 @@ import { Button } from '../components/ui/button';
 import GiftLinks from '../dashboard_ALL/GiftLinks';
 import QRCodePage from '../dashboard_ALL/QRCodePage';
 import VendorPaymentTracker from '../dashboard_ALL/VendorPaymentTracker';
+import Moments from '../dashboard_ALL/Moments';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
@@ -175,6 +176,7 @@ const Dashboard: React.FC = () => {
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length },
     { id: 'rsvp', label: 'RSVP', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests },
     { id: 'qr', label: 'QR Code for Cash Gifts', icon: QrCode, color: 'text-green-500', badge: null },
+    { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null },
     { id: 'vendors', label: 'Vendor Payment Tracker', icon: Wallet, color: 'text-orange-500', badge: null },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
@@ -227,6 +229,7 @@ const Dashboard: React.FC = () => {
                 <th>First Name</th>
                 <th>Last Name</th>
                 <th style="width: 120px;">Allowed</th>
+                <th>Asoebi</th>
                 <th>Table seating</th>
               </tr>
             </thead>
@@ -237,6 +240,7 @@ const Dashboard: React.FC = () => {
                   <td>${guest.firstName}</td>
                   <td>${guest.lastName}</td>
                   <td>${guest.allowed}</td>
+                  <td>${guest.asoebi ? 'Yes' : 'No'}</td>
                   <td>${guest.tableSitting || 'Table seating'}</td>
                 </tr>
               `).join('')}
@@ -2197,6 +2201,11 @@ const Dashboard: React.FC = () => {
             {/* QR Code Section */}
             {activeTab === 'qr' && (
               <QRCodePage gifts={gifts} />
+            )}
+
+            {/* Moments Section */}
+            {activeTab === 'moments' && (
+              <Moments gifts={gifts} />
             )}
 
           </div>

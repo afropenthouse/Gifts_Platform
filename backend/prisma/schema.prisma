@@ -25,6 +25,7 @@ model Gift {
   contributions  Contribution[]
   guests         Guest[]
   vendors        Vendor[]
+  moments        Moment[]
   guestListMode  GuestListMode @default(restricted)
   isSellingAsoebi Boolean   @default(false)
   asoebiPrice    Decimal?  @db.Decimal(10, 2)
@@ -51,6 +52,7 @@ model User {
   contributions             Contribution[]
   guests                    Guest[]
   withdrawals               Withdrawal[]
+  moments                   Moment[]
 
   @@index([email])
 }
@@ -136,6 +138,21 @@ model Vendor {
   updatedAt      DateTime @updatedAt
 
   @@index([eventId])
+}
+
+model Moment {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  giftId    Int
+  gift      Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  event     String   // the gift title
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([giftId])
 }
 
 enum GiftType {

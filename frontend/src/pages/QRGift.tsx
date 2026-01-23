@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import Navbar from '../components/Navbar';
 import confetti from 'canvas-confetti';
+import { useToast } from '../hooks/use-toast';
 
 declare global {
   interface Window {
@@ -45,6 +46,11 @@ const QRGift: React.FC = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
   const [verifyMessage, setVerifyMessage] = useState('');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [eventType, setEventType] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     document.title = "Send a Cash Gift";
@@ -227,6 +233,61 @@ const QRGift: React.FC = () => {
     }
   };
 
+  const handleMomentUpload = (files: FileList, giftId: string | number) => {
+    setSelectedFiles(files);
+    setShowUploadModal(true);
+  };
+
+  const uploadMoments = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFiles || !gift) return;
+
+    setUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      const formData = new FormData();
+      formData.append('picture', file);
+      formData.append('giftId', gift.id.toString());
+      formData.append('event', gift.title);
+
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/moments`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (res.ok) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch (err) {
+        console.error('Error uploading moment:', err);
+        errorCount++;
+      }
+    }
+
+    setUploading(false);
+    setShowUploadModal(false);
+    setSelectedFiles(null);
+
+    if (successCount > 0) {
+      toast({
+        title: "Upload successful",
+        description: `${successCount} moment${successCount > 1 ? 's' : ''} uploaded successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}.`,
+      });
+    } else {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload moments. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading)
     return (
       <div className="min-h-screen bg-background">
@@ -277,13 +338,36 @@ const QRGift: React.FC = () => {
             <p className="text-gray-600">Send a cash gift to celebrate!</p>
           </div>
 
-          <Button
-            className="w-full bg-[#2E235C] hover:bg-[#2E235C]/90 text-white"
-            size="lg"
-            onClick={() => setShowAmountModal(true)}
-          >
-            Send a Cash Gift
-          </Button>
+          <div className="space-y-3">
+            <Button
+              className="w-full bg-[#2E235C] hover:bg-[#2E235C]/90 text-white"
+              size="lg"
+              onClick={() => setShowAmountModal(true)}
+            >
+              Send a Cash Gift
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
+              size="lg"
+              onClick={() => {
+                const uploadInput = document.createElement('input');
+                uploadInput.type = 'file';
+                uploadInput.accept = 'image/*';
+                uploadInput.multiple = true;
+                uploadInput.onchange = (e) => {
+                  const files = (e.target as HTMLInputElement).files;
+                  if (files && files.length > 0) {
+                    handleMomentUpload(files, gift.id);
+                  }
+                };
+                uploadInput.click();
+              }}
+            >
+              📸 Upload Pictures
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -437,6 +521,55 @@ const QRGift: React.FC = () => {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Pictures Modal */}
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload Pictures</DialogTitle>
+            <p className="text-sm text-gray-600">Share moments from {gift?.title}</p>
+          </DialogHeader>
+
+          <form onSubmit={uploadMoments} className="space-y-4">
+            <div>
+              <Label>Event</Label>
+              <Select value={gift?.title || ''} disabled>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={gift?.title || ''}>{gift?.title}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedFiles && (
+              <div className="text-sm text-gray-600">
+                {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowUploadModal(false)}
+                disabled={uploading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={uploading}
+              >
+                {uploading ? 'Uploading...' : 'Upload'}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
