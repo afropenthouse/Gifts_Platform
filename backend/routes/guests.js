@@ -283,6 +283,7 @@ module.exports = () => {
         ownerEmail: gift.user.email,
         ownerName: gift.user.name,
         guestName,
+        guestEmail: guest.email,
         attending: Boolean(attending),
         gift,
       }).catch(err => console.error('Background owner notification failed:', err));

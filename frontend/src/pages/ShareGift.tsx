@@ -346,7 +346,7 @@ const ShareGift: React.FC = () => {
       });
 
       if (res.ok) {
-        setRsvpThanksMessage("Asoebi request received! We'll be in touch.");
+        setRsvpThanksMessage("Aso-ebi request received! We'll be in touch.");
         setRsvpGuestId(null); // Hide the button
       } else {
         const data = await res.json();
@@ -381,7 +381,7 @@ const ShareGift: React.FC = () => {
               contributorEmail: contributorEmail,
               amount: totalAmount,
               currency: 'NGN',
-              message: `Asoebi Payment (Qty: ${asoebiQuantity})`,
+              message: `Aso-ebi Payment (Qty: ${asoebiQuantity})`,
               isAsoebi: true,
               asoebiQuantity: asoebiQuantity
             }),
@@ -569,7 +569,7 @@ const ShareGift: React.FC = () => {
 
                     {gift?.isSellingAsoebi && (
                       <Button
-                        className="w-full bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors"
+                        className="w-full bg-gold text-white hover:bg-gold/90 transition-colors"
                         size="lg"
                         onClick={() => {
                           if (rsvpGuestId) {
@@ -594,7 +594,7 @@ const ShareGift: React.FC = () => {
                           }
                         }}
                       >
-                        <span className='font-thin'>Get Asoebi</span>
+                        <span className='font-thin'>Get Aso-ebi</span>
                       </Button>
                     )}
 
@@ -1040,7 +1040,7 @@ const ShareGift: React.FC = () => {
                     setAsoebiQuantity(1);
                   }}
                 >
-                  Get Asoebi
+                  Get Aso-ebi
                 </Button>
               )}
 
@@ -1100,7 +1100,7 @@ const ShareGift: React.FC = () => {
                         setShowAsoebiConfirm(true);
                     }}
                   >
-                    Get asoebi
+                    Get Aso-ebi
                   </Button>
                 )}
                 <Button className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90" onClick={() => setShowRsvpThanks(false)}>Close</Button>
@@ -1212,7 +1212,7 @@ const ShareGift: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
-              Get Asoebi
+              Get Aso-ebi
             </div>
           </DialogHeader>
 

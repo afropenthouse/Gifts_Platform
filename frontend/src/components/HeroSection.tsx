@@ -124,18 +124,18 @@ const HeroSection = () => {
       <div className="flex-1 w-full text-center lg:text-left px-0 lg:px-6 py-0 md:py-2 lg:py-4 max-w-4xl mx-auto lg:mx-0">
         {/* Main heading */}
         <h1 
-          className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold text-foreground mb-4 md:mb-6 leading-snug md:leading-tight"
+          className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold text-foreground mb-4 md:mb-6 leading-snug md:leading-tight"
         >
-          <span style={{ color: '#2E235C' }}>Collect RSVPs</span> {" "}
-          
-          <span className="font-serif font-semibold block"><span style={{ color: '#2E235C' }}>And</span> <span className="text-gold">Cash Gifts</span></span>
-
-          <span className="font-medium block md:inline" style={{ color: '#2E235C' }}>For your wedding</span>
+          <span style={{ color: '#2E235C' }}>Everything your </span>
+          <span className="text-gold" style={{ color: '#C9A14A' }}>Wedding needs</span>
+          <span style={{ color: '#2E235C' }}>.</span>
+          <br />
+          <span className="font-serif font-semibold block" style={{ color: '#2E235C' }}>In one simple link.</span>
         </h1>
 
         {/* Subtitle */}
         <p className="text-base md:text-lg lg:text-xl text-black max-w-xl mb-6 md:mb-8 mx-auto lg:mx-0 font-sans font-thin">
-          One trusted link to RSVP and receive all your cash gifts in one place.
+          Manage guests, collect cash gifts, sell Aso-ebi, and manage vendor payments - all in one place.
         </p>
 
         {/* CTA Buttons */}
@@ -154,7 +154,7 @@ const HeroSection = () => {
       {/* Images - Hidden on small mobile, shown on medium and up */}
       <div className="flex-1 w-full lg:w-auto mt-8 lg:mt-0 mb-6 lg:mb-0 px-0 lg:px-4 flex items-center justify-center">
         <img 
-          src="/6ty.JPG" 
+          src="/6ty1.JPG" 
           alt="Celebration" 
           className="w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[200px] xl:max-w-xs h-auto rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
         />

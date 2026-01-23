@@ -1760,7 +1760,7 @@ const Dashboard: React.FC = () => {
                             <SelectValue placeholder="Filter by asoebi" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All (Asoebi)</SelectItem>
+                            <SelectItem value="all">All (Aso-ebi)</SelectItem>
                             <SelectItem value="yes">Yes</SelectItem>
                             <SelectItem value="not responded">Not Responded</SelectItem>
                           </SelectContent>
@@ -2355,14 +2355,14 @@ const Dashboard: React.FC = () => {
                   onCheckedChange={(checked) => setIsSellingAsoebi(checked as boolean)}
                 />
                 <Label htmlFor="sellAsoebi" className="text-sm font-medium text-gray-900">
-                  Sell Asoebi for this event?
+                  Sell Aso-ebi for this event?
                 </Label>
               </div>
 
               {isSellingAsoebi && (
                 <div>
                   <Label htmlFor="asoebiPrice" className="text-sm font-medium text-gray-900 mb-2 block">
-                    Asoebi Price (₦)
+                    Aso-ebi Price (₦)
                   </Label>
                   <Input
                     id="asoebiPrice"
@@ -2652,14 +2652,14 @@ const Dashboard: React.FC = () => {
                   onCheckedChange={(checked) => setIsSellingAsoebi(checked as boolean)}
                 />
                 <Label htmlFor="editSellAsoebi" className="text-sm font-medium text-gray-900">
-                  Sell Asoebi for this event?
+                  Sell Aso-ebi for this event?
                 </Label>
               </div>
 
               {isSellingAsoebi && (
                 <div>
                   <Label htmlFor="editAsoebiPrice" className="text-sm font-medium text-gray-900 mb-2 block">
-                    Asoebi Price (₦)
+                    Aso-ebi Price (₦)
                   </Label>
                   <Input
                     id="editAsoebiPrice"
@@ -2667,7 +2667,7 @@ const Dashboard: React.FC = () => {
                     value={asoebiPrice}
                     onChange={(e) => setAsoebiPrice(e.target.value)}
                     className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                    placeholder="Enter price per Asoebi"
+                    placeholder="Enter price per Aso-ebi"
                     required={isSellingAsoebi}
                   />
                 </div>

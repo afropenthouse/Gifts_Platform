@@ -39,14 +39,14 @@ const Navbar = () => {
             <Link to="/collect-cash-gifts" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               Cash Gifts
             </Link>
-            <Link to="/wedding-qr-code" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+            {/* <Link to="/wedding-qr-code" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               QR Code
             </Link>
             <Link to="/vendor-payment-tracker" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
-              Payments
-            </Link>
+              Payment Tracker
+            </Link> */}
             <Link to="/schedule-vendor-payments" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
-              Schedule
+              Vendor Payments
             </Link>
             {user ? (
               <>
@@ -91,19 +91,19 @@ const Navbar = () => {
                     How it Works
                   </Link>
                   <Link to="/wedding-rsvp" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
-                    Wedding RSVP
+                    RSVP
                   </Link>
                   <Link to="/collect-cash-gifts" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
-                    Collect Cash Gifts
+                    Cash Gifts
                   </Link>
-                  <Link to="/wedding-qr-code" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
+                  {/* <Link to="/wedding-qr-code" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     Wedding QR Code
                   </Link>
                   <Link to="/vendor-payment-tracker" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     Vendor Payment Tracker
-                  </Link>
+                  </Link> */}
                   <Link to="/schedule-vendor-payments" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
-                    Schedule Vendor Payments
+                    Vendor Payments
                   </Link>
                   {user ? (
                     <>

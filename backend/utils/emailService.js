@@ -55,31 +55,39 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
   const eventDate = formatEventDate(gift?.date);
   const eventAddress = gift?.details?.address;
   const accent = '#2E235C';
-  const muted = '#f6f4ff';
-  const eventPicture = gift?.picture || 'https://placehold.co/600x400?text=Event+Image';
   const responseLine = attending
     ? `Thank you for letting us know you will attend. We cannot wait to celebrate with you${eventDate ? ` on ${eventDate}` : ''}.`
     : 'Thank you for letting us know. If your plans change, reply to this email and we will update your RSVP.';
   const googleMapsUrl = eventAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` : null;
   
   const html = `
-    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
-      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
-        <div style="padding: 28px 28px 18px; text-align: center;">
-          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading}</h2>
-          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">We've received your RSVP!</p>
-        </div>
-
-        <div style="padding: 0 24px 24px; text-align: center;">
-          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
-            <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${guestName || 'there'},</p>
-            <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">${responseLine}</p>
-            ${eventAddress ? `<p style="margin: 12px 0 0; font-size: 14px; color: #6b7280;">Location: <a href='${googleMapsUrl}' style='color: ${accent}; text-decoration: underline;'>${eventAddress}</a></p>` : ''}
-          </div>
-
-          <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">If you need to update your response, just reply to this email.</p>
-        </div>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+      
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="font-size: 24px; font-weight: bold; color: ${accent}; margin: 0 0 8px 0;">RSVP Confirmation</h1>
+        <p style="margin: 0; color: #6b7280; font-size: 16px;">${heading}</p>
       </div>
+
+      <div style="text-align: center; margin-bottom: 32px;">
+        <p style="font-size: 16px; margin-bottom: 24px;">Hi ${guestName || 'there'},</p>
+        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+          ${responseLine}
+        </p>
+        
+        ${attending && eventAddress ? `
+          <div style="margin-top: 24px;">
+            <p style="margin: 0 0 4px 0; font-weight: 600;">Location</p>
+            <a href="${googleMapsUrl}" style="color: ${accent}; text-decoration: none; border-bottom: 1px dotted ${accent};">${eventAddress}</a>
+          </div>
+        ` : ''}
+      </div>
+
+      <div style="text-align: center; margin-top: 40px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
+        <p style="margin: 0; font-size: 14px; color: #6b7280;">
+          If you need to update your response, just reply to this email.
+        </p>
+      </div>
+
     </div>
   `;
 
@@ -97,7 +105,7 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
   }
 };
 
-const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, attending, gift }) => {
+const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, guestEmail, attending, gift }) => {
   if (!emailEnabled || !transporter) {
     return { delivered: false, skipped: true };
   }
@@ -106,37 +114,38 @@ const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, at
   const status = attending ? 'accepted' : 'declined';
   const statusColor = attending ? '#059669' : '#dc2626';
   const accent = '#2E235C';
-  const muted = '#f6f4ff';
-  const eventPicture = gift?.picture || 'https://placehold.co/600x400?text=Event+Image';
   const dashboardUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`;
 
   const html = `
-    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
-      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
-        <div style="padding: 28px 28px 18px; text-align: center;">
-          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading}</h2>
-          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">New RSVP Update</p>
-        </div>
-
-        <div style="padding: 0 24px 24px; text-align: center;">
-          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
-            <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${ownerName},</p>
-            <p style="margin: 8px 0 0; font-size: 16px; color: #4b5563; line-height: 24px;">
-              <strong>${guestName}</strong> has just <strong style="color: ${statusColor}">${status}</strong> your invitation.
-            </p>
-          </div>
-
-          <div style="margin-top: 24px;">
-            <a href="${dashboardUrl}" style="display: inline-block; background-color: ${accent}; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
-              View Dashboard
-            </a>
-          </div>
-
-          <p style="margin: 16px 0 0; font-size: 12px; color: #6b7280;">
-            Log in to manage your guest list and see more details.
-          </p>
-        </div>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+      
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="font-size: 24px; font-weight: bold; color: ${accent}; margin: 0 0 8px 0;">New RSVP Response</h1>
+        <p style="margin: 0; color: #6b7280; font-size: 16px;">${heading}</p>
       </div>
+
+      <div style="text-align: center; margin-bottom: 32px;">
+        <p style="font-size: 16px; margin-bottom: 24px;">
+          Hi ${ownerName},
+        </p>
+        <p style="font-size: 18px; margin-bottom: 8px;">
+          <strong>${guestName}</strong> has just <strong>${status}</strong> your invitation.
+        </p>
+        ${guestEmail ? `<p style="color: #6b7280; font-size: 14px; margin: 0;">Guest Email: <a href="mailto:${guestEmail}" style="color: ${accent}; text-decoration: none;">${guestEmail}</a></p>` : ''}
+      </div>
+
+      <div style="text-align: center;">
+        <a href="${dashboardUrl}" style="display: inline-block; background-color: ${accent}; color: #ffffff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">
+          View Guest List
+        </a>
+      </div>
+
+      <div style="margin-top: 40px; text-align: center; border-top: 1px solid #f3f4f6; padding-top: 20px;">
+        <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+          Sent via BeThere
+        </p>
+      </div>
+
     </div>
   `;
 
