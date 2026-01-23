@@ -311,7 +311,8 @@ const Moments: React.FC<MomentsProps> = ({ gifts }) => {
             <ImageIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No moments yet</h3>
             <p className="text-gray-600 mb-6">
-              Start capturing special moments from your events. Upload photos to share memories with your guests.
+              No moments yet.
+              Share your wedding QR code at your event and let guests upload photos, videos, and memories you can relive here.
             </p>
             <Button
               onClick={() => setIsUploadModalOpen(true)}
