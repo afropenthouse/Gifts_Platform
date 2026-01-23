@@ -222,6 +222,7 @@ module.exports = () => {
       // For demo, assume payment success and update vendor
       // In real app, update after webhook or verification
 
+      // Release 24 hours after due date
       const releaseDate = new Date(vendor.dueDate.getTime() + 24 * 60 * 60 * 1000);
 
       const updatedVendor = await prisma.vendor.update({
@@ -230,7 +231,11 @@ module.exports = () => {
           vendorEmail,
           scheduledAmount: vendor.scheduledAmount + parseFloat(amount),
           status: 'Scheduled',
-          releaseDate
+          releaseDate,
+          accountNumber,
+          bankCode,
+          bankName,
+          accountName
         },
         include: {
           event: {

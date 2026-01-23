@@ -52,6 +52,7 @@ app.use(express.json({
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const { checkAndSendReminders } = require('./utils/reminderService');
+const { checkAndReleaseVendorPayments } = require('./utils/vendorPaymentService');
 
 // Verify Prisma DB connection on startup
 prisma.$connect()
@@ -59,12 +60,18 @@ prisma.$connect()
     console.log('Prisma connected to database');
     
     // Start the reminder check service (runs every 60 seconds)
-    console.log('Starting reminder service...');
+    console.log('Starting scheduled services...');
     setInterval(async () => {
       try {
         await checkAndSendReminders();
       } catch (err) {
         console.error('Error in reminder service:', err);
+      }
+      
+      try {
+        await checkAndReleaseVendorPayments();
+      } catch (err) {
+        console.error('Error in vendor payment service:', err);
       }
     }, 60000);
   })

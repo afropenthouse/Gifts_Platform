@@ -127,6 +127,10 @@ model Vendor {
   scheduledAmount Decimal @default(0) @db.Decimal(10, 2)
   dueDate        DateTime
   releaseDate    DateTime?
+  bankCode       String?
+  bankName       String?
+  accountNumber  String?
+  accountName    String?
   status         String   @default("Not Scheduled")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

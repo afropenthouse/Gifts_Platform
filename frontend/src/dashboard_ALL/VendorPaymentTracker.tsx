@@ -935,8 +935,12 @@ const VendorPaymentTracker: React.FC = () => {
                     <p className="text-sm">₦{(selectedVendor.amountAgreed - selectedVendor.amountPaid - (selectedVendor.scheduledAmount || 0)).toLocaleString()}</p>
                   </div>
                   <div>
-                    <Label>Release Date</Label>
-                    <p className="text-sm">{selectedVendor.releaseDate ? new Date(selectedVendor.releaseDate).toLocaleDateString() : '-'}</p>
+                    <Label>Release Date & Time</Label>
+                    <p className="text-sm">
+                      {selectedVendor.releaseDate 
+                        ? `${new Date(selectedVendor.releaseDate).toLocaleDateString()} at ${new Date(selectedVendor.releaseDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` 
+                        : '-'}
+                    </p>
                   </div>
                   <div className="flex gap-3 pt-4">
                     {(selectedVendor.amountAgreed - selectedVendor.amountPaid - (selectedVendor.scheduledAmount || 0)) > 0 && (

@@ -56,7 +56,7 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
   const eventAddress = gift?.details?.address;
   const accent = '#2E235C';
   const responseLine = attending
-    ? `Thank you for letting us know you will attend. We cannot wait to celebrate with you${eventDate ? ` on ${eventDate}` : ''}.`
+    ? `Thank you for letting us know you will attend. We cannot wait to celebrate with you${eventDate ? ` on <b>${eventDate}</b>` : ''}.`
     : 'Thank you for letting us know. If your plans change, reply to this email and we will update your RSVP.';
   const googleMapsUrl = eventAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` : null;
   
