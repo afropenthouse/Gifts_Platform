@@ -554,7 +554,7 @@ const ShareGift: React.FC = () => {
                 <div className="w-full p-4 pb-6">
                   <div className="space-y-3">
                     <Button
-                      className="w-full bg-black text-white border border-black hover:bg-white hover:text-black transition-colors"
+                      className="w-full bg-black text-white border border-black hover:bg-black transition-colors"
                       size="lg"
                       onClick={() => {
                         setShowRsvpModal(true);
@@ -569,8 +569,7 @@ const ShareGift: React.FC = () => {
 
                     {gift?.isSellingAsoebi && (
                       <Button
-                        className="w-full text-white hover:bg-[#2E235C]/90"
-                        style={{ backgroundColor: '#2E235C' }}
+                        className="w-full bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors"
                         size="lg"
                         onClick={() => {
                           if (rsvpGuestId) {
@@ -600,7 +599,8 @@ const ShareGift: React.FC = () => {
                     )}
 
                     <Button
-                      className="w-full bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors"
+                      className="w-full text-white hover:bg-[#2E235C]/90"
+                      style={{ backgroundColor: '#2E235C' }}
                       size="lg"
                       onClick={() => setShowAmountModal(true)}
                     >
@@ -1032,7 +1032,7 @@ const ShareGift: React.FC = () => {
             <div className="flex flex-col gap-4">
               {gift?.isSellingAsoebi && (
                 <Button
-                  className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                  className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white"
                   onClick={() => {
                     setShowCashGiftPrompt(false);
                     setShowRsvpThanks(true);
@@ -1094,7 +1094,7 @@ const ShareGift: React.FC = () => {
               <div className="pt-2 flex flex-col gap-3">
                 {rsvpGuestId && gift?.isSellingAsoebi && (
                   <Button 
-                    className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C]" 
+                    className="w-full bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors" 
                     onClick={() => {
                         setAsoebiQuantity(1); // Reset quantity when opening
                         setShowAsoebiConfirm(true);
