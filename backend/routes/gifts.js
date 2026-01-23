@@ -38,7 +38,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, details, customType, guestListMode, isSellingAsoebi, asoebiPrice } = req.body;
+    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice } = req.body;
 
     try {
       let pictureUrl = null;
@@ -72,6 +72,7 @@ module.exports = () => {
           title,
           description,
           date: date ? new Date(date) : null,
+          address,
           picture: pictureUrl,
           details: details ? (typeof details === 'string' ? JSON.parse(details) : details) : null,
           customType,
@@ -102,7 +103,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, details, customType, guestListMode, isSellingAsoebi, asoebiPrice } = req.body;
+    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -130,6 +131,7 @@ module.exports = () => {
           title,
           description,
           date: date ? new Date(date) : null,
+          address,
           picture: pictureUrl,
           details: details ? (typeof details === 'string' ? JSON.parse(details) : details) : null,
           customType,

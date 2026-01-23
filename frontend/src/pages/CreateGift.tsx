@@ -16,10 +16,13 @@ const CreateGift: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
+  const [address, setAddress] = useState('');
   const [pictureFile, setPictureFile] = useState<File | null>(null);
   const [groomName, setGroomName] = useState('');
   const [brideName, setBrideName] = useState('');
   const [customType, setCustomType] = useState('');
+  const [isSellingAsoebi, setIsSellingAsoebi] = useState(false);
+  const [asoebiPrice, setAsoebiPrice] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shareLink, setShareLink] = useState('');
 
@@ -81,6 +84,7 @@ const CreateGift: React.FC = () => {
     formData.append('title', title);
     formData.append('description', description);
     formData.append('date', date);
+    formData.append('address', address);
 
     // Add picture file if selected
     if (pictureFile) {
@@ -172,7 +176,16 @@ const CreateGift: React.FC = () => {
             onChange={(e) => setDate(e.target.value)}
           />
         </div>
-        
+        <div>
+          <Label htmlFor="address">Event Address</Label>
+          <Input
+            id="address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Enter event address"
+          />
+        </div>
+
         <div className="flex items-center space-x-2 border p-4 rounded-lg">
           <Checkbox 
             id="sellAsoebi" 

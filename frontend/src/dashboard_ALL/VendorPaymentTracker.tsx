@@ -532,9 +532,6 @@ const VendorPaymentTracker: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-          <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]" onClick={() => setIsScheduleModalOpen(true)}>
-            Schedule Payment
-          </Button>
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]">
@@ -646,6 +643,9 @@ const VendorPaymentTracker: React.FC = () => {
               </form>
             </DialogContent>
           </Dialog>
+          <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]" onClick={() => setIsScheduleModalOpen(true)}>
+            Schedule Payment
+          </Button>
 
           <Dialog open={isEditModalOpen} onOpenChange={(open) => {
             setIsEditModalOpen(open);

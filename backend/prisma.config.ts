@@ -11,6 +11,7 @@ const adapter = new PrismaPg(pool)
 export default defineConfig({
   schema: './prisma/schema.prisma',
   database: {
+    url: process.env.DATABASE_URL,
     adapter,
   },
 })

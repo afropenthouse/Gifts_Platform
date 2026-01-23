@@ -73,6 +73,9 @@ const ShareGift: React.FC = () => {
   const [rsvpGuestId, setRsvpGuestId] = useState<number | null>(null);
   const [showAsoebiConfirm, setShowAsoebiConfirm] = useState(false);
   const [asoebiQuantity, setAsoebiQuantity] = useState(1);
+  const [pendingAsoebi, setPendingAsoebi] = useState(false);
+  const [showAsoebiDirectModal, setShowAsoebiDirectModal] = useState(false);
+  const [asoebiStep, setAsoebiStep] = useState(1);
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.brideName} & ${gift.details.groomName}`
@@ -248,7 +251,16 @@ const ShareGift: React.FC = () => {
           });
         }
         setShowRsvpModal(false);
-        setShowCashGiftPrompt(true);
+
+        if (pendingAsoebi) {
+          setPendingAsoebi(false);
+          setAsoebiQuantity(1);
+          setShowRsvpThanks(true);
+          setShowAsoebiConfirm(true);
+        } else {
+          setShowCashGiftPrompt(true);
+        }
+
         setRsvpStep(1);
         setRsvpFirstName('');
         setRsvpLastName('');
@@ -343,6 +355,51 @@ const ShareGift: React.FC = () => {
     } catch (err) {
       console.error(err);
       alert("Error updating asoebi request");
+    }
+  };
+
+  const handleAsoebiDirectPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!contributorName.trim() || !contributorEmail.trim()) {
+      alert('Please provide your name and email');
+      return;
+    }
+
+    setProcessingPayment(true);
+    try {
+        const price = Number(gift?.asoebiPrice || 0);
+        const totalAmount = (price * asoebiQuantity) + 1000;
+
+        const initRes = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contributorName: contributorName,
+              contributorEmail: contributorEmail,
+              amount: totalAmount,
+              currency: 'NGN',
+              message: `Asoebi Payment (Qty: ${asoebiQuantity})`,
+              isAsoebi: true,
+              asoebiQuantity: asoebiQuantity
+            }),
+          }
+        );
+
+        const initData = await initRes.json();
+        if (!initRes.ok) {
+          throw new Error(initData?.msg || 'Failed to initialize payment');
+        }
+
+        if (initData.data && initData.data.authorization_url) {
+          window.location.href = initData.data.authorization_url;
+        }
+    } catch (err: any) {
+        console.error(err);
+        alert(err?.message || 'Payment initialization failed');
+        setProcessingPayment(false);
     }
   };
 
@@ -510,11 +567,42 @@ const ShareGift: React.FC = () => {
                       <span className='font-thin'>RSVP</span>
                     </Button>
 
+                    {gift?.isSellingAsoebi && (
+                      <Button
+                        className="w-full text-white hover:bg-[#2E235C]/90"
+                        style={{ backgroundColor: '#2E235C' }}
+                        size="lg"
+                        onClick={() => {
+                          if (rsvpGuestId) {
+                            setAsoebiQuantity(1);
+                            setShowRsvpThanks(true);
+                            setShowAsoebiConfirm(true);
+                          } else if (gift?.asoebiPrice && Number(gift.asoebiPrice) > 0) {
+                            // Direct purchase flow without RSVP
+                            setAsoebiQuantity(1);
+                            setContributorName('');
+                            setContributorEmail('');
+                            setAsoebiStep(1);
+                            setShowAsoebiDirectModal(true);
+                          } else {
+                            // For free/interest only, we need a guest record, so force RSVP
+                            setPendingAsoebi(true);
+                            setShowRsvpModal(true);
+                            setRsvpStep(1);
+                            setWillAttend(null);
+                            setRsvpFirstName('');
+                            setRsvpLastName('');
+                          }
+                        }}
+                      >
+                        <span className='font-thin'>Get Asoebi</span>
+                      </Button>
+                    )}
+
                     <Button
-                      className="w-full text-white"
+                      className="w-full bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors"
                       size="lg"
                       onClick={() => setShowAmountModal(true)}
-                      style={{ backgroundColor: '#2E235C' }}
                     >
                       <Gift className="w-5 h-5 mr-[0.00007rem]" />
                       <span className='font-thin'>Send a Cash Gift</span>
@@ -1012,7 +1100,7 @@ const ShareGift: React.FC = () => {
                         setShowAsoebiConfirm(true);
                     }}
                   >
-                    Tap to get asoebi
+                    Get asoebi
                   </Button>
                 )}
                 <Button className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90" onClick={() => setShowRsvpThanks(false)}>Close</Button>
@@ -1115,6 +1203,119 @@ const ShareGift: React.FC = () => {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Asoebi Direct Purchase Modal */}
+      <Dialog open={showAsoebiDirectModal} onOpenChange={setShowAsoebiDirectModal}>
+        <DialogContent className="max-w-[19rem]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
+            <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
+              Get Asoebi
+            </div>
+          </DialogHeader>
+
+          {asoebiStep === 1 && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!contributorName.trim() || !contributorEmail.trim()) {
+                 alert('Please provide your name and email');
+                 return;
+              }
+              setAsoebiStep(2);
+            }} className="py-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="asoebi-name" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Your Name
+                  </Label>
+                  <Input
+                    id="asoebi-name"
+                    value={contributorName}
+                    onChange={(e) => setContributorName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="asoebi-email" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Your Email
+                  </Label>
+                  <Input
+                    id="asoebi-email"
+                    type="email"
+                    value={contributorEmail}
+                    onChange={(e) => setContributorEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <Button
+                  type="submit"
+                  className="w-full h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C]"
+                >
+                  Continue
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {asoebiStep === 2 && (
+            <form onSubmit={handleAsoebiDirectPayment} className="py-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                   <Label htmlFor="asoebi-direct-qty" className="text-sm font-medium text-gray-900 mb-2 block">Quantity</Label>
+                   <Input 
+                      id="asoebi-direct-qty"
+                      type="number" 
+                      min={1}
+                      value={asoebiQuantity}
+                      onChange={(e) => setAsoebiQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                   />
+                </div>
+
+                {gift?.asoebiPrice && Number(gift.asoebiPrice) > 0 && (
+                  <div className="bg-muted/50 p-3 rounded-lg text-center mt-2">
+                      <p className="text-sm text-muted-foreground mb-1">Price per item: ₦{Number(gift.asoebiPrice).toLocaleString()}</p>
+                      <p className="text-lg font-semibold text-[#2E235C]">
+                          Total: ₦{((Number(gift.asoebiPrice) * asoebiQuantity) + 1000).toLocaleString()}
+                      </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 h-11"
+                  onClick={() => setAsoebiStep(1)}
+                  disabled={processingPayment}
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C]"
+                  disabled={processingPayment}
+                >
+                  {processingPayment ? 'Processing...' : 'Pay Now'}
+                </Button>
+              </div>
+              
+              <p className="text-xs text-center text-muted-foreground mt-4">
+                💳 Powered by Paystack - Secure payment processing
+              </p>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>

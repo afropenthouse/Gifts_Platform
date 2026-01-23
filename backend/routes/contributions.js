@@ -164,16 +164,55 @@ module.exports = () => {
 
       console.log('💾 Contribution created:', { id: contribution.id, amount, giftId });
 
-      // If this is an Asoebi payment, update the guest record
-      if (isAsoebi && guestId) {
+      // If this is an Asoebi payment, update the guest record or create one if it doesn't exist
+      if (isAsoebi) {
         try {
-          await prisma.guest.update({
-            where: { id: parseInt(guestId) },
-            data: { asoebiPaid: true, asoebi: true }
-          });
-          console.log('✅ Updated guest asoebi status for guest:', guestId);
+          if (guestId) {
+             await prisma.guest.update({
+              where: { id: parseInt(guestId) },
+              data: { asoebiPaid: true, asoebi: true }
+            });
+            console.log('✅ Updated guest asoebi status for guest:', guestId);
+          } else if (contributorEmail) {
+             // Try to find guest by email
+             const existingGuest = await prisma.guest.findFirst({
+                where: {
+                   email: contributorEmail,
+                   giftId: giftId
+                }
+             });
+
+             if (existingGuest) {
+                await prisma.guest.update({
+                   where: { id: existingGuest.id },
+                   data: { asoebiPaid: true, asoebi: true }
+                });
+                console.log('✅ Updated guest asoebi status for guest (by email):', existingGuest.id);
+             } else {
+                // Create new guest
+                const nameParts = (contributorName || 'Anonymous Guest').trim().split(' ');
+                const firstName = nameParts[0];
+                const lastName = nameParts.slice(1).join(' ') || '-';
+                
+                const newGuest = await prisma.guest.create({
+                   data: {
+                      firstName,
+                      lastName,
+                      email: contributorEmail,
+                      giftId: giftId,
+                      userId: gift.userId,
+                      asoebi: true,
+                      asoebiPaid: true,
+                      attending: 'pending',
+                      allowed: 1,
+                      status: 'invited'
+                   }
+                });
+                console.log('✅ Created new guest for Asoebi payment:', newGuest.id);
+             }
+          }
         } catch (err) {
-          console.error('❌ Failed to update guest asoebi status:', err);
+          console.error('❌ Failed to update/create guest asoebi status:', err);
         }
       }
 
@@ -364,16 +403,55 @@ module.exports = () => {
 
         console.log('✓ Contribution created:', contribution.id, 'Amount:', amountInNaira);
 
-        // If this is an Asoebi payment, update the guest record
-        if (isAsoebi && guestId) {
+        // If this is an Asoebi payment, update the guest record or create one if it doesn't exist
+        if (isAsoebi) {
           try {
-            await prisma.guest.update({
-              where: { id: parseInt(guestId) },
-              data: { asoebiPaid: true, asoebi: true }
-            });
-            console.log('✅ Updated guest asoebi status for guest:', guestId);
+            if (guestId) {
+               await prisma.guest.update({
+                where: { id: parseInt(guestId) },
+                data: { asoebiPaid: true, asoebi: true }
+              });
+              console.log('✅ Updated guest asoebi status for guest:', guestId);
+            } else if (contributorEmail) {
+               // Try to find guest by email
+               const existingGuest = await prisma.guest.findFirst({
+                  where: {
+                     email: contributorEmail,
+                     giftId: giftId
+                  }
+               });
+  
+               if (existingGuest) {
+                  await prisma.guest.update({
+                     where: { id: existingGuest.id },
+                     data: { asoebiPaid: true, asoebi: true }
+                  });
+                  console.log('✅ Updated guest asoebi status for guest (by email):', existingGuest.id);
+               } else {
+                  // Create new guest
+                  const nameParts = (contributorName || 'Anonymous Guest').trim().split(' ');
+                  const firstName = nameParts[0];
+                  const lastName = nameParts.slice(1).join(' ') || '-';
+                  
+                  const newGuest = await prisma.guest.create({
+                     data: {
+                        firstName,
+                        lastName,
+                        email: contributorEmail,
+                        giftId: giftId,
+                        userId: gift.userId,
+                        asoebi: true,
+                        asoebiPaid: true,
+                        attending: 'pending',
+                        allowed: 1,
+                        status: 'invited'
+                     }
+                  });
+                  console.log('✅ Created new guest for Asoebi payment:', newGuest.id);
+               }
+            }
           } catch (err) {
-            console.error('❌ Failed to update guest asoebi status:', err);
+            console.error('❌ Failed to update/create guest asoebi status:', err);
           }
         }
 

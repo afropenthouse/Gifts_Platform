@@ -2614,6 +2614,20 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div>
+                <Label htmlFor="address" className="text-sm font-medium text-gray-900 mb-2 block">
+                  <MapPin className="inline w-4 h-4 mr-2 text-gray-600" />
+                  Event Address
+                </Label>
+                <Textarea
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="min-h-20 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  placeholder="Enter the event location address"
+                />
+              </div>
+
+              <div>
                 <Label className="text-sm font-medium text-gray-900 mb-2 block">
                   Guest List Mode
                 </Label>
