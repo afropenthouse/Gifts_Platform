@@ -486,7 +486,7 @@ const ShareGift: React.FC = () => {
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 mx-auto border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-            <p className="text-muted-foreground">Loading gift details...</p>
+            <p className="text-muted-foreground">Loading details...</p>
           </div>
         </div>
       </div>

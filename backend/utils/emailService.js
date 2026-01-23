@@ -65,10 +65,9 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
   const html = `
     <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
       <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
-        <img src="${eventPicture}" alt="Event" style="width: 100%; height: 200px; object-fit: cover; display: block;" />
         <div style="padding: 28px 28px 18px; text-align: center;">
           <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading}</h2>
-          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">We've received your RSVP.</p>
+          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">We've received your RSVP!</p>
         </div>
 
         <div style="padding: 0 24px 24px; text-align: center;">
@@ -88,7 +87,7 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
     await transporter.sendMail({
       from: mailFrom,
       to: recipient,
-      subject: `${heading} – RSVP Confirmation!`,
+      subject: `${heading} – RSVP Confirmation`,
       html,
     });
     return { delivered: true };
@@ -114,7 +113,6 @@ const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, at
   const html = `
     <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
       <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
-        <img src="${eventPicture}" alt="Event" style="width: 100%; height: 200px; object-fit: cover; display: block;" />
         <div style="padding: 28px 28px 18px; text-align: center;">
           <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading}</h2>
           <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">New RSVP Update</p>
