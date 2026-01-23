@@ -27,7 +27,7 @@ model Gift {
   vendors        Vendor[]
   guestListMode  GuestListMode @default(restricted)
   isSellingAsoebi Boolean   @default(false)
-  asoebiPrice    Float?
+  asoebiPrice    Decimal?  @db.Decimal(10, 2)
 
   @@index([userId])
   @@index([createdAt])
@@ -43,7 +43,7 @@ model User {
   verificationTokenExpires  DateTime?
   resetPasswordToken        String?
   resetPasswordExpires      DateTime?
-  wallet                    Float   @default(0)
+  wallet                    Decimal   @default(0) @db.Decimal(10, 2)
   profilePicture            String?
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
@@ -102,7 +102,7 @@ model Withdrawal {
   id             Int      @id @default(autoincrement())
   userId         Int
   user           User     @relation(fields: [userId], references: [id])
-  amount         Float
+  amount         Decimal  @db.Decimal(10, 2)
   bankCode       String
   bankName       String?
   accountNumber  String
@@ -122,9 +122,9 @@ model Vendor {
   event          Gift     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   category       String
   vendorEmail    String?
-  amountAgreed   Float
-  amountPaid     Float @default(0)
-  scheduledAmount Float @default(0)
+  amountAgreed   Decimal  @db.Decimal(10, 2)
+  amountPaid     Decimal  @default(0) @db.Decimal(10, 2)
+  scheduledAmount Decimal @default(0) @db.Decimal(10, 2)
   dueDate        DateTime
   releaseDate    DateTime?
   status         String   @default("Not Scheduled")
