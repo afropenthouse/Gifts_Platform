@@ -576,15 +576,8 @@ const ShareGift: React.FC = () => {
                             setAsoebiQuantity(1);
                             setShowRsvpThanks(true);
                             setShowAsoebiConfirm(true);
-                          } else if (gift?.asoebiPrice && Number(gift.asoebiPrice) > 0) {
-                            // Direct purchase flow without RSVP
-                            setAsoebiQuantity(1);
-                            setContributorName('');
-                            setContributorEmail('');
-                            setAsoebiStep(1);
-                            setShowAsoebiDirectModal(true);
                           } else {
-                            // For free/interest only, we need a guest record, so force RSVP
+                            // Force RSVP flow for everyone to ensure guest record creation/verification
                             setPendingAsoebi(true);
                             setShowRsvpModal(true);
                             setRsvpStep(1);
