@@ -223,10 +223,10 @@ const Moments: React.FC<MomentsProps> = ({ gifts }) => {
         </div>
         <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90">
+            {/* <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90">
               <Upload className="w-4 h-4 mr-2" />
               Upload Moment
-            </Button>
+            </Button> */}
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
@@ -328,7 +328,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts }) => {
             <Card key={giftId} className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
-                  <Gift className="w-5 h-5 text-purple-500" />
+                  
                   {gift.title}
                   <span className="text-sm font-normal text-gray-500">
                     ({giftMoments.length} moment{giftMoments.length !== 1 ? 's' : ''})
