@@ -223,10 +223,10 @@ module.exports = () => {
       // In real app, update after webhook or verification
 
       // Release 24 hours after due date (Old Logic)
-      // const releaseDate = new Date(vendor.dueDate.getTime() + 24 * 60 * 60 * 1000);
+      const releaseDate = new Date(vendor.dueDate.getTime() + 24 * 60 * 60 * 1000);
 
-      // Release 5 minutes after payment (for testing)
-      const releaseDate = new Date(Date.now() + 5 * 60 * 1000);
+      // // Release 5 minutes after payment (for testing)
+      // const releaseDate = new Date(Date.now() + 5 * 60 * 1000);
 
       const updatedVendor = await prisma.vendor.update({
         where: { id: vendorId },

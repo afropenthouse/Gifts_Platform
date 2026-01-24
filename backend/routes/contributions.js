@@ -8,7 +8,7 @@ module.exports = () => {
 
   // Initialize payment
   router.post('/:link(*)/initialize-payment', async (req, res) => {
-    const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity } = req.body;
+    const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity, asoebiType } = req.body;
 
     try {
       const gift = await prisma.gift.findUnique({ 
@@ -18,26 +18,30 @@ module.exports = () => {
       
       if (!gift) return res.status(404).json({ msg: 'Gift not found' });
 
+      // Construct metadata
+      const metadata = {
+        giftId: gift.id,
+        giftLink: req.params.link,
+        contributorName,
+        contributorEmail,
+        message: message || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
+        isAsoebi,
+        guestId,
+        asoebiQuantity,
+        asoebiType,
+        customizations: {
+          title: `Contribution to ${gift.user.name}'s ${gift.type}`,
+          description: gift.title || gift.type,
+        }
+      };
+
       const payload = {
         reference: `gift-${gift.id}-${Date.now()}`,
         amount: parseFloat(amount) * 100, // Paystack amount in kobo
         currency: 'NGN',
         callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`,
         email: contributorEmail,
-        metadata: {
-          giftId: gift.id,
-          giftLink: req.params.link,
-          contributorName,
-          contributorEmail,
-          message: message || '',
-          isAsoebi,
-          guestId,
-          asoebiQuantity,
-          customizations: {
-            title: `Contribution to ${gift.user.name}'s ${gift.type}`,
-            description: gift.title || gift.type,
-          }
-        },
+        metadata,
       };
 
       const response = await initializePayment(payload);
@@ -109,11 +113,11 @@ module.exports = () => {
         });
       }
 
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId } = response.data.metadata || {};
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType } = response.data.metadata || {};
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const amount = parseFloat((response.data.amount / 100).toFixed(2)); // Paystack amount in kobo, convert to Naira
 
-      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: response.data.amount, isAsoebi, guestId });
+      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: response.data.amount, isAsoebi, guestId, asoebiType });
 
       if (!giftId) {
         console.error('❌ No giftId in transaction meta');
@@ -156,7 +160,7 @@ module.exports = () => {
           contributorName: contributorName || 'Anonymous',
           contributorEmail: contributorEmail || '',
           amount,
-          message: contributorMessage || (isAsoebi ? 'Asoebi Payment' : ''),
+          message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
           transactionId: response.data.id?.toString() || response.data.reference,
           status: 'completed',
         },
@@ -344,7 +348,7 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
-        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId } = response.data.metadata || {};
+        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType } = response.data.metadata || {};
         const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
 
         console.log('Extracted meta data:', {
@@ -353,7 +357,8 @@ module.exports = () => {
           contributorEmail,
           contributorMessage,
           isAsoebi,
-          guestId
+          guestId,
+          asoebiType
         });
 
         if (!giftId) {
@@ -395,7 +400,7 @@ module.exports = () => {
             contributorName: contributorName || 'Anonymous',
             contributorEmail: contributorEmail || '',
             amount: amountInNaira,
-            message: contributorMessage || (isAsoebi ? 'Asoebi Payment' : ''),
+            message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
             transactionId: transactionId.toString(),
             status: 'completed',
           },

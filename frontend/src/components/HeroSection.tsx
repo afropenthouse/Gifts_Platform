@@ -135,7 +135,7 @@ const HeroSection = () => {
 
         {/* Subtitle */}
         <p className="text-base md:text-lg lg:text-xl text-black max-w-xl mb-6 md:mb-8 mx-auto lg:mx-0 font-sans font-thin">
-          Manage guests, collect cash gifts, sell Aso-ebi, and manage vendor payments - all in one place.
+          Manage guests, collect cash gifts, sell Asoebi, and manage vendor payments - all in one place.
         </p>
 
         {/* CTA Buttons */}

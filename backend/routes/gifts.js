@@ -38,7 +38,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice } = req.body;
+    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen } = req.body;
 
     try {
       let pictureUrl = null;
@@ -80,6 +80,8 @@ module.exports = () => {
           guestListMode: guestListMode || 'restricted',
           isSellingAsoebi: isSellingAsoebi === 'true' || isSellingAsoebi === true,
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
+          asoebiPriceMen: asoebiPriceMen ? parseFloat(asoebiPriceMen) : null,
+          asoebiPriceWomen: asoebiPriceWomen ? parseFloat(asoebiPriceWomen) : null,
         },
       });
 
@@ -103,7 +105,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice } = req.body;
+    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -138,6 +140,8 @@ module.exports = () => {
           guestListMode,
           isSellingAsoebi: isSellingAsoebi === 'true' || isSellingAsoebi === true,
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
+          asoebiPriceMen: asoebiPriceMen ? parseFloat(asoebiPriceMen) : null,
+          asoebiPriceWomen: asoebiPriceWomen ? parseFloat(asoebiPriceWomen) : null,
         },
       });
 

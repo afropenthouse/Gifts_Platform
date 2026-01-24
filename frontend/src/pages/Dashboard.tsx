@@ -58,6 +58,8 @@ interface Gift {
   guestListMode?: string;
   isSellingAsoebi?: boolean;
   asoebiPrice?: number | string;
+  asoebiPriceMen?: number | string;
+  asoebiPriceWomen?: number | string;
 }
 
 interface Contribution {
@@ -487,6 +489,8 @@ const Dashboard: React.FC = () => {
 
   const [isSellingAsoebi, setIsSellingAsoebi] = useState(false);
   const [asoebiPrice, setAsoebiPrice] = useState('');
+  const [asoebiPriceMen, setAsoebiPriceMen] = useState('');
+  const [asoebiPriceWomen, setAsoebiPriceWomen] = useState('');
 
   const handleEditGift = (gift: Gift) => {
     setEditingGift(gift);
@@ -514,6 +518,8 @@ const Dashboard: React.FC = () => {
     const g = gift as any;
     setIsSellingAsoebi(g.isSellingAsoebi || false);
     setAsoebiPrice(g.asoebiPrice ? g.asoebiPrice.toString() : '');
+    setAsoebiPriceMen(g.asoebiPriceMen ? g.asoebiPriceMen.toString() : '');
+    setAsoebiPriceWomen(g.asoebiPriceWomen ? g.asoebiPriceWomen.toString() : '');
     setEditGuestListMode(gift.guestListMode || 'restricted');
     setIsEditModalOpen(true);
   };
@@ -584,8 +590,10 @@ const Dashboard: React.FC = () => {
     formData.append('details', JSON.stringify(details));
     formData.append('guestListMode', createGuestListMode);
     formData.append('isSellingAsoebi', isSellingAsoebi.toString());
-    if (isSellingAsoebi && asoebiPrice) {
-      formData.append('asoebiPrice', asoebiPrice);
+    if (isSellingAsoebi) {
+      if (asoebiPrice) formData.append('asoebiPrice', asoebiPrice);
+      if (asoebiPriceMen) formData.append('asoebiPriceMen', asoebiPriceMen);
+      if (asoebiPriceWomen) formData.append('asoebiPriceWomen', asoebiPriceWomen);
     }
 
     if (type === 'other') {
@@ -620,6 +628,8 @@ const Dashboard: React.FC = () => {
         setCreateGuestListMode('restricted');
         setIsSellingAsoebi(false);
         setAsoebiPrice('');
+        setAsoebiPriceMen('');
+        setAsoebiPriceWomen('');
         setIsCreateModalOpen(false);
 
         const shareLink = `${window.location.origin}/gift/${createdGift.shareLink}`;
@@ -669,8 +679,10 @@ const Dashboard: React.FC = () => {
     formData.append('details', JSON.stringify(details));
     formData.append('guestListMode', editGuestListMode);
     formData.append('isSellingAsoebi', isSellingAsoebi.toString());
-    if (isSellingAsoebi && asoebiPrice) {
-      formData.append('asoebiPrice', asoebiPrice);
+    if (isSellingAsoebi) {
+      if (asoebiPrice) formData.append('asoebiPrice', asoebiPrice);
+      if (asoebiPriceMen) formData.append('asoebiPriceMen', asoebiPriceMen);
+      if (asoebiPriceWomen) formData.append('asoebiPriceWomen', asoebiPriceWomen);
     }
 
     if (type === 'other') {
@@ -707,6 +719,8 @@ const Dashboard: React.FC = () => {
         setEditGuestListMode('restricted');
         setIsSellingAsoebi(false);
         setAsoebiPrice('');
+        setAsoebiPriceMen('');
+        setAsoebiPriceWomen('');
       } else {
         alert('Failed to update event');
       }
@@ -1764,7 +1778,7 @@ const Dashboard: React.FC = () => {
                             <SelectValue placeholder="Filter by asoebi" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All (Aso-ebi)</SelectItem>
+                            <SelectItem value="all">All (Asoebi)</SelectItem>
                             <SelectItem value="yes">Yes</SelectItem>
                             <SelectItem value="not responded">Not Responded</SelectItem>
                           </SelectContent>
@@ -2364,24 +2378,55 @@ const Dashboard: React.FC = () => {
                   onCheckedChange={(checked) => setIsSellingAsoebi(checked as boolean)}
                 />
                 <Label htmlFor="sellAsoebi" className="text-sm font-medium text-gray-900">
-                  Sell Aso-ebi for this event?
+                  Sell Asoebi for this event?
                 </Label>
               </div>
 
               {isSellingAsoebi && (
-                <div>
-                  <Label htmlFor="asoebiPrice" className="text-sm font-medium text-gray-900 mb-2 block">
-                    Aso-ebi Price (₦)
-                  </Label>
-                  <Input
-                    id="asoebiPrice"
-                    type="number"
-                    value={asoebiPrice}
-                    onChange={(e) => setAsoebiPrice(e.target.value)}
-                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                    placeholder="Enter price per Asoebi"
-                    required={isSellingAsoebi}
-                  />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="asoebiPriceMen" className="text-sm font-medium text-gray-900 mb-2 block">
+                        Men's Price (₦)
+                      </Label>
+                      <Input
+                        id="asoebiPriceMen"
+                        type="number"
+                        value={asoebiPriceMen}
+                        onChange={(e) => setAsoebiPriceMen(e.target.value)}
+                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="asoebiPriceWomen" className="text-sm font-medium text-gray-900 mb-2 block">
+                        Women's Price (₦)
+                      </Label>
+                      <Input
+                        id="asoebiPriceWomen"
+                        type="number"
+                        value={asoebiPriceWomen}
+                        onChange={(e) => setAsoebiPriceWomen(e.target.value)}
+                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="asoebiPrice" className="text-sm font-medium text-gray-900 mb-2 block">
+                      Standard Price (₦)
+                    </Label>
+                    <Input
+                      id="asoebiPrice"
+                      type="number"
+                      value={asoebiPrice}
+                      onChange={(e) => setAsoebiPrice(e.target.value)}
+                      className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                      placeholder="Enter price per Asoebi"
+                      required={!asoebiPriceMen && !asoebiPriceWomen}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Fill Standard Price if uniform, or specific prices above.</p>
+                  </div>
                 </div>
               )}
 
@@ -2661,24 +2706,55 @@ const Dashboard: React.FC = () => {
                   onCheckedChange={(checked) => setIsSellingAsoebi(checked as boolean)}
                 />
                 <Label htmlFor="editSellAsoebi" className="text-sm font-medium text-gray-900">
-                  Sell Aso-ebi for this event?
+                  Sell Asoebi for this event?
                 </Label>
               </div>
 
               {isSellingAsoebi && (
-                <div>
-                  <Label htmlFor="editAsoebiPrice" className="text-sm font-medium text-gray-900 mb-2 block">
-                    Aso-ebi Price (₦)
-                  </Label>
-                  <Input
-                    id="editAsoebiPrice"
-                    type="number"
-                    value={asoebiPrice}
-                    onChange={(e) => setAsoebiPrice(e.target.value)}
-                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                    placeholder="Enter price per Aso-ebi"
-                    required={isSellingAsoebi}
-                  />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="editAsoebiPriceMen" className="text-sm font-medium text-gray-900 mb-2 block">
+                        Men's Price (₦)
+                      </Label>
+                      <Input
+                        id="editAsoebiPriceMen"
+                        type="number"
+                        value={asoebiPriceMen}
+                        onChange={(e) => setAsoebiPriceMen(e.target.value)}
+                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editAsoebiPriceWomen" className="text-sm font-medium text-gray-900 mb-2 block">
+                        Women's Price (₦)
+                      </Label>
+                      <Input
+                        id="editAsoebiPriceWomen"
+                        type="number"
+                        value={asoebiPriceWomen}
+                        onChange={(e) => setAsoebiPriceWomen(e.target.value)}
+                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="editAsoebiPrice" className="text-sm font-medium text-gray-900 mb-2 block">
+                      Standard Price (₦)
+                    </Label>
+                    <Input
+                      id="editAsoebiPrice"
+                      type="number"
+                      value={asoebiPrice}
+                      onChange={(e) => setAsoebiPrice(e.target.value)}
+                      className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                      placeholder="Enter price per Asoebi"
+                      required={!asoebiPriceMen && !asoebiPriceWomen}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Fill Standard Price if uniform, or specific prices above.</p>
+                  </div>
                 </div>
               )}
 

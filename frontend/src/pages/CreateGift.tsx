@@ -193,13 +193,13 @@ const CreateGift: React.FC = () => {
             onCheckedChange={(checked) => setIsSellingAsoebi(checked as boolean)}
           />
           <Label htmlFor="sellAsoebi" className="text-sm font-medium text-gray-900">
-            Sell Aso-ebi for this event?
+            Sell Asoebi for this event?
           </Label>
         </div>
 
         {isSellingAsoebi && (
           <div>
-            <Label htmlFor="asoebiPrice">Aso-ebi Price (₦)</Label>
+            <Label htmlFor="asoebiPrice">Asoebi Price (₦)</Label>
             <Input
               id="asoebiPrice"
               type="number"

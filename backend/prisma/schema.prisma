@@ -29,6 +29,8 @@ model Gift {
   guestListMode  GuestListMode @default(restricted)
   isSellingAsoebi Boolean   @default(false)
   asoebiPrice    Decimal?  @db.Decimal(10, 2)
+  asoebiPriceMen Decimal?  @db.Decimal(10, 2)
+  asoebiPriceWomen Decimal? @db.Decimal(10, 2)
 
   @@index([userId])
   @@index([createdAt])

@@ -31,6 +31,8 @@ interface Gift {
   guestListMode?: string;
   isSellingAsoebi?: boolean;
   asoebiPrice?: string | number;
+  asoebiPriceMen?: string | number;
+  asoebiPriceWomen?: string | number;
 }
 
 const ShareGift: React.FC = () => {
@@ -58,6 +60,7 @@ const ShareGift: React.FC = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
   const [verifyMessage, setVerifyMessage] = useState('');
+  const [asoebiType, setAsoebiType] = useState<'men' | 'women' | null>(null);
 
   useEffect(() => {
     document.title = "BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding";
@@ -279,6 +282,7 @@ const ShareGift: React.FC = () => {
         if (pendingAsoebi) {
           setPendingAsoebi(false);
           setAsoebiQuantity(1);
+          setAsoebiType(null);
           setShowRsvpThanks(true);
           setShowAsoebiConfirm(true);
         } else {
@@ -306,8 +310,21 @@ const ShareGift: React.FC = () => {
   const handleAsoebi = async () => {
     if (!rsvpGuestId || !linkParam) return;
 
+    // Determine effective price based on selection
+    let effectivePrice = Number(gift?.asoebiPrice || 0);
+    if (asoebiType === 'men' && gift?.asoebiPriceMen) {
+        effectivePrice = Number(gift.asoebiPriceMen);
+    } else if (asoebiType === 'women' && gift?.asoebiPriceWomen) {
+        effectivePrice = Number(gift.asoebiPriceWomen);
+    }
+
     // If Asoebi is being sold with a price, initiate payment
-    if (gift?.isSellingAsoebi && gift.asoebiPrice && Number(gift.asoebiPrice) > 0) {
+    if (gift?.isSellingAsoebi && effectivePrice > 0) {
+      if ((gift?.asoebiPriceMen || gift?.asoebiPriceWomen) && !asoebiType) {
+          alert("Please select Men or Women Asoebi option");
+          return;
+      }
+
       setProcessingPayment(true);
       try {
         const name = lastRsvpData ? `${lastRsvpData.firstName} ${lastRsvpData.lastName}` : 'Guest';
@@ -319,8 +336,7 @@ const ShareGift: React.FC = () => {
           return;
         }
 
-        const price = Number(gift.asoebiPrice);
-        const totalAmount = (price * asoebiQuantity) + 1000;
+        const totalAmount = (effectivePrice * asoebiQuantity) + 1000;
 
         const initRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
@@ -332,10 +348,11 @@ const ShareGift: React.FC = () => {
               contributorEmail: email,
               amount: totalAmount,
               currency: 'NGN',
-              message: `Asoebi Payment (Qty: ${asoebiQuantity})`,
+              message: `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''} (Qty: ${asoebiQuantity})`,
               isAsoebi: true,
               guestId: rsvpGuestId,
-              asoebiQuantity: asoebiQuantity
+              asoebiQuantity: asoebiQuantity,
+              asoebiType: asoebiType
             }),
           }
         );
@@ -370,7 +387,7 @@ const ShareGift: React.FC = () => {
       });
 
       if (res.ok) {
-        setRsvpThanksMessage("Aso-ebi request received! We'll be in touch.");
+        setRsvpThanksMessage("Asoebi request received! We'll be in touch.");
         setRsvpGuestId(null); // Hide the button
       } else {
         const data = await res.json();
@@ -390,10 +407,22 @@ const ShareGift: React.FC = () => {
       return;
     }
 
+    // Determine effective price
+    let effectivePrice = Number(gift?.asoebiPrice || 0);
+    if (asoebiType === 'men' && gift?.asoebiPriceMen) {
+        effectivePrice = Number(gift.asoebiPriceMen);
+    } else if (asoebiType === 'women' && gift?.asoebiPriceWomen) {
+        effectivePrice = Number(gift.asoebiPriceWomen);
+    }
+
+    if ((gift?.asoebiPriceMen || gift?.asoebiPriceWomen) && !asoebiType) {
+        alert("Please select Men or Women Asoebi option");
+        return;
+    }
+
     setProcessingPayment(true);
     try {
-        const price = Number(gift?.asoebiPrice || 0);
-        const totalAmount = (price * asoebiQuantity) + 1000;
+        const totalAmount = (effectivePrice * asoebiQuantity) + 1000;
 
         const initRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
@@ -405,9 +434,10 @@ const ShareGift: React.FC = () => {
               contributorEmail: contributorEmail,
               amount: totalAmount,
               currency: 'NGN',
-              message: `Aso-ebi Payment (Qty: ${asoebiQuantity})`,
+              message: `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''} (Qty: ${asoebiQuantity})`,
               isAsoebi: true,
-              asoebiQuantity: asoebiQuantity
+              asoebiQuantity: asoebiQuantity,
+              asoebiType: asoebiType
             }),
           }
         );
@@ -598,6 +628,7 @@ const ShareGift: React.FC = () => {
                         onClick={() => {
                           if (rsvpGuestId) {
                             setAsoebiQuantity(1);
+                            setAsoebiType(null);
                             setShowRsvpThanks(true);
                             setShowAsoebiConfirm(true);
                           } else {
@@ -611,7 +642,7 @@ const ShareGift: React.FC = () => {
                           }
                         }}
                       >
-                        <span className='font-thin'>Get Aso-ebi</span>
+                        <span className='font-thin'>Get Asoebi</span>
                       </Button>
                     )}
 
@@ -1055,9 +1086,10 @@ const ShareGift: React.FC = () => {
                     setShowRsvpThanks(true);
                     setShowAsoebiConfirm(true);
                     setAsoebiQuantity(1);
+                    setAsoebiType(null);
                   }}
                 >
-                  Get Aso-ebi
+                  Get Asoebi
                 </Button>
               )}
 
@@ -1114,10 +1146,11 @@ const ShareGift: React.FC = () => {
                     className="w-full bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors" 
                     onClick={() => {
                         setAsoebiQuantity(1); // Reset quantity when opening
+                        setAsoebiType(null);
                         setShowAsoebiConfirm(true);
                     }}
                   >
-                    Get Aso-ebi
+                    Get Asoebi
                   </Button>
                 )}
                 <Button className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90" onClick={() => setShowRsvpThanks(false)}>Close</Button>
@@ -1127,12 +1160,35 @@ const ShareGift: React.FC = () => {
             <>
               <div className="py-4 text-center space-y-4">
                 <p className="text-base text-muted-foreground">
-                  {gift?.asoebiPrice && Number(gift.asoebiPrice) > 0 
-                     ? "How many do you want to get?"
+                  {(Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0)
+                     ? "Select your preference"
                      : "Confirm your interest in Asoebi?"}
                 </p>
                 
-                {gift?.asoebiPrice && Number(gift.asoebiPrice) > 0 && (
+                {(gift?.asoebiPriceMen || gift?.asoebiPriceWomen) && (
+                    <div className="flex gap-4 justify-center">
+                        {gift.asoebiPriceMen && Number(gift.asoebiPriceMen) > 0 && (
+                            <div 
+                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${asoebiType === 'men' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C]' : 'border-gray-200 hover:border-[#2E235C]/50'}`}
+                                onClick={() => setAsoebiType('men')}
+                            >
+                                <div className="font-medium text-[#2E235C]">Men</div>
+                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceMen).toLocaleString()}</div>
+                            </div>
+                        )}
+                        {gift.asoebiPriceWomen && Number(gift.asoebiPriceWomen) > 0 && (
+                            <div 
+                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${asoebiType === 'women' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C]' : 'border-gray-200 hover:border-[#2E235C]/50'}`}
+                                onClick={() => setAsoebiType('women')}
+                            >
+                                <div className="font-medium text-[#2E235C]">Women</div>
+                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceWomen).toLocaleString()}</div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {(Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) && (
                     <div className="flex flex-col items-center gap-3">
                         <div className="flex items-center gap-3 justify-center">
                              <Label htmlFor="asoebi-qty" className="whitespace-nowrap">Quantity:</Label>
@@ -1146,7 +1202,7 @@ const ShareGift: React.FC = () => {
                              />
                         </div>
                         <p className="text-lg font-semibold text-[#2E235C]">
-                            Total: ₦{((Number(gift.asoebiPrice) * asoebiQuantity) + 1000).toLocaleString()}
+                            Total: ₦{(((asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)) * asoebiQuantity) + 1000).toLocaleString()}
                         </p>
                     </div>
                 )}
@@ -1157,7 +1213,7 @@ const ShareGift: React.FC = () => {
                   onClick={handleAsoebi}
                   disabled={processingPayment}
                 >
-                  {processingPayment ? 'Processing...' : (gift?.asoebiPrice && Number(gift.asoebiPrice) > 0 ? 'Proceed to Payment' : 'Yes')}
+                  {processingPayment ? 'Processing...' : ((Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) ? 'Proceed to Payment' : 'Yes')}
                 </Button>
               </div>
             </>
@@ -1229,7 +1285,7 @@ const ShareGift: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
-              Get Aso-ebi
+              Get Asoebi
             </div>
           </DialogHeader>
 
@@ -1299,11 +1355,34 @@ const ShareGift: React.FC = () => {
                    />
                 </div>
 
-                {gift?.asoebiPrice && Number(gift.asoebiPrice) > 0 && (
+                {(gift?.asoebiPriceMen || gift?.asoebiPriceWomen) && (
+                    <div className="flex gap-4 justify-center">
+                        {gift.asoebiPriceMen && Number(gift.asoebiPriceMen) > 0 && (
+                            <div 
+                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${asoebiType === 'men' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C]' : 'border-gray-200 hover:border-[#2E235C]/50'}`}
+                                onClick={() => setAsoebiType('men')}
+                            >
+                                <div className="font-medium text-[#2E235C]">Men</div>
+                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceMen).toLocaleString()}</div>
+                            </div>
+                        )}
+                        {gift.asoebiPriceWomen && Number(gift.asoebiPriceWomen) > 0 && (
+                            <div 
+                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${asoebiType === 'women' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C]' : 'border-gray-200 hover:border-[#2E235C]/50'}`}
+                                onClick={() => setAsoebiType('women')}
+                            >
+                                <div className="font-medium text-[#2E235C]">Women</div>
+                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceWomen).toLocaleString()}</div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {(Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) && (
                   <div className="bg-muted/50 p-3 rounded-lg text-center mt-2">
-                      <p className="text-sm text-muted-foreground mb-1">Price per item: ₦{Number(gift.asoebiPrice).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground mb-1">Price per item: ₦{(asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)).toLocaleString()}</p>
                       <p className="text-lg font-semibold text-[#2E235C]">
-                          Total: ₦{((Number(gift.asoebiPrice) * asoebiQuantity) + 1000).toLocaleString()}
+                          Total: ₦{(((asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)) * asoebiQuantity) + 1000).toLocaleString()}
                       </p>
                   </div>
                 )}
