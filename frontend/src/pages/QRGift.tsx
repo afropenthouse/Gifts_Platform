@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import Navbar from '../components/Navbar';
 import confetti from 'canvas-confetti';
 import { useToast } from '../hooks/use-toast';
-
+//Testing
 declare global {
   interface Window {
     PaystackPop: any;
