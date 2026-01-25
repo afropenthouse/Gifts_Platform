@@ -336,7 +336,7 @@ const ShareGift: React.FC = () => {
           return;
         }
 
-        const totalAmount = (effectivePrice + 1000) * asoebiQuantity;
+        const totalAmount = effectivePrice * asoebiQuantity;
 
         const initRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
@@ -422,7 +422,7 @@ const ShareGift: React.FC = () => {
 
     setProcessingPayment(true);
     try {
-        const totalAmount = (effectivePrice + 1000) * asoebiQuantity;
+        const totalAmount = effectivePrice * asoebiQuantity;
 
         const initRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
@@ -1173,7 +1173,7 @@ const ShareGift: React.FC = () => {
                                 onClick={() => setAsoebiType('men')}
                             >
                                 <div className="font-medium text-[#2E235C]">Men</div>
-                                <div className="text-sm text-gray-600">₦{(Number(gift.asoebiPriceMen) + 1000).toLocaleString()}</div>
+                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceMen).toLocaleString()}</div>
                             </div>
                         )}
                         {gift.asoebiPriceWomen && Number(gift.asoebiPriceWomen) > 0 && (
@@ -1182,7 +1182,7 @@ const ShareGift: React.FC = () => {
                                 onClick={() => setAsoebiType('women')}
                             >
                                 <div className="font-medium text-[#2E235C]">Women</div>
-                                <div className="text-sm text-gray-600">₦{(Number(gift.asoebiPriceWomen) + 1000).toLocaleString()}</div>
+                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceWomen).toLocaleString()}</div>
                             </div>
                         )}
                     </div>
@@ -1202,7 +1202,7 @@ const ShareGift: React.FC = () => {
                              />
                         </div>
                         <p className="text-lg font-semibold text-[#2E235C]">
-                            Total: ₦{(((asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)) + 1000) * asoebiQuantity).toLocaleString()}
+                            Total: ₦{((asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)) * asoebiQuantity).toLocaleString()}
                         </p>
                     </div>
                 )}
@@ -1363,7 +1363,7 @@ const ShareGift: React.FC = () => {
                                 onClick={() => setAsoebiType('men')}
                             >
                                 <div className="font-medium text-[#2E235C]">Men</div>
-                                <div className="text-sm text-gray-600">₦{(Number(gift.asoebiPriceMen) + 1000).toLocaleString()}</div>
+                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceMen).toLocaleString()}</div>
                             </div>
                         )}
                         {gift.asoebiPriceWomen && Number(gift.asoebiPriceWomen) > 0 && (
@@ -1372,7 +1372,7 @@ const ShareGift: React.FC = () => {
                                 onClick={() => setAsoebiType('women')}
                             >
                                 <div className="font-medium text-[#2E235C]">Women</div>
-                                <div className="text-sm text-gray-600">₦{(Number(gift.asoebiPriceWomen) + 1000).toLocaleString()}</div>
+                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceWomen).toLocaleString()}</div>
                             </div>
                         )}
                     </div>
@@ -1380,9 +1380,9 @@ const ShareGift: React.FC = () => {
 
                 {(Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) && (
                   <div className="bg-muted/50 p-3 rounded-lg text-center mt-2">
-                      <p className="text-sm text-muted-foreground mb-1">Price per item: ₦{((asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)) + 1000).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground mb-1">Price per item: ₦{(asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)).toLocaleString()}</p>
                       <p className="text-lg font-semibold text-[#2E235C]">
-                          Total: ₦{(((asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)) + 1000) * asoebiQuantity).toLocaleString()}
+                          Total: ₦{((asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)) * asoebiQuantity).toLocaleString()}
                       </p>
                   </div>
                 )}

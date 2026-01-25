@@ -78,7 +78,7 @@ async function initializePayment(payload) {
       reference,
       callback_url,
       metadata,
-      channels: ['bank_transfer'],
+      channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
     };
 
     const response = await psRequest('POST', '/transaction/initialize', psPayload);

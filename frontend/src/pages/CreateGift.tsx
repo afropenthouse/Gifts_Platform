@@ -199,6 +199,9 @@ const CreateGift: React.FC = () => {
 
         {isSellingAsoebi && (
           <div>
+            <div className="bg-amber-50 text-amber-800 text-sm p-3 rounded-md border border-amber-200 mb-4">
+              <strong>Note:</strong> We charge ₦1,000 per Asoebi sold.
+            </div>
             <Label htmlFor="asoebiPrice">Asoebi Price (₦)</Label>
             <Input
               id="asoebiPrice"

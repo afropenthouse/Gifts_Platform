@@ -2384,6 +2384,9 @@ const Dashboard: React.FC = () => {
 
               {isSellingAsoebi && (
                 <div className="space-y-4">
+                  <div className="bg-amber-50 text-amber-800 text-sm p-3 rounded-md border border-amber-200">
+                    <strong>Note:</strong> We charge ₦1,000 per Asoebi sold.
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="asoebiPriceMen" className="text-sm font-medium text-gray-900 mb-2 block">
@@ -2712,6 +2715,9 @@ const Dashboard: React.FC = () => {
 
               {isSellingAsoebi && (
                 <div className="space-y-4">
+                  <div className="bg-amber-50 text-amber-800 text-sm p-3 rounded-md border border-amber-200">
+                    <strong>Note:</strong> We charge ₦1,000 per Asoebi sold.
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="editAsoebiPriceMen" className="text-sm font-medium text-gray-900 mb-2 block">
