@@ -7,6 +7,7 @@ import GiftLinks from '../dashboard_ALL/GiftLinks';
 import QRCodePage from '../dashboard_ALL/QRCodePage';
 import VendorPaymentTracker from '../dashboard_ALL/VendorPaymentTracker';
 import Moments from '../dashboard_ALL/Moments';
+import Asoebi from '../dashboard_ALL/Asoebi';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
@@ -110,7 +111,7 @@ const Dashboard: React.FC = () => {
   const [withdrawHistory, setWithdrawHistory] = useState<any[]>([]);
   const [goalAmount, setGoalAmount] = useState(500000);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string, asoebi?: boolean, asoebiPaid?: boolean}>>([]);
+  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string, asoebi?: boolean, asoebiPaid?: boolean, asoebiSelection?: string}>>([]);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<number | null>(null);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<{id: number, firstName: string, lastName: string, allowed: number, attending: string, tableSitting?: string} | null>(null);
@@ -179,6 +180,7 @@ const Dashboard: React.FC = () => {
     { id: 'rsvp', label: 'RSVP', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests },
     { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null },
     { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null },
+    { id: 'asoebi', label: 'Asoebi', icon: Package, color: 'text-purple-600', badge: null },
     { id: 'vendors', label: 'Vendor Payment Tracker', icon: Wallet, color: 'text-orange-500', badge: null },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
@@ -1153,6 +1155,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
                     {activeTab === 'gifts' && 'Manage all your event links & cash gifts'}
                     {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
+                    {activeTab === 'asoebi' && 'Track Asoebi orders and payments'}
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
                     {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share moments'}
                   </p>
@@ -1495,6 +1498,13 @@ const Dashboard: React.FC = () => {
                     </Table>
                   </CardContent>
                 </Card>
+              </div>
+            )}
+
+            {/* Asoebi Section */}
+            {activeTab === 'asoebi' && (
+              <div>
+                <Asoebi guests={guests} contributions={contributions} gifts={gifts} />
               </div>
             )}
 

@@ -11,7 +11,7 @@ const Index = () => {
   const { openLoginModal, openSignupModal } = useAuth();
   
   useEffect(() => {
-    document.title = "BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding";
+    document.title = "BeThere Weddings - Manage RSVPs, Cash Gifts, Asoebi, and Vendor Payments - in one place";
   }, []);
 
   return (
