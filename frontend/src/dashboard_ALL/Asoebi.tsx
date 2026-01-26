@@ -39,7 +39,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
   
   const asoebiData = useMemo(() => {
     // Filter guests who clicked Get Asoebi or purchased Asoebi
-    const relevantGuests = guests.filter(g => g.asoebi || g.asoebiPaid);
+    const relevantGuests = guests.filter(g => g.asoebiPaid);
 
     const processedData = relevantGuests.map(guest => {
       // Expected format example: "Bride's Family - Men x2"

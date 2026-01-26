@@ -178,7 +178,8 @@ const Dashboard: React.FC = () => {
   const [isSettingReminders, setIsSettingReminders] = useState(false);
 
   const totalAllowedGuests = guests.reduce((sum, g) => sum + g.allowed, 0);
-  const asoebiOrdersCount = guests.filter(g => g.asoebiPaid).length;
+  const asoebiOrdersCount = contributions.filter(c => c.isAsoebi).length;
+  const giftersCount = contributions.filter(c => !c.isAsoebi).length;
   const isMobile = useIsMobile();
 
   const sidebarItems = [
@@ -1266,7 +1267,7 @@ const Dashboard: React.FC = () => {
                       </div>
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Gifters</p>
-                        <p className="text-2xl font-bold">{contributions.length}</p>
+                        <p className="text-2xl font-bold">{giftersCount}</p>
                       </div>
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Asoebi Orders</p>
