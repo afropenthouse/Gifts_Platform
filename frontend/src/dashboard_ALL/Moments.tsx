@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
@@ -6,7 +7,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
-import { ImageIcon, Upload, X, Calendar, Gift } from 'lucide-react';
+import { ImageIcon, Upload, X, Calendar, Gift, Filter } from 'lucide-react';
 
 interface Moment {
   id: number;
@@ -30,9 +31,10 @@ interface MomentGift {
 
 interface MomentsProps {
   gifts: MomentGift[];
+  onTabChange: (tab: string) => void;
 }
 
-const Moments: React.FC<MomentsProps> = ({ gifts }) => {
+const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
   const [moments, setMoments] = useState<Moment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -43,7 +45,9 @@ const Moments: React.FC<MomentsProps> = ({ gifts }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [momentToDelete, setMomentToDelete] = useState<Moment | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [filterGiftId, setFilterGiftId] = useState<string>('all');
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchMoments();
@@ -219,7 +223,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts }) => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Moments</h2>
-          <p className="text-gray-600 mt-1">Capture and share special moments from your events</p>
+          <p className="text-gray-600 mt-1">Share your wedding QR code so your guest can capture and share their special moments from your events</p>
         </div>
         <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
           <DialogTrigger asChild>
@@ -305,6 +309,25 @@ const Moments: React.FC<MomentsProps> = ({ gifts }) => {
         </Dialog>
       </div>
 
+      {Object.keys(momentsByGift).length > 0 && (
+        <div className="flex items-center justify-end gap-2">
+          <Filter className="w-4 h-4 text-gray-500" />
+          <Select value={filterGiftId} onValueChange={setFilterGiftId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filter by Event" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Events</SelectItem>
+              {gifts.map((gift) => (
+                <SelectItem key={gift.id} value={gift.id.toString()}>
+                  {gift.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {Object.keys(momentsByGift).length === 0 ? (
         <Card className="border-0 shadow-lg">
           <CardContent className="p-12 text-center">
@@ -314,17 +337,22 @@ const Moments: React.FC<MomentsProps> = ({ gifts }) => {
               Share your wedding QR code at your event and let guests upload photos, videos, and memories you can relive here.
             </p>
             <Button
-              onClick={() => setIsUploadModalOpen(true)}
+              onClick={() => onTabChange('qr')}
               className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
             >
               <Upload className="w-4 h-4 mr-2" />
-              Upload Your First Moment
+              Share your QR code
             </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-8">
-          {Object.entries(momentsByGift).map(([giftId, { gift, moments: giftMoments }]) => (
+          {Object.entries(momentsByGift).filter(([giftId]) => filterGiftId === 'all' || giftId === filterGiftId).length === 0 && (
+             <div className="text-center py-12 text-gray-500">No moments found for this event.</div>
+          )}
+          {Object.entries(momentsByGift)
+            .filter(([giftId]) => filterGiftId === 'all' || giftId === filterGiftId)
+            .map(([giftId, { gift, moments: giftMoments }]) => (
             <Card key={giftId} className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">

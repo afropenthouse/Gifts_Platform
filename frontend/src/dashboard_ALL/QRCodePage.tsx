@@ -79,7 +79,7 @@ const QrCodePage: React.FC<QrCodePageProps> = ({ gifts }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h2 className="text-2xl font-bold text-gray-900">QR Code for Cash gifts</h2>
-            <p className="text-gray-600">Place this QR code at your event to receive cash gifts</p>
+            <p className="text-gray-600">Place this QR code at your event to receive cash gifts & share moments</p>
         </div>
         <div className="w-full md:w-64 flex flex-row items-center gap-2">
           <span className="text-sm text-gray-600 whitespace-nowrap">Select event</span>

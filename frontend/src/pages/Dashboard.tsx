@@ -177,7 +177,7 @@ const Dashboard: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null },
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length },
     { id: 'rsvp', label: 'RSVP', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests },
-    { id: 'qr', label: 'QR Code for Cash Gifts', icon: QrCode, color: 'text-green-500', badge: null },
+    { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null },
     { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null },
     { id: 'vendors', label: 'Vendor Payment Tracker', icon: Wallet, color: 'text-orange-500', badge: null },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
@@ -198,6 +198,8 @@ const Dashboard: React.FC = () => {
     const totalGuests = guestsToExport.reduce((sum, guest) => sum + guest.allowed, 0);
     const selectedEvent = selectedEventForRSVP ? gifts.find(g => g.id === selectedEventForRSVP) : null;
     const eventTitle = selectedEvent ? selectedEvent.title : 'All Events';
+
+
     
     const htmlContent = `
       <!DOCTYPE html>
@@ -1152,7 +1154,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'gifts' && 'Manage all your event links & cash gifts'}
                     {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
-                    {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts'}
+                    {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share moments'}
                   </p>
                 </div>
                 
@@ -2287,7 +2289,7 @@ const Dashboard: React.FC = () => {
 
             {/* Moments Section */}
             {activeTab === 'moments' && (
-              <Moments gifts={gifts} />
+              <Moments gifts={gifts} onTabChange={setActiveTab} />
             )}
 
           </div>

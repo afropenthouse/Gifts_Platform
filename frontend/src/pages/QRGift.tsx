@@ -335,7 +335,7 @@ const QRGift: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               {gift.title}
             </h1>
-            <p className="text-gray-600">Send a cash gift to celebrate!</p>
+            <p className="text-gray-600">Celebrate with them by sharing your moments at their event and sending cash gifts!</p>
           </div>
 
           <div className="space-y-3">
