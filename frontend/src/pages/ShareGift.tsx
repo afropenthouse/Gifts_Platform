@@ -711,7 +711,7 @@ const ShareGift: React.FC = () => {
                   <div className="space-y-3">
                     {isDeadlinePassed ? (
                       <Button
-                        className="w-full bg-gray-400 text-white cursor-not-allowed border border-gray-400"
+                        className="w-full bg-black text-white cursor-not-allowed border border-black disabled:opacity-100"
                         size="lg"
                         disabled
                       >
@@ -736,7 +736,7 @@ const ShareGift: React.FC = () => {
                     {gift?.isSellingAsoebi && (
                       isDeadlinePassed ? (
                         <Button
-                          className="w-full bg-gray-400 text-white cursor-not-allowed"
+                          className="w-full bg-gold text-white cursor-not-allowed disabled:opacity-100"
                           size="lg"
                           disabled
                         >

@@ -178,7 +178,7 @@ const Dashboard: React.FC = () => {
   const [isSettingReminders, setIsSettingReminders] = useState(false);
 
   const totalAllowedGuests = guests.reduce((sum, g) => sum + g.allowed, 0);
-  const asoebiOrdersCount = guests.filter(g => g.asoebi).length;
+  const asoebiOrdersCount = guests.filter(g => g.asoebiPaid).length;
   const isMobile = useIsMobile();
 
   const sidebarItems = [
