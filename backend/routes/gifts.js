@@ -38,7 +38,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen } = req.body;
+    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription } = req.body;
 
     try {
       let pictureUrl = null;
@@ -82,6 +82,16 @@ module.exports = () => {
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
           asoebiPriceMen: asoebiPriceMen ? parseFloat(asoebiPriceMen) : null,
           asoebiPriceWomen: asoebiPriceWomen ? parseFloat(asoebiPriceWomen) : null,
+          asoebiBrideMenPrice: asoebiBrideMenPrice ? parseFloat(asoebiBrideMenPrice) : null,
+          asoebiBrideWomenPrice: asoebiBrideWomenPrice ? parseFloat(asoebiBrideWomenPrice) : null,
+          asoebiGroomMenPrice: asoebiGroomMenPrice ? parseFloat(asoebiGroomMenPrice) : null,
+          asoebiGroomWomenPrice: asoebiGroomWomenPrice ? parseFloat(asoebiGroomWomenPrice) : null,
+          asoebiBrideDescription,
+          asoebiGroomDescription,
+          asoebiBrideMenDescription,
+          asoebiBrideWomenDescription,
+          asoebiGroomMenDescription,
+          asoebiGroomWomenDescription,
         },
       });
 
@@ -105,7 +115,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen } = req.body;
+    const { type, title, description, date, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -142,6 +152,16 @@ module.exports = () => {
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
           asoebiPriceMen: asoebiPriceMen ? parseFloat(asoebiPriceMen) : null,
           asoebiPriceWomen: asoebiPriceWomen ? parseFloat(asoebiPriceWomen) : null,
+          asoebiBrideMenPrice: asoebiBrideMenPrice ? parseFloat(asoebiBrideMenPrice) : null,
+          asoebiBrideWomenPrice: asoebiBrideWomenPrice ? parseFloat(asoebiBrideWomenPrice) : null,
+          asoebiGroomMenPrice: asoebiGroomMenPrice ? parseFloat(asoebiGroomMenPrice) : null,
+          asoebiGroomWomenPrice: asoebiGroomWomenPrice ? parseFloat(asoebiGroomWomenPrice) : null,
+          asoebiBrideDescription,
+          asoebiGroomDescription,
+          asoebiBrideMenDescription,
+          asoebiBrideWomenDescription,
+          asoebiGroomMenDescription,
+          asoebiGroomWomenDescription,
         },
       });
 

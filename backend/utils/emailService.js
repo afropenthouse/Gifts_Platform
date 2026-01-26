@@ -398,7 +398,7 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
           </div>
 
           <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="color: ${accent}; text-decoration: none; font-weight: 600;">View your gifts in your dashboard</a>
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="color: ${accent}; text-decoration: none; font-weight: 600;">View your Payment in your dashboard</a>
           </p>
         </div>
       </div>

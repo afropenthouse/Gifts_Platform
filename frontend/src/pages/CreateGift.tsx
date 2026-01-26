@@ -23,6 +23,10 @@ const CreateGift: React.FC = () => {
   const [customType, setCustomType] = useState('');
   const [isSellingAsoebi, setIsSellingAsoebi] = useState(false);
   const [asoebiPrice, setAsoebiPrice] = useState('');
+  const [asoebiBrideMenPrice, setAsoebiBrideMenPrice] = useState('');
+  const [asoebiBrideWomenPrice, setAsoebiBrideWomenPrice] = useState('');
+  const [asoebiGroomMenPrice, setAsoebiGroomMenPrice] = useState('');
+  const [asoebiGroomWomenPrice, setAsoebiGroomWomenPrice] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shareLink, setShareLink] = useState('');
 
@@ -89,6 +93,18 @@ const CreateGift: React.FC = () => {
     // Add picture file if selected
     if (pictureFile) {
       formData.append('picture', pictureFile);
+    }
+
+    formData.append('isSellingAsoebi', String(isSellingAsoebi));
+    if (isSellingAsoebi) {
+      if (type === 'wedding') {
+        formData.append('asoebiBrideMenPrice', asoebiBrideMenPrice);
+        formData.append('asoebiBrideWomenPrice', asoebiBrideWomenPrice);
+        formData.append('asoebiGroomMenPrice', asoebiGroomMenPrice);
+        formData.append('asoebiGroomWomenPrice', asoebiGroomWomenPrice);
+      } else {
+        formData.append('asoebiPrice', asoebiPrice);
+      }
     }
 
     // Add details
@@ -198,19 +214,78 @@ const CreateGift: React.FC = () => {
         </div>
 
         {isSellingAsoebi && (
-          <div>
+          <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
             <div className="bg-amber-50 text-amber-800 text-sm p-3 rounded-md border border-amber-200 mb-4">
               <strong>Note:</strong> We charge ₦1,000 per Asoebi sold.
             </div>
-            <Label htmlFor="asoebiPrice">Asoebi Price (₦)</Label>
-            <Input
-              id="asoebiPrice"
-              type="number"
-              value={asoebiPrice}
-              onChange={(e) => setAsoebiPrice(e.target.value)}
-              placeholder="Enter price per Asoebi"
-              required={isSellingAsoebi}
-            />
+            
+            {type === 'wedding' ? (
+              <>
+                <div className="space-y-3">
+                  <h3 className="font-medium">Bride's Family Asoebi</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="asoebiBrideMenPrice">Men Price (₦)</Label>
+                      <Input
+                        id="asoebiBrideMenPrice"
+                        type="number"
+                        value={asoebiBrideMenPrice}
+                        onChange={(e) => setAsoebiBrideMenPrice(e.target.value)}
+                        placeholder="e.g. 5000"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="asoebiBrideWomenPrice">Women Price (₦)</Label>
+                      <Input
+                        id="asoebiBrideWomenPrice"
+                        type="number"
+                        value={asoebiBrideWomenPrice}
+                        onChange={(e) => setAsoebiBrideWomenPrice(e.target.value)}
+                        placeholder="e.g. 5000"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t">
+                  <h3 className="font-medium">Groom's Family Asoebi</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="asoebiGroomMenPrice">Men Price (₦)</Label>
+                      <Input
+                        id="asoebiGroomMenPrice"
+                        type="number"
+                        value={asoebiGroomMenPrice}
+                        onChange={(e) => setAsoebiGroomMenPrice(e.target.value)}
+                        placeholder="e.g. 5000"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="asoebiGroomWomenPrice">Women Price (₦)</Label>
+                      <Input
+                        id="asoebiGroomWomenPrice"
+                        type="number"
+                        value={asoebiGroomWomenPrice}
+                        onChange={(e) => setAsoebiGroomWomenPrice(e.target.value)}
+                        placeholder="e.g. 5000"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div>
+                <Label htmlFor="asoebiPrice">Asoebi Price (₦)</Label>
+                <Input
+                  id="asoebiPrice"
+                  type="number"
+                  value={asoebiPrice}
+                  onChange={(e) => setAsoebiPrice(e.target.value)}
+                  placeholder="Enter price per Asoebi"
+                  required={isSellingAsoebi}
+                />
+              </div>
+            )}
           </div>
         )}
 

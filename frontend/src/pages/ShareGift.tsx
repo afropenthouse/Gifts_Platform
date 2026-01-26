@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import Navbar from '../components/Navbar';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Users, Gift } from 'lucide-react';
+import { Users, Gift, Plus, Minus, ChevronLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 declare global {
@@ -33,6 +33,16 @@ interface Gift {
   asoebiPrice?: string | number;
   asoebiPriceMen?: string | number;
   asoebiPriceWomen?: string | number;
+  asoebiBrideMenPrice?: string | number;
+  asoebiBrideWomenPrice?: string | number;
+  asoebiGroomMenPrice?: string | number;
+  asoebiGroomWomenPrice?: string | number;
+  asoebiBrideDescription?: string;
+  asoebiGroomDescription?: string;
+  asoebiBrideMenDescription?: string;
+  asoebiBrideWomenDescription?: string;
+  asoebiGroomMenDescription?: string;
+  asoebiGroomWomenDescription?: string;
 }
 
 const ShareGift: React.FC = () => {
@@ -60,7 +70,6 @@ const ShareGift: React.FC = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
   const [verifyMessage, setVerifyMessage] = useState('');
-  const [asoebiType, setAsoebiType] = useState<'men' | 'women' | null>(null);
 
   useEffect(() => {
     document.title = "BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding";
@@ -79,6 +88,10 @@ const ShareGift: React.FC = () => {
   const [pendingAsoebi, setPendingAsoebi] = useState(false);
   const [showAsoebiDirectModal, setShowAsoebiDirectModal] = useState(false);
   const [asoebiStep, setAsoebiStep] = useState(1);
+  const [asoebiFamily, setAsoebiFamily] = useState<'bride' | 'groom' | null>(null);
+  const [menQuantity, setMenQuantity] = useState(0);
+  const [womenQuantity, setWomenQuantity] = useState(0);
+  const [asoebiType, setAsoebiType] = useState<'men' | 'women' | null>(null);
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.brideName} & ${gift.details.groomName}`
@@ -123,7 +136,7 @@ const ShareGift: React.FC = () => {
           return;
         }
         setVerifyStatus('success');
-        setVerifyMessage('Thank you! Your gift was successful.');
+        setVerifyMessage('Thank you! Your payment was successful.');
       } catch (err) {
         console.error(err);
         setVerifyStatus('error');
@@ -310,18 +323,57 @@ const ShareGift: React.FC = () => {
   const handleAsoebi = async () => {
     if (!rsvpGuestId || !linkParam) return;
 
-    // Determine effective price based on selection
-    let effectivePrice = Number(gift?.asoebiPrice || 0);
-    if (asoebiType === 'men' && gift?.asoebiPriceMen) {
-        effectivePrice = Number(gift.asoebiPriceMen);
-    } else if (asoebiType === 'women' && gift?.asoebiPriceWomen) {
-        effectivePrice = Number(gift.asoebiPriceWomen);
+    let totalAmount = 0;
+    let mPrice = 0;
+    let wPrice = 0;
+    let selectionDescription = '';
+    let typeDescription = '';
+    
+    const hasBrideGroomPrices = (gift?.asoebiBrideMenPrice || gift?.asoebiBrideWomenPrice || gift?.asoebiGroomMenPrice || gift?.asoebiGroomWomenPrice);
+    const genericPrice = Number(gift?.asoebiPrice || 0);
+
+    if (hasBrideGroomPrices) {
+        if (!asoebiFamily) {
+             alert("Please select Bride or Groom family");
+             return;
+        }
+        
+        if (asoebiFamily === 'bride') {
+             mPrice = Number(gift?.asoebiBrideMenPrice || 0);
+             wPrice = Number(gift?.asoebiBrideWomenPrice || 0);
+        } else if (asoebiFamily === 'groom') {
+             mPrice = Number(gift?.asoebiGroomMenPrice || 0);
+             wPrice = Number(gift?.asoebiGroomWomenPrice || 0);
+        }
+    } else {
+        mPrice = Number(gift?.asoebiPriceMen || 0);
+        wPrice = Number(gift?.asoebiPriceWomen || 0);
+    }
+
+    // Calculate Total
+    if (mPrice > 0) totalAmount += mPrice * menQuantity;
+    if (wPrice > 0) totalAmount += wPrice * womenQuantity;
+
+    // Fallback for simple single-price Asoebi
+    if (totalAmount === 0 && genericPrice > 0 && asoebiQuantity > 0 && menQuantity === 0 && womenQuantity === 0) {
+        totalAmount = genericPrice * asoebiQuantity;
+        selectionDescription = `Qty: ${asoebiQuantity}`;
+        typeDescription = 'standard';
+    } else {
+        const parts = [];
+        if (menQuantity > 0) parts.push(`Men x${menQuantity}`);
+        if (womenQuantity > 0) parts.push(`Women x${womenQuantity}`);
+        selectionDescription = parts.join(', ');
+        
+        if (menQuantity > 0 && womenQuantity > 0) typeDescription = 'mixed';
+        else if (menQuantity > 0) typeDescription = 'men';
+        else if (womenQuantity > 0) typeDescription = 'women';
     }
 
     // If Asoebi is being sold with a price, initiate payment
-    if (gift?.isSellingAsoebi && effectivePrice > 0) {
-      if ((gift?.asoebiPriceMen || gift?.asoebiPriceWomen) && !asoebiType) {
-          alert("Please select Men or Women Asoebi option");
+    if (gift?.isSellingAsoebi && totalAmount > 0) {
+      if (!selectionDescription) {
+          alert("Please select at least one item");
           return;
       }
 
@@ -336,7 +388,8 @@ const ShareGift: React.FC = () => {
           return;
         }
 
-        const totalAmount = effectivePrice * asoebiQuantity;
+        const familyStr = asoebiFamily ? (asoebiFamily === 'bride' ? "Bride's Family" : "Groom's Family") : '';
+        const fullSelection = `${familyStr ? familyStr + ' - ' : ''}${selectionDescription}`;
 
         const initRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
@@ -348,11 +401,12 @@ const ShareGift: React.FC = () => {
               contributorEmail: email,
               amount: totalAmount,
               currency: 'NGN',
-              message: `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''} (Qty: ${asoebiQuantity})`,
+              message: `Asoebi Payment: ${fullSelection}`,
               isAsoebi: true,
               guestId: rsvpGuestId,
-              asoebiQuantity: asoebiQuantity,
-              asoebiType: asoebiType
+              asoebiQuantity: menQuantity + womenQuantity || asoebiQuantity,
+              asoebiType: typeDescription,
+              asoebiSelection: fullSelection
             }),
           }
         );
@@ -375,6 +429,9 @@ const ShareGift: React.FC = () => {
 
     // Default: Just mark as interested (if no price set)
     try {
+      const familyStr = asoebiFamily ? (asoebiFamily === 'bride' ? "Bride's Family" : "Groom's Family") : '';
+      const fullSelection = `${familyStr ? familyStr + ' - ' : ''}${selectionDescription || 'Interested'}`;
+
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/asoebi-update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -382,7 +439,8 @@ const ShareGift: React.FC = () => {
           shareLink: linkParam,
           guestId: rsvpGuestId,
           asoebi: true,
-          asoebiQuantity: asoebiQuantity
+          asoebiQuantity: menQuantity + womenQuantity || asoebiQuantity,
+          asoebiSelection: fullSelection
         }),
       });
 
@@ -407,22 +465,62 @@ const ShareGift: React.FC = () => {
       return;
     }
 
-    // Determine effective price
-    let effectivePrice = Number(gift?.asoebiPrice || 0);
-    if (asoebiType === 'men' && gift?.asoebiPriceMen) {
-        effectivePrice = Number(gift.asoebiPriceMen);
-    } else if (asoebiType === 'women' && gift?.asoebiPriceWomen) {
-        effectivePrice = Number(gift.asoebiPriceWomen);
+    let totalAmount = 0;
+    let mPrice = 0;
+    let wPrice = 0;
+    let selectionDescription = '';
+    let typeDescription = '';
+
+    const hasBrideGroomPrices = (gift?.asoebiBrideMenPrice || gift?.asoebiBrideWomenPrice || gift?.asoebiGroomMenPrice || gift?.asoebiGroomWomenPrice);
+    const genericPrice = Number(gift?.asoebiPrice || 0);
+
+    if (hasBrideGroomPrices) {
+        if (!asoebiFamily) {
+             alert("Please select Bride or Groom family");
+             return;
+        }
+        
+        if (asoebiFamily === 'bride') {
+             mPrice = Number(gift?.asoebiBrideMenPrice || 0);
+             wPrice = Number(gift?.asoebiBrideWomenPrice || 0);
+        } else if (asoebiFamily === 'groom') {
+             mPrice = Number(gift?.asoebiGroomMenPrice || 0);
+             wPrice = Number(gift?.asoebiGroomWomenPrice || 0);
+        }
+    } else {
+        mPrice = Number(gift?.asoebiPriceMen || 0);
+        wPrice = Number(gift?.asoebiPriceWomen || 0);
     }
 
-    if ((gift?.asoebiPriceMen || gift?.asoebiPriceWomen) && !asoebiType) {
-        alert("Please select Men or Women Asoebi option");
+    // Calculate Total
+    if (mPrice > 0) totalAmount += mPrice * menQuantity;
+    if (wPrice > 0) totalAmount += wPrice * womenQuantity;
+
+    // Fallback for simple single-price Asoebi
+    if (totalAmount === 0 && genericPrice > 0 && asoebiQuantity > 0 && menQuantity === 0 && womenQuantity === 0) {
+        totalAmount = genericPrice * asoebiQuantity;
+        selectionDescription = `Qty: ${asoebiQuantity}`;
+        typeDescription = 'standard';
+    } else {
+        const parts = [];
+        if (menQuantity > 0) parts.push(`Men x${menQuantity}`);
+        if (womenQuantity > 0) parts.push(`Women x${womenQuantity}`);
+        selectionDescription = parts.join(', ');
+        
+        if (menQuantity > 0 && womenQuantity > 0) typeDescription = 'mixed';
+        else if (menQuantity > 0) typeDescription = 'men';
+        else if (womenQuantity > 0) typeDescription = 'women';
+    }
+
+    if (!selectionDescription) {
+        alert("Please select at least one item");
         return;
     }
 
     setProcessingPayment(true);
     try {
-        const totalAmount = effectivePrice * asoebiQuantity;
+        const familyStr = asoebiFamily ? (asoebiFamily === 'bride' ? "Bride's Family" : "Groom's Family") : '';
+        const fullSelection = `${familyStr ? familyStr + ' - ' : ''}${selectionDescription}`;
 
         const initRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
@@ -434,10 +532,11 @@ const ShareGift: React.FC = () => {
               contributorEmail: contributorEmail,
               amount: totalAmount,
               currency: 'NGN',
-              message: `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''} (Qty: ${asoebiQuantity})`,
+              message: `Asoebi Payment: ${fullSelection}`,
               isAsoebi: true,
-              asoebiQuantity: asoebiQuantity,
-              asoebiType: asoebiType
+              asoebiQuantity: menQuantity + womenQuantity || asoebiQuantity,
+              asoebiType: typeDescription,
+              asoebiSelection: fullSelection
             }),
           }
         );
@@ -1159,36 +1258,145 @@ const ShareGift: React.FC = () => {
           ) : (
             <>
               <div className="py-4 text-center space-y-4">
-                <p className="text-base text-muted-foreground">
-                  {(Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0)
-                     ? "Select your preference"
-                     : "Confirm your interest in Asoebi?"}
-                </p>
-                
-                {(gift?.asoebiPriceMen || gift?.asoebiPriceWomen) && (
-                    <div className="flex gap-4 justify-center">
-                        {gift.asoebiPriceMen && Number(gift.asoebiPriceMen) > 0 && (
-                            <div 
-                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${asoebiType === 'men' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C]' : 'border-gray-200 hover:border-[#2E235C]/50'}`}
-                                onClick={() => setAsoebiType('men')}
+                {(Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && !asoebiFamily && (
+                    <div className="mb-4 space-y-2">
+                        <p className="text-base text-black font-medium text-center">
+                          Whose Asoebi do you want?
+                        </p>
+                        <div className="flex gap-4 justify-center items-center">
+                             <div 
+                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all min-w-[100px] border-gray-200 hover:bg-[#2E235C] hover:text-white flex items-center justify-center`}
+                                onClick={() => { setAsoebiFamily('bride'); setMenQuantity(0); setWomenQuantity(0); }}
                             >
-                                <div className="font-medium text-[#2E235C]">Men</div>
-                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceMen).toLocaleString()}</div>
+                                <div className="font-medium">Bride's Asoebi</div>
                             </div>
-                        )}
-                        {gift.asoebiPriceWomen && Number(gift.asoebiPriceWomen) > 0 && (
+                            
+                            <span className="text-gray-500 font-medium">or</span>
+
                             <div 
-                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${asoebiType === 'women' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C]' : 'border-gray-200 hover:border-[#2E235C]/50'}`}
-                                onClick={() => setAsoebiType('women')}
+                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all min-w-[100px] border-gray-200 hover:bg-[#2E235C] hover:text-white flex items-center justify-center`}
+                                onClick={() => { setAsoebiFamily('groom'); setMenQuantity(0); setWomenQuantity(0); }}
                             >
-                                <div className="font-medium text-[#2E235C]">Women</div>
-                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceWomen).toLocaleString()}</div>
+                                <div className="font-medium">Groom's Asoebi</div>
                             </div>
-                        )}
+                        </div>
                     </div>
                 )}
 
-                {(Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) && (
+                {((!gift?.asoebiBrideMenPrice && !gift?.asoebiGroomMenPrice && !gift?.asoebiBrideWomenPrice && !gift?.asoebiGroomWomenPrice && (gift?.asoebiPriceMen || gift?.asoebiPriceWomen)) || 
+                  (asoebiFamily)) && (
+                    <div className="space-y-4">
+                        {(Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && (
+                             <div className="flex justify-start">
+                                 <Button variant="ghost" size="sm" className="text-muted-foreground -ml-2 h-8" onClick={() => setAsoebiFamily(null)}>
+                                     <ChevronLeft className="w-4 h-4 mr-1" /> Back
+                                 </Button>
+                             </div>
+                        )}
+
+                        {((!asoebiFamily && gift?.asoebiPriceMen && Number(gift.asoebiPriceMen) > 0) || 
+                          (asoebiFamily === 'bride' && gift?.asoebiBrideMenPrice && Number(gift.asoebiBrideMenPrice) > 0) ||
+                          (asoebiFamily === 'groom' && gift?.asoebiGroomMenPrice && Number(gift.asoebiGroomMenPrice) > 0)) && (
+                            <div className={`flex justify-between items-center border rounded-lg p-3 ${menQuantity > 0 ? 'border-[#2E235C] bg-[#2E235C]/5' : 'border-gray-200'}`}>
+                                <div>
+                                    <div className="font-medium text-[#2E235C]">Men</div>
+                                    <div className="text-sm text-gray-600">₦{Number(asoebiFamily === 'bride' ? gift?.asoebiBrideMenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomMenPrice : gift?.asoebiPriceMen).toLocaleString()}</div>
+                                    {(asoebiFamily === 'bride' ? gift?.asoebiBrideMenDescription : asoebiFamily === 'groom' ? gift?.asoebiGroomMenDescription : null) && (
+                                        <div className="text-xs text-gray-500 mt-1 italic">
+                                            {asoebiFamily === 'bride' ? gift?.asoebiBrideMenDescription : gift?.asoebiGroomMenDescription}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Button 
+                                        variant="outline" size="icon" className="h-8 w-8 rounded-full"
+                                        onClick={() => setMenQuantity(Math.max(0, menQuantity - 1))}
+                                        disabled={menQuantity === 0}
+                                    >
+                                        <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        value={menQuantity}
+                                        onChange={(e) => setMenQuantity(Math.max(0, parseInt(e.target.value) || 0))}
+                                        className="w-14 h-8 text-center p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-gray-300"
+                                    />
+                                    <Button 
+                                        variant="outline" size="icon" className="h-8 w-8 rounded-full"
+                                        onClick={() => setMenQuantity(menQuantity + 1)}
+                                    >
+                                        <Plus className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {((!asoebiFamily && gift?.asoebiPriceWomen && Number(gift.asoebiPriceWomen) > 0) || 
+                          (asoebiFamily === 'bride' && gift?.asoebiBrideWomenPrice && Number(gift.asoebiBrideWomenPrice) > 0) ||
+                          (asoebiFamily === 'groom' && gift?.asoebiGroomWomenPrice && Number(gift.asoebiGroomWomenPrice) > 0)) && (
+                            <div className={`flex justify-between items-center border rounded-lg p-3 ${womenQuantity > 0 ? 'border-[#2E235C] bg-[#2E235C]/5' : 'border-gray-200'}`}>
+                                <div>
+                                    <div className="font-medium text-[#2E235C]">Women</div>
+                                    <div className="text-sm text-gray-600">₦{Number(asoebiFamily === 'bride' ? gift?.asoebiBrideWomenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomWomenPrice : gift?.asoebiPriceWomen).toLocaleString()}</div>
+                                    {(asoebiFamily === 'bride' ? gift?.asoebiBrideWomenDescription : asoebiFamily === 'groom' ? gift?.asoebiGroomWomenDescription : null) && (
+                                        <div className="text-xs text-gray-500 mt-1 italic">
+                                            {asoebiFamily === 'bride' ? gift?.asoebiBrideWomenDescription : gift?.asoebiGroomWomenDescription}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Button 
+                                        variant="outline" size="icon" className="h-8 w-8 rounded-full"
+                                        onClick={() => setWomenQuantity(Math.max(0, womenQuantity - 1))}
+                                        disabled={womenQuantity === 0}
+                                    >
+                                        <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        value={womenQuantity}
+                                        onChange={(e) => setWomenQuantity(Math.max(0, parseInt(e.target.value) || 0))}
+                                        className="w-14 h-8 text-center p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-gray-300"
+                                    />
+                                    <Button 
+                                        variant="outline" size="icon" className="h-8 w-8 rounded-full"
+                                        onClick={() => setWomenQuantity(womenQuantity + 1)}
+                                    >
+                                        <Plus className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {(menQuantity > 0 || womenQuantity > 0) && (
+                            <div className="bg-muted/50 p-3 rounded-lg text-center mt-2">
+                                <p className="text-lg font-semibold text-[#2E235C]">
+                                    Total: ₦{((menQuantity * Number(asoebiFamily === 'bride' ? gift?.asoebiBrideMenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomMenPrice : gift?.asoebiPriceMen || 0)) + 
+                                              (womenQuantity * Number(asoebiFamily === 'bride' ? gift?.asoebiBrideWomenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomWomenPrice : gift?.asoebiPriceWomen || 0))).toLocaleString()}
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="mt-4 grid grid-cols-2 gap-3">
+                            {gift?.asoebiBrideDescription && (
+                                <div className="p-3 bg-gray-50 border rounded-lg text-sm text-gray-700">
+                                    <p className="font-medium mb-1">Bride:</p>
+                                    <p className="whitespace-pre-wrap">{gift.asoebiBrideDescription}</p>
+                                </div>
+                            )}
+                            {gift?.asoebiGroomDescription && (
+                                <div className="p-3 bg-gray-50 border rounded-lg text-sm text-gray-700">
+                                    <p className="font-medium mb-1">Groom:</p>
+                                    <p className="whitespace-pre-wrap">{gift.asoebiGroomDescription}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {(Number(gift?.asoebiPrice || 0) > 0 && !gift?.asoebiPriceMen && !gift?.asoebiPriceWomen && !gift?.asoebiBrideMenPrice) && (
                     <div className="flex flex-col items-center gap-3">
                         <div className="flex items-center gap-3 justify-center">
                              <Label htmlFor="asoebi-qty" className="whitespace-nowrap">Quantity:</Label>
@@ -1202,7 +1410,7 @@ const ShareGift: React.FC = () => {
                              />
                         </div>
                         <p className="text-lg font-semibold text-[#2E235C]">
-                            Total: ₦{((asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)) * asoebiQuantity).toLocaleString()}
+                            Total: ₦{(Number(gift?.asoebiPrice || 0) * asoebiQuantity).toLocaleString()}
                         </p>
                     </div>
                 )}
@@ -1213,7 +1421,7 @@ const ShareGift: React.FC = () => {
                   onClick={handleAsoebi}
                   disabled={processingPayment}
                 >
-                  {processingPayment ? 'Processing...' : ((Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) ? 'Proceed to Payment' : 'Yes')}
+                  {processingPayment ? 'Processing...' : ((Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) ? 'Proceed to Payment' : 'Proceed')}
                 </Button>
               </div>
             </>
@@ -1355,24 +1563,51 @@ const ShareGift: React.FC = () => {
                    />
                 </div>
 
-                {(gift?.asoebiPriceMen || gift?.asoebiPriceWomen) && (
+                {(Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && (
+                    <div className="mb-4 space-y-2">
+                        <div className="flex gap-4 justify-center items-center">
+                             <div 
+                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all min-w-[100px] ${asoebiFamily === 'bride' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C] text-[#2E235C]' : 'border-gray-200 hover:bg-[#2E235C] hover:text-white'} flex items-center justify-center`}
+                                onClick={() => { setAsoebiFamily('bride'); setAsoebiType(null); }}
+                            >
+                                <div className="font-medium">Bride's Asoebi</div>
+                            </div>
+                            
+                            <span className="text-gray-500 font-medium">or</span>
+
+                            <div 
+                                className={`cursor-pointer border rounded-lg p-3 text-center transition-all min-w-[100px] ${asoebiFamily === 'groom' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C] text-[#2E235C]' : 'border-gray-200 hover:bg-[#2E235C] hover:text-white'} flex items-center justify-center`}
+                                onClick={() => { setAsoebiFamily('groom'); setAsoebiType(null); }}
+                            >
+                                <div className="font-medium">Groom's Asoebi</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {((!gift?.asoebiBrideMenPrice && !gift?.asoebiGroomMenPrice && !gift?.asoebiBrideWomenPrice && !gift?.asoebiGroomWomenPrice && (gift?.asoebiPriceMen || gift?.asoebiPriceWomen)) || 
+                  (asoebiFamily)) && (
                     <div className="flex gap-4 justify-center">
-                        {gift.asoebiPriceMen && Number(gift.asoebiPriceMen) > 0 && (
+                        {((!asoebiFamily && gift?.asoebiPriceMen && Number(gift.asoebiPriceMen) > 0) || 
+                          (asoebiFamily === 'bride' && gift?.asoebiBrideMenPrice && Number(gift.asoebiBrideMenPrice) > 0) ||
+                          (asoebiFamily === 'groom' && gift?.asoebiGroomMenPrice && Number(gift.asoebiGroomMenPrice) > 0)) && (
                             <div 
                                 className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${asoebiType === 'men' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C]' : 'border-gray-200 hover:border-[#2E235C]/50'}`}
                                 onClick={() => setAsoebiType('men')}
                             >
                                 <div className="font-medium text-[#2E235C]">Men</div>
-                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceMen).toLocaleString()}</div>
+                                <div className="text-sm text-gray-600">₦{Number(asoebiFamily === 'bride' ? gift?.asoebiBrideMenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomMenPrice : gift?.asoebiPriceMen).toLocaleString()}</div>
                             </div>
                         )}
-                        {gift.asoebiPriceWomen && Number(gift.asoebiPriceWomen) > 0 && (
+                        {((!asoebiFamily && gift?.asoebiPriceWomen && Number(gift.asoebiPriceWomen) > 0) || 
+                          (asoebiFamily === 'bride' && gift?.asoebiBrideWomenPrice && Number(gift.asoebiBrideWomenPrice) > 0) ||
+                          (asoebiFamily === 'groom' && gift?.asoebiGroomWomenPrice && Number(gift.asoebiGroomWomenPrice) > 0)) && (
                             <div 
                                 className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${asoebiType === 'women' ? 'border-[#2E235C] bg-[#2E235C]/5 ring-1 ring-[#2E235C]' : 'border-gray-200 hover:border-[#2E235C]/50'}`}
                                 onClick={() => setAsoebiType('women')}
                             >
                                 <div className="font-medium text-[#2E235C]">Women</div>
-                                <div className="text-sm text-gray-600">₦{Number(gift.asoebiPriceWomen).toLocaleString()}</div>
+                                <div className="text-sm text-gray-600">₦{Number(asoebiFamily === 'bride' ? gift?.asoebiBrideWomenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomWomenPrice : gift?.asoebiPriceWomen).toLocaleString()}</div>
                             </div>
                         )}
                     </div>
@@ -1380,9 +1615,17 @@ const ShareGift: React.FC = () => {
 
                 {(Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) && (
                   <div className="bg-muted/50 p-3 rounded-lg text-center mt-2">
-                      <p className="text-sm text-muted-foreground mb-1">Price per item: ₦{(asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground mb-1">Price per item: ₦{(asoebiType === 'men' ? 
+                          (asoebiFamily === 'bride' ? Number(gift?.asoebiBrideMenPrice || 0) : asoebiFamily === 'groom' ? Number(gift?.asoebiGroomMenPrice || 0) : Number(gift?.asoebiPriceMen || 0)) 
+                          : asoebiType === 'women' ? 
+                          (asoebiFamily === 'bride' ? Number(gift?.asoebiBrideWomenPrice || 0) : asoebiFamily === 'groom' ? Number(gift?.asoebiGroomWomenPrice || 0) : Number(gift?.asoebiPriceWomen || 0))
+                          : Number(gift?.asoebiPrice || 0)).toLocaleString()}</p>
                       <p className="text-lg font-semibold text-[#2E235C]">
-                          Total: ₦{((asoebiType === 'men' && gift?.asoebiPriceMen ? Number(gift.asoebiPriceMen) : asoebiType === 'women' && gift?.asoebiPriceWomen ? Number(gift.asoebiPriceWomen) : Number(gift?.asoebiPrice || 0)) * asoebiQuantity).toLocaleString()}
+                          Total: ₦{((asoebiType === 'men' ? 
+                                (asoebiFamily === 'bride' ? Number(gift?.asoebiBrideMenPrice || 0) : asoebiFamily === 'groom' ? Number(gift?.asoebiGroomMenPrice || 0) : Number(gift?.asoebiPriceMen || 0)) 
+                                : asoebiType === 'women' ? 
+                                (asoebiFamily === 'bride' ? Number(gift?.asoebiBrideWomenPrice || 0) : asoebiFamily === 'groom' ? Number(gift?.asoebiGroomWomenPrice || 0) : Number(gift?.asoebiPriceWomen || 0))
+                                : Number(gift?.asoebiPrice || 0)) * asoebiQuantity).toLocaleString()}
                       </p>
                   </div>
                 )}

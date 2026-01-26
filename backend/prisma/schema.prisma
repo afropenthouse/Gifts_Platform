@@ -31,6 +31,16 @@ model Gift {
   asoebiPrice    Decimal?  @db.Decimal(10, 2)
   asoebiPriceMen Decimal?  @db.Decimal(10, 2)
   asoebiPriceWomen Decimal? @db.Decimal(10, 2)
+  asoebiBrideMenPrice Decimal? @db.Decimal(10, 2)
+  asoebiBrideWomenPrice Decimal? @db.Decimal(10, 2)
+  asoebiGroomMenPrice Decimal? @db.Decimal(10, 2)
+  asoebiGroomWomenPrice Decimal? @db.Decimal(10, 2)
+  asoebiBrideDescription String?
+  asoebiGroomDescription String?
+  asoebiBrideMenDescription String?
+  asoebiBrideWomenDescription String?
+  asoebiGroomMenDescription String?
+  asoebiGroomWomenDescription String?
 
   @@index([userId])
   @@index([createdAt])
@@ -94,6 +104,7 @@ model Guest {
   tableSitting String      @default("Table sitting")
   asoebi       Boolean     @default(false)
   asoebiPaid   Boolean     @default(false)
+  asoebiSelection String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 

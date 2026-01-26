@@ -8,7 +8,7 @@ module.exports = () => {
 
   // Initialize payment
   router.post('/:link(*)/initialize-payment', async (req, res) => {
-    const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity, asoebiType } = req.body;
+    const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity, asoebiType, asoebiSelection } = req.body;
 
     try {
       const gift = await prisma.gift.findUnique({ 
@@ -29,6 +29,7 @@ module.exports = () => {
         guestId,
         asoebiQuantity,
         asoebiType,
+        asoebiSelection,
         customizations: {
           title: `Contribution to ${gift.user.name}'s ${gift.type}`,
           description: gift.title || gift.type,
@@ -113,11 +114,11 @@ module.exports = () => {
         });
       }
 
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType } = response.data.metadata || {};
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection } = response.data.metadata || {};
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const amount = parseFloat((response.data.amount / 100).toFixed(2)); // Paystack amount in kobo, convert to Naira
 
-      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: response.data.amount, isAsoebi, guestId, asoebiType });
+      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: response.data.amount, isAsoebi, guestId, asoebiType, asoebiSelection });
 
       if (!giftId) {
         console.error('❌ No giftId in transaction meta');
@@ -174,7 +175,11 @@ module.exports = () => {
           if (guestId) {
              await prisma.guest.update({
               where: { id: parseInt(guestId) },
-              data: { asoebiPaid: true, asoebi: true }
+              data: { 
+                asoebiPaid: true, 
+                asoebi: true,
+                asoebiSelection: asoebiSelection || undefined
+              }
             });
             console.log('✅ Updated guest asoebi status for guest:', guestId);
           } else if (contributorEmail) {
@@ -189,7 +194,11 @@ module.exports = () => {
              if (existingGuest) {
                 await prisma.guest.update({
                    where: { id: existingGuest.id },
-                   data: { asoebiPaid: true, asoebi: true }
+                   data: { 
+                    asoebiPaid: true, 
+                    asoebi: true,
+                    asoebiSelection: asoebiSelection || undefined
+                   }
                 });
                 console.log('✅ Updated guest asoebi status for guest (by email):', existingGuest.id);
              } else {
@@ -207,6 +216,7 @@ module.exports = () => {
                       userId: gift.userId,
                       asoebi: true,
                       asoebiPaid: true,
+                      asoebiSelection: asoebiSelection || null,
                       attending: 'pending',
                       allowed: 1,
                       status: 'invited'
@@ -348,7 +358,7 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
-        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType } = response.data.metadata || {};
+        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection } = response.data.metadata || {};
         const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
 
         console.log('Extracted meta data:', {
@@ -358,7 +368,8 @@ module.exports = () => {
           contributorMessage,
           isAsoebi,
           guestId,
-          asoebiType
+          asoebiType,
+          asoebiSelection
         });
 
         if (!giftId) {
@@ -414,7 +425,11 @@ module.exports = () => {
             if (guestId) {
                await prisma.guest.update({
                 where: { id: parseInt(guestId) },
-                data: { asoebiPaid: true, asoebi: true }
+                data: { 
+                    asoebiPaid: true, 
+                    asoebi: true,
+                    asoebiSelection: asoebiSelection || undefined
+                }
               });
               console.log('✅ Updated guest asoebi status for guest:', guestId);
             } else if (contributorEmail) {
@@ -429,7 +444,11 @@ module.exports = () => {
                if (existingGuest) {
                   await prisma.guest.update({
                      where: { id: existingGuest.id },
-                     data: { asoebiPaid: true, asoebi: true }
+                     data: { 
+                        asoebiPaid: true, 
+                        asoebi: true,
+                        asoebiSelection: asoebiSelection || undefined
+                     }
                   });
                   console.log('✅ Updated guest asoebi status for guest (by email):', existingGuest.id);
                } else {
@@ -447,6 +466,7 @@ module.exports = () => {
                         userId: gift.userId,
                         asoebi: true,
                         asoebiPaid: true,
+                        asoebiSelection: asoebiSelection || null,
                         attending: 'pending',
                         allowed: 1,
                         status: 'invited'

@@ -289,8 +289,8 @@ module.exports = () => {
 
   // Update asoebi status (public)
   router.post('/asoebi-update', async (req, res) => {
-    const { shareLink, guestId, asoebi } = req.body;
-    console.log('Asoebi update request:', { shareLink, guestId, asoebi });
+    const { shareLink, guestId, asoebi, asoebiSelection } = req.body;
+    console.log('Asoebi update request:', { shareLink, guestId, asoebi, asoebiSelection });
 
     if (!shareLink || !guestId) {
       console.log('Missing shareLink or guestId');
@@ -329,7 +329,10 @@ module.exports = () => {
 
       const updatedGuest = await prisma.guest.update({
         where: { id: guest.id },
-        data: { asoebi: Boolean(asoebi) }
+        data: { 
+          asoebi: Boolean(asoebi),
+          asoebiSelection: asoebiSelection || null
+        }
       });
 
       console.log('Guest updated successfully:', updatedGuest.id);
