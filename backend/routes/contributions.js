@@ -114,7 +114,7 @@ module.exports = () => {
         });
       }
 
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection } = response.data.metadata || {};
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity } = response.data.metadata || {};
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const amount = parseFloat((response.data.amount / 100).toFixed(2)); // Paystack amount in kobo, convert to Naira
 
@@ -154,6 +154,22 @@ module.exports = () => {
         });
       }
 
+      // Calculate commission and amount to receive
+      let commission;
+      let amountReceived;
+      
+      if (isAsoebi) {
+        // For Asoebi, we charge 1000 per quantity
+        const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
+        commission = 1000 * quantity;
+        amountReceived = amount - commission;
+        if (amountReceived < 0) amountReceived = 0; // Safety check
+      } else {
+        // Standard 15% commission
+        commission = amount * 0.15;
+        amountReceived = amount * 0.85;
+      }
+
       // Create contribution record
       const contribution = await prisma.contribution.create({
         data: {
@@ -161,13 +177,16 @@ module.exports = () => {
           contributorName: contributorName || 'Anonymous',
           contributorEmail: contributorEmail || '',
           amount,
+          commission,
+          isAsoebi: !!isAsoebi,
+          asoebiQuantity: asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0,
           message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
           transactionId: response.data.id?.toString() || response.data.reference,
           status: 'completed',
         },
       });
 
-      console.log('💾 Contribution created:', { id: contribution.id, amount, giftId });
+      console.log('💾 Contribution created:', { id: contribution.id, amount, commission, giftId });
 
       // If this is an Asoebi payment, update the guest record or create one if it doesn't exist
       if (isAsoebi) {
@@ -228,21 +247,6 @@ module.exports = () => {
         } catch (err) {
           console.error('❌ Failed to update/create guest asoebi status:', err);
         }
-      }
-
-      // Deduct 15% commission or Asoebi fee
-      let commission;
-      let amountReceived;
-      
-      if (isAsoebi) {
-        // For Asoebi, we charge a flat 1000 fee, user gets the rest
-        commission = 1000;
-        amountReceived = amount - commission;
-        if (amountReceived < 0) amountReceived = 0; // Safety check
-      } else {
-        // Standard 15% commission
-        commission = amount * 0.15;
-        amountReceived = amount * 0.85;
       }
 
       // Update user's wallet
@@ -358,7 +362,7 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
-        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection } = response.data.metadata || {};
+        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity } = response.data.metadata || {};
         const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
 
         console.log('Extracted meta data:', {
@@ -402,8 +406,25 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
-        console.log('Creating contribution...');
         const amountInNaira = amount / 100; // Convert kobo to Naira
+
+        // Deduct 15% commission or Asoebi fee
+        let commission;
+        let amountReceived;
+        
+        if (isAsoebi) {
+          // For Asoebi, we charge 1000 per quantity
+          const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
+          commission = 1000 * quantity;
+          amountReceived = amountInNaira - commission;
+          if (amountReceived < 0) amountReceived = 0; // Safety check
+        } else {
+          // Standard 15% commission
+          commission = amountInNaira * 0.15;
+          amountReceived = amountInNaira * 0.85;
+        }
+
+        console.log('Creating contribution...');
         // Create contribution
         const contribution = await prisma.contribution.create({
           data: {
@@ -411,6 +432,9 @@ module.exports = () => {
             contributorName: contributorName || 'Anonymous',
             contributorEmail: contributorEmail || '',
             amount: amountInNaira,
+            commission,
+            isAsoebi: !!isAsoebi,
+            asoebiQuantity: asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0,
             message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
             transactionId: transactionId.toString(),
             status: 'completed',
@@ -478,21 +502,6 @@ module.exports = () => {
           } catch (err) {
             console.error('❌ Failed to update/create guest asoebi status:', err);
           }
-        }
-
-        // Deduct 15% commission or Asoebi fee
-        let commission;
-        let amountReceived;
-        
-        if (isAsoebi) {
-          // For Asoebi, we charge a flat 1000 fee, user gets the rest
-          commission = 1000;
-          amountReceived = amountInNaira - commission;
-          if (amountReceived < 0) amountReceived = 0; // Safety check
-        } else {
-          // Standard 15% commission
-          commission = amountInNaira * 0.15;
-          amountReceived = amountInNaira * 0.85;
         }
 
         // Update user's wallet

@@ -23,6 +23,7 @@ interface Gift {
   title: string;
   description: string;
   date: string;
+  deadline?: string;
   picture: string;
   details: any;
   customType?: string;
@@ -96,6 +97,8 @@ const ShareGift: React.FC = () => {
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.brideName} & ${gift.details.groomName}`
     : gift?.title || gift?.user?.name || "Special Celebration";
+
+  const isDeadlinePassed = gift?.deadline && new Date() > new Date(gift.deadline);
 
   // Handle redirect back from Paystack: verify payment
   useEffect(() => {
@@ -706,43 +709,63 @@ const ShareGift: React.FC = () => {
               <div className="absolute inset-0 flex items-end">
                 <div className="w-full p-4 pb-6">
                   <div className="space-y-3">
-                    <Button
-                      className="w-full bg-black text-white border border-black hover:bg-black transition-colors"
-                      size="lg"
-                      onClick={() => {
-                        setShowRsvpModal(true);
-                        setRsvpStep(1);
-                        setWillAttend(null);
-                        setRsvpFirstName('');
-                        setRsvpLastName('');
-                      }}
-                    >
-                      <span className='font-thin'>RSVP</span>
-                    </Button>
-
-                    {gift?.isSellingAsoebi && (
+                    {isDeadlinePassed ? (
                       <Button
-                        className="w-full bg-gold text-white hover:bg-gold/90 transition-colors"
+                        className="w-full bg-gray-400 text-white cursor-not-allowed border border-gray-400"
+                        size="lg"
+                        disabled
+                      >
+                        <span className='font-thin'>RSVP Closed</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full bg-black text-white border border-black hover:bg-black transition-colors"
                         size="lg"
                         onClick={() => {
-                          if (rsvpGuestId) {
-                            setAsoebiQuantity(1);
-                            setAsoebiType(null);
-                            setShowRsvpThanks(true);
-                            setShowAsoebiConfirm(true);
-                          } else {
-                            // Force RSVP flow for everyone to ensure guest record creation/verification
-                            setPendingAsoebi(true);
-                            setShowRsvpModal(true);
-                            setRsvpStep(1);
-                            setWillAttend(null);
-                            setRsvpFirstName('');
-                            setRsvpLastName('');
-                          }
+                          setShowRsvpModal(true);
+                          setRsvpStep(1);
+                          setWillAttend(null);
+                          setRsvpFirstName('');
+                          setRsvpLastName('');
                         }}
                       >
-                        <span className='font-thin'>Get Asoebi</span>
+                        <span className='font-thin'>RSVP</span>
                       </Button>
+                    )}
+
+                    {gift?.isSellingAsoebi && (
+                      isDeadlinePassed ? (
+                        <Button
+                          className="w-full bg-gray-400 text-white cursor-not-allowed"
+                          size="lg"
+                          disabled
+                        >
+                          <span className='font-thin'>Asoebi Sales Closed</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full bg-gold text-white hover:bg-gold/90 transition-colors"
+                          size="lg"
+                          onClick={() => {
+                            if (rsvpGuestId) {
+                              setAsoebiQuantity(1);
+                              setAsoebiType(null);
+                              setShowRsvpThanks(true);
+                              setShowAsoebiConfirm(true);
+                            } else {
+                              // Force RSVP flow for everyone to ensure guest record creation/verification
+                              setPendingAsoebi(true);
+                              setShowRsvpModal(true);
+                              setRsvpStep(1);
+                              setWillAttend(null);
+                              setRsvpFirstName('');
+                              setRsvpLastName('');
+                            }
+                          }}
+                        >
+                          <span className='font-thin'>Get Asoebi</span>
+                        </Button>
+                      )
                     )}
 
                     <Button
@@ -1240,7 +1263,7 @@ const ShareGift: React.FC = () => {
                 <p className="text-base text-muted-foreground">{rsvpThanksMessage}</p>
               </div>
               <div className="pt-2 flex flex-col gap-3">
-                {rsvpGuestId && gift?.isSellingAsoebi && (
+                {rsvpGuestId && gift?.isSellingAsoebi && !isDeadlinePassed && (
                   <Button 
                     className="w-full bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors" 
                     onClick={() => {

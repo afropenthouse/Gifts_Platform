@@ -50,6 +50,7 @@ interface Gift {
   title: string;
   description?: string;
   date?: string;
+  deadline?: string;
   picture?: string;
   details?: any;
   customType?: string;
@@ -71,6 +72,9 @@ interface Contribution {
   amount: number;
   message: string;
   createdAt: string;
+  commission?: number;
+  isAsoebi?: boolean;
+  asoebiQuantity?: number;
 }
 
 const Dashboard: React.FC = () => {
@@ -88,6 +92,7 @@ const Dashboard: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [picture, setPicture] = useState('');
   const [pictureFile, setPictureFile] = useState<File | null>(null);
   const [groomName, setGroomName] = useState('');
@@ -99,6 +104,7 @@ const Dashboard: React.FC = () => {
   const [withdrawBank, setWithdrawBank] = useState('');
   const [withdrawAccount, setWithdrawAccount] = useState('');
   const [withdrawAccountName, setWithdrawAccountName] = useState('');
+
   const [banks, setBanks] = useState([]);
   const [bankSearch, setBankSearch] = useState('');
   const [isBankDropdownOpen, setIsBankDropdownOpen] = useState(false);
@@ -172,6 +178,7 @@ const Dashboard: React.FC = () => {
   const [isSettingReminders, setIsSettingReminders] = useState(false);
 
   const totalAllowedGuests = guests.reduce((sum, g) => sum + g.allowed, 0);
+  const asoebiOrdersCount = guests.filter(g => g.asoebi).length;
   const isMobile = useIsMobile();
 
   const sidebarItems = [
@@ -511,6 +518,7 @@ const Dashboard: React.FC = () => {
     setType(gift.type);
     setTitle(gift.title);
     setDate(gift.date ? gift.date.split('T')[0] : '');
+    setDeadline(gift.deadline ? new Date(gift.deadline).toISOString().slice(0, 16) : '');
     setPicture(gift.picture || '');
     setPictureFile(null);
     setFileError('');
@@ -595,6 +603,7 @@ const Dashboard: React.FC = () => {
     formData.append('type', type);
     formData.append('title', title);
     formData.append('date', date);
+    if (deadline) formData.append('deadline', deadline);
 
     if (pictureFile) {
       formData.append('picture', pictureFile);
@@ -657,6 +666,7 @@ const Dashboard: React.FC = () => {
         setTitle('');
         setDescription('');
         setDate('');
+        setDeadline('');
         setFileError('');
         setPicture('');
         setPictureFile(null);
@@ -708,6 +718,7 @@ const Dashboard: React.FC = () => {
      formData.append('type', type);
      formData.append('title', title);
      formData.append('date', date);
+     if (deadline) formData.append('deadline', deadline);
 
     if (pictureFile) {
       formData.append('picture', pictureFile);
@@ -769,6 +780,7 @@ const Dashboard: React.FC = () => {
         setTitle('');
         setDescription('');
         setDate('');
+        setDeadline('');
         setFileError('');
         setPicture('');
         setPictureFile(null);
@@ -945,7 +957,7 @@ const Dashboard: React.FC = () => {
     ...contributions.map(c => ({ ...c, type: 'contribution' })),
     ...withdrawHistory.map(w => ({ ...w, type: 'withdrawal' }))
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  .slice(0, 5);
+  .slice(0, 10);
 
   const totalGoalProgress = (totalContributions / goalAmount) * 100;
   
@@ -1031,6 +1043,7 @@ const Dashboard: React.FC = () => {
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
           shadow-xl lg:shadow-none h-screen
+          overflow-y-auto
         `}>
           <div className="h-full flex flex-col">
             {/* Logo/Brand */}
@@ -1155,7 +1168,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
                     {activeTab === 'gifts' && 'Manage all your event links & cash gifts'}
                     {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
-                    {activeTab === 'asoebi' && 'Track Asoebi orders and payments'}
+                    {activeTab === 'asoebi' && 'Track orders and payments'}
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
                     {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share moments'}
                   </p>
@@ -1238,7 +1251,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     
                     {/* Stats Row */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mt-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 mt-6">
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Wallet Balance</p>
                         <p className="text-2xl font-bold">₦{user.wallet}</p>
@@ -1254,6 +1267,10 @@ const Dashboard: React.FC = () => {
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Gifters</p>
                         <p className="text-2xl font-bold">{contributions.length}</p>
+                      </div>
+                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                        <p className="text-sm opacity-90">Asoebi Orders</p>
+                        <p className="text-2xl font-bold">{asoebiOrdersCount}</p>
                       </div>
                     </div>
                   </div>
@@ -1367,7 +1384,7 @@ const Dashboard: React.FC = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">My Events</h2>
-                    <p className="text-gray-600 mt-1">Create and manage all your events and gift collection links</p>
+                    <p className="text-gray-600 mt-1">Create events and manage all your RSVP links</p>
                   </div>
                   <div className="flex space-x-3">
                     <Button variant="outline" size="sm">
@@ -1459,9 +1476,16 @@ const Dashboard: React.FC = () => {
                                 </TableCell>
                                 <TableCell>
                                   {gift ? (
-                                    <Badge variant="outline" className="text-xs">
-                                      {gift.title}
-                                    </Badge>
+                                    <div className="flex flex-col gap-1">
+                                      <Badge variant="outline" className="text-xs w-fit">
+                                        {gift.title}
+                                      </Badge>
+                                      {contribution.isAsoebi && (
+                                        <Badge className="text-xs bg-purple-100 text-purple-800 hover:bg-purple-200 w-fit">
+                                          Asoebi
+                                        </Badge>
+                                      )}
+                                    </div>
                                   ) : (
                                     <span className="text-gray-500">-</span>
                                   )}
@@ -1575,6 +1599,20 @@ const Dashboard: React.FC = () => {
                           const isContribution = transaction.type === 'contribution';
                           const amount = typeof transaction.amount === 'number' ? transaction.amount : parseFloat(String(transaction.amount));
                           const gift = isContribution ? gifts.find(g => Number(g.id) === Number(transaction.giftId)) : null;
+                          
+                          // Calculate commission and received amount
+                          let commission = 0;
+                          if (isContribution) {
+                             if (transaction.commission !== undefined && transaction.commission !== null && transaction.commission > 0) {
+                                commission = transaction.commission;
+                             } else if (transaction.isAsoebi) {
+                                commission = 1000 * (transaction.asoebiQuantity || 1);
+                             } else {
+                                commission = amount * 0.15;
+                             }
+                          }
+                          const received = amount - commission;
+
                           return (
                             <div key={index} className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 ${isContribution ? 'border-gray-100' : 'border-red-200 bg-red-50'}`}>
                               <div className="flex items-center space-x-3">
@@ -1586,7 +1624,7 @@ const Dashboard: React.FC = () => {
                                   )}
                                 </div>
                                 <div>
-                                  <p className="font-medium">{isContribution ? `Gifts ${gift?.title || 'Gift'}` : 'Withdrawal'}</p>
+                                  <p className="font-medium">{isContribution ? (transaction.isAsoebi ? 'Asoebi Sales' : `Gifts ${gift?.title || 'Gift'}`) : `Withdrawal${transaction.sourceType && transaction.sourceType !== 'wallet' && transaction.sourceType !== 'combined' ? ` - ${transaction.sourceType === 'asoebi' ? 'Asoebi Sales' : 'Wedding Gifts'}` : ''}`}</p>
                                   <p className="text-sm text-gray-500">
                                     {new Date(transaction.createdAt).toLocaleDateString()} • {isContribution ? (transaction.contributorName || 'Anonymous') : 'Bank Transfer'}
                                   </p>
@@ -1596,8 +1634,8 @@ const Dashboard: React.FC = () => {
                                 <p className={`font-bold ${isContribution ? 'text-gray-900' : 'text-red-600'}`}>{isContribution ? '₦' : '-₦'}{amount.toFixed(2)}</p>
                                 {isContribution && (
                                   <>
-                                    <p className="text-xs text-gray-500">Commission: ₦{(amount * 0.15).toFixed(2)}</p>
-                                    <p className="text-xs text-green-600">Received: ₦{(amount * 0.85).toFixed(2)}</p>
+                                    <p className="text-xs text-gray-500">Commission: ₦{commission.toFixed(2)}</p>
+                                    <p className="text-xs text-green-600">Received: ₦{received.toFixed(2)}</p>
                                   </>
                                 )}
                               </div>
@@ -1783,7 +1821,7 @@ const Dashboard: React.FC = () => {
                     <h2 className="text-2xl font-bold text-gray-900">RSVP Management</h2>
                     <p className="text-gray-600 mt-1">
                       {isOpenGuestList
-                        ? 'View RSVPs - anyone can join via the event link'
+                        ? 'Manage your event guest list and track RSVPs'
                         : 'Manage your event guest list and track RSVPs'
                       }
                     </p>
@@ -2400,6 +2438,20 @@ const Dashboard: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <Label htmlFor="deadline" className="text-sm font-medium text-gray-900 mb-2 block">
+                  <Clock className="inline w-4 h-4 mr-2 text-gray-600" />
+                  RSVP Deadline
+                </Label>
+                <Input
+                  id="deadline"
+                  type="datetime-local"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                />
+              </div>
+
 
               <div>
                 <Label htmlFor="address" className="text-sm font-medium text-gray-900 mb-2 block">
@@ -2480,7 +2532,7 @@ const Dashboard: React.FC = () => {
                               type="number"
                               value={asoebiBrideMenPrice}
                               onChange={(e) => setAsoebiBrideMenPrice(e.target.value)}
-                              placeholder="e.g. 5000"
+                              placeholder="50000"
                               className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                             />
                           </div>
@@ -2491,7 +2543,7 @@ const Dashboard: React.FC = () => {
                               type="number"
                               value={asoebiBrideWomenPrice}
                               onChange={(e) => setAsoebiBrideWomenPrice(e.target.value)}
-                              placeholder="e.g. 5000"
+                              placeholder="50000"
                               className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                             />
                           </div>
@@ -2503,8 +2555,8 @@ const Dashboard: React.FC = () => {
                               id="asoebiBrideMenDescription"
                               value={asoebiBrideMenDescription}
                               onChange={(e) => setAsoebiBrideMenDescription(e.target.value)}
-                              placeholder="Describe Bride's Men Asoebi..."
-                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 h-20 min-h-[50px]"
+                              placeholder="White Senator and purple cap"
+                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 min-h-[50px]"
                             />
                           </div>
                           <div>
@@ -2513,8 +2565,8 @@ const Dashboard: React.FC = () => {
                               id="asoebiBrideWomenDescription"
                               value={asoebiBrideWomenDescription}
                               onChange={(e) => setAsoebiBrideWomenDescription(e.target.value)}
-                              placeholder="Describe Bride's Women Asoebi..."
-                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 h-20 min-h-[50px]"
+                              placeholder="Gold Gele and Lace"
+                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 min-h-[50px]"
                             />
                           </div>
                         </div>
@@ -2530,7 +2582,7 @@ const Dashboard: React.FC = () => {
                               type="number"
                               value={asoebiGroomMenPrice}
                               onChange={(e) => setAsoebiGroomMenPrice(e.target.value)}
-                              placeholder="e.g. 5000"
+                              placeholder="50000"
                               className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                             />
                           </div>
@@ -2541,7 +2593,7 @@ const Dashboard: React.FC = () => {
                               type="number"
                               value={asoebiGroomWomenPrice}
                               onChange={(e) => setAsoebiGroomWomenPrice(e.target.value)}
-                              placeholder="e.g. 5000"
+                              placeholder="50000"
                               className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                             />
                           </div>
@@ -2553,8 +2605,8 @@ const Dashboard: React.FC = () => {
                               id="asoebiGroomMenDescription"
                               value={asoebiGroomMenDescription}
                               onChange={(e) => setAsoebiGroomMenDescription(e.target.value)}
-                              placeholder="Describe Groom's Men Asoebi..."
-                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 h-20 min-h-[50px]"
+                              placeholder="White Senator and purple cap"
+                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 min-h-[50px]"
                             />
                           </div>
                           <div>
@@ -2563,8 +2615,8 @@ const Dashboard: React.FC = () => {
                               id="asoebiGroomWomenDescription"
                               value={asoebiGroomWomenDescription}
                               onChange={(e) => setAsoebiGroomWomenDescription(e.target.value)}
-                              placeholder="Describe Groom's Women Asoebi..."
-                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 h-20 min-h-[50px]"
+                              placeholder="Gold Gele and Lace"
+                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 min-h-[50px]"
                             />
                           </div>
                         </div>
@@ -2578,7 +2630,7 @@ const Dashboard: React.FC = () => {
                         type="number"
                         value={asoebiPrice}
                         onChange={(e) => setAsoebiPrice(e.target.value)}
-                        placeholder="Enter price per Asoebi"
+                        placeholder="50000"
                         required={isSellingAsoebi}
                         className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                       />
@@ -2728,6 +2780,7 @@ const Dashboard: React.FC = () => {
           setType('');
           setTitle('');
           setDate('');
+          setDeadline('');
           setPicture('');
           setPictureFile(null);
           setFileError('');
@@ -2828,6 +2881,20 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div>
+                <Label htmlFor="edit-deadline" className="text-sm font-medium text-gray-900 mb-2 block">
+                  <Clock className="inline w-4 h-4 mr-2 text-gray-600" />
+                  RSVP Deadline
+                </Label>
+                <Input
+                  id="edit-deadline"
+                  type="datetime-local"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                />
+              </div>
+
+              <div>
                 <Label htmlFor="address" className="text-sm font-medium text-gray-900 mb-2 block">
                   <MapPin className="inline w-4 h-4 mr-2 text-gray-600" />
                   Event Address
@@ -2888,7 +2955,7 @@ const Dashboard: React.FC = () => {
                               type="number"
                               value={asoebiBrideMenPrice}
                               onChange={(e) => setAsoebiBrideMenPrice(e.target.value)}
-                              placeholder="e.g. 5000"
+                              placeholder="50000"
                               className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                             />
                           </div>
@@ -2899,7 +2966,7 @@ const Dashboard: React.FC = () => {
                               type="number"
                               value={asoebiBrideWomenPrice}
                               onChange={(e) => setAsoebiBrideWomenPrice(e.target.value)}
-                              placeholder="e.g. 5000"
+                              placeholder="50000"
                               className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                             />
                           </div>
@@ -2911,8 +2978,8 @@ const Dashboard: React.FC = () => {
                               id="editAsoebiBrideMenDescription"
                               value={asoebiBrideMenDescription}
                               onChange={(e) => setAsoebiBrideMenDescription(e.target.value)}
-                              placeholder="Describe Bride's Men Asoebi..."
-                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 h-20 min-h-[50px]"
+                              placeholder="White Senator and purple cap"
+                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 min-h-[50px]"
                             />
                           </div>
                           <div>
@@ -2921,8 +2988,8 @@ const Dashboard: React.FC = () => {
                               id="editAsoebiBrideWomenDescription"
                               value={asoebiBrideWomenDescription}
                               onChange={(e) => setAsoebiBrideWomenDescription(e.target.value)}
-                              placeholder="Describe Bride's Women Asoebi..."
-                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 h-20 min-h-[50px]"
+                              placeholder="Gold Gele and Lace"
+                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 min-h-[50px]"
                             />
                           </div>
                         </div>
@@ -2938,7 +3005,7 @@ const Dashboard: React.FC = () => {
                               type="number"
                               value={asoebiGroomMenPrice}
                               onChange={(e) => setAsoebiGroomMenPrice(e.target.value)}
-                              placeholder="e.g. 5000"
+                              placeholder="50000"
                               className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                             />
                           </div>
@@ -2949,7 +3016,7 @@ const Dashboard: React.FC = () => {
                               type="number"
                               value={asoebiGroomWomenPrice}
                               onChange={(e) => setAsoebiGroomWomenPrice(e.target.value)}
-                              placeholder="e.g. 5000"
+                              placeholder="50000"
                               className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                             />
                           </div>
@@ -2961,8 +3028,8 @@ const Dashboard: React.FC = () => {
                               id="editAsoebiGroomMenDescription"
                               value={asoebiGroomMenDescription}
                               onChange={(e) => setAsoebiGroomMenDescription(e.target.value)}
-                              placeholder="Describe Groom's Men Asoebi..."
-                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 h-20 min-h-[50px]"
+                              placeholder="White Senator and purple cap"
+                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 min-h-[50px]"
                             />
                           </div>
                           <div>
@@ -2971,8 +3038,8 @@ const Dashboard: React.FC = () => {
                               id="editAsoebiGroomWomenDescription"
                               value={asoebiGroomWomenDescription}
                               onChange={(e) => setAsoebiGroomWomenDescription(e.target.value)}
-                              placeholder="Describe Groom's Women Asoebi..."
-                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 h-20 min-h-[50px]"
+                              placeholder="Gold Gele and Lace"
+                              className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 min-h-[50px]"
                             />
                           </div>
                         </div>
@@ -2986,7 +3053,7 @@ const Dashboard: React.FC = () => {
                         type="number"
                         value={asoebiPrice}
                         onChange={(e) => setAsoebiPrice(e.target.value)}
-                        placeholder="Enter price per Asoebi"
+                        placeholder="50000"
                         required={isSellingAsoebi}
                         className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                       />
@@ -3102,6 +3169,7 @@ const Dashboard: React.FC = () => {
           setWithdrawBank('');
           setWithdrawAccount('');
           setWithdrawAccountName('');
+
         }
       }}>
         <DialogContent className="max-w-[90vw] sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-auto max-h-[80vh]">
@@ -3118,6 +3186,7 @@ const Dashboard: React.FC = () => {
           </DialogHeader>
           <form onSubmit={handleWithdraw} className="px-6 pb-6">
             <div className="space-y-5 mt-4">
+
               <div>
                 <Label htmlFor="amount" className="text-sm font-medium text-gray-900 mb-2 block">
                   Amount (₦)

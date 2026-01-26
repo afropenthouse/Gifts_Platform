@@ -231,7 +231,7 @@ const CreateGift: React.FC = () => {
                         type="number"
                         value={asoebiBrideMenPrice}
                         onChange={(e) => setAsoebiBrideMenPrice(e.target.value)}
-                        placeholder="e.g. 5000"
+                        placeholder="50000"
                       />
                     </div>
                     <div>
@@ -241,7 +241,7 @@ const CreateGift: React.FC = () => {
                         type="number"
                         value={asoebiBrideWomenPrice}
                         onChange={(e) => setAsoebiBrideWomenPrice(e.target.value)}
-                        placeholder="e.g. 5000"
+                        placeholder="50000"
                       />
                     </div>
                   </div>
@@ -257,7 +257,7 @@ const CreateGift: React.FC = () => {
                         type="number"
                         value={asoebiGroomMenPrice}
                         onChange={(e) => setAsoebiGroomMenPrice(e.target.value)}
-                        placeholder="e.g. 5000"
+                        placeholder="50000"
                       />
                     </div>
                     <div>
@@ -267,7 +267,7 @@ const CreateGift: React.FC = () => {
                         type="number"
                         value={asoebiGroomWomenPrice}
                         onChange={(e) => setAsoebiGroomWomenPrice(e.target.value)}
-                        placeholder="e.g. 5000"
+                        placeholder="50000"
                       />
                     </div>
                   </div>
@@ -281,7 +281,7 @@ const CreateGift: React.FC = () => {
                   type="number"
                   value={asoebiPrice}
                   onChange={(e) => setAsoebiPrice(e.target.value)}
-                  placeholder="Enter price per Asoebi"
+                  placeholder="50000"
                   required={isSellingAsoebi}
                 />
               </div>

@@ -15,6 +15,7 @@ model Gift {
   title          String?
   description    String?
   date           DateTime?
+  deadline       DateTime?
   address        String?
   picture        String?
   details        Json?
@@ -81,6 +82,9 @@ model Contribution {
   message          String?
   transactionId    String? @unique
   status           String  @default("completed")
+  commission       Float   @default(0)
+  isAsoebi         Boolean @default(false)
+  asoebiQuantity   Int     @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -125,6 +129,7 @@ model Withdrawal {
   reference      String?  @unique
   status         String   @default("pending")
   transferId     String?
+  sourceType     String?  @default("gift") // "gift" or "asoebi"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

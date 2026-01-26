@@ -41,41 +41,37 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     // Filter guests who clicked Get Asoebi or purchased Asoebi
     const relevantGuests = guests.filter(g => g.asoebi || g.asoebiPaid);
 
-    return relevantGuests.map(guest => {
-      // Parse Type and Quantity from asoebiSelection
+    const processedData = relevantGuests.map(guest => {
       // Expected format example: "Bride's Family - Men x2"
       // Or potentially multiple: "Bride's Family - Men x2, Groom's Family - Women x1"
       
-      let type = 'Unknown';
-      let quantity = 0;
+      let type = '-';
+      let maleQty = '-';
+      let femaleQty = '-';
       let selectionRaw = guest.asoebiSelection || '';
 
-      // Simple parsing strategy:
-      // If we can find "x" followed by number, extract it.
-      // Type is the rest of the string.
-      
       if (selectionRaw) {
-        // Check if there are multiple selections (comma separated)
-        // For simplicity, we might just display the raw string if complex, 
-        // but let's try to make it look good as requested "Type" and "Quantity".
-        
-        // If single selection:
-        const match = selectionRaw.match(/(.*?)\s*x\s*(\d+)/i);
-        if (match) {
-          type = match[1].trim();
-          quantity = parseInt(match[2], 10);
-        } else {
-          type = selectionRaw;
-          quantity = 1; // Default to 1 if not specified but selection exists
+        // Determine Type
+        if (selectionRaw.toLowerCase().includes("bride")) {
+          type = "Bride";
+        } else if (selectionRaw.toLowerCase().includes("groom")) {
+          type = "Groom";
+        }
+
+        // Determine Quantities
+        const menMatch = selectionRaw.match(/Men x(\d+)/i);
+        if (menMatch) {
+          maleQty = menMatch[1];
+        }
+
+        const womenMatch = selectionRaw.match(/Women x(\d+)/i);
+        if (womenMatch) {
+          femaleQty = womenMatch[1];
         }
       }
 
       // Determine Amount Paid
       // Look for a contribution from this guest for the same event
-      // This is heuristic as email is optional for guest but required for contribution usually?
-      // Guest email might be null if added manually without email.
-      // But for Asoebi purchase, they likely entered email in payment flow.
-      
       let amountPaid = 0;
       if (guest.email && guest.asoebiPaid) {
         // Find contributions by email and giftId
@@ -84,8 +80,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                c.contributorEmail?.toLowerCase() === guest.email?.toLowerCase()
         );
         
-        // Sum amounts (in case of multiple payments, though unlikely for single asoebi)
-        // Note: Contribution amount is in main currency unit (Naira) based on backend.
+        // Sum amounts
         amountPaid = contribs.reduce((sum, c) => sum + c.amount, 0);
       }
 
@@ -97,32 +92,36 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         name: `${guest.firstName} ${guest.lastName}`,
         email: guest.email || '-',
         type,
-        quantity,
+        maleQty,
+        femaleQty,
         amountPaid,
         status,
-        selectionRaw // Keep raw for tooltip or fallback
+        selectionRaw
       };
     });
+
+    // Only show paid status as requested
+    return processedData.filter(item => item.status === 'Paid');
   }, [guests, contributions]);
 
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Asoebi Tracker</CardTitle>
+        <CardTitle>Asoebi Orders</CardTitle>
       </CardHeader>
       <CardContent>
         {asoebiData.length === 0 ? (
           <div className="text-center py-10 text-gray-500">
-            No Asoebi data found.
+            No Asoebi records found.
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Type (Bride / Groom)</TableHead>
-                <TableHead>Quantity</TableHead>
+                <TableHead>Male Quantity</TableHead>
+                <TableHead>Female Quantity</TableHead>
                 <TableHead>Amount Paid</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
@@ -131,22 +130,22 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               {asoebiData.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="font-medium">{row.name}</TableCell>
-                  <TableCell>{row.email}</TableCell>
-                  <TableCell>
-                    {row.type}
-                    {/* If raw selection is complex and parsing failed to capture all, maybe show info icon? */}
-                  </TableCell>
-                  <TableCell>{row.quantity > 0 ? row.quantity : '-'}</TableCell>
+                  <TableCell>{row.type}</TableCell>
+                  <TableCell>{row.maleQty}</TableCell>
+                  <TableCell>{row.femaleQty}</TableCell>
                   <TableCell>
                     {row.amountPaid > 0 
                       ? `₦${row.amountPaid.toLocaleString()}` 
                       : '-'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={row.status === 'Paid' ? 'default' : 'secondary'} 
-                           className={row.status === 'Paid' ? 'bg-green-500 hover:bg-green-600' : 'bg-yellow-500 hover:bg-yellow-600'}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      row.status === 'Paid' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
                       {row.status}
-                    </Badge>
+                    </span>
                   </TableCell>
                 </TableRow>
               ))}

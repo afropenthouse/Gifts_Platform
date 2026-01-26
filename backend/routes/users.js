@@ -72,7 +72,7 @@ module.exports = () => {
 
   // Withdraw funds
   router.post('/withdraw', auth(), async (req, res) => {
-    const { amount, bank_code, account_number } = req.body;
+    const { amount, bank_code, account_number, sourceType } = req.body;
 
     try {
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
@@ -118,6 +118,7 @@ module.exports = () => {
           accountNumber: account_number,
           accountName: accountName,
           status: 'pending',
+          sourceType: sourceType || 'wallet',
         },
       });
 
@@ -150,7 +151,7 @@ module.exports = () => {
       const transferPayload = {
         amount: totalToReceive,
         recipient_code: recipientRes.data.recipient_code,
-        narration: `Withdrawal from Wedding Gifts (Fee: ₦${fee.toFixed(2)})`,
+        narration: `Withdrawal from Wallet (Fee: ₦${fee.toFixed(2)})`,
       };
       const response = await initiateTransfer(transferPayload);
 
