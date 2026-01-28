@@ -838,7 +838,7 @@ const ShareGift: React.FC = () => {
                           size="lg"
                           disabled
                         >
-                          <span className='font-thin'>Asoebi Out of Stock</span>
+                          <span className='font-thin'>Asoebi (Sold out)</span>
                         </Button>
                       ) : (
                         <Button
@@ -861,7 +861,7 @@ const ShareGift: React.FC = () => {
                             }
                           }}
                         >
-                          <span className='font-thin'>Get Asoebi</span>
+                          <span className='font-thin'>Buy Asoebi</span>
                         </Button>
                       )
                     )}
@@ -1303,7 +1303,7 @@ const ShareGift: React.FC = () => {
                       className="w-full h-12 bg-gray-400 text-white cursor-not-allowed disabled:opacity-100"
                       disabled
                     >
-                      Asoebi out of Stock
+                      Asoebi (Sold out)
                     </Button>
                 ) : (
                     <Button
@@ -1316,7 +1316,7 @@ const ShareGift: React.FC = () => {
                         setAsoebiType(gift?.asoebiPriceWomen ? 'women' : gift?.asoebiPriceMen ? 'men' : null);
                       }}
                     >
-                      Get Asoebi
+                      Buy Asoebi
                     </Button>
                 )
               )}
@@ -1386,7 +1386,7 @@ const ShareGift: React.FC = () => {
                             setShowAsoebiConfirm(true);
                         }}
                       >
-                        Get Asoebi
+                        Buy Asoebi
                       </Button>
                   )
                 )}
@@ -1668,7 +1668,7 @@ const ShareGift: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
-              Get Asoebi
+              Buy Asoebi
             </div>
           </DialogHeader>
 

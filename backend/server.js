@@ -59,21 +59,26 @@ prisma.$connect()
   .then(() => {
     console.log('Prisma connected to database');
     
-    // Start the reminder check service (runs every 60 seconds)
-    console.log('Starting scheduled services...');
+    // Start the reminder and vendor payment check services
+    // Both run every 24 hours (86400000 ms)
+    const CHECK_INTERVAL_24H = 86400000; // 24 hours
+    console.log(`Starting scheduled services (Interval: ${CHECK_INTERVAL_24H}ms for all)...`);
+
     setInterval(async () => {
       try {
         await checkAndSendReminders();
       } catch (err) {
         console.error('Error in reminder service:', err);
       }
-      
+    }, CHECK_INTERVAL_24H);
+
+    setInterval(async () => {
       try {
         await checkAndReleaseVendorPayments();
       } catch (err) {
         console.error('Error in vendor payment service:', err);
       }
-    }, 60000);
+    }, CHECK_INTERVAL_24H);
   })
   .catch((err) => console.error('Prisma connection error:', err));
 

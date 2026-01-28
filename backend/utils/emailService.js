@@ -97,7 +97,7 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
           <tr>
             <td align="center">
               <a href="${eventUrl || '#'}" style="display: block; width: 200px; background-color: #D4AF37; color: #111827; padding: 12px 0; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; text-align: center;">
-                Get Asoebi
+                Buy Asoebi
               </a>
             </td>
           </tr>
