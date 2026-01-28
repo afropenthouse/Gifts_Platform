@@ -160,14 +160,18 @@ module.exports = () => {
       
       if (isAsoebi) {
         // For Asoebi, we charge 1000 per quantity
-        const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
-        commission = 1000 * quantity;
+        // const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
+        // commission = 1000 * quantity;
+        
+        // New Logic: 200 per transaction
+        commission = 200;
+        
         amountReceived = amount - commission;
         if (amountReceived < 0) amountReceived = 0; // Safety check
       } else {
-        // Standard 15% commission
-        commission = amount * 0.15;
-        amountReceived = amount * 0.85;
+        // Standard 5% commission
+        commission = amount * 0.05;
+        amountReceived = amount * 0.95;
       }
 
       // Create contribution record
@@ -414,14 +418,18 @@ module.exports = () => {
         
         if (isAsoebi) {
           // For Asoebi, we charge 1000 per quantity
-          const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
-          commission = 1000 * quantity;
+          // const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
+          // commission = 1000 * quantity;
+          
+          // New Logic: 200 per transaction
+          commission = 200;
+
           amountReceived = amountInNaira - commission;
           if (amountReceived < 0) amountReceived = 0; // Safety check
         } else {
-          // Standard 15% commission
-          commission = amountInNaira * 0.15;
-          amountReceived = amountInNaira * 0.85;
+          // Standard 5% commission
+          commission = amountInNaira * 0.05;
+          amountReceived = amountInNaira * 0.95;
         }
 
         console.log('Creating contribution...');

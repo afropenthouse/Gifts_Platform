@@ -797,7 +797,7 @@ const ShareGift: React.FC = () => {
 
       {/* Amount Modal */}
       <Dialog open={showAmountModal} onOpenChange={setShowAmountModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
@@ -847,7 +847,7 @@ const ShareGift: React.FC = () => {
 
       {/* Name/Anonymous Modal */}
       <Dialog open={showNameModal} onOpenChange={setShowNameModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-lg font-playfair text-center">How would you like to appear?</DialogTitle>
           </DialogHeader>
@@ -926,7 +926,7 @@ const ShareGift: React.FC = () => {
            setAdditionalGuests(0);
          }
       }}>
-        <DialogContent className="max-w-[19rem]">
+        <DialogContent className="max-w-[19rem]" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
@@ -1194,7 +1194,7 @@ const ShareGift: React.FC = () => {
 
       {/* Cash Gift Prompt Modal */}
       <Dialog open={showCashGiftPrompt} onOpenChange={setShowCashGiftPrompt}>
-        <DialogContent className="max-w-[19rem]">
+        <DialogContent className="max-w-[19rem]" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
           </DialogHeader>
@@ -1252,7 +1252,7 @@ const ShareGift: React.FC = () => {
         setShowRsvpThanks(open);
         if (!open) setShowAsoebiConfirm(false);
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-lg font-playfair text-center">{heading}</DialogTitle>
           </DialogHeader>
@@ -1454,7 +1454,7 @@ const ShareGift: React.FC = () => {
 
       {/* RSVP Error Modal */}
       <Dialog open={showRsvpErrorModal} onOpenChange={setShowRsvpErrorModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-lg font-playfair text-center">{heading}</DialogTitle>
           </DialogHeader>
@@ -1469,7 +1469,7 @@ const ShareGift: React.FC = () => {
 
       {/* Payment verification modal */}
       <Dialog open={showVerifyModal} onOpenChange={setShowVerifyModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle>Payment verification</DialogTitle>
           </DialogHeader>
@@ -1512,7 +1512,7 @@ const ShareGift: React.FC = () => {
 
       {/* Asoebi Direct Purchase Modal */}
       <Dialog open={showAsoebiDirectModal} onOpenChange={setShowAsoebiDirectModal}>
-        <DialogContent className="max-w-[19rem]">
+        <DialogContent className="max-w-[19rem]" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">

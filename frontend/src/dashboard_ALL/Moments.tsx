@@ -7,7 +7,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
-import { ImageIcon, Upload, X, Calendar, Gift, Filter } from 'lucide-react';
+import { ImageIcon, Upload, X, Calendar, Gift, Filter, Download } from 'lucide-react';
 
 interface Moment {
   id: number;
@@ -46,6 +46,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
   const [momentToDelete, setMomentToDelete] = useState<Moment | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [filterGiftId, setFilterGiftId] = useState<string>('all');
+  const [viewingMoment, setViewingMoment] = useState<Moment | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -191,6 +192,26 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
       });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleDownload = async (e: React.MouseEvent, imageUrl: string, filename: string) => {
+    e.stopPropagation();
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || 'moment.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab
+      window.open(imageUrl, '_blank');
     }
   };
 
@@ -376,19 +397,38 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {giftMoments.map((moment) => (
-                    <div key={moment.id} className="relative group">
+                    <div 
+                      key={moment.id} 
+                      className="relative group cursor-pointer"
+                      onClick={() => setViewingMoment(moment)}
+                    >
                       <img
                         src={moment.imageUrl}
                         alt={moment.event}
-                        className="w-full h-48 object-cover rounded-lg"
+                        className="w-full h-48 object-cover rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg" />
-                      <div className="absolute top-2 right-2">
+                      
+                      {/* Actions overlay */}
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                          onClick={(e) => handleDownload(e, moment.imageUrl, `moment-${moment.id}.jpg`)}
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4 text-gray-700" />
+                        </Button>
                         <Button
                           variant="destructive"
                           size="sm"
                           className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
-                          onClick={() => handleDeleteClick(moment)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(moment);
+                          }}
+                          title="Delete"
                         >
                           <X className="w-4 h-4" />
                         </Button>
@@ -440,6 +480,44 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
               {deleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Moment Modal */}
+      <Dialog open={!!viewingMoment} onOpenChange={(open) => !open && setViewingMoment(null)}>
+        <DialogContent className="max-w-4xl w-full p-1 bg-transparent border-0 shadow-none [&>button]:hidden">
+          {viewingMoment && (
+            <div className="relative flex flex-col items-center justify-center">
+              <div className="relative">
+                <img
+                  src={viewingMoment.imageUrl}
+                  alt={viewingMoment.event}
+                  className="max-h-[85vh] w-auto max-w-full rounded-lg shadow-2xl"
+                />
+                <Button
+                  className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 h-10 w-10 backdrop-blur-sm"
+                  onClick={() => setViewingMoment(null)}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+                <Button
+                  className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-black rounded-full p-2 h-10 w-10 shadow-lg backdrop-blur-sm"
+                  onClick={(e) => handleDownload(e, viewingMoment.imageUrl, `moment-${viewingMoment.id}.jpg`)}
+                >
+                  <Download className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="mt-4 bg-white/90 backdrop-blur px-6 py-2 rounded-full shadow-lg">
+                <p className="text-gray-900 font-medium capitalize">
+                  {viewingMoment.event.replace('-', ' ')}
+                  <span className="text-gray-500 mx-2">•</span>
+                  <span className="text-gray-600 font-normal">
+                    {new Date(viewingMoment.createdAt).toLocaleDateString()}
+                  </span>
+                </p>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

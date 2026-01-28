@@ -594,12 +594,39 @@ const Dashboard: React.FC = () => {
     e.preventDefault();
     if (isCreatingGift) return; // Prevent duplicate submissions
     
+    // Explicit Validation
+    if (!type) {
+      alert('Please select an Event Type.');
+      return;
+    }
+    if (!title.trim()) {
+      alert('Please enter an Event Title.');
+      return;
+    }
+    
     if (fileError) {
       alert('Please fix the file upload error before submitting.');
       return;
     }
 
     setIsCreatingGift(true);
+     if (isSellingAsoebi) {
+       if (type === 'wedding') {
+         // Ensure at least one price is set if they are selling asoebi for wedding
+         if (!asoebiBrideMenPrice && !asoebiBrideWomenPrice && !asoebiGroomMenPrice && !asoebiGroomWomenPrice) {
+            alert('Please set at least one Asoebi price.');
+            setIsCreatingGift(false);
+            return;
+         }
+       } else {
+         if (!asoebiPrice) {
+           alert('Please enter the Asoebi Price.');
+           setIsCreatingGift(false);
+           return;
+         }
+       }
+     }
+
     const formData = new FormData();
     formData.append('type', type);
     formData.append('title', title);
@@ -709,12 +736,38 @@ const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!editingGift || isUpdatingGift) return; // Prevent duplicate submissions
     
+    // Explicit Validation
+    if (!type) {
+      alert('Please select an Event Type.');
+      return;
+    }
+    if (!title.trim()) {
+      alert('Please enter an Event Title.');
+      return;
+    }
+
     if (fileError) {
       alert('Please fix the file upload error before submitting.');
       return;
     }
 
     setIsUpdatingGift(true);
+    if (isSellingAsoebi) {
+      if (type === 'wedding') {
+        if (!asoebiBrideMenPrice && !asoebiBrideWomenPrice && !asoebiGroomMenPrice && !asoebiGroomWomenPrice) {
+           alert('Please set at least one Asoebi price.');
+           setIsUpdatingGift(false);
+           return;
+        }
+      } else {
+        if (!asoebiPrice) {
+          alert('Please enter the Asoebi Price.');
+          setIsUpdatingGift(false);
+          return;
+        }
+      }
+    }
+
     const formData = new FormData();
      formData.append('type', type);
      formData.append('title', title);
@@ -1225,7 +1278,7 @@ const Dashboard: React.FC = () => {
                           Welcome back, {user.name}!
                         </h1>
                         <p className="text-white/90 max-w-2xl">
-                          You've received ₦{totalContributions.toFixed(2)} from {contributions.length} gifters. 
+                          You've received ₦{totalContributions.toFixed(2)} from {giftersCount} gifters and {asoebiOrdersCount} asoebi orders. 
                           Keep sharing your RSVP links to receive more!
                         </p>
                       </div>
@@ -1607,9 +1660,10 @@ const Dashboard: React.FC = () => {
                              if (transaction.commission !== undefined && transaction.commission !== null && transaction.commission > 0) {
                                 commission = transaction.commission;
                              } else if (transaction.isAsoebi) {
-                                commission = 1000 * (transaction.asoebiQuantity || 1);
+                                // commission = 1000 * (transaction.asoebiQuantity || 1);
+                                commission = 200;
                              } else {
-                                commission = amount * 0.15;
+                                commission = amount * 0.05;
                              }
                           }
                           const received = amount - commission;
@@ -1635,8 +1689,12 @@ const Dashboard: React.FC = () => {
                                 <p className={`font-bold ${isContribution ? 'text-gray-900' : 'text-red-600'}`}>{isContribution ? '₦' : '-₦'}{amount.toFixed(2)}</p>
                                 {isContribution && (
                                   <>
-                                    <p className="text-xs text-gray-500">Commission: ₦{commission.toFixed(2)}</p>
-                                    <p className="text-xs text-green-600">Received: ₦{received.toFixed(2)}</p>
+                                    <p className={`text-xs ${transaction.isAsoebi ? 'text-red-600' : 'text-gray-500'}`}>
+                                      {transaction.isAsoebi ? 'Transaction charge' : 'Commission'}: ₦{commission.toFixed(2)}
+                                    </p>
+                                    {!transaction.isAsoebi && (
+                                      <p className="text-xs text-green-600">Received: ₦{received.toFixed(2)}</p>
+                                    )}
                                   </>
                                 )}
                               </div>
@@ -2518,7 +2576,7 @@ const Dashboard: React.FC = () => {
               {isSellingAsoebi && (
                 <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
                   <div className="bg-amber-50 text-amber-800 text-sm p-3 rounded-md border border-amber-200 mb-4">
-                    <strong>Note:</strong> We charge ₦1,000 per Asoebi sold.
+                    <strong>Note:</strong> We charge ₦200 per transaction for Asoebi sales.
                   </div>
                   
                   {type === 'wedding' ? (
@@ -2941,7 +2999,7 @@ const Dashboard: React.FC = () => {
               {isSellingAsoebi && (
                 <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
                   <div className="bg-amber-50 text-amber-800 text-sm p-3 rounded-md border border-amber-200 mb-4">
-                    <strong>Note:</strong> We charge ₦1,000 per Asoebi sold.
+                    <strong>Note:</strong> We charge ₦200 per transaction for Asoebi sales.
                   </div>
 
                   {type === 'wedding' ? (
@@ -3329,8 +3387,8 @@ const Dashboard: React.FC = () => {
 
       {/* Share Link Modal */}
       <Dialog open={isShareLinkModalOpen} onOpenChange={setIsShareLinkModalOpen}>
-        <DialogContent className="max-w-[90vw] sm:max-w-lg rounded-2xl border-0 shadow-2xl p-0 overflow-hidden bg-white">
-          <div className="bg-gradient-to-r from-[#2E235C]/10 to-[#2E235C]/10 p-6">
+        <DialogContent className="max-w-[90vw] sm:max-w-lg max-h-[80vh] flex flex-col rounded-2xl border-0 shadow-2xl p-0 overflow-hidden bg-white">
+          <div className="bg-gradient-to-r from-[#2E235C]/10 to-[#2E235C]/10 p-6 shrink-0">
             <DialogHeader>
               <div className="flex items-center space-x-2">
                 <div className="p-2 bg-gradient-to-r from-[#2E235C] to-[#2E235C] rounded-lg">
@@ -3348,7 +3406,7 @@ const Dashboard: React.FC = () => {
             </DialogHeader>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 overflow-y-auto">
             {/* QR Code Display */}
             <div className="flex justify-center">
               <div className="bg-white p-6 rounded-xl border-2 border-gray-200 shadow-lg">

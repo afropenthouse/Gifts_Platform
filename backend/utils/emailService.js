@@ -82,6 +82,30 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
         ` : ''}
       </div>
 
+      ${attending ? `
+      <div style="text-align: center; margin: 8px 0 24px;">
+        <p style="margin: 0 0 12px 0; font-size: 14px; color: #374151; font-weight: 600;">Next steps</p>
+        <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
+          <tr>
+            <td align="center" style="padding-bottom: 12px;">
+              <a href="${eventUrl || '#'}" style="display: block; width: 200px; background-color: ${accent}; color: #ffffff; padding: 12px 0; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; text-align: center;">
+                Send a Cash Gift
+              </a>
+            </td>
+          </tr>
+          ${gift?.isSellingAsoebi ? `
+          <tr>
+            <td align="center">
+              <a href="${eventUrl || '#'}" style="display: block; width: 200px; background-color: #D4AF37; color: #111827; padding: 12px 0; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; text-align: center;">
+                Get Asoebi
+              </a>
+            </td>
+          </tr>
+          ` : ''}
+        </table>
+      </div>
+      ` : ''}
+
       <div style="text-align: center; margin-top: 40px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
         <p style="margin: 0; font-size: 14px; color: #6b7280;">
           If you need to update your response, just reply to this email.

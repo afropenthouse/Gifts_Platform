@@ -172,7 +172,7 @@ module.exports = () => {
 
     try {
       const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
+      if (!user) return res.status(400).json({ msg: 'User not found' });
 
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });

@@ -373,7 +373,7 @@ const QRGift: React.FC = () => {
 
       {/* Amount Modal */}
       <Dialog open={showAmountModal} onOpenChange={setShowAmountModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{gift.title}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
@@ -423,7 +423,7 @@ const QRGift: React.FC = () => {
 
       {/* Name/Anonymous Modal */}
       <Dialog open={showNameModal} onOpenChange={setShowNameModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-lg font-playfair text-center">How would you like to appear?</DialogTitle>
           </DialogHeader>
@@ -483,7 +483,7 @@ const QRGift: React.FC = () => {
 
       {/* Payment verification modal */}
       <Dialog open={showVerifyModal} onOpenChange={setShowVerifyModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle>Payment verification</DialogTitle>
           </DialogHeader>
@@ -526,7 +526,7 @@ const QRGift: React.FC = () => {
 
       {/* Upload Pictures Modal */}
       <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle>Upload Pictures</DialogTitle>
             <p className="text-sm text-gray-600">Share moments from {gift?.title}</p>

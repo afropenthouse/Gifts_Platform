@@ -17,6 +17,25 @@ const Signup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
+    if (!email.includes('@')) {
+      setError("Invalid email: missing '@' symbol");
+      return;
+    }
+
+    const parts = email.split('@');
+    if (parts.length > 1 && !parts[1].includes('.')) {
+      setError("Invalid email: domain is missing '.' (e.g. .com)");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a complete and valid email address");
+      return;
+    }
+
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/signup`, {
         method: 'POST',
