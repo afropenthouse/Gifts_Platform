@@ -194,7 +194,7 @@ export const GiftLinks = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs h-9 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-600 transition-all font-medium"
+                            className="text-xs h-9 border-red-200 text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all font-medium"
                             onClick={() => {
                               setGiftToDelete(gift);
                               setDeleteModalOpen(true);

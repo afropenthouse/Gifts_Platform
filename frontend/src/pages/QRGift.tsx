@@ -184,12 +184,12 @@ const QRGift: React.FC = () => {
       return;
     }
 
-    if (!isAnonymous && !contributorEmail.trim()) {
+    if (!contributorEmail.trim()) {
       alert('Please enter your email address');
       return;
     }
 
-    if (!isAnonymous && !contributorEmail.includes('@')) {
+    if (!contributorEmail.includes('@')) {
       alert('Please enter a valid email address');
       return;
     }
@@ -198,7 +198,7 @@ const QRGift: React.FC = () => {
 
     try {
       const name = isAnonymous ? 'Anonymous Contributor' : contributorName;
-      const email = isAnonymous ? `anonymous-${Date.now()}@giftlink.com` : contributorEmail;
+      const email = contributorEmail;
 
       // Initialize payment
       const initRes = await fetch(
@@ -356,11 +356,16 @@ const QRGift: React.FC = () => {
                 uploadInput.type = 'file';
                 uploadInput.accept = 'image/*';
                 uploadInput.multiple = true;
+                // Append to body to ensure iOS compatibility
+                uploadInput.style.display = 'none';
+                document.body.appendChild(uploadInput);
+
                 uploadInput.onchange = (e) => {
                   const files = (e.target as HTMLInputElement).files;
                   if (files && files.length > 0) {
                     handleMomentUpload(files, gift.id);
                   }
+                  document.body.removeChild(uploadInput);
                 };
                 uploadInput.click();
               }}
@@ -448,8 +453,7 @@ const QRGift: React.FC = () => {
                   type="email"
                   value={contributorEmail}
                   onChange={(e) => setContributorEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  disabled={isAnonymous}
+                  placeholder="Enter your email (for your receipt)"
                 />
               </div>
 

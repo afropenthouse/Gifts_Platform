@@ -2575,9 +2575,6 @@ const Dashboard: React.FC = () => {
 
               {isSellingAsoebi && (
                 <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
-                  <div className="bg-amber-50 text-amber-800 text-sm p-3 rounded-md border border-amber-200 mb-4">
-                    <strong>Note:</strong> We charge ₦200 per transaction for Asoebi sales.
-                  </div>
                   
                   {type === 'wedding' ? (
                     <>
@@ -3431,16 +3428,16 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button
                 onClick={() => {
                   navigator.clipboard.writeText(createdGiftLink);
                   alert('Link copied to clipboard!');
                 }}
                 size="lg"
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 whitespace-nowrap text-sm sm:text-base"
               >
-                <Copy className="w-5 h-5 mr-2" />
+                <Copy className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                 Copy Link
               </Button>
 
@@ -3477,9 +3474,9 @@ const Dashboard: React.FC = () => {
                 }}
                 variant="outline"
                 size="lg"
-                className="w-full"
+                className="w-full whitespace-nowrap text-sm sm:text-base"
               >
-                <Download className="w-5 h-5 mr-2" />
+                <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                 Download QR
               </Button>
             </div>

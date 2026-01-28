@@ -330,11 +330,11 @@ const CreateGift: React.FC = () => {
               Your gift link has been created successfully. Share it with friends and family to start receiving contributions.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-4 mt-4">
-            <Button onClick={handleCopyLink} className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <Button onClick={handleCopyLink} className="flex-1 whitespace-nowrap text-sm sm:text-base">
               Copy Link
             </Button>
-            <Button onClick={handleShareWithFriends} variant="outline" className="flex-1">
+            <Button onClick={handleShareWithFriends} variant="outline" className="flex-1 whitespace-nowrap text-sm sm:text-base">
               Share with Friends
             </Button>
           </div>

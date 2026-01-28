@@ -586,12 +586,12 @@ const ShareGift: React.FC = () => {
       return;
     }
 
-    if (!isAnonymous && !contributorEmail.trim()) {
+    if (!contributorEmail.trim()) {
       alert('Please enter your email address');
       return;
     }
 
-    if (!isAnonymous && !contributorEmail.includes('@')) {
+    if (!contributorEmail.includes('@')) {
       alert('Please enter a valid email address');
       return;
     }
@@ -600,7 +600,7 @@ const ShareGift: React.FC = () => {
 
     try {
       const name = isAnonymous ? 'Anonymous Contributor' : contributorName;
-      const email = isAnonymous ? `anonymous-${Date.now()}@giftlink.com` : contributorEmail;
+      const email = contributorEmail;
 
       // Initialize payment
       const initRes = await fetch(
@@ -872,8 +872,7 @@ const ShareGift: React.FC = () => {
                   type="email"
                   value={contributorEmail}
                   onChange={(e) => setContributorEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  disabled={isAnonymous}
+                  placeholder="Enter your email (for your receipt)"
                 />
               </div>
 
