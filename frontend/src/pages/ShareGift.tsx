@@ -44,6 +44,20 @@ interface Gift {
   asoebiBrideWomenDescription?: string;
   asoebiGroomMenDescription?: string;
   asoebiGroomWomenDescription?: string;
+  asoebiQuantity?: number;
+  asoebiQtyMen?: number;
+  asoebiQtyWomen?: number;
+  asoebiBrideMenQty?: number;
+  asoebiBrideWomenQty?: number;
+  asoebiGroomMenQty?: number;
+  asoebiGroomWomenQty?: number;
+  soldAsoebiQuantity?: number;
+  soldAsoebiQtyMen?: number;
+  soldAsoebiQtyWomen?: number;
+  soldAsoebiBrideMenQty?: number;
+  soldAsoebiBrideWomenQty?: number;
+  soldAsoebiGroomMenQty?: number;
+  soldAsoebiGroomWomenQty?: number;
 }
 
 const ShareGift: React.FC = () => {
@@ -99,6 +113,47 @@ const ShareGift: React.FC = () => {
     : gift?.title || gift?.user?.name || "Special Celebration";
 
   const isDeadlinePassed = gift?.deadline && new Date() > new Date(gift.deadline);
+
+  const getStock = (total?: number, sold?: number) => {
+    if (total === undefined || total === null) return Infinity;
+    return Math.max(0, total - (sold || 0));
+  };
+
+  const stock = {
+    men: getStock(gift?.asoebiQtyMen, gift?.soldAsoebiQtyMen),
+    women: getStock(gift?.asoebiQtyWomen, gift?.soldAsoebiQtyWomen),
+    brideMen: getStock(gift?.asoebiBrideMenQty, gift?.soldAsoebiBrideMenQty),
+    brideWomen: getStock(gift?.asoebiBrideWomenQty, gift?.soldAsoebiBrideWomenQty),
+    groomMen: getStock(gift?.asoebiGroomMenQty, gift?.soldAsoebiGroomMenQty),
+    groomWomen: getStock(gift?.asoebiGroomWomenQty, gift?.soldAsoebiGroomWomenQty),
+    generic: getStock(gift?.asoebiQuantity, gift?.soldAsoebiQuantity),
+  };
+
+  const isOutOfStock = () => {
+      if (!gift?.isSellingAsoebi) return false;
+      
+      const hasBrideGroom = (gift.asoebiBrideMenPrice || gift.asoebiBrideWomenPrice || gift.asoebiGroomMenPrice || gift.asoebiGroomWomenPrice);
+      
+      if (hasBrideGroom) {
+          const isConfigured = (price: any) => Number(price) > 0;
+          
+          const anyAvailable = 
+              (isConfigured(gift.asoebiBrideMenPrice) && stock.brideMen > 0) ||
+              (isConfigured(gift.asoebiBrideWomenPrice) && stock.brideWomen > 0) ||
+              (isConfigured(gift.asoebiGroomMenPrice) && stock.groomMen > 0) ||
+              (isConfigured(gift.asoebiGroomWomenPrice) && stock.groomWomen > 0);
+              
+          return !anyAvailable;
+      } else {
+          if (Number(gift?.asoebiPriceMen) > 0 || Number(gift?.asoebiPriceWomen) > 0) {
+              const menAvailable = (Number(gift.asoebiPriceMen) > 0) ? stock.men > 0 : false;
+              const womenAvailable = (Number(gift.asoebiPriceWomen) > 0) ? stock.women > 0 : false;
+              return !(menAvailable || womenAvailable);
+          } else {
+              return stock.generic === 0;
+          }
+      }
+  };
 
   // Handle redirect back from Paystack: verify payment
   useEffect(() => {
@@ -394,6 +449,20 @@ const ShareGift: React.FC = () => {
         const familyStr = asoebiFamily ? (asoebiFamily === 'bride' ? "Bride's Family" : "Groom's Family") : '';
         const fullSelection = `${familyStr ? familyStr + ' - ' : ''}${selectionDescription}`;
 
+        // Calculate quantity breakdown
+        let qtyMen = 0, qtyWomen = 0, brideMenQty = 0, brideWomenQty = 0, groomMenQty = 0, groomWomenQty = 0;
+
+        if (asoebiFamily === 'bride') {
+            brideMenQty = menQuantity;
+            brideWomenQty = womenQuantity;
+        } else if (asoebiFamily === 'groom') {
+            groomMenQty = menQuantity;
+            groomWomenQty = womenQuantity;
+        } else {
+             qtyMen = menQuantity;
+             qtyWomen = womenQuantity;
+        }
+
         const initRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
           {
@@ -409,7 +478,13 @@ const ShareGift: React.FC = () => {
               guestId: rsvpGuestId,
               asoebiQuantity: menQuantity + womenQuantity || asoebiQuantity,
               asoebiType: typeDescription,
-              asoebiSelection: fullSelection
+              asoebiSelection: fullSelection,
+              asoebiQtyMen: qtyMen,
+              asoebiQtyWomen: qtyWomen,
+              asoebiBrideMenQty: brideMenQty,
+              asoebiBrideWomenQty: brideWomenQty,
+              asoebiGroomMenQty: groomMenQty,
+              asoebiGroomWomenQty: groomWomenQty
             }),
           }
         );
@@ -495,29 +570,38 @@ const ShareGift: React.FC = () => {
         wPrice = Number(gift?.asoebiPriceWomen || 0);
     }
 
-    // Calculate Total
-    if (mPrice > 0) totalAmount += mPrice * menQuantity;
-    if (wPrice > 0) totalAmount += wPrice * womenQuantity;
-
-    // Fallback for simple single-price Asoebi
-    if (totalAmount === 0 && genericPrice > 0 && asoebiQuantity > 0 && menQuantity === 0 && womenQuantity === 0) {
-        totalAmount = genericPrice * asoebiQuantity;
-        selectionDescription = `Qty: ${asoebiQuantity}`;
-        typeDescription = 'standard';
-    } else {
-        const parts = [];
-        if (menQuantity > 0) parts.push(`Men x${menQuantity}`);
-        if (womenQuantity > 0) parts.push(`Women x${womenQuantity}`);
-        selectionDescription = parts.join(', ');
-        
-        if (menQuantity > 0 && womenQuantity > 0) typeDescription = 'mixed';
-        else if (menQuantity > 0) typeDescription = 'men';
-        else if (womenQuantity > 0) typeDescription = 'women';
+    // Calculate Total based on asoebiType and asoebiQuantity
+    if (asoebiType === 'men') {
+         totalAmount = mPrice * asoebiQuantity;
+         selectionDescription = `Men x${asoebiQuantity}`;
+         typeDescription = 'men';
+    } else if (asoebiType === 'women') {
+         totalAmount = wPrice * asoebiQuantity;
+         selectionDescription = `Women x${asoebiQuantity}`;
+         typeDescription = 'women';
+    } else if (genericPrice > 0) {
+         totalAmount = genericPrice * asoebiQuantity;
+         selectionDescription = `Qty: ${asoebiQuantity}`;
+         typeDescription = 'standard';
     }
 
     if (!selectionDescription) {
         alert("Please select at least one item");
         return;
+    }
+
+    // Calculate quantity breakdown
+    let qtyMen = 0, qtyWomen = 0, brideMenQty = 0, brideWomenQty = 0, groomMenQty = 0, groomWomenQty = 0;
+
+    if (asoebiFamily === 'bride') {
+        if (asoebiType === 'men') brideMenQty = asoebiQuantity;
+        if (asoebiType === 'women') brideWomenQty = asoebiQuantity;
+    } else if (asoebiFamily === 'groom') {
+        if (asoebiType === 'men') groomMenQty = asoebiQuantity;
+        if (asoebiType === 'women') groomWomenQty = asoebiQuantity;
+    } else {
+         if (asoebiType === 'men') qtyMen = asoebiQuantity;
+         if (asoebiType === 'women') qtyWomen = asoebiQuantity;
     }
 
     setProcessingPayment(true);
@@ -537,9 +621,15 @@ const ShareGift: React.FC = () => {
               currency: 'NGN',
               message: `Asoebi Payment: ${fullSelection}`,
               isAsoebi: true,
-              asoebiQuantity: menQuantity + womenQuantity || asoebiQuantity,
+              asoebiQuantity: asoebiQuantity,
               asoebiType: typeDescription,
-              asoebiSelection: fullSelection
+              asoebiSelection: fullSelection,
+              asoebiQtyMen: qtyMen,
+              asoebiQtyWomen: qtyWomen,
+              asoebiBrideMenQty: brideMenQty,
+              asoebiBrideWomenQty: brideWomenQty,
+              asoebiGroomMenQty: groomMenQty,
+              asoebiGroomWomenQty: groomWomenQty
             }),
           }
         );
@@ -741,6 +831,14 @@ const ShareGift: React.FC = () => {
                           disabled
                         >
                           <span className='font-thin'>Asoebi Sales Closed</span>
+                        </Button>
+                      ) : isOutOfStock() ? (
+                        <Button
+                          className="w-full bg-gray-400 text-white cursor-not-allowed disabled:opacity-100"
+                          size="lg"
+                          disabled
+                        >
+                          <span className='font-thin'>Out of Stock</span>
                         </Button>
                       ) : (
                         <Button
@@ -1200,18 +1298,27 @@ const ShareGift: React.FC = () => {
           <div className="py-6">
             <div className="flex flex-col gap-4">
               {gift?.isSellingAsoebi && (
-                <Button
-                  className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white"
-                  onClick={() => {
-                    setShowCashGiftPrompt(false);
-                    setShowRsvpThanks(true);
-                    setShowAsoebiConfirm(true);
-                    setAsoebiQuantity(1);
-                    setAsoebiType(gift?.asoebiPriceWomen ? 'women' : gift?.asoebiPriceMen ? 'men' : null);
-                  }}
-                >
-                  Get Asoebi
-                </Button>
+                isOutOfStock() ? (
+                    <Button
+                      className="w-full h-12 bg-gray-400 text-white cursor-not-allowed disabled:opacity-100"
+                      disabled
+                    >
+                      Asoebi Out of Stock
+                    </Button>
+                ) : (
+                    <Button
+                      className="w-full h-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white"
+                      onClick={() => {
+                        setShowCashGiftPrompt(false);
+                        setShowRsvpThanks(true);
+                        setShowAsoebiConfirm(true);
+                        setAsoebiQuantity(1);
+                        setAsoebiType(gift?.asoebiPriceWomen ? 'women' : gift?.asoebiPriceMen ? 'men' : null);
+                      }}
+                    >
+                      Get Asoebi
+                    </Button>
+                )
               )}
 
               <Button
@@ -1263,16 +1370,25 @@ const ShareGift: React.FC = () => {
               </div>
               <div className="pt-2 flex flex-col gap-3">
                 {rsvpGuestId && gift?.isSellingAsoebi && !isDeadlinePassed && (
-                  <Button 
-                    className="w-full bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors" 
-                    onClick={() => {
-                        setAsoebiQuantity(1); // Reset quantity when opening
-                        setAsoebiType(gift?.asoebiPriceWomen ? 'women' : gift?.asoebiPriceMen ? 'men' : null);
-                        setShowAsoebiConfirm(true);
-                    }}
-                  >
-                    Get Asoebi
-                  </Button>
+                  isOutOfStock() ? (
+                      <Button 
+                        className="w-full bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed" 
+                        disabled
+                      >
+                        Asoebi Out of Stock
+                      </Button>
+                  ) : (
+                      <Button 
+                        className="w-full bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors" 
+                        onClick={() => {
+                            setAsoebiQuantity(1); // Reset quantity when opening
+                            setAsoebiType(gift?.asoebiPriceWomen ? 'women' : gift?.asoebiPriceMen ? 'men' : null);
+                            setShowAsoebiConfirm(true);
+                        }}
+                      >
+                        Get Asoebi
+                      </Button>
+                  )
                 )}
                 <Button className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90" onClick={() => setShowRsvpThanks(false)}>Close</Button>
               </div>
@@ -1319,10 +1435,17 @@ const ShareGift: React.FC = () => {
                         {((!asoebiFamily && gift?.asoebiPriceMen && Number(gift.asoebiPriceMen) > 0) || 
                           (asoebiFamily === 'bride' && gift?.asoebiBrideMenPrice && Number(gift.asoebiBrideMenPrice) > 0) ||
                           (asoebiFamily === 'groom' && gift?.asoebiGroomMenPrice && Number(gift.asoebiGroomMenPrice) > 0)) && (
-                            <div className={`flex justify-between items-center border rounded-lg p-3 ${menQuantity > 0 ? 'border-[#2E235C] bg-[#2E235C]/5' : 'border-gray-200'}`}>
+                            <div className={`flex justify-between items-center border rounded-lg p-3 ${menQuantity > 0 ? 'border-[#2E235C] bg-[#2E235C]/5' : 'border-gray-200'} ${(asoebiFamily === 'bride' ? stock.brideMen : asoebiFamily === 'groom' ? stock.groomMen : stock.men) === 0 ? 'opacity-60' : ''}`}>
                                 <div>
                                     <div className="font-medium text-[#2E235C]">Men</div>
-                                    <div className="text-sm text-gray-600">₦{Number(asoebiFamily === 'bride' ? gift?.asoebiBrideMenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomMenPrice : gift?.asoebiPriceMen).toLocaleString()}</div>
+                                    <div className="text-sm text-gray-600">
+                                        ₦{Number(asoebiFamily === 'bride' ? gift?.asoebiBrideMenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomMenPrice : gift?.asoebiPriceMen).toLocaleString()}
+                                        {(asoebiFamily === 'bride' ? stock.brideMen : asoebiFamily === 'groom' ? stock.groomMen : stock.men) < Infinity && (
+                                            <span className={`ml-2 text-xs ${(asoebiFamily === 'bride' ? stock.brideMen : asoebiFamily === 'groom' ? stock.groomMen : stock.men) === 0 ? 'text-red-500 font-bold' : 'text-green-600'}`}>
+                                                ({(asoebiFamily === 'bride' ? stock.brideMen : asoebiFamily === 'groom' ? stock.groomMen : stock.men) === 0 ? 'Out of Stock' : `${(asoebiFamily === 'bride' ? stock.brideMen : asoebiFamily === 'groom' ? stock.groomMen : stock.men)} available`} )
+                                            </span>
+                                        )}
+                                    </div>
                                     {(asoebiFamily === 'bride' ? gift?.asoebiBrideMenDescription : asoebiFamily === 'groom' ? gift?.asoebiGroomMenDescription : null) && (
                                         <div className="text-xs text-gray-500 mt-1 italic">
                                             {asoebiFamily === 'bride' ? gift?.asoebiBrideMenDescription : gift?.asoebiGroomMenDescription}
@@ -1340,13 +1463,20 @@ const ShareGift: React.FC = () => {
                                     <Input
                                         type="number"
                                         min="0"
+                                        max={(asoebiFamily === 'bride' ? stock.brideMen : asoebiFamily === 'groom' ? stock.groomMen : stock.men)}
                                         value={menQuantity}
-                                        onChange={(e) => setMenQuantity(Math.max(0, parseInt(e.target.value) || 0))}
-                                        className="w-14 h-8 text-center p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-gray-300"
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value) || 0;
+                                            const limit = (asoebiFamily === 'bride' ? stock.brideMen : asoebiFamily === 'groom' ? stock.groomMen : stock.men);
+                                            setMenQuantity(Math.min(limit, Math.max(0, val)));
+                                        }}
+                                        disabled={(asoebiFamily === 'bride' ? stock.brideMen : asoebiFamily === 'groom' ? stock.groomMen : stock.men) === 0}
+                                        className="w-14 h-8 text-center p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-gray-300 disabled:bg-gray-100"
                                     />
                                     <Button 
                                         variant="outline" size="icon" className="h-8 w-8 rounded-full"
                                         onClick={() => setMenQuantity(menQuantity + 1)}
+                                        disabled={(asoebiFamily === 'bride' ? stock.brideMen : asoebiFamily === 'groom' ? stock.groomMen : stock.men) <= menQuantity}
                                     >
                                         <Plus className="h-3 w-3" />
                                     </Button>
@@ -1357,10 +1487,17 @@ const ShareGift: React.FC = () => {
                         {((!asoebiFamily && gift?.asoebiPriceWomen && Number(gift.asoebiPriceWomen) > 0) || 
                           (asoebiFamily === 'bride' && gift?.asoebiBrideWomenPrice && Number(gift.asoebiBrideWomenPrice) > 0) ||
                           (asoebiFamily === 'groom' && gift?.asoebiGroomWomenPrice && Number(gift.asoebiGroomWomenPrice) > 0)) && (
-                            <div className={`flex justify-between items-center border rounded-lg p-3 ${womenQuantity > 0 ? 'border-[#2E235C] bg-[#2E235C]/5' : 'border-gray-200'}`}>
+                            <div className={`flex justify-between items-center border rounded-lg p-3 ${womenQuantity > 0 ? 'border-[#2E235C] bg-[#2E235C]/5' : 'border-gray-200'} ${(asoebiFamily === 'bride' ? stock.brideWomen : asoebiFamily === 'groom' ? stock.groomWomen : stock.women) === 0 ? 'opacity-60' : ''}`}>
                                 <div>
                                     <div className="font-medium text-[#2E235C]">Women</div>
-                                    <div className="text-sm text-gray-600">₦{Number(asoebiFamily === 'bride' ? gift?.asoebiBrideWomenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomWomenPrice : gift?.asoebiPriceWomen).toLocaleString()}</div>
+                                    <div className="text-sm text-gray-600">
+                                        ₦{Number(asoebiFamily === 'bride' ? gift?.asoebiBrideWomenPrice : asoebiFamily === 'groom' ? gift?.asoebiGroomWomenPrice : gift?.asoebiPriceWomen).toLocaleString()}
+                                        {(asoebiFamily === 'bride' ? stock.brideWomen : asoebiFamily === 'groom' ? stock.groomWomen : stock.women) < Infinity && (
+                                            <span className={`ml-2 text-xs ${(asoebiFamily === 'bride' ? stock.brideWomen : asoebiFamily === 'groom' ? stock.groomWomen : stock.women) === 0 ? 'text-red-500 font-bold' : 'text-green-600'}`}>
+                                                ({(asoebiFamily === 'bride' ? stock.brideWomen : asoebiFamily === 'groom' ? stock.groomWomen : stock.women) === 0 ? 'Out of Stock' : `${(asoebiFamily === 'bride' ? stock.brideWomen : asoebiFamily === 'groom' ? stock.groomWomen : stock.women)} available`} )
+                                            </span>
+                                        )}
+                                    </div>
                                     {(asoebiFamily === 'bride' ? gift?.asoebiBrideWomenDescription : asoebiFamily === 'groom' ? gift?.asoebiGroomWomenDescription : null) && (
                                         <div className="text-xs text-gray-500 mt-1 italic">
                                             {asoebiFamily === 'bride' ? gift?.asoebiBrideWomenDescription : gift?.asoebiGroomWomenDescription}
@@ -1378,13 +1515,20 @@ const ShareGift: React.FC = () => {
                                     <Input
                                         type="number"
                                         min="0"
+                                        max={(asoebiFamily === 'bride' ? stock.brideWomen : asoebiFamily === 'groom' ? stock.groomWomen : stock.women)}
                                         value={womenQuantity}
-                                        onChange={(e) => setWomenQuantity(Math.max(0, parseInt(e.target.value) || 0))}
-                                        className="w-14 h-8 text-center p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-gray-300"
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value) || 0;
+                                            const limit = (asoebiFamily === 'bride' ? stock.brideWomen : asoebiFamily === 'groom' ? stock.groomWomen : stock.women);
+                                            setWomenQuantity(Math.min(limit, Math.max(0, val)));
+                                        }}
+                                        disabled={(asoebiFamily === 'bride' ? stock.brideWomen : asoebiFamily === 'groom' ? stock.groomWomen : stock.women) === 0}
+                                        className="w-14 h-8 text-center p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-gray-300 disabled:bg-gray-100"
                                     />
                                     <Button 
                                         variant="outline" size="icon" className="h-8 w-8 rounded-full"
                                         onClick={() => setWomenQuantity(womenQuantity + 1)}
+                                        disabled={(asoebiFamily === 'bride' ? stock.brideWomen : asoebiFamily === 'groom' ? stock.groomWomen : stock.women) <= womenQuantity}
                                     >
                                         <Plus className="h-3 w-3" />
                                     </Button>
@@ -1422,14 +1566,23 @@ const ShareGift: React.FC = () => {
                     <div className="flex flex-col items-center gap-3">
                         <div className="flex items-center gap-3 justify-center">
                              <Label htmlFor="asoebi-qty" className="whitespace-nowrap">Quantity:</Label>
-                             <Input 
-                                id="asoebi-qty"
-                                type="number" 
-                                min={1}
-                                value={asoebiQuantity}
-                                onChange={(e) => setAsoebiQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                                className="w-24 text-center h-10"
-                             />
+                             <div className="flex flex-col items-center">
+                                 <Input 
+                                    id="asoebi-qty"
+                                    type="number" 
+                                    min={1}
+                                    max={stock.generic}
+                                    value={asoebiQuantity}
+                                    onChange={(e) => setAsoebiQuantity(Math.min(stock.generic, Math.max(1, parseInt(e.target.value) || 1)))}
+                                    disabled={stock.generic === 0}
+                                    className="w-24 text-center h-10 disabled:bg-gray-100"
+                                 />
+                                 {stock.generic < Infinity && (
+                                     <span className={`text-xs mt-1 ${stock.generic === 0 ? 'text-red-500 font-bold' : 'text-green-600'}`}>
+                                         ({stock.generic === 0 ? 'Out of Stock' : `${stock.generic} available`})
+                                     </span>
+                                 )}
+                             </div>
                         </div>
                         <p className="text-lg font-semibold text-[#2E235C]">
                             Total: ₦{(Number(gift?.asoebiPrice || 0) * asoebiQuantity).toLocaleString()}
@@ -1441,7 +1594,7 @@ const ShareGift: React.FC = () => {
                 <Button 
                   className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C]" 
                   onClick={handleAsoebi}
-                  disabled={processingPayment}
+                  disabled={processingPayment || (asoebiFamily ? (menQuantity === 0 && womenQuantity === 0) : stock.generic === 0)}
                 >
                   {processingPayment ? 'Processing...' : ((Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) ? 'Proceed to Payment' : 'Proceed')}
                 </Button>

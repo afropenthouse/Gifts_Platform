@@ -38,7 +38,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription } = req.body;
+    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = req.body;
 
     try {
       let pictureUrl = null;
@@ -93,6 +93,13 @@ module.exports = () => {
           asoebiBrideWomenDescription,
           asoebiGroomMenDescription,
           asoebiGroomWomenDescription,
+          asoebiQuantity: asoebiQuantity ? parseInt(asoebiQuantity) : null,
+          asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen) : null,
+          asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen) : null,
+          asoebiBrideMenQty: asoebiBrideMenQty ? parseInt(asoebiBrideMenQty) : null,
+          asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty) : null,
+          asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty) : null,
+          asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty) : null,
         },
       });
 
@@ -116,7 +123,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription } = req.body;
+    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -164,6 +171,13 @@ module.exports = () => {
           asoebiBrideWomenDescription,
           asoebiGroomMenDescription,
           asoebiGroomWomenDescription,
+          asoebiQuantity: asoebiQuantity ? parseInt(asoebiQuantity) : null,
+          asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen) : null,
+          asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen) : null,
+          asoebiBrideMenQty: asoebiBrideMenQty ? parseInt(asoebiBrideMenQty) : null,
+          asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty) : null,
+          asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty) : null,
+          asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty) : null,
         },
       });
 
@@ -321,10 +335,43 @@ module.exports = () => {
     try {
       const gift = await prisma.gift.findUnique({
         where: { shareLink: req.params.link },
-        include: { user: { select: { name: true, profilePicture: true } } },
+        include: { 
+          user: { select: { name: true, profilePicture: true } },
+          _count: { select: { contributions: true } }
+        },
       });
       if (!gift) return res.status(404).json({ msg: 'Gift not found' });
-      res.json(gift);
+
+      // Aggregate sold Asoebi quantities
+      const soldStats = await prisma.contribution.aggregate({
+        where: { 
+          giftId: gift.id,
+          isAsoebi: true,
+          status: 'completed'
+        },
+        _sum: {
+          asoebiQuantity: true,
+          asoebiQtyMen: true,
+          asoebiQtyWomen: true,
+          asoebiBrideMenQty: true,
+          asoebiBrideWomenQty: true,
+          asoebiGroomMenQty: true,
+          asoebiGroomWomenQty: true
+        }
+      });
+
+      const giftWithStats = {
+        ...gift,
+        soldAsoebiQuantity: soldStats._sum.asoebiQuantity || 0,
+        soldAsoebiQtyMen: soldStats._sum.asoebiQtyMen || 0,
+        soldAsoebiQtyWomen: soldStats._sum.asoebiQtyWomen || 0,
+        soldAsoebiBrideMenQty: soldStats._sum.asoebiBrideMenQty || 0,
+        soldAsoebiBrideWomenQty: soldStats._sum.asoebiBrideWomenQty || 0,
+        soldAsoebiGroomMenQty: soldStats._sum.asoebiGroomMenQty || 0,
+        soldAsoebiGroomWomenQty: soldStats._sum.asoebiGroomWomenQty || 0,
+      };
+
+      res.json(giftWithStats);
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });

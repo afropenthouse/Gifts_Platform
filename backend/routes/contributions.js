@@ -8,7 +8,8 @@ module.exports = () => {
 
   // Initialize payment
   router.post('/:link(*)/initialize-payment', async (req, res) => {
-    const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity, asoebiType, asoebiSelection } = req.body;
+    const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity, asoebiType, asoebiSelection,
+      asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = req.body;
 
     try {
       const gift = await prisma.gift.findUnique({ 
@@ -30,6 +31,12 @@ module.exports = () => {
         asoebiQuantity,
         asoebiType,
         asoebiSelection,
+        asoebiQtyMen,
+        asoebiQtyWomen,
+        asoebiBrideMenQty,
+        asoebiBrideWomenQty,
+        asoebiGroomMenQty,
+        asoebiGroomWomenQty,
         customizations: {
           title: `Contribution to ${gift.user.name}'s ${gift.type}`,
           description: gift.title || gift.type,
@@ -114,7 +121,7 @@ module.exports = () => {
         });
       }
 
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity } = response.data.metadata || {};
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = response.data.metadata || {};
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const amount = parseFloat((response.data.amount / 100).toFixed(2)); // Paystack amount in kobo, convert to Naira
 
@@ -163,8 +170,8 @@ module.exports = () => {
         // const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
         // commission = 1000 * quantity;
         
-        // New Logic: 200 per transaction
-        commission = 200;
+        // New Logic: 300 per transaction
+        commission = 300;
         
         amountReceived = amount - commission;
         if (amountReceived < 0) amountReceived = 0; // Safety check
@@ -184,6 +191,12 @@ module.exports = () => {
           commission,
           isAsoebi: !!isAsoebi,
           asoebiQuantity: asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0,
+          asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0,
+          asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0,
+          asoebiBrideMenQty: asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0,
+          asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
+          asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
+          asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
           message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
           transactionId: response.data.id?.toString() || response.data.reference,
           status: 'completed',
@@ -421,8 +434,8 @@ module.exports = () => {
           // const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
           // commission = 1000 * quantity;
           
-          // New Logic: 200 per transaction
-          commission = 200;
+          // New Logic: 300 per transaction
+          commission = 300;
 
           amountReceived = amountInNaira - commission;
           if (amountReceived < 0) amountReceived = 0; // Safety check

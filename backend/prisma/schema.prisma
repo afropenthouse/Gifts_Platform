@@ -42,6 +42,13 @@ model Gift {
   asoebiBrideWomenDescription String?
   asoebiGroomMenDescription String?
   asoebiGroomWomenDescription String?
+  asoebiQuantity   Int?
+  asoebiQtyMen     Int?
+  asoebiQtyWomen   Int?
+  asoebiBrideMenQty Int?
+  asoebiBrideWomenQty Int?
+  asoebiGroomMenQty Int?
+  asoebiGroomWomenQty Int?
 
   @@index([userId])
   @@index([createdAt])
@@ -85,6 +92,12 @@ model Contribution {
   commission       Float   @default(0)
   isAsoebi         Boolean @default(false)
   asoebiQuantity   Int     @default(0)
+  asoebiQtyMen     Int     @default(0)
+  asoebiQtyWomen   Int     @default(0)
+  asoebiBrideMenQty Int    @default(0)
+  asoebiBrideWomenQty Int  @default(0)
+  asoebiGroomMenQty Int    @default(0)
+  asoebiGroomWomenQty Int  @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

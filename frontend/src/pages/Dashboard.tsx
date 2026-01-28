@@ -62,6 +62,23 @@ interface Gift {
   asoebiPrice?: number | string;
   asoebiPriceMen?: number | string;
   asoebiPriceWomen?: number | string;
+  asoebiBrideMenPrice?: number | string;
+  asoebiBrideWomenPrice?: number | string;
+  asoebiGroomMenPrice?: number | string;
+  asoebiGroomWomenPrice?: number | string;
+  asoebiBrideDescription?: string;
+  asoebiGroomDescription?: string;
+  asoebiBrideMenDescription?: string;
+  asoebiBrideWomenDescription?: string;
+  asoebiGroomMenDescription?: string;
+  asoebiGroomWomenDescription?: string;
+  asoebiQuantity?: number;
+  asoebiQtyMen?: number;
+  asoebiQtyWomen?: number;
+  asoebiBrideMenQty?: number;
+  asoebiBrideWomenQty?: number;
+  asoebiGroomMenQty?: number;
+  asoebiGroomWomenQty?: number;
 }
 
 interface Contribution {
@@ -513,6 +530,13 @@ const Dashboard: React.FC = () => {
   const [asoebiBrideWomenDescription, setAsoebiBrideWomenDescription] = useState('');
   const [asoebiGroomMenDescription, setAsoebiGroomMenDescription] = useState('');
   const [asoebiGroomWomenDescription, setAsoebiGroomWomenDescription] = useState('');
+  const [asoebiQuantity, setAsoebiQuantity] = useState('');
+  const [asoebiQtyMen, setAsoebiQtyMen] = useState('');
+  const [asoebiQtyWomen, setAsoebiQtyWomen] = useState('');
+  const [asoebiBrideMenQty, setAsoebiBrideMenQty] = useState('');
+  const [asoebiBrideWomenQty, setAsoebiBrideWomenQty] = useState('');
+  const [asoebiGroomMenQty, setAsoebiGroomMenQty] = useState('');
+  const [asoebiGroomWomenQty, setAsoebiGroomWomenQty] = useState('');
 
   const handleEditGift = (gift: Gift) => {
     setEditingGift(gift);
@@ -553,6 +577,13 @@ const Dashboard: React.FC = () => {
     setAsoebiBrideWomenDescription(g.asoebiBrideWomenDescription || '');
     setAsoebiGroomMenDescription(g.asoebiGroomMenDescription || '');
     setAsoebiGroomWomenDescription(g.asoebiGroomWomenDescription || '');
+    setAsoebiQuantity(g.asoebiQuantity !== undefined && g.asoebiQuantity !== null ? g.asoebiQuantity.toString() : '');
+    setAsoebiQtyMen(g.asoebiQtyMen !== undefined && g.asoebiQtyMen !== null ? g.asoebiQtyMen.toString() : '');
+    setAsoebiQtyWomen(g.asoebiQtyWomen !== undefined && g.asoebiQtyWomen !== null ? g.asoebiQtyWomen.toString() : '');
+    setAsoebiBrideMenQty(g.asoebiBrideMenQty !== undefined && g.asoebiBrideMenQty !== null ? g.asoebiBrideMenQty.toString() : '');
+    setAsoebiBrideWomenQty(g.asoebiBrideWomenQty !== undefined && g.asoebiBrideWomenQty !== null ? g.asoebiBrideWomenQty.toString() : '');
+    setAsoebiGroomMenQty(g.asoebiGroomMenQty !== undefined && g.asoebiGroomMenQty !== null ? g.asoebiGroomMenQty.toString() : '');
+    setAsoebiGroomWomenQty(g.asoebiGroomWomenQty !== undefined && g.asoebiGroomWomenQty !== null ? g.asoebiGroomWomenQty.toString() : '');
     setEditGuestListMode(gift.guestListMode || 'restricted');
     setIsEditModalOpen(true);
   };
@@ -663,12 +694,19 @@ const Dashboard: React.FC = () => {
         if (asoebiBrideWomenDescription) formData.append('asoebiBrideWomenDescription', asoebiBrideWomenDescription);
         if (asoebiGroomMenDescription) formData.append('asoebiGroomMenDescription', asoebiGroomMenDescription);
         if (asoebiGroomWomenDescription) formData.append('asoebiGroomWomenDescription', asoebiGroomWomenDescription);
+        if (asoebiBrideMenQty) formData.append('asoebiBrideMenQty', asoebiBrideMenQty);
+        if (asoebiBrideWomenQty) formData.append('asoebiBrideWomenQty', asoebiBrideWomenQty);
+        if (asoebiGroomMenQty) formData.append('asoebiGroomMenQty', asoebiGroomMenQty);
+        if (asoebiGroomWomenQty) formData.append('asoebiGroomWomenQty', asoebiGroomWomenQty);
       } else {
         if (asoebiPrice) formData.append('asoebiPrice', asoebiPrice);
+        if (asoebiQuantity) formData.append('asoebiQuantity', asoebiQuantity);
       }
       // Fallback/Legacy support if needed, but primarily relying on type logic
       if (asoebiPriceMen) formData.append('asoebiPriceMen', asoebiPriceMen);
       if (asoebiPriceWomen) formData.append('asoebiPriceWomen', asoebiPriceWomen);
+      if (asoebiQtyMen) formData.append('asoebiQtyMen', asoebiQtyMen);
+      if (asoebiQtyWomen) formData.append('asoebiQtyWomen', asoebiQtyWomen);
     }
 
     if (type === 'other') {
@@ -716,6 +754,13 @@ const Dashboard: React.FC = () => {
         setAsoebiBrideWomenDescription('');
         setAsoebiGroomMenDescription('');
         setAsoebiGroomWomenDescription('');
+        setAsoebiQuantity('');
+        setAsoebiQtyMen('');
+        setAsoebiQtyWomen('');
+        setAsoebiBrideMenQty('');
+        setAsoebiBrideWomenQty('');
+        setAsoebiGroomMenQty('');
+        setAsoebiGroomWomenQty('');
         setIsCreateModalOpen(false);
 
         const shareLink = `${window.location.origin}/gift/${createdGift.shareLink}`;
@@ -804,11 +849,18 @@ const Dashboard: React.FC = () => {
         if (asoebiBrideWomenDescription) formData.append('asoebiBrideWomenDescription', asoebiBrideWomenDescription);
         if (asoebiGroomMenDescription) formData.append('asoebiGroomMenDescription', asoebiGroomMenDescription);
         if (asoebiGroomWomenDescription) formData.append('asoebiGroomWomenDescription', asoebiGroomWomenDescription);
+        if (asoebiBrideMenQty) formData.append('asoebiBrideMenQty', asoebiBrideMenQty);
+        if (asoebiBrideWomenQty) formData.append('asoebiBrideWomenQty', asoebiBrideWomenQty);
+        if (asoebiGroomMenQty) formData.append('asoebiGroomMenQty', asoebiGroomMenQty);
+        if (asoebiGroomWomenQty) formData.append('asoebiGroomWomenQty', asoebiGroomWomenQty);
       } else {
         if (asoebiPrice) formData.append('asoebiPrice', asoebiPrice);
+        if (asoebiQuantity) formData.append('asoebiQuantity', asoebiQuantity);
       }
       if (asoebiPriceMen) formData.append('asoebiPriceMen', asoebiPriceMen);
       if (asoebiPriceWomen) formData.append('asoebiPriceWomen', asoebiPriceWomen);
+      if (asoebiQtyMen) formData.append('asoebiQtyMen', asoebiQtyMen);
+      if (asoebiQtyWomen) formData.append('asoebiQtyWomen', asoebiQtyWomen);
     }
 
     if (type === 'other') {
@@ -858,6 +910,13 @@ const Dashboard: React.FC = () => {
         setAsoebiBrideWomenDescription('');
         setAsoebiGroomMenDescription('');
         setAsoebiGroomWomenDescription('');
+        setAsoebiQuantity('');
+        setAsoebiQtyMen('');
+        setAsoebiQtyWomen('');
+        setAsoebiBrideMenQty('');
+        setAsoebiBrideWomenQty('');
+        setAsoebiGroomMenQty('');
+        setAsoebiGroomWomenQty('');
       } else {
         alert('Failed to update event');
       }
@@ -1216,7 +1275,8 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'withdraw' && 'Withdraw Funds'}
                     {activeTab === 'rsvp' && 'RSVP'}
                     {activeTab === 'vendors' && 'Vendor Payment Tracker'}
-                    {activeTab === 'qr' && 'QR Code'}
+                    {activeTab === 'asoebi' && 'Asoebi'}
+                    {activeTab === 'qr' && 'Event QR Code'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
@@ -2626,6 +2686,30 @@ const Dashboard: React.FC = () => {
                             />
                           </div>
                         </div>
+                        <div className="grid grid-cols-2 gap-4 mt-3">
+                          <div>
+                            <Label htmlFor="asoebiBrideMenQty">Men Quantity (Optional)</Label>
+                            <Input
+                              id="asoebiBrideMenQty"
+                              type="number"
+                              value={asoebiBrideMenQty}
+                              onChange={(e) => setAsoebiBrideMenQty(e.target.value)}
+                              placeholder="Unlimited"
+                              className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="asoebiBrideWomenQty">Women Quantity (Optional)</Label>
+                            <Input
+                              id="asoebiBrideWomenQty"
+                              type="number"
+                              value={asoebiBrideWomenQty}
+                              onChange={(e) => setAsoebiBrideWomenQty(e.target.value)}
+                              placeholder="Unlimited"
+                              className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       <div className="space-y-3 pt-2 border-t">
@@ -2676,6 +2760,30 @@ const Dashboard: React.FC = () => {
                             />
                           </div>
                         </div>
+                        <div className="grid grid-cols-2 gap-4 mt-3">
+                          <div>
+                            <Label htmlFor="asoebiGroomMenQty">Men Quantity (Optional)</Label>
+                            <Input
+                              id="asoebiGroomMenQty"
+                              type="number"
+                              value={asoebiGroomMenQty}
+                              onChange={(e) => setAsoebiGroomMenQty(e.target.value)}
+                              placeholder="Unlimited"
+                              className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="asoebiGroomWomenQty">Women Quantity (Optional)</Label>
+                            <Input
+                              id="asoebiGroomWomenQty"
+                              type="number"
+                              value={asoebiGroomWomenQty}
+                              onChange={(e) => setAsoebiGroomWomenQty(e.target.value)}
+                              placeholder="Unlimited"
+                              className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -2688,6 +2796,15 @@ const Dashboard: React.FC = () => {
                         onChange={(e) => setAsoebiPrice(e.target.value)}
                         placeholder="50000"
                         required={isSellingAsoebi}
+                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                      />
+                      <Label htmlFor="asoebiQuantity" className="mt-3 block">Quantity (Optional)</Label>
+                      <Input
+                        id="asoebiQuantity"
+                        type="number"
+                        value={asoebiQuantity}
+                        onChange={(e) => setAsoebiQuantity(e.target.value)}
+                        placeholder="Unlimited"
                         className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                       />
                       <p className="text-xs text-gray-500 mt-2 bg-blue-50 p-2 rounded border border-blue-100">
@@ -2996,7 +3113,7 @@ const Dashboard: React.FC = () => {
               {isSellingAsoebi && (
                 <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
                   <div className="bg-amber-50 text-amber-800 text-sm p-3 rounded-md border border-amber-200 mb-4">
-                    <strong>Note:</strong> We charge ₦200 per transaction for Asoebi sales.
+                    <strong>Note:</strong> We charge ₦300 per transaction for Asoebi sales.
                   </div>
 
                   {type === 'wedding' ? (
@@ -3046,6 +3163,30 @@ const Dashboard: React.FC = () => {
                               onChange={(e) => setAsoebiBrideWomenDescription(e.target.value)}
                               placeholder="Gold Gele and Lace"
                               className="mt-1 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 min-h-[50px]"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mt-3">
+                          <div>
+                            <Label htmlFor="editAsoebiBrideMenQty">Men Quantity (Optional)</Label>
+                            <Input
+                              id="editAsoebiBrideMenQty"
+                              type="number"
+                              value={asoebiBrideMenQty}
+                              onChange={(e) => setAsoebiBrideMenQty(e.target.value)}
+                              placeholder="Unlimited"
+                              className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="editAsoebiBrideWomenQty">Women Quantity (Optional)</Label>
+                            <Input
+                              id="editAsoebiBrideWomenQty"
+                              type="number"
+                              value={asoebiBrideWomenQty}
+                              onChange={(e) => setAsoebiBrideWomenQty(e.target.value)}
+                              placeholder="Unlimited"
+                              className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                             />
                           </div>
                         </div>
@@ -3099,6 +3240,30 @@ const Dashboard: React.FC = () => {
                             />
                           </div>
                         </div>
+                        <div className="grid grid-cols-2 gap-4 mt-3">
+                          <div>
+                            <Label htmlFor="editAsoebiGroomMenQty">Men Quantity (Optional)</Label>
+                            <Input
+                              id="editAsoebiGroomMenQty"
+                              type="number"
+                              value={asoebiGroomMenQty}
+                              onChange={(e) => setAsoebiGroomMenQty(e.target.value)}
+                              placeholder="Unlimited"
+                              className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="editAsoebiGroomWomenQty">Women Quantity (Optional)</Label>
+                            <Input
+                              id="editAsoebiGroomWomenQty"
+                              type="number"
+                              value={asoebiGroomWomenQty}
+                              onChange={(e) => setAsoebiGroomWomenQty(e.target.value)}
+                              placeholder="Unlimited"
+                              className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -3111,6 +3276,15 @@ const Dashboard: React.FC = () => {
                         onChange={(e) => setAsoebiPrice(e.target.value)}
                         placeholder="50000"
                         required={isSellingAsoebi}
+                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                      />
+                      <Label htmlFor="editAsoebiQuantity" className="mt-3 block">Quantity (Optional)</Label>
+                      <Input
+                        id="editAsoebiQuantity"
+                        type="number"
+                        value={asoebiQuantity}
+                        onChange={(e) => setAsoebiQuantity(e.target.value)}
+                        placeholder="Unlimited"
                         className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
                       />
                       <p className="text-xs text-gray-500 mt-2 bg-blue-50 p-2 rounded border border-blue-100">
