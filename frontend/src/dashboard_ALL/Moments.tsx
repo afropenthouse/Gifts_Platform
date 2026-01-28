@@ -7,7 +7,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
-import { ImageIcon, Upload, X, Calendar, Gift, Filter, Download } from 'lucide-react';
+import { ImageIcon, Upload, X, Calendar, Gift, Filter, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Moment {
   id: number;
@@ -228,6 +228,45 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
     return acc;
   }, {} as Record<number, { gift: MomentGift; moments: Moment[] }>);
 
+  const getVisibleMoments = () => {
+    return Object.entries(momentsByGift)
+      .filter(([giftId]) => filterGiftId === 'all' || giftId === filterGiftId)
+      .flatMap(([_, { moments }]) => moments);
+  };
+
+  const handleNextMoment = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!viewingMoment) return;
+    const visibleMoments = getVisibleMoments();
+    const currentIndex = visibleMoments.findIndex(m => m.id === viewingMoment.id);
+    if (currentIndex === -1) return;
+    const nextIndex = (currentIndex + 1) % visibleMoments.length;
+    setViewingMoment(visibleMoments[nextIndex]);
+  };
+
+  const handlePrevMoment = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!viewingMoment) return;
+    const visibleMoments = getVisibleMoments();
+    const currentIndex = visibleMoments.findIndex(m => m.id === viewingMoment.id);
+    if (currentIndex === -1) return;
+    const prevIndex = (currentIndex - 1 + visibleMoments.length) % visibleMoments.length;
+    setViewingMoment(visibleMoments[prevIndex]);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!viewingMoment) return;
+      if (e.key === 'ArrowRight') handleNextMoment();
+      if (e.key === 'ArrowLeft') handlePrevMoment();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewingMoment, filterGiftId, moments]);
+
+  const showNavigation = getVisibleMoments().length > 1;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -405,7 +444,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
                       <img
                         src={moment.imageUrl}
                         alt={moment.event}
-                        className="w-full h-48 object-cover rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
+                        className="w-full aspect-square md:aspect-auto md:h-48 object-cover rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg" />
                       
@@ -488,12 +527,31 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
         <DialogContent className="max-w-4xl w-full p-1 bg-transparent border-0 shadow-none [&>button]:hidden">
           {viewingMoment && (
             <div className="relative flex flex-col items-center justify-center">
-              <div className="relative">
+              <div className="relative w-fit mx-auto">
+                {showNavigation && (
+                  <Button
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 h-10 w-10 backdrop-blur-sm"
+                    onClick={handlePrevMoment}
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </Button>
+                )}
+
                 <img
                   src={viewingMoment.imageUrl}
                   alt={viewingMoment.event}
                   className="max-h-[85vh] w-auto max-w-full rounded-lg shadow-2xl"
                 />
+
+                {showNavigation && (
+                  <Button
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 h-10 w-10 backdrop-blur-sm"
+                    onClick={handleNextMoment}
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </Button>
+                )}
+
                 <Button
                   className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 h-10 w-10 backdrop-blur-sm"
                   onClick={() => setViewingMoment(null)}

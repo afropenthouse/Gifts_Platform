@@ -838,7 +838,7 @@ const ShareGift: React.FC = () => {
                           size="lg"
                           disabled
                         >
-                          <span className='font-thin'>Out of Stock</span>
+                          <span className='font-thin'>Asoebi Out of Stock</span>
                         </Button>
                       ) : (
                         <Button
@@ -1303,7 +1303,7 @@ const ShareGift: React.FC = () => {
                       className="w-full h-12 bg-gray-400 text-white cursor-not-allowed disabled:opacity-100"
                       disabled
                     >
-                      Asoebi Out of Stock
+                      Asoebi out of Stock
                     </Button>
                 ) : (
                     <Button
@@ -1375,7 +1375,7 @@ const ShareGift: React.FC = () => {
                         className="w-full bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed" 
                         disabled
                       >
-                        Asoebi Out of Stock
+                        Out of Stock
                       </Button>
                   ) : (
                       <Button 
