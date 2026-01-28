@@ -3666,7 +3666,7 @@ const Dashboard: React.FC = () => {
               {selectedGiftForTable?.title || selectedGiftForTable?.type}
             </DialogTitle>
             <p className="text-sm text-gray-600 mt-1">
-              All contributions for this gift
+              All cash gifts for this event
             </p>
           </DialogHeader>
           
