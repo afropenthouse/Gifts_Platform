@@ -300,7 +300,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
 
       {stockSummary.show && (
         <>
-          <div className="text-sm font-semibold text-gray-900 mb-2">In Stocks</div>
+          <div className="text-sm font-semibold text-gray-900 mb-2">In Stock</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div className="p-3 rounded-lg bg-primary text-white text-center">
               <div className="text-sm/5 opacity-90">Bride's Asoebi (Men)</div>
