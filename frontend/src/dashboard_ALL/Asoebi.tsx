@@ -300,7 +300,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
 
       {stockSummary.show && (
         <>
-          <div className="text-sm font-semibold text-gray-900 mb-2">Stocks</div>
+          <div className="text-sm font-semibold text-gray-900 mb-2">In Stocks</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div className="p-3 rounded-lg bg-primary text-white text-center">
               <div className="text-sm/5 opacity-90">Bride's Asoebi (Men)</div>
@@ -324,11 +324,11 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Asoebi Orders</CardTitle>
-          <div className="flex flex-wrap items-center gap-4 mt-2">
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="type-filter">Type:</Label>
+          <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-4 mt-4">
+            <div className="grid grid-cols-[70px_1fr] items-center gap-2 md:flex md:gap-2">
+              <Label htmlFor="type-filter" className="md:text-left">Type:</Label>
               <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-                <SelectTrigger className="w-[140px] sm:w-[160px]" id="type-filter">
+                <SelectTrigger className="w-full md:w-[160px]" id="type-filter">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -338,10 +338,10 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="qty-filter">Qty:</Label>
+            <div className="grid grid-cols-[70px_1fr] items-center gap-2 md:flex md:gap-2">
+              <Label htmlFor="qty-filter" className="md:text-left">Qty:</Label>
               <Select value={qtyFilter} onValueChange={(v) => setQtyFilter(v as any)}>
-                <SelectTrigger className="w-[170px]" id="qty-filter">
+                <SelectTrigger className="w-full md:w-[170px]" id="qty-filter">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -353,10 +353,10 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="delivery-filter">Delivery:</Label>
+            <div className="grid grid-cols-[70px_1fr] items-center gap-2 md:flex md:gap-2">
+              <Label htmlFor="delivery-filter" className="md:text-left">Delivery:</Label>
               <Select value={deliveryFilter} onValueChange={(v) => setDeliveryFilter(v as any)}>
-                <SelectTrigger className="w-[160px] sm:w-[180px]" id="delivery-filter">
+                <SelectTrigger className="w-full md:w-[180px]" id="delivery-filter">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -366,8 +366,8 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center">
-              <Button variant="outline" size="sm" className="h-9 px-3 whitespace-nowrap" onClick={exportCSV}>
+            <div className="flex items-center pt-2 md:pt-0">
+              <Button className="w-full md:w-auto bg-[#2E235C] text-white hover:bg-[#2E235C]/90" size="sm" onClick={exportCSV}>
                 <FileDown className="w-4 h-4 mr-2" />
                 Download CSV
               </Button>
