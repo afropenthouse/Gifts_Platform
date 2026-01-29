@@ -1,7 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { Badge } from '../components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Label } from '../components/ui/label';
+import { Button } from '../components/ui/button';
+import { Checkbox } from '../components/ui/checkbox';
+import { FileDown } from 'lucide-react';
 
 interface Guest {
   id: number;
@@ -27,6 +31,28 @@ interface Contribution {
 interface Gift {
   id: number;
   title: string;
+  isSellingAsoebi?: boolean;
+  asoebiPrice?: number | string;
+  asoebiPriceMen?: number | string;
+  asoebiPriceWomen?: number | string;
+  asoebiBrideMenPrice?: number | string;
+  asoebiBrideWomenPrice?: number | string;
+  asoebiGroomMenPrice?: number | string;
+  asoebiGroomWomenPrice?: number | string;
+  asoebiQuantity?: number;
+  asoebiQtyMen?: number;
+  asoebiQtyWomen?: number;
+  asoebiBrideMenQty?: number;
+  asoebiBrideWomenQty?: number;
+  asoebiGroomMenQty?: number;
+  asoebiGroomWomenQty?: number;
+  soldAsoebiQuantity?: number;
+  soldAsoebiQtyMen?: number;
+  soldAsoebiQtyWomen?: number;
+  soldAsoebiBrideMenQty?: number;
+  soldAsoebiBrideWomenQty?: number;
+  soldAsoebiGroomMenQty?: number;
+  soldAsoebiGroomWomenQty?: number;
 }
 
 interface AsoebiProps {
@@ -36,12 +62,42 @@ interface AsoebiProps {
 }
 
 const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
-  
+  const [eventFilter, setEventFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'bride' | 'groom'>('all');
+  const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivered' | 'undelivered'>('all');
+  const [deliveryStatus, setDeliveryStatus] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const saved = localStorage.getItem('asoebiDeliveryStatus');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          setDeliveryStatus(parsed);
+        }
+      } catch {}
+    }
+  }, []);
+
+  const persistDeliveryStatus = (updated: Record<string, boolean>) => {
+    setDeliveryStatus(updated);
+    try {
+      localStorage.setItem('asoebiDeliveryStatus', JSON.stringify(updated));
+    } catch {}
+  };
+
   const asoebiData = useMemo(() => {
     // Filter guests who clicked Get Asoebi or purchased Asoebi
-    const relevantGuests = guests.filter(g => g.asoebiPaid);
+    let relevantGuests = guests.filter(g => g.asoebiPaid);
+
+    if (eventFilter !== 'all') {
+      relevantGuests = relevantGuests.filter(g => g.giftId === parseInt(eventFilter));
+    }
 
     const processedData = relevantGuests.map(guest => {
+      // Get the gift title for this guest
+      const gift = gifts.find(g => g.id === guest.giftId);
+      const eventTitle = gift ? gift.title : 'Unknown Event';
       // Expected format example: "Bride's Family - Men x2"
       // Or potentially multiple: "Bride's Family - Men x2, Groom's Family - Women x1"
       
@@ -87,6 +143,9 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       // Status
       const status = guest.asoebiPaid ? 'Paid' : 'Pending';
 
+      const key = `${guest.giftId}:${guest.id}`;
+      const delivered = Boolean(deliveryStatus[key]);
+
       return {
         id: guest.id,
         name: `${guest.firstName} ${guest.lastName}`,
@@ -96,25 +155,196 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         femaleQty,
         amountPaid,
         status,
-        selectionRaw
+        selectionRaw,
+        giftId: guest.giftId,
+        eventTitle,
+        delivered
       };
     });
 
-    // Only show paid status as requested
-    return processedData.filter(item => item.status === 'Paid');
-  }, [guests, contributions]);
+    let filtered = processedData.filter(item => item.status === 'Paid');
+
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(item => item.type.toLowerCase() === typeFilter);
+    }
+
+    if (deliveryFilter !== 'all') {
+      filtered = filtered.filter(item =>
+        deliveryFilter === 'delivered' ? item.delivered : !item.delivered
+      );
+    }
+
+    return filtered;
+  }, [guests, contributions, eventFilter, typeFilter, deliveryFilter, deliveryStatus, gifts]);
+
+  const selectedGift = useMemo(() => {
+    if (eventFilter === 'all') return null;
+    const gid = parseInt(eventFilter);
+    return gifts.find(g => g.id === gid) || null;
+  }, [eventFilter, gifts]);
+
+  const getStock = (total?: number, sold?: number) => {
+    if (total === undefined || total === null) return undefined;
+    const s = sold || 0;
+    return Math.max(0, total - s);
+  };
+
+  const stockSummary = useMemo(() => {
+    const toNum = (v?: number | string) => {
+      if (v === undefined || v === null) return 0;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const calcGiftStock = (g: Gift) => ({
+      brideMen: Math.max(0, toNum(g.asoebiBrideMenQty) - toNum(g.soldAsoebiBrideMenQty)),
+      brideWomen: Math.max(0, toNum(g.asoebiBrideWomenQty) - toNum(g.soldAsoebiBrideWomenQty)),
+      groomMen: Math.max(0, toNum(g.asoebiGroomMenQty) - toNum(g.soldAsoebiGroomMenQty)),
+      groomWomen: Math.max(0, toNum(g.asoebiGroomWomenQty) - toNum(g.soldAsoebiGroomWomenQty)),
+      men: Math.max(0, toNum(g.asoebiQtyMen) - toNum(g.soldAsoebiQtyMen)),
+      women: Math.max(0, toNum(g.asoebiQtyWomen) - toNum(g.soldAsoebiQtyWomen)),
+      generic: Math.max(0, toNum(g.asoebiQuantity) - toNum(g.soldAsoebiQuantity)),
+      hasSelling: Boolean(g.isSellingAsoebi)
+    });
+    if (selectedGift) {
+      const s = calcGiftStock(selectedGift);
+      const hasAny =
+        s.hasSelling ||
+        s.brideMen + s.brideWomen + s.groomMen + s.groomWomen + s.men + s.women + s.generic > 0;
+      return { ...s, show: hasAny };
+    }
+    // Aggregate across all gifts when "All Events"
+    let total = {
+      brideMen: 0, brideWomen: 0, groomMen: 0, groomWomen: 0, men: 0, women: 0, generic: 0
+    };
+    let anySelling = false;
+    for (const g of gifts) {
+      const s = calcGiftStock(g);
+      total.brideMen += s.brideMen;
+      total.brideWomen += s.brideWomen;
+      total.groomMen += s.groomMen;
+      total.groomWomen += s.groomWomen;
+      total.men += s.men;
+      total.women += s.women;
+      total.generic += s.generic;
+      anySelling = anySelling || s.hasSelling;
+    }
+    const hasAny = anySelling || (total.brideMen + total.brideWomen + total.groomMen + total.groomWomen + total.men + total.women + total.generic > 0);
+    return { ...total, show: hasAny };
+  }, [selectedGift, gifts]);
+
+  const exportCSV = () => {
+    const headers = [
+      'Name',
+      'Email',
+      'Event',
+      'Type',
+      'Male Qty',
+      'Female Qty',
+      'Amount Paid',
+      'Delivered'
+    ];
+    const rows = asoebiData.map(r => [
+      r.name,
+      r.email,
+      r.eventTitle,
+      r.type,
+      r.maleQty,
+      r.femaleQty,
+      r.amountPaid,
+      r.delivered ? 'Yes' : 'No'
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'asoebi-orders.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Asoebi Orders</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {asoebiData.length === 0 ? (
+    <>
+      {stockSummary.show && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="p-3 border rounded-lg">
+            <div className="text-sm text-gray-600">Bride Family: Men remaining</div>
+            <div className="text-2xl font-semibold">{stockSummary.brideMen}</div>
+          </div>
+          <div className="p-3 border rounded-lg">
+            <div className="text-sm text-gray-600">Bride Family: Women remaining</div>
+            <div className="text-2xl font-semibold">{stockSummary.brideWomen}</div>
+          </div>
+          <div className="p-3 border rounded-lg">
+            <div className="text-sm text-gray-600">Groom Family: Men remaining</div>
+            <div className="text-2xl font-semibold">{stockSummary.groomMen}</div>
+          </div>
+          <div className="p-3 border rounded-lg">
+            <div className="text-sm text-gray-600">Groom Family: Women remaining</div>
+            <div className="text-2xl font-semibold">{stockSummary.groomWomen}</div>
+          </div>
+        </div>
+      )}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Asoebi Orders</CardTitle>
+          <div className="flex flex-wrap items-center gap-4 mt-2">
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="event-filter">Event:</Label>
+              <Select value={eventFilter} onValueChange={setEventFilter}>
+                <SelectTrigger className="w-[200px]" id="event-filter">
+                  <SelectValue placeholder="Select event" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Events</SelectItem>
+                  {gifts.map(g => (
+                    <SelectItem key={g.id} value={String(g.id)}>{g.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="type-filter">Type:</Label>
+              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                <SelectTrigger className="w-[160px]" id="type-filter">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="bride">Bride</SelectItem>
+                  <SelectItem value="groom">Groom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="delivery-filter">Delivery:</Label>
+              <Select value={deliveryFilter} onValueChange={(v) => setDeliveryFilter(v as any)}>
+                <SelectTrigger className="w-[180px]" id="delivery-filter">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="undelivered">Undelivered</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center">
+              <Button variant="outline" size="sm" className="h-9 px-3 whitespace-nowrap" onClick={exportCSV}>
+                <FileDown className="w-4 h-4 mr-2" />
+                Download CSV
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {asoebiData.length === 0 ? (
           <div className="text-center py-10 text-gray-500">
             No Asoebi records found.
           </div>
-        ) : (
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -124,6 +354,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                 <TableHead>Female Quantity</TableHead>
                 <TableHead>Amount Paid</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Delivered</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -147,13 +378,24 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                       {row.status}
                     </span>
                   </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={row.delivered}
+                      onCheckedChange={(checked) => {
+                        const key = `${row.giftId}:${row.id}`;
+                        const updated = { ...deliveryStatus, [key]: Boolean(checked) };
+                        persistDeliveryStatus(updated);
+                      }}
+                    />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 };
 

@@ -202,10 +202,10 @@ const Dashboard: React.FC = () => {
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null },
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length },
-    { id: 'rsvp', label: 'RSVP', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests },
+    { id: 'rsvp', label: 'RSVP Manager', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests },
+    { id: 'asoebi', label: 'Asoebi Orders', icon: Package, color: 'text-purple-600', badge: null },
     { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null },
     { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null },
-    { id: 'asoebi', label: 'Asoebi', icon: Package, color: 'text-purple-600', badge: null },
     { id: 'vendors', label: 'Vendor Payment Tracker', icon: Wallet, color: 'text-orange-500', badge: null },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
@@ -2504,11 +2504,11 @@ const Dashboard: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent className="border-0 shadow-lg">
                     <SelectItem value="wedding">Wedding</SelectItem>
-                    <SelectItem value="birthday">Birthday</SelectItem>
+                    {/* <SelectItem value="birthday">Birthday</SelectItem>
                     <SelectItem value="graduation">Graduation</SelectItem>
                     <SelectItem value="convocation">Convocation</SelectItem>
                     <SelectItem value="baby-shower">Baby Shower</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="other">Other</SelectItem> */}
                   </SelectContent>
                 </Select>
               </div>
@@ -3001,10 +3001,10 @@ const Dashboard: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent className="border-0 shadow-lg">
                     <SelectItem value="wedding">Wedding</SelectItem>
-                    <SelectItem value="birthday">Birthday</SelectItem>
+                    {/* <SelectItem value="birthday">Birthday</SelectItem>
                     <SelectItem value="graduation">Graduation</SelectItem>
                     <SelectItem value="convocation">Convocation</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="other">Other</SelectItem> */}
                   </SelectContent>
                 </Select>
               </div>
