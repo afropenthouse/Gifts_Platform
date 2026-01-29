@@ -4,14 +4,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Label } from '../components/ui/label';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Checkbox } from '../components/ui/checkbox';
-import { FileDown } from 'lucide-react';
+import { FileDown, CheckCircle, Loader2, XCircle } from 'lucide-react';
 
 interface Guest {
   id: number;
   firstName: string;
   lastName: string;
   email?: string;
+  phone?: string;
+  allowed?: number;
+  attending?: string;
   asoebi?: boolean;
   asoebiPaid?: boolean;
   asoebiSelection?: string;
@@ -65,6 +69,9 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
   const [eventFilter, setEventFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'bride' | 'groom'>('all');
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivered' | 'undelivered'>('all');
+  const [qtyFilter, setQtyFilter] = useState<'all' | 'male_has' | 'male_none' | 'female_has' | 'female_none'>('all');
+  const [phoneEdits, setPhoneEdits] = useState<Record<number, string>>({});
+  const [phoneStatus, setPhoneStatus] = useState<Record<number, 'idle' | 'saving' | 'saved' | 'error'>>({});
   const [deliveryStatus, setDeliveryStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -150,6 +157,11 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         id: guest.id,
         name: `${guest.firstName} ${guest.lastName}`,
         email: guest.email || '-',
+        phone: guest.phone || '',
+        firstName: guest.firstName,
+        lastName: guest.lastName,
+        allowed: guest.allowed,
+        attending: guest.attending,
         type,
         maleQty,
         femaleQty,
@@ -173,15 +185,64 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         deliveryFilter === 'delivered' ? item.delivered : !item.delivered
       );
     }
+    if (qtyFilter !== 'all') {
+      filtered = filtered.filter(item => {
+        const male = parseInt(String(item.maleQty));
+        const female = parseInt(String(item.femaleQty));
+        const maleHas = Number.isFinite(male) && male > 0;
+        const femaleHas = Number.isFinite(female) && female > 0;
+        if (qtyFilter === 'male_has') return maleHas;
+        if (qtyFilter === 'male_none') return !maleHas;
+        if (qtyFilter === 'female_has') return femaleHas;
+        if (qtyFilter === 'female_none') return !femaleHas;
+        return true;
+      });
+    }
 
     return filtered;
-  }, [guests, contributions, eventFilter, typeFilter, deliveryFilter, deliveryStatus, gifts]);
+  }, [guests, contributions, eventFilter, typeFilter, deliveryFilter, qtyFilter, deliveryStatus, gifts]);
 
   const selectedGift = useMemo(() => {
     if (eventFilter === 'all') return null;
     const gid = parseInt(eventFilter);
     return gifts.find(g => g.id === gid) || null;
   }, [eventFilter, gifts]);
+
+  const updateGuestPhone = async (guestId: number, phone: string) => {
+    setPhoneStatus(prev => ({ ...prev, [guestId]: 'saving' }));
+    const g = guests.find(gg => gg.id === guestId);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guestId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          firstName: g?.firstName,
+          lastName: g?.lastName,
+          allowed: g?.allowed,
+          attending: g?.attending,
+          phone
+        }),
+      });
+      if (!res.ok) {
+        console.error('Failed to update phone');
+        alert('Failed to update phone number');
+        setPhoneStatus(prev => ({ ...prev, [guestId]: 'error' }));
+        return;
+      }
+      setPhoneStatus(prev => ({ ...prev, [guestId]: 'saved' }));
+      setTimeout(() => {
+        setPhoneStatus(prev => ({ ...prev, [guestId]: 'idle' }));
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      alert('Error updating phone number');
+      setPhoneStatus(prev => ({ ...prev, [guestId]: 'error' }));
+    }
+  };
 
   const getStock = (total?: number, sold?: number) => {
     if (total === undefined || total === null) return undefined;
@@ -236,16 +297,18 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     const headers = [
       'Name',
       'Email',
+      'Phone',
       'Event',
       'Type',
-      'Male Qty',
-      'Female Qty',
+      'Men Qty',
+      'Women Qty',
       'Amount Paid',
       'Delivered'
     ];
     const rows = asoebiData.map(r => [
       r.name,
       r.email,
+      r.phone || '',
       r.eventTitle,
       r.type,
       r.maleQty,
@@ -267,48 +330,54 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
 
   return (
     <>
-      {stockSummary.show && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-          <div className="p-3 border rounded-lg">
-            <div className="text-sm text-gray-600">Bride Family: Men remaining</div>
-            <div className="text-2xl font-semibold">{stockSummary.brideMen}</div>
-          </div>
-          <div className="p-3 border rounded-lg">
-            <div className="text-sm text-gray-600">Bride Family: Women remaining</div>
-            <div className="text-2xl font-semibold">{stockSummary.brideWomen}</div>
-          </div>
-          <div className="p-3 border rounded-lg">
-            <div className="text-sm text-gray-600">Groom Family: Men remaining</div>
-            <div className="text-2xl font-semibold">{stockSummary.groomMen}</div>
-          </div>
-          <div className="p-3 border rounded-lg">
-            <div className="text-sm text-gray-600">Groom Family: Women remaining</div>
-            <div className="text-2xl font-semibold">{stockSummary.groomWomen}</div>
-          </div>
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="event-filter-top">Event:</Label>
+          <Select value={eventFilter} onValueChange={setEventFilter}>
+            <SelectTrigger className="w-[160px] sm:w-[200px]" id="event-filter-top">
+              <SelectValue placeholder="Select event" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Events</SelectItem>
+              {gifts.map(g => (
+                <SelectItem key={g.id} value={String(g.id)}>{g.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+      </div>
+
+      {stockSummary.show && (
+        <>
+          <div className="text-sm font-semibold text-gray-900 mb-2">Stocks</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="p-3 rounded-lg bg-primary text-white text-center">
+              <div className="text-sm/5 opacity-90">Bride's Asoebi (Men)</div>
+              <div className="text-2xl font-semibold text-center">{stockSummary.brideMen}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-primary text-white text-center">
+              <div className="text-sm/5 opacity-90">Bride's Asoebi (Women)</div>
+              <div className="text-2xl font-semibold text-center">{stockSummary.brideWomen}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-primary text-white text-center">
+              <div className="text-sm/5 opacity-90">Groom's Asoebi (Men)</div>
+              <div className="text-2xl font-semibold text-center">{stockSummary.groomMen}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-primary text-white text-center">
+              <div className="text-sm/5 opacity-90">Groom's Asoebi (Women)</div>
+              <div className="text-2xl font-semibold text-center">{stockSummary.groomWomen}</div>
+            </div>
+          </div>
+        </>
       )}
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Asoebi Orders</CardTitle>
           <div className="flex flex-wrap items-center gap-4 mt-2">
             <div className="flex items-center space-x-2">
-              <Label htmlFor="event-filter">Event:</Label>
-              <Select value={eventFilter} onValueChange={setEventFilter}>
-                <SelectTrigger className="w-[200px]" id="event-filter">
-                  <SelectValue placeholder="Select event" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Events</SelectItem>
-                  {gifts.map(g => (
-                    <SelectItem key={g.id} value={String(g.id)}>{g.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
               <Label htmlFor="type-filter">Type:</Label>
               <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-                <SelectTrigger className="w-[160px]" id="type-filter">
+                <SelectTrigger className="w-[140px] sm:w-[160px]" id="type-filter">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -319,9 +388,24 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               </Select>
             </div>
             <div className="flex items-center space-x-2">
+              <Label htmlFor="qty-filter">Qty:</Label>
+              <Select value={qtyFilter} onValueChange={(v) => setQtyFilter(v as any)}>
+                <SelectTrigger className="w-[170px]" id="qty-filter">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="male_has">Men: Has</SelectItem>
+                  <SelectItem value="male_none">Men: None</SelectItem>
+                  <SelectItem value="female_has">Women: Has</SelectItem>
+                  <SelectItem value="female_none">Women: None</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
               <Label htmlFor="delivery-filter">Delivery:</Label>
               <Select value={deliveryFilter} onValueChange={(v) => setDeliveryFilter(v as any)}>
-                <SelectTrigger className="w-[180px]" id="delivery-filter">
+                <SelectTrigger className="w-[160px] sm:w-[180px]" id="delivery-filter">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -345,53 +429,70 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
             No Asoebi records found.
           </div>
           ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Type (Bride / Groom)</TableHead>
-                <TableHead>Male Quantity</TableHead>
-                <TableHead>Female Quantity</TableHead>
-                <TableHead>Amount Paid</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Delivered</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {asoebiData.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className="font-medium">{row.name}</TableCell>
-                  <TableCell>{row.type}</TableCell>
-                  <TableCell>{row.maleQty}</TableCell>
-                  <TableCell>{row.femaleQty}</TableCell>
-                  <TableCell>
-                    {row.amountPaid > 0 
-                      ? `₦${row.amountPaid.toLocaleString()}` 
-                      : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      row.status === 'Paid' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {row.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Checkbox
-                      checked={row.delivered}
-                      onCheckedChange={(checked) => {
-                        const key = `${row.giftId}:${row.id}`;
-                        const updated = { ...deliveryStatus, [key]: Boolean(checked) };
-                        persistDeliveryStatus(updated);
-                      }}
-                    />
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Type (Bride / Groom)</TableHead>
+                  <TableHead>Men Quantity</TableHead>
+                  <TableHead>Women Quantity</TableHead>
+                  <TableHead>Amount Paid</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Delivered</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {asoebiData.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-medium">{row.name}</TableCell>
+                    <TableCell className="min-w-[180px]">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder="Enter phone"
+                          value={phoneEdits[row.id] ?? String(row.phone || '')}
+                          onChange={(e) => setPhoneEdits(prev => ({ ...prev, [row.id]: e.target.value }))}
+                          onBlur={(e) => updateGuestPhone(row.id, e.target.value.trim())}
+                          className="h-9"
+                        />
+                        {phoneStatus[row.id] === 'saving' && <Loader2 className="w-4 h-4 animate-spin text-gray-500" />}
+                        {phoneStatus[row.id] === 'saved' && <CheckCircle className="w-4 h-4 text-green-600" />}
+                        {phoneStatus[row.id] === 'error' && <XCircle className="w-4 h-4 text-red-600" />}
+                      </div>
+                    </TableCell>
+                    <TableCell>{row.type}</TableCell>
+                    <TableCell>{row.maleQty}</TableCell>
+                    <TableCell>{row.femaleQty}</TableCell>
+                    <TableCell>
+                      {row.amountPaid > 0 
+                        ? `₦${row.amountPaid.toLocaleString()}` 
+                        : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        row.status === 'Paid' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {row.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Checkbox
+                        checked={row.delivered}
+                        onCheckedChange={(checked) => {
+                          const key = `${row.giftId}:${row.id}`;
+                          const updated = { ...deliveryStatus, [key]: Boolean(checked) };
+                          persistDeliveryStatus(updated);
+                        }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           )}
         </CardContent>
       </Card>

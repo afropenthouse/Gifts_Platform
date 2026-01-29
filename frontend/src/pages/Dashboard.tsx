@@ -1282,7 +1282,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
                     {activeTab === 'gifts' && 'Manage all your event links & cash gifts'}
                     {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
-                    {activeTab === 'asoebi' && 'Track orders and payments'}
+                    {activeTab === 'asoebi' && 'Track asoebi orders and payments'}
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
                     {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share moments'}
                   </p>
