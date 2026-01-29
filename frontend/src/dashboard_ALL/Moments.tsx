@@ -285,6 +285,14 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
           <h2 className="text-2xl font-bold text-gray-900">Moments</h2>
           <p className="text-gray-600 mt-1">Share your wedding QR code so your guest can capture and share their special moments from your events</p>
         </div>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => onTabChange('qr')} 
+            className="bg-[#2E235C] hover:bg-[#2E235C]/90 whitespace-nowrap"
+          >
+            Get event QR code
+          </Button>
+        </div>
         <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
           <DialogTrigger asChild>
             {/* <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90">

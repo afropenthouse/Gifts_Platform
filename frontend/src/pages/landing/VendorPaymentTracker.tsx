@@ -10,7 +10,7 @@ const VendorPaymentTracker = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Wedding Vendor Payment Tracker - BeThere Weddings";
+    document.title = "Wedding Expense Manager - BeThere Weddings";
   }, []);
 
   const features = [
@@ -70,7 +70,7 @@ const VendorPaymentTracker = () => {
               </span>
             </div>
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Wedding Vendor Payment Tracker
+              Wedding Expense Manager
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Track all your wedding vendor payments in one place.

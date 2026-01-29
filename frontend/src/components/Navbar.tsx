@@ -100,7 +100,7 @@ const Navbar = () => {
                     Wedding QR Code
                   </Link>
                   <Link to="/vendor-payment-tracker" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
-                    Vendor Payment Tracker
+                    Wedding Expense Manager
                   </Link> */}
                   <Link to="/schedule-vendor-payments" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     Vendor Payments

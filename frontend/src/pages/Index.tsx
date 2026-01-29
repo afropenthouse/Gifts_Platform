@@ -22,7 +22,7 @@ const Index = () => {
       <section className="py-8 px-4 md:py-12 md:px-6">
         <div className="container mx-auto max-w-4xl text-center">
           <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-            Manage RSVPs, collect cash gifts, sell Asoebi, and manage vendor payments - all in one place.
+            BeThere Weddings helps couples manage guest attendance through RSVPs, coordinate Asoebi sales, collect cash gifts, and track wedding expenses all in one place.
           </p>
         </div>
       </section>

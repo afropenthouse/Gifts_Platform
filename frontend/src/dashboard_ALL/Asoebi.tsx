@@ -4,18 +4,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Label } from '../components/ui/label';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
 import { Checkbox } from '../components/ui/checkbox';
-import { FileDown, CheckCircle, Loader2, XCircle } from 'lucide-react';
+import { FileDown } from 'lucide-react';
 
 interface Guest {
   id: number;
   firstName: string;
   lastName: string;
   email?: string;
-  phone?: string;
-  allowed?: number;
-  attending?: string;
   asoebi?: boolean;
   asoebiPaid?: boolean;
   asoebiSelection?: string;
@@ -70,8 +66,6 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'bride' | 'groom'>('all');
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivered' | 'undelivered'>('all');
   const [qtyFilter, setQtyFilter] = useState<'all' | 'male_has' | 'male_none' | 'female_has' | 'female_none'>('all');
-  const [phoneEdits, setPhoneEdits] = useState<Record<number, string>>({});
-  const [phoneStatus, setPhoneStatus] = useState<Record<number, 'idle' | 'saving' | 'saved' | 'error'>>({});
   const [deliveryStatus, setDeliveryStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -157,11 +151,6 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         id: guest.id,
         name: `${guest.firstName} ${guest.lastName}`,
         email: guest.email || '-',
-        phone: guest.phone || '',
-        firstName: guest.firstName,
-        lastName: guest.lastName,
-        allowed: guest.allowed,
-        attending: guest.attending,
         type,
         maleQty,
         femaleQty,
@@ -207,42 +196,6 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     const gid = parseInt(eventFilter);
     return gifts.find(g => g.id === gid) || null;
   }, [eventFilter, gifts]);
-
-  const updateGuestPhone = async (guestId: number, phone: string) => {
-    setPhoneStatus(prev => ({ ...prev, [guestId]: 'saving' }));
-    const g = guests.find(gg => gg.id === guestId);
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/${guestId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          firstName: g?.firstName,
-          lastName: g?.lastName,
-          allowed: g?.allowed,
-          attending: g?.attending,
-          phone
-        }),
-      });
-      if (!res.ok) {
-        console.error('Failed to update phone');
-        alert('Failed to update phone number');
-        setPhoneStatus(prev => ({ ...prev, [guestId]: 'error' }));
-        return;
-      }
-      setPhoneStatus(prev => ({ ...prev, [guestId]: 'saved' }));
-      setTimeout(() => {
-        setPhoneStatus(prev => ({ ...prev, [guestId]: 'idle' }));
-      }, 1500);
-    } catch (err) {
-      console.error(err);
-      alert('Error updating phone number');
-      setPhoneStatus(prev => ({ ...prev, [guestId]: 'error' }));
-    }
-  };
 
   const getStock = (total?: number, sold?: number) => {
     if (total === undefined || total === null) return undefined;
@@ -297,7 +250,6 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     const headers = [
       'Name',
       'Email',
-      'Phone',
       'Event',
       'Type',
       'Men Qty',
@@ -308,7 +260,6 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     const rows = asoebiData.map(r => [
       r.name,
       r.email,
-      r.phone || '',
       r.eventTitle,
       r.type,
       r.maleQty,
@@ -434,7 +385,6 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
                   <TableHead>Type (Bride / Groom)</TableHead>
                   <TableHead>Men Quantity</TableHead>
                   <TableHead>Women Quantity</TableHead>
@@ -447,20 +397,6 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                 {asoebiData.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">{row.name}</TableCell>
-                    <TableCell className="min-w-[180px]">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          placeholder="Enter phone"
-                          value={phoneEdits[row.id] ?? String(row.phone || '')}
-                          onChange={(e) => setPhoneEdits(prev => ({ ...prev, [row.id]: e.target.value }))}
-                          onBlur={(e) => updateGuestPhone(row.id, e.target.value.trim())}
-                          className="h-9"
-                        />
-                        {phoneStatus[row.id] === 'saving' && <Loader2 className="w-4 h-4 animate-spin text-gray-500" />}
-                        {phoneStatus[row.id] === 'saved' && <CheckCircle className="w-4 h-4 text-green-600" />}
-                        {phoneStatus[row.id] === 'error' && <XCircle className="w-4 h-4 text-red-600" />}
-                      </div>
-                    </TableCell>
                     <TableCell>{row.type}</TableCell>
                     <TableCell>{row.maleQty}</TableCell>
                     <TableCell>{row.femaleQty}</TableCell>

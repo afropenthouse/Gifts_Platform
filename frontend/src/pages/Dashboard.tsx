@@ -206,7 +206,7 @@ const Dashboard: React.FC = () => {
     { id: 'asoebi', label: 'Asoebi Orders', icon: Package, color: 'text-purple-600', badge: null },
     { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null },
     { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null },
-    { id: 'vendors', label: 'Vendor Payment Tracker', icon: Wallet, color: 'text-orange-500', badge: null },
+    { id: 'vendors', label: 'Expense Manager', icon: Wallet, color: 'text-orange-500', badge: null },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
 
@@ -1201,7 +1201,7 @@ const Dashboard: React.FC = () => {
                       }
                     `}
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 flex-1 min-w-0">
                       <div className={`
                         p-1.5 rounded-lg transition-colors
                         ${activeTab === item.id 
@@ -1211,7 +1211,7 @@ const Dashboard: React.FC = () => {
                       `}>
                         <item.icon className="w-4 h-4" />
                       </div>
-                      <span className={`text-sm font-medium ${activeTab === item.id ? 'font-semibold' : ''}`}>
+                      <span className={`text-sm font-medium ${activeTab === item.id ? 'font-semibold' : ''} whitespace-nowrap`}>
                         {item.label}
                       </span>
                     </div>
@@ -1274,7 +1274,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'gifts' && 'Events'}
                     {activeTab === 'withdraw' && 'Withdraw Funds'}
                     {activeTab === 'rsvp' && 'RSVP'}
-                    {activeTab === 'vendors' && 'Vendor Payment Tracker'}
+                    {activeTab === 'vendors' && 'Wedding Expense Manager'}
                     {activeTab === 'asoebi' && 'Asoebi'}
                     {activeTab === 'qr' && 'Event QR Code'}
                   </h1>
@@ -2444,7 +2444,7 @@ const Dashboard: React.FC = () => {
             </div>
             )}
 
-            {/* Vendor Payment Tracker Section */}
+            {/* Wedding Expense Manager Section */}
             {activeTab === 'vendors' && (
               <VendorPaymentTracker />
             )}
