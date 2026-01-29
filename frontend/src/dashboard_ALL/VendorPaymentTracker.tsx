@@ -1013,10 +1013,10 @@ const VendorPaymentTracker: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="font-semibold">Category</TableHead>
-                <TableHead className="font-semibold">Total (₦)</TableHead>
+                <TableHead className="font-semibold">Cost (₦)</TableHead>
                 <TableHead className="font-semibold">Paid (₦)</TableHead>
-                <TableHead className="font-semibold">Scheduled (₦)</TableHead>
                 <TableHead className="font-semibold">Balance (₦)</TableHead>
+                <TableHead className="font-semibold">Scheduled (₦)</TableHead>
                 <TableHead className="font-semibold">Due Date</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
                 <TableHead className="font-semibold">Actions</TableHead>
@@ -1029,8 +1029,8 @@ const VendorPaymentTracker: React.FC = () => {
                     <TableCell><span className="font-semibold">{vendor.category}</span></TableCell>
                     <TableCell>{Number(vendor.amountAgreed).toLocaleString()}</TableCell>
                     <TableCell>{Number(vendor.amountPaid).toLocaleString()}</TableCell>
-                    <TableCell>{Number(vendor.scheduledAmount || 0).toLocaleString()}</TableCell>
                     <TableCell>{Number(vendor.amountAgreed - vendor.amountPaid - (vendor.scheduledAmount || 0)).toLocaleString()}</TableCell>
+                    <TableCell>{Number(vendor.scheduledAmount || 0).toLocaleString()}</TableCell>
                     <TableCell>{new Date(vendor.dueDate).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <button
