@@ -70,7 +70,7 @@ const VendorPaymentTracker = () => {
               </span>
             </div>
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Wedding Expense Manager
+              Wedding Expenses
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Track all your wedding vendor payments in one place.

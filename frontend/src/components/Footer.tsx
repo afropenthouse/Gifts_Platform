@@ -63,7 +63,7 @@ const Footer = () => {
               </li>
               <li>
                 <a href="/schedule-vendor-payments" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Wedding Expense Manager
+                  Manage Expenses
                 </a>
               </li>
             </ul>

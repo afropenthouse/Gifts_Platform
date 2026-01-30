@@ -206,7 +206,7 @@ const Dashboard: React.FC = () => {
     { id: 'asoebi', label: 'Asoebi Orders', icon: Package, color: 'text-purple-600', badge: null },
     { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null },
     { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null },
-    { id: 'vendors', label: 'Expense Manager', icon: Wallet, color: 'text-orange-500', badge: null },
+    { id: 'vendors', label: 'Manage Expenses', icon: Wallet, color: 'text-orange-500', badge: null },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
 
@@ -1274,7 +1274,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'gifts' && 'Events'}
                     {activeTab === 'withdraw' && 'Withdraw Funds'}
                     {activeTab === 'rsvp' && 'RSVP'}
-                    {activeTab === 'vendors' && 'Wedding Expense Manager'}
+                    {activeTab === 'vendors' && 'Manage Expenses'}
                     {activeTab === 'asoebi' && 'Asoebi Orders'}
                     {activeTab === 'qr' && 'Event QR Code'}
                   </h1>
