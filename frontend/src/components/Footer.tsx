@@ -52,18 +52,18 @@ const Footer = () => {
                 </a>
               </li>
               <li>
+                <a href="/asoebi" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Asoebi
+                </a>
+              </li>
+              <li>
                 <a href="/wedding-qr-code" className="text-muted-foreground hover:text-foreground transition-colors">
                   Wedding QR Code
                 </a>
               </li>
               <li>
-                <a href="/vendor-payment-tracker" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Wedding Expense Manager
-                </a>
-              </li>
-              <li>
                 <a href="/schedule-vendor-payments" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Schedule Vendor Payments
+                  Wedding Expense Manager
                 </a>
               </li>
             </ul>

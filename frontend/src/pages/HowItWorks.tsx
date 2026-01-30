@@ -15,17 +15,17 @@ const HowItWorks = () => {
     {
       step: 'Step 1',
       title: 'Create your wedding link',
-      body: 'Set up your event in minutes. Add your guest list, Aso-ebi options, vendors, and wedding details.',
+      body: 'Set up your event in minutes. Add your guest list, Asoebi options, vendors, and wedding details.',
     },
     {
       step: 'Step 2',
       title: 'Share one simple link',
-      body: 'Send your link to guests. They can RSVP, buy Aso-ebi, and send cash gifts — all from one place.',
+      body: 'Send your link to guests. They can RSVP, buy Asoebi, and send cash gifts all from one place.',
     },
     {
       step: 'Step 3',
       title: 'Track guests & payments in real time',
-      body: 'See who’s attending, Aso-ebi orders, and cash gifts as they come in — all in one dashboard.',
+      body: 'See who’s attending, Asoebi orders, and cash gifts as they come in all in one dashboard.',
     },
     {
       step: 'Step 4',
@@ -73,7 +73,7 @@ const HowItWorks = () => {
                 key={item.step} 
                 className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-border/50 p-6 md:p-8 text-center hover:shadow-md transition-shadow duration-300"
               >
-                <div className="inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full font-semibold mb-3 md:mb-4" style={{ backgroundColor: '#2E235C1A', color: '#2E235C' }}>
+                <div className="inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full font-semibold mb-3 md:mb-4 bg-primary text-primary-foreground">
                   {item.step.split(' ')[1]}
                 </div>
                 <h3 className="font-serif text-xl md:text-2xl font-semibold text-foreground mb-2">

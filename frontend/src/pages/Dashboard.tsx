@@ -1275,7 +1275,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'withdraw' && 'Withdraw Funds'}
                     {activeTab === 'rsvp' && 'RSVP'}
                     {activeTab === 'vendors' && 'Wedding Expense Manager'}
-                    {activeTab === 'asoebi' && 'Asoebi'}
+                    {activeTab === 'asoebi' && 'Asoebi Orders'}
                     {activeTab === 'qr' && 'Event QR Code'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
@@ -1687,11 +1687,11 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Minimum Amount</p>
-                          <p className="font-medium">₦1,000</p>
+                          <p className="font-medium">₦100</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Transaction Fee</p>
-                          <p className="font-medium">₦50 flat fee</p>
+                          <p className="font-medium">Free</p>
                         </div>
                       </div>
                     </CardContent>
@@ -1723,9 +1723,9 @@ const Dashboard: React.FC = () => {
                                 const qty = (transaction.asoebiQuantity && Number(transaction.asoebiQuantity) > 0) 
                                   ? Number(transaction.asoebiQuantity) 
                                   : 1;
-                                commission = 300 * qty;
+                                commission = 500 * qty;
                              } else {
-                                commission = amount * 0.05;
+                                commission = amount * 0.04;
                              }
                           }
                           const received = amount - commission;
@@ -1752,11 +1752,8 @@ const Dashboard: React.FC = () => {
                                 {isContribution && (
                                   <>
                                     <p className="text-xs text-gray-500">
-                                      {transaction.isAsoebi ? 'Platform fees' : 'Commission'}: ₦{commission.toFixed(2)}
+                                      Platform Fee: ₦{commission.toFixed(2)}
                                     </p>
-                                    {!transaction.isAsoebi && (
-                                      <p className="text-xs text-green-600">Received: ₦{received.toFixed(2)}</p>
-                                    )}
                                   </>
                                 )}
                               </div>

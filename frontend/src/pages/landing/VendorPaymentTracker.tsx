@@ -96,7 +96,7 @@ const VendorPaymentTracker = () => {
                   style={{ backgroundColor: '#ffff' }}
                   onClick={openSignupModal}
                 >
-                  Track Vendor Payments
+                  Track Wedding Expense
                 </Button>
               </div>
             </div>

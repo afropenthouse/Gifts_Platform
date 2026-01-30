@@ -39,6 +39,9 @@ const Navbar = () => {
             <Link to="/collect-cash-gifts" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               Cash Gifts
             </Link>
+            <Link to="/asoebi" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+              Asoebi
+            </Link>
             {/* <Link to="/wedding-qr-code" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               QR Code
             </Link>
@@ -46,7 +49,7 @@ const Navbar = () => {
               Payment Tracker
             </Link> */}
             <Link to="/schedule-vendor-payments" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
-              Vendor Payments
+              Expense Manager
             </Link>
             {user ? (
               <>
@@ -103,7 +106,7 @@ const Navbar = () => {
                     Wedding Expense Manager
                   </Link> */}
                   <Link to="/schedule-vendor-payments" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
-                    Vendor Payments
+                    Expense Manager
                   </Link>
                   {user ? (
                     <>
