@@ -14,33 +14,28 @@ const HowItWorks = () => {
   const steps = [
     {
       step: 'Step 1',
-      title: 'Create Your Event',
-      body: 'Sign up and create a personalized event link for your wedding or celebration in minutes.',
+      title: 'Create your wedding link',
+      body: 'Set up your event in minutes. Add your guest list, Aso-ebi options, vendors, and wedding details.',
     },
     {
       step: 'Step 2',
-      title: 'Add Guest List',
-      body: 'Import or type guest names to keep your event organized.',
+      title: 'Share one simple link',
+      body: 'Send your link to guests. They can RSVP, buy Aso-ebi, and send cash gifts — all from one place.',
     },
     {
       step: 'Step 3',
-      title: 'Share with Loved Ones',
-      body: 'Send your unique link to family and friends via WhatsApp, email, or social media.',
+      title: 'Track guests & payments in real time',
+      body: 'See who’s attending, Aso-ebi orders, and cash gifts as they come in — all in one dashboard.',
     },
     {
       step: 'Step 4',
-      title: 'Manage RSVPs',
-      body: 'Guests confirm attendance with a response so you know exactly who is coming.',
+      title: 'Manage vendors & wedding expenses',
+      body: 'Track vendor balances, schedule payments, and stay on top of your wedding expenses without spreadsheets or WhatsApp follow-ups.',
     },
     {
       step: 'Step 5',
-      title: 'Receive Cash Gifts',
-      body: 'Receive cash gifts from friends in multiple currencies',
-    },
-    {
-      step: 'Step 6',
-      title: 'Track & Manage',
-      body: 'Monitor RSVPs, guest details, and incoming cash gifts from your dashboard in real time.',
+      title: 'Enjoy your day, stress-free',
+      body: 'Use your event QR code to collect gifts and moments at the venue, while BeThere keeps everything organized behind the scenes.',
     },
   ];
 
@@ -55,7 +50,7 @@ const HowItWorks = () => {
             How It <span style={{ color: '#2E235C' }}>Works</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Six simple steps to turn your celebration into a memorable experience with RSVPs and cash gifts from everyone you love.
+            Five simple steps to turn your celebration into a memorable experience with RSVPs and cash gifts from everyone you love.
           </p>
         </div>
       </section>
@@ -68,7 +63,7 @@ const HowItWorks = () => {
               How It Works
             </span>
             <h2 className="font-serif text-2xl md:text-4xl font-semibold text-foreground mt-2">
-              6 simple steps to start
+              5 simple steps to start
             </h2>
           </div>
 

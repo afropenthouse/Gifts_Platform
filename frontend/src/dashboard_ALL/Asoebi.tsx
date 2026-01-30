@@ -65,7 +65,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
   const [eventFilter, setEventFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'bride' | 'groom'>('all');
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivered' | 'undelivered'>('all');
-  const [qtyFilter, setQtyFilter] = useState<'all' | 'male_has' | 'male_none' | 'female_has' | 'female_none'>('all');
+  const [qtyFilter, setQtyFilter] = useState<'all' | 'men' | 'women'>('all');
   const [deliveryStatus, setDeliveryStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -180,10 +180,8 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         const female = parseInt(String(item.femaleQty));
         const maleHas = Number.isFinite(male) && male > 0;
         const femaleHas = Number.isFinite(female) && female > 0;
-        if (qtyFilter === 'male_has') return maleHas;
-        if (qtyFilter === 'male_none') return !maleHas;
-        if (qtyFilter === 'female_has') return femaleHas;
-        if (qtyFilter === 'female_none') return !femaleHas;
+        if (qtyFilter === 'men') return maleHas;
+        if (qtyFilter === 'women') return femaleHas;
         return true;
       });
     }
@@ -329,10 +327,13 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               <Label htmlFor="type-filter" className="hidden md:inline md:text-left">Type:</Label>
               <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
                 <SelectTrigger className="w-full md:w-[160px]" id="type-filter">
-                  <SelectValue placeholder="All" />
+                  <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">
+                    <span className="hidden md:inline">All</span>
+                    <span className="inline md:hidden">Type</span>
+                  </SelectItem>
                   <SelectItem value="bride">Bride</SelectItem>
                   <SelectItem value="groom">Groom</SelectItem>
                 </SelectContent>
@@ -342,14 +343,15 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               <Label htmlFor="qty-filter" className="hidden md:inline md:text-left">Qty:</Label>
               <Select value={qtyFilter} onValueChange={(v) => setQtyFilter(v as any)}>
                 <SelectTrigger className="w-full md:w-[170px]" id="qty-filter">
-                  <SelectValue placeholder="All" />
+                  <SelectValue placeholder="Qty" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="male_has">Men: Has</SelectItem>
-                  <SelectItem value="male_none">Men: None</SelectItem>
-                  <SelectItem value="female_has">Women: Has</SelectItem>
-                  <SelectItem value="female_none">Women: None</SelectItem>
+                  <SelectItem value="all">
+                    <span className="hidden md:inline">All</span>
+                    <span className="inline md:hidden">Qty</span>
+                  </SelectItem>
+                <SelectItem value="men">Men</SelectItem>
+                <SelectItem value="women">Women</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -357,10 +359,13 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               <Label htmlFor="delivery-filter" className="hidden md:inline md:text-left">Delivery:</Label>
               <Select value={deliveryFilter} onValueChange={(v) => setDeliveryFilter(v as any)}>
                 <SelectTrigger className="w-full md:w-[180px]" id="delivery-filter">
-                  <SelectValue placeholder="All" />
+                  <SelectValue placeholder="Delivery" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">
+                    <span className="hidden md:inline">All</span>
+                    <span className="inline md:hidden">Delivery</span>
+                  </SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
                   <SelectItem value="undelivered">Undelivered</SelectItem>
                 </SelectContent>

@@ -1720,8 +1720,10 @@ const Dashboard: React.FC = () => {
                              if (transaction.commission !== undefined && transaction.commission !== null && transaction.commission > 0) {
                                 commission = transaction.commission;
                              } else if (transaction.isAsoebi) {
-                                // commission = 1000 * (transaction.asoebiQuantity || 1);
-                                commission = 200;
+                                const qty = (transaction.asoebiQuantity && Number(transaction.asoebiQuantity) > 0) 
+                                  ? Number(transaction.asoebiQuantity) 
+                                  : 1;
+                                commission = 300 * qty;
                              } else {
                                 commission = amount * 0.05;
                              }
@@ -1749,8 +1751,8 @@ const Dashboard: React.FC = () => {
                                 <p className={`font-bold ${isContribution ? 'text-gray-900' : 'text-red-600'}`}>{isContribution ? '₦' : '-₦'}{amount.toFixed(2)}</p>
                                 {isContribution && (
                                   <>
-                                    <p className={`text-xs ${transaction.isAsoebi ? 'text-red-600' : 'text-gray-500'}`}>
-                                      {transaction.isAsoebi ? 'Transaction charge' : 'Commission'}: ₦{commission.toFixed(2)}
+                                    <p className="text-xs text-gray-500">
+                                      {transaction.isAsoebi ? 'Platform fees' : 'Commission'}: ₦{commission.toFixed(2)}
                                     </p>
                                     {!transaction.isAsoebi && (
                                       <p className="text-xs text-green-600">Received: ₦{received.toFixed(2)}</p>

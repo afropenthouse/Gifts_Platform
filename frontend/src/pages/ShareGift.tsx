@@ -1587,6 +1587,9 @@ const ShareGift: React.FC = () => {
                         <p className="text-lg font-semibold text-[#2E235C]">
                             Total: ₦{(Number(gift?.asoebiPrice || 0) * asoebiQuantity).toLocaleString()}
                         </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                            Platform fees: ₦300 per order
+                        </p>
                     </div>
                 )}
               </div>
@@ -1802,6 +1805,7 @@ const ShareGift: React.FC = () => {
                                 (asoebiFamily === 'bride' ? Number(gift?.asoebiBrideWomenPrice || 0) : asoebiFamily === 'groom' ? Number(gift?.asoebiGroomWomenPrice || 0) : Number(gift?.asoebiPriceWomen || 0))
                                 : Number(gift?.asoebiPrice || 0)) * asoebiQuantity).toLocaleString()}
                       </p>
+                      <p className="text-sm text-gray-600 mt-1">Platform fees: ₦300 per order</p>
                   </div>
                 )}
               </div>

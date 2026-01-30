@@ -1013,10 +1013,30 @@ const VendorPaymentTracker: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="font-semibold">Category</TableHead>
-                <TableHead className="font-semibold">Cost (₦)</TableHead>
-                <TableHead className="font-semibold">Paid (₦)</TableHead>
-                <TableHead className="font-semibold">Balance (₦)</TableHead>
-                <TableHead className="font-semibold">Scheduled (₦)</TableHead>
+                <TableHead className="font-semibold">
+                  <span className="hidden md:inline">Cost (₦)</span>
+                  <span className="inline md:hidden flex items-center">
+                    Cost <span className="ml-1 text-gray-500">(₦)</span>
+                  </span>
+                </TableHead>
+                <TableHead className="font-semibold">
+                  <span className="hidden md:inline">Paid (₦)</span>
+                  <span className="inline md:hidden flex items-center">
+                    Paid <span className="ml-1 text-gray-500">(₦)</span>
+                  </span>
+                </TableHead>
+                <TableHead className="font-semibold">
+                  <span className="hidden md:inline">Balance (₦)</span>
+                  <span className="inline md:hidden flex items-center">
+                    Balance <span className="ml-1 text-gray-500">(₦)</span>
+                  </span>
+                </TableHead>
+                <TableHead className="font-semibold">
+                  <span className="hidden md:inline">Scheduled (₦)</span>
+                  <span className="inline md:hidden flex items-center">
+                    Scheduled <span className="ml-1 text-gray-500">(₦)</span>
+                  </span>
+                </TableHead>
                 <TableHead className="font-semibold">Due Date</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
                 <TableHead className="font-semibold">Actions</TableHead>
