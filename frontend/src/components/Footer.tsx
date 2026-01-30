@@ -53,7 +53,7 @@ const Footer = () => {
               </li>
               <li>
                 <a href="/asoebi" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Asoebi
+                  Sell Asoebi
                 </a>
               </li>
               <li>
