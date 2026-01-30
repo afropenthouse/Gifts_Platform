@@ -166,13 +166,16 @@ module.exports = () => {
       let amountReceived;
       
       if (isAsoebi) {
-        // For Asoebi, we charge 1000 per quantity
-        // const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
-        // commission = 1000 * quantity;
-        
-        // New Logic: 300 per transaction
-        commission = 300;
-        
+        const qtySum =
+          (asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0) +
+          (asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0) +
+          (asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0) +
+          (asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0) +
+          (asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0) +
+          (asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0) +
+          (asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0);
+        const quantity = qtySum > 0 ? qtySum : 1;
+        commission = 300 * quantity;
         amountReceived = amount - commission;
         if (amountReceived < 0) amountReceived = 0; // Safety check
       } else {
@@ -379,7 +382,7 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
-        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity } = response.data.metadata || {};
+        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = response.data.metadata || {};
         const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
 
         console.log('Extracted meta data:', {
@@ -430,13 +433,16 @@ module.exports = () => {
         let amountReceived;
         
         if (isAsoebi) {
-          // For Asoebi, we charge 1000 per quantity
-          // const quantity = asoebiQuantity ? parseInt(asoebiQuantity, 10) : 1;
-          // commission = 1000 * quantity;
-          
-          // New Logic: 300 per transaction
-          commission = 300;
-
+          const qtySum =
+            (asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0) +
+            (asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0) +
+            (asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0) +
+            (asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0) +
+            (asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0) +
+            (asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0) +
+            (asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0);
+          const quantity = qtySum > 0 ? qtySum : 1;
+          commission = 300 * quantity;
           amountReceived = amountInNaira - commission;
           if (amountReceived < 0) amountReceived = 0; // Safety check
         } else {
