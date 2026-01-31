@@ -49,9 +49,17 @@ const HowItWorks = () => {
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-6">
             How It <span style={{ color: '#2E235C' }}>Works</span>
           </h1>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-6">
+            BeThere Weddings is an all-in-one wedding platform for couples to manage their wedding in one place. 
+            Couples can share a single wedding link with guests to RSVP, manage guest lists, collect cash gifts, sell Asoebi or group items, and coordinate vendor payments — all without using multiple tools.
+          </p>
+
+          <br className="hidden md:block" />
+
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Five simple steps to turn your celebration into a memorable experience with RSVPs and cash gifts from everyone you love.
           </p>
+          
         </div>
       </section>
 

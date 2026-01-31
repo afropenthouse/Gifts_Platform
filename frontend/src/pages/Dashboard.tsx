@@ -179,6 +179,7 @@ const Dashboard: React.FC = () => {
   const [attendingFilter, setAttendingFilter] = useState('all');
   const [asoebiFilter, setAsoebiFilter] = useState('all');
   const [tableFilter, setTableFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState<'default' | 'first-asc' | 'last-asc'>('default');
   const [isCustomTableModalOpen, setIsCustomTableModalOpen] = useState(false);
   const [customTableName, setCustomTableName] = useState('');
   const [currentEditingGuestId, setCurrentEditingGuestId] = useState<number | null>(null);
@@ -1109,6 +1110,18 @@ const Dashboard: React.FC = () => {
       filteredGuests = filteredGuests.filter(g => !g.asoebi);
     }
   }
+
+  // Apply sorting
+  if (sortOrder !== 'default') {
+    filteredGuests = [...filteredGuests].sort((a, b) => {
+      if (sortOrder === 'first-asc') {
+        return a.firstName.localeCompare(b.firstName);
+      } else if (sortOrder === 'last-asc') {
+        return a.lastName.localeCompare(b.lastName);
+      }
+      return 0;
+    });
+  }
   
   const totalAttending = Array.isArray(eventFilteredGuests) ? eventFilteredGuests.filter(g => g.attending === 'yes').reduce((sum, g) => sum + g.allowed, 0) : 0;
   const selectedGift = selectedEventForRSVP ? gifts.find(g => g.id === selectedEventForRSVP) : null;
@@ -1996,10 +2009,10 @@ const Dashboard: React.FC = () => {
                           className="h-10 w-full"
                         />
                       </div>
-                      <div className="flex gap-2 w-full sm:w-auto">
+                      <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                         <Select value={attendingFilter} onValueChange={setAttendingFilter}>
-                          <SelectTrigger className="w-full h-10 sm:w-40">
-                            <SelectValue placeholder="Filter by status" />
+                          <SelectTrigger className="flex-1 h-10 min-w-[90px] sm:w-40">
+                            <SelectValue placeholder="Status" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All</SelectItem>
@@ -2009,8 +2022,8 @@ const Dashboard: React.FC = () => {
                           </SelectContent>
                         </Select>
                         <Select value={asoebiFilter} onValueChange={setAsoebiFilter}>
-                          <SelectTrigger className="w-full h-10 sm:w-40">
-                            <SelectValue placeholder="Filter by asoebi" />
+                          <SelectTrigger className="flex-1 h-10 min-w-[90px] sm:w-40">
+                            <SelectValue placeholder="Asoebi" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All (Asoebi)</SelectItem>
@@ -2019,8 +2032,8 @@ const Dashboard: React.FC = () => {
                           </SelectContent>
                         </Select>
                         <Select value={tableFilter} onValueChange={setTableFilter}>
-                          <SelectTrigger className="w-full h-10 sm:w-40">
-                            <SelectValue placeholder="Filter by table" />
+                          <SelectTrigger className="flex-1 h-10 min-w-[90px] sm:w-40">
+                            <SelectValue placeholder="Table" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Table seating (All)</SelectItem>
@@ -2034,6 +2047,19 @@ const Dashboard: React.FC = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        
+                        <div className="w-full sm:w-auto">
+                          <Select value={sortOrder} onValueChange={(value: 'default' | 'first-asc' | 'last-asc') => setSortOrder(value)}>
+                            <SelectTrigger className="w-40 h-10">
+                              <SelectValue placeholder="Sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="default">Default</SelectItem>
+                              <SelectItem value="first-asc">First Name (A-Z)</SelectItem>
+                              <SelectItem value="last-asc">Last Name (A-Z)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
 

@@ -22,7 +22,8 @@ const Index = () => {
       <section className="py-8 px-4 md:py-12 md:px-6">
         <div className="container mx-auto max-w-4xl text-center">
           <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8 md:mb-12">
-            BeThere Weddings helps couples manage guest attendance through RSVPs, coordinate Asoebi sales, collect cash gifts, and track wedding expenses all in one place.
+            BeThere Weddings is an all-in-one wedding platform for couples to manage their wedding in one place.
+            Couples can share a single wedding link with guests to RSVP, manage guest lists, collect cash gifts, sell Asoebi or group items, and coordinate vendor payments all without using multiple tools.
           </p>
           
           <div className="relative -mx-4 md:mx-0 rounded-none md:rounded-xl overflow-hidden shadow-2xl border-y md:border border-border/50">
