@@ -179,7 +179,7 @@ const Dashboard: React.FC = () => {
   const [attendingFilter, setAttendingFilter] = useState('all');
   const [asoebiFilter, setAsoebiFilter] = useState('all');
   const [tableFilter, setTableFilter] = useState('all');
-  const [sortOrder, setSortOrder] = useState<'default' | 'first-asc' | 'last-asc'>('default');
+  const [sortOrder, setSortOrder] = useState<'first-asc' | 'last-asc'>('first-asc');
   const [isCustomTableModalOpen, setIsCustomTableModalOpen] = useState(false);
   const [customTableName, setCustomTableName] = useState('');
   const [currentEditingGuestId, setCurrentEditingGuestId] = useState<number | null>(null);
@@ -1112,16 +1112,14 @@ const Dashboard: React.FC = () => {
   }
 
   // Apply sorting
-  if (sortOrder !== 'default') {
-    filteredGuests = [...filteredGuests].sort((a, b) => {
-      if (sortOrder === 'first-asc') {
-        return a.firstName.localeCompare(b.firstName);
-      } else if (sortOrder === 'last-asc') {
-        return a.lastName.localeCompare(b.lastName);
-      }
-      return 0;
-    });
-  }
+  filteredGuests = [...filteredGuests].sort((a, b) => {
+    if (sortOrder === 'first-asc') {
+      return a.firstName.localeCompare(b.firstName);
+    } else if (sortOrder === 'last-asc') {
+      return a.lastName.localeCompare(b.lastName);
+    }
+    return 0;
+  });
   
   const totalAttending = Array.isArray(eventFilteredGuests) ? eventFilteredGuests.filter(g => g.attending === 'yes').reduce((sum, g) => sum + g.allowed, 0) : 0;
   const selectedGift = selectedEventForRSVP ? gifts.find(g => g.id === selectedEventForRSVP) : null;
@@ -2049,12 +2047,11 @@ const Dashboard: React.FC = () => {
                         </Select>
                         
                         <div className="w-full sm:w-auto">
-                          <Select value={sortOrder} onValueChange={(value: 'default' | 'first-asc' | 'last-asc') => setSortOrder(value)}>
+                          <Select value={sortOrder} onValueChange={(value: 'first-asc' | 'last-asc') => setSortOrder(value)}>
                             <SelectTrigger className="w-40 h-10">
                               <SelectValue placeholder="Sort by" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="default">Default</SelectItem>
                               <SelectItem value="first-asc">First Name (A-Z)</SelectItem>
                               <SelectItem value="last-asc">Last Name (A-Z)</SelectItem>
                             </SelectContent>
@@ -2076,8 +2073,8 @@ const Dashboard: React.FC = () => {
                         <TableHeader className="bg-gray-50">
                           <TableRow>
                             <TableHead className="font-semibold w-16">#</TableHead>
-                            <TableHead className="font-semibold">First Name</TableHead>
                             <TableHead className="font-semibold">Last Name</TableHead>
+                            <TableHead className="font-semibold">First Name</TableHead>
                             <TableHead className="font-semibold">Will you be attending</TableHead>
                             <TableHead className="font-semibold text-center">
                               <div>Allowed</div>
@@ -2093,10 +2090,10 @@ const Dashboard: React.FC = () => {
                             <TableRow key={guest.id} className="hover:bg-gray-50/50">
                               <TableCell className="font-medium text-gray-600">{index + 1}</TableCell>
                               <TableCell>
-                                <span className="font-medium">{guest.firstName}</span>
+                                <span className="font-medium">{guest.lastName}</span>
                               </TableCell>
                               <TableCell>
-                                <span className="font-medium">{guest.lastName}</span>
+                                <span className="font-medium">{guest.firstName}</span>
                               </TableCell>
                               <TableCell>
                                 <Select
