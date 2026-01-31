@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
 import { useToast } from '../hooks/use-toast';
-import { Plus, Edit, Trash2, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Filter, Download } from 'lucide-react';
 
 interface Vendor {
   id: number;
@@ -501,6 +501,38 @@ const VendorPaymentTracker: React.FC = () => {
   const totalScheduled = filteredVendors.reduce((sum, v) => sum + Number(v.scheduledAmount || 0), 0);
   const totalOutstanding = totalBudget - totalPaid - totalScheduled;
 
+  const handleDownload = () => {
+    const headers = ['Category', 'Event', 'Total Cost', 'Paid', 'Scheduled', 'Balance', 'Due Date', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredVendors.map(vendor => {
+        const balance = vendor.amountAgreed - vendor.amountPaid - (vendor.scheduledAmount || 0);
+        return [
+          `"${vendor.category}"`,
+          `"${vendor.event.title}"`,
+          vendor.amountAgreed,
+          vendor.amountPaid,
+          vendor.scheduledAmount || 0,
+          balance,
+          vendor.dueDate.split('T')[0],
+          vendor.status
+        ].join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'wedding_expenses.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -516,7 +548,7 @@ const VendorPaymentTracker: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Expenses</h2>
           <p className="text-gray-600 mt-1">Track payments for your wedding vendors</p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3 lg:flex-nowrap">
           <Select value={filterEvent ? filterEvent.toString() : 'all'} onValueChange={(value) => {
             setFilterEvent(value === 'all' ? null : parseInt(value));
           }}>
@@ -645,6 +677,10 @@ const VendorPaymentTracker: React.FC = () => {
           </Dialog>
           <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]" onClick={() => setIsScheduleModalOpen(true)}>
             Schedule Payment
+          </Button>
+          <Button variant="outline" onClick={handleDownload} className="border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white">
+            <Download className="w-4 h-4 mr-2" />
+            Download
           </Button>
 
           <Dialog open={isEditModalOpen} onOpenChange={(open) => {
