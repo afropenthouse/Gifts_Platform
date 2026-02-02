@@ -33,6 +33,9 @@ const Navbar = () => {
             <Link to="/how-it-works" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               How it Works
             </Link>
+            <Link to="/faq" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+              FAQ
+            </Link>
             <Link to="/wedding-rsvp" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               RSVP
             </Link>
@@ -92,6 +95,9 @@ const Navbar = () => {
                 <div className="flex flex-col gap-4 mt-8">
                   <Link to="/how-it-works" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     How it Works
+                  </Link>
+                  <Link to="/faq" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
+                    FAQ
                   </Link>
                   <Link to="/wedding-rsvp" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     RSVP

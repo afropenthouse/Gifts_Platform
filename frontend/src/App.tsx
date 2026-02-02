@@ -20,6 +20,7 @@ import WeddingQRCode from "./pages/landing/WeddingQRCode";
 import VendorPaymentTracker from "./pages/landing/VendorPaymentTracker";
 import ScheduleVendorPayments from "./pages/landing/ScheduleVendorPayments";
 import AsoebiLanding from "./pages/landing/AsoebiLanding";
+import FAQ from "./pages/landing/FAQ";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => {
           <Route path="/vendor-payment-tracker" element={<VendorPaymentTracker />} />
           <Route path="/schedule-vendor-payments" element={<ScheduleVendorPayments />} />
           <Route path="/asoebi" element={<AsoebiLanding />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/gift/:link" element={<ShareGift />} />
           <Route path="/gift/:slug/:id" element={<ShareGift />} />
           <Route path="/qr-gift/:link" element={<QRGift />} />

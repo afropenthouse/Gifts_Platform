@@ -27,7 +27,7 @@ const AsoebiLanding = () => {
               </span>
             </div>
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Collect Asoebi payments the easy way, all in one place.
+              Organise Asoebi payments the easy way, all in one place.
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Asoebi should bring excitement — not confusion. BeThere Weddings helps couples sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
@@ -54,8 +54,8 @@ const AsoebiLanding = () => {
             How Asoebi Works on BeThere
           </h2>
 
-          <div className="mb-20 flex justify-center">
-            <div className="bg-secondary/30 p-8 rounded-2xl max-w-3xl w-full">
+          <div className="mb-20 grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="bg-secondary/30 p-8 rounded-2xl w-full">
               <ShoppingBag className="w-12 h-12 mb-6 text-primary" />
               <h3 className="text-2xl font-bold mb-4" style={{ color: '#2E235C' }}>Set your Asoebi options</h3>
               <p className="text-lg text-muted-foreground mb-4">
@@ -69,10 +69,7 @@ const AsoebiLanding = () => {
                 Set your price, available quantity, and close sales when you’re ready.
               </p>
             </div>
-          </div>
-
-          <div className="mb-20 flex justify-center">
-            <div className="bg-secondary/30 p-8 rounded-2xl max-w-3xl w-full">
+            <div className="bg-secondary/30 p-8 rounded-2xl w-full">
               <LinkIcon className="w-12 h-12 mb-6 text-primary" />
               <h3 className="text-2xl font-bold mb-4" style={{ color: '#2E235C' }}>Share one simple link</h3>
               <p className="text-lg text-muted-foreground mb-4">
@@ -89,8 +86,8 @@ const AsoebiLanding = () => {
             </div>
           </div>
 
-          <div className="mb-20 flex justify-center">
-            <div className="bg-secondary/30 p-8 rounded-2xl max-w-3xl w-full">
+          <div className="mb-20 grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="bg-secondary/30 p-8 rounded-2xl w-full">
               <BarChart3 className="w-12 h-12 mb-6 text-primary" />
               <h3 className="text-2xl font-bold mb-4" style={{ color: '#2E235C' }}>Track orders automatically</h3>
               <p className="text-lg text-muted-foreground mb-4">
@@ -106,10 +103,7 @@ const AsoebiLanding = () => {
                 Everything updates in real time.
               </p>
             </div>
-          </div>
-
-           <div className="flex justify-center">
-            <div className="bg-secondary/30 p-8 rounded-2xl max-w-3xl w-full">
+            <div className="bg-secondary/30 p-8 rounded-2xl w-full">
               <AlertCircle className="w-12 h-12 mb-6 text-primary" />
               <h3 className="text-2xl font-bold mb-4" style={{ color: '#2E235C' }}>Avoid over-selling & confusion</h3>
               <p className="text-lg text-muted-foreground mb-4">

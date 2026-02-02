@@ -212,35 +212,34 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
       <div style="max-width: 420px; margin: 0 auto; background: #fff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46,35,92,0.08); overflow: hidden;">
         <div style="padding: 24px 24px 0; text-align: center;">
           <div style="font-size: 22px; font-weight: 700; color: ${accent}; margin-bottom: 8px;">${heading}</div>
-          <p style="margin: 0; font-size: 15px; color: #4b5563;">is coming up soon!</p>
+          <p style="margin: 0; font-size: 15px; color: #4b5563;">Save the Date</p>
         </div>
 
         <div style="padding: 20px;">
-          <div style="position: relative; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
-             ${eventPicture ? `<img src="${eventPicture}" alt="Event" style="width: 100%; height: 200px; object-fit: cover; display: block;">` : ''}
-            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); padding: 20px 16px 12px;">
-              <div style="color: #fff; font-weight: 700; font-size: 18px;">${eventDate || 'Date TBA'}</div>
-              ${eventAddress ? `<div style="color: rgba(255,255,255,0.9); font-size: 13px; margin-top: 4px;">${eventAddress}</div>` : ''}
-            </div>
+          
+          <div style="text-align: center; margin-bottom: 24px;">
+             <div style="color: ${accent}; font-weight: 700; font-size: 18px; margin-bottom: 4px;">${eventDate || 'Date TBA'}</div>
+             ${eventAddress ? `<div style="color: #6b7280; font-size: 14px; max-width: 300px; margin: 0 auto;">${eventAddress}</div>` : ''}
           </div>
 
           <div style="background: ${muted}; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
             <p style="margin: 0 0 12px; font-size: 14px; color: #374151;">Hi ${guestName},</p>
             <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.5;">
-              We're so excited to see you! Here are the details for the big day.
+              We're so excited to see you on our big day.
+            </p>
+            <p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.5;">
+              Click the button to send Cash gift and show your support
             </p>
           </div>
 
           <div style="display: grid; gap: 10px;">
             <a href="${websiteUrl}" style="display: block; background: ${accent}; color: #fff; text-decoration: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; text-align: center;">
-              View Event Details
+              Send Cash Gift
             </a>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <a href="${directionsUrl}" style="display: block; background: #fff; border: 1px solid #e5e7eb; color: #374151; text-decoration: none; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13px; text-align: center;">
-                Get Directions
-              </a>
-              
-            </div>
+            <div style="height: 10px;"></div>
+            <a href="${directionsUrl}" style="display: block; background: #fff; border: 1px solid #e5e7eb; color: #374151; text-decoration: none; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13px; text-align: center;">
+              Get Directions
+            </a>
           </div>
         </div>
 
@@ -257,7 +256,7 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
     await transporter.sendMail({
       from: mailFrom,
       to: recipient,
-      subject: `${heading} – Event Reminder`,
+      subject: `${heading} – Save the Date`,
       html,
     });
     return { delivered: true };

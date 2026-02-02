@@ -10,33 +10,39 @@ const ScheduleVendorPayments = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Schedule Wedding Vendor Payments Securely - BeThere Weddings";
+    document.title = "Manage Wedding Expenses & Schedule Vendor Payments - BeThere Weddings";
   }, []);
 
   const howItWorks = [
     {
       step: "1",
       icon: <Calendar className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Schedule Payments",
-      description: "Set payment dates and amounts for each vendor"
+      title: "Add & Track Expenses",
+      description: "List all your wedding expenses and vendors in one place."
     },
     {
       step: "2",
       icon: <Shield className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Secure Holding",
-      description: "Funds are held safely by our trusted platform"
+      title: "Schedule Payments",
+      description: "Set payment dates and amounts for each vendor or expense."
     },
     {
       step: "3",
       icon: <Clock className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Auto Release",
-      description: "Payments release automatically on due dates"
+      title: "Automatic & Secure",
+      description: "Payments are released automatically and securely on due dates."
     },
     {
       step: "4",
       icon: <CheckCircle className="w-8 h-8" style={{ color: '#2E235C' }} />,
+      title: "Full Visibility",
+      description: "Monitor all expenses, payment statuses, and vendor balances in real time."
+    },
+    {
+      step: "5",
+      icon: <Heart className="w-8 h-8" style={{ color: '#2E235C' }} />,
       title: "Peace of Mind",
-      description: "Both parties protected with dispute resolution"
+      description: "Enjoy your day knowing all finances are organized and protected."
     },
   ];
 
@@ -64,14 +70,14 @@ const ScheduleVendorPayments = () => {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-primary/10 rounded-full">
               <span className="text-sm font-medium" style={{ color: '#2E235C' }}>
-                Secure Payment Solutions
+                Manage Expenses & Vendor Payments
               </span>
             </div>
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Schedule Wedding Vendor Payments Securely
+              Track & Schedule All Wedding Expenses
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Protect both couples and vendors with scheduled, auto-release payments.
+              Organize, track, and pay all your wedding expenses and vendors in one secure dashboard.
             </p>
           </div>
 
@@ -79,10 +85,10 @@ const ScheduleVendorPayments = () => {
             <div className="space-y-6">
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  One of the biggest challenges in weddings is trust around vendor payments. Couples worry about paying too early, vendors worry about not being paid.
+                  Managing wedding expenses can be overwhelming. With BeThere, you can add every vendor, set payment schedules, and see all your costs in one place.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Be There Weddings solves this with scheduled vendor payments that protect everyone involved.
+                  No more spreadsheets or payment confusion—just clarity, control, and peace of mind for your big day.
                 </p>
               </div>
 
@@ -94,7 +100,7 @@ const ScheduleVendorPayments = () => {
                   style={{ backgroundColor: '#ffff' }}
                   onClick={openSignupModal}
                 >
-                  Schedule Vendor Payments
+                  Start Managing Expenses
                 </Button>
               </div>
             </div>
@@ -103,21 +109,21 @@ const ScheduleVendorPayments = () => {
               <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/20">
                 <div className="flex items-center gap-3 mb-6">
                   <Lock className="w-6 h-6" style={{ color: '#2E235C' }} />
-                  <h3 className="text-xl font-semibold text-foreground">Trusted Protection</h3>
+                  <h3 className="text-xl font-semibold text-foreground">Total Control</h3>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-start gap-4 p-4 bg-white/70 rounded-xl">
                     <Shield className="w-5 h-5 mt-1 flex-shrink-0" style={{ color: '#2E235C' }} />
                     <div>
-                      <p className="text-foreground font-medium">Secure Fund Holding</p>
-                      <p className="text-sm text-muted-foreground">Your money is protected until services are delivered</p>
+                      <p className="text-foreground font-medium">Expense Tracking</p>
+                      <p className="text-sm text-muted-foreground">See all your wedding costs, due dates, and payment statuses at a glance.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4 p-4 bg-white/70 rounded-xl">
                     <CheckCircle className="w-5 h-5 mt-1 flex-shrink-0" style={{ color: '#2E235C' }} />
                     <div>
-                      <p className="text-foreground font-medium">Dispute Resolution</p>
-                      <p className="text-sm text-muted-foreground">Fair process protects both couples and vendors</p>
+                      <p className="text-foreground font-medium">Secure Payments</p>
+                      <p className="text-sm text-muted-foreground">Pay vendors on time, every time, with automatic and protected payments.</p>
                     </div>
                   </div>
                 </div>
@@ -132,14 +138,14 @@ const ScheduleVendorPayments = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-4">
-              How Scheduled Payments Work
+              How to Manage Wedding Expenses
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A simple 4-step process that builds trust and eliminates payment worries
+              A simple step-by-step process to keep your wedding finances organized and stress-free
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {howItWorks.map((step, index) => (
               <div key={index} className="text-center">
                 <div className="relative">
