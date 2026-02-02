@@ -113,8 +113,53 @@ module.exports = () => {
   // Get user's gifts
   router.get('/my', auth(), async (req, res) => {
     try {
-      const gifts = await prisma.gift.findMany({ where: { userId: req.user.id } });
-      res.json(gifts);
+      const gifts = await prisma.gift.findMany({ 
+        where: { userId: req.user.id },
+        include: {
+          contributions: {
+            where: { status: 'completed' },
+            select: {
+              asoebiQuantity: true,
+              asoebiQtyMen: true,
+              asoebiQtyWomen: true,
+              asoebiBrideMenQty: true,
+              asoebiBrideWomenQty: true,
+              asoebiGroomMenQty: true,
+              asoebiGroomWomenQty: true
+            }
+          }
+        }
+      });
+
+      const giftsWithStats = gifts.map(gift => {
+        const sold = {
+          soldAsoebiQuantity: 0,
+          soldAsoebiQtyMen: 0,
+          soldAsoebiQtyWomen: 0,
+          soldAsoebiBrideMenQty: 0,
+          soldAsoebiBrideWomenQty: 0,
+          soldAsoebiGroomMenQty: 0,
+          soldAsoebiGroomWomenQty: 0
+        };
+
+        if (gift.contributions) {
+          gift.contributions.forEach(c => {
+            sold.soldAsoebiQuantity += c.asoebiQuantity || 0;
+            sold.soldAsoebiQtyMen += c.asoebiQtyMen || 0;
+            sold.soldAsoebiQtyWomen += c.asoebiQtyWomen || 0;
+            sold.soldAsoebiBrideMenQty += c.asoebiBrideMenQty || 0;
+            sold.soldAsoebiBrideWomenQty += c.asoebiBrideWomenQty || 0;
+            sold.soldAsoebiGroomMenQty += c.asoebiGroomMenQty || 0;
+            sold.soldAsoebiGroomWomenQty += c.asoebiGroomWomenQty || 0;
+          });
+        }
+        
+        // Remove contributions array to keep response clean
+        const { contributions, ...giftData } = gift;
+        return { ...giftData, ...sold };
+      });
+
+      res.json(giftsWithStats);
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
@@ -181,7 +226,33 @@ module.exports = () => {
         },
       });
 
-      res.json(updatedGift);
+      const soldStats = await prisma.contribution.aggregate({
+        where: { 
+          giftId: giftId,
+          status: 'completed'
+        },
+        _sum: {
+          asoebiQuantity: true,
+          asoebiQtyMen: true,
+          asoebiQtyWomen: true,
+          asoebiBrideMenQty: true,
+          asoebiBrideWomenQty: true,
+          asoebiGroomMenQty: true,
+          asoebiGroomWomenQty: true
+        }
+      });
+
+      const sold = {
+        soldAsoebiQuantity: soldStats._sum.asoebiQuantity || 0,
+        soldAsoebiQtyMen: soldStats._sum.asoebiQtyMen || 0,
+        soldAsoebiQtyWomen: soldStats._sum.asoebiQtyWomen || 0,
+        soldAsoebiBrideMenQty: soldStats._sum.asoebiBrideMenQty || 0,
+        soldAsoebiBrideWomenQty: soldStats._sum.asoebiBrideWomenQty || 0,
+        soldAsoebiGroomMenQty: soldStats._sum.asoebiGroomMenQty || 0,
+        soldAsoebiGroomWomenQty: soldStats._sum.asoebiGroomWomenQty || 0
+      };
+
+      res.json({ ...updatedGift, ...sold });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });

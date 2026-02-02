@@ -191,6 +191,8 @@ enum GiftType {
   birthday
   graduation
   convocation
+  baby_shower
+  funeral
   other
 }
 

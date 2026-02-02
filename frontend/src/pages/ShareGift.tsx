@@ -250,7 +250,7 @@ const ShareGift: React.FC = () => {
     const title = heading;
     const baseDescription = gift.description ? String(gift.description).trim() : '';
     const description = baseDescription ? `${title} — ${baseDescription}` : `${title} — Join us and send a cash gift using this RSVP link.`;
-    const image = gift.picture || '/logo2.png';
+    const image = gift.picture || (gift.type === 'wedding' ? '/logo2.png' : '/logo1.png');
 
     // Title
     document.title = `${title} — BeThere Weddings`;
@@ -770,7 +770,7 @@ const ShareGift: React.FC = () => {
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
         <div className="w-full max-w-md flex flex-col items-center gap-6">
           <img
-            src="/logo2.png"
+            src={gift.type === 'wedding' ? "/logo2.png" : "/logo1.png"}
             alt="BeThere Weddings logo"
             className="h-12 w-auto"
           />
@@ -1396,7 +1396,7 @@ const ShareGift: React.FC = () => {
           ) : (
             <>
               <div className="py-4 text-center space-y-4">
-                {(Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && !asoebiFamily && (
+                {gift?.type === 'wedding' && (Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && !asoebiFamily && (
                     <div className="mb-4 space-y-2">
                         <p className="text-base text-black font-medium text-center">
                           Whose Asoebi do you want?
@@ -1421,10 +1421,10 @@ const ShareGift: React.FC = () => {
                     </div>
                 )}
 
-                {((!gift?.asoebiBrideMenPrice && !gift?.asoebiGroomMenPrice && !gift?.asoebiBrideWomenPrice && !gift?.asoebiGroomWomenPrice && (gift?.asoebiPriceMen || gift?.asoebiPriceWomen)) || 
+                {((gift?.type !== 'wedding' && (Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0)) || 
                   (asoebiFamily)) && (
                     <div className="space-y-4">
-                        {(Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && (
+                        {gift?.type === 'wedding' && (Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && (
                              <div className="flex justify-start">
                                  <Button variant="ghost" size="sm" className="text-muted-foreground -ml-2 h-8" onClick={() => setAsoebiFamily(null)}>
                                      <ChevronLeft className="w-4 h-4 mr-1" /> Back

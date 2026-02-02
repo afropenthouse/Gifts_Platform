@@ -22,15 +22,25 @@ interface Contribution {
   id: number;
   giftId: number;
   contributorEmail: string;
+  contributorName?: string;
   amount: number;
-  isAsoebi?: boolean; // Note: schema doesn't have isAsoebi on Contribution, but metadata might. 
-                      // However, we can match by email and giftId for now.
+  isAsoebi?: boolean;
   message?: string;
+  status?: string;
+  asoebiQuantity?: number;
+  asoebiQtyMen?: number;
+  asoebiQtyWomen?: number;
+  asoebiBrideMenQty?: number;
+  asoebiBrideWomenQty?: number;
+  asoebiGroomMenQty?: number;
+  asoebiGroomWomenQty?: number;
+  createdAt?: string;
 }
 
 interface Gift {
   id: number;
   title: string;
+  type?: string;
   isSellingAsoebi?: boolean;
   asoebiPrice?: number | string;
   asoebiPriceMen?: number | string;
@@ -67,6 +77,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivered' | 'undelivered'>('all');
   const [qtyFilter, setQtyFilter] = useState<'all' | 'men' | 'women'>('all');
   const [deliveryStatus, setDeliveryStatus] = useState<Record<string, boolean>>({});
+  const [stockView, setStockView] = useState<'in_stock' | 'sold_out'>('in_stock');
 
   useEffect(() => {
     const saved = localStorage.getItem('asoebiDeliveryStatus');
@@ -88,85 +99,114 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
   };
 
   const asoebiData = useMemo(() => {
-    // Filter guests who clicked Get Asoebi or purchased Asoebi
-    let relevantGuests = guests.filter(g => g.asoebiPaid);
+    // Filter contributions that are for Asoebi
+    let relevantContribs = contributions.filter(c => c.isAsoebi);
 
     if (eventFilter !== 'all') {
-      relevantGuests = relevantGuests.filter(g => g.giftId === parseInt(eventFilter));
+      const gid = parseInt(eventFilter);
+      relevantContribs = relevantContribs.filter(c => c.giftId === gid);
     }
 
-    const processedData = relevantGuests.map(guest => {
-      // Get the gift title for this guest
-      const gift = gifts.find(g => g.id === guest.giftId);
+    const processedData = relevantContribs.map(c => {
+      // Get the gift title
+      const gift = gifts.find(g => g.id === c.giftId);
       const eventTitle = gift ? gift.title : 'Unknown Event';
-      // Expected format example: "Bride's Family - Men x2"
-      // Or potentially multiple: "Bride's Family - Men x2, Groom's Family - Women x1"
-      
+
+      // Helper to sum
+      const sum = (...args: (number | undefined)[]) => args.reduce((a, b) => (a || 0) + (b || 0), 0) || 0;
+
+      // Determine Quantities
+      const brideMen = c.asoebiBrideMenQty || 0;
+      const brideWomen = c.asoebiBrideWomenQty || 0;
+      const groomMen = c.asoebiGroomMenQty || 0;
+      const groomWomen = c.asoebiGroomWomenQty || 0;
+      const men = c.asoebiQtyMen || 0;
+      const women = c.asoebiQtyWomen || 0;
+
+      const totalMen = sum(brideMen, groomMen, men);
+      const totalWomen = sum(brideWomen, groomWomen, women);
+
+      // Determine Type
       let type = '-';
-      let maleQty = '-';
-      let femaleQty = '-';
-      let selectionRaw = guest.asoebiSelection || '';
+      const hasBride = brideMen > 0 || brideWomen > 0;
+      const hasGroom = groomMen > 0 || groomWomen > 0;
 
-      if (selectionRaw) {
-        // Determine Type
-        if (selectionRaw.toLowerCase().includes("bride")) {
-          type = "Bride";
-        } else if (selectionRaw.toLowerCase().includes("groom")) {
-          type = "Groom";
-        }
+      if (hasBride && hasGroom) {
+        type = 'Bride & Groom';
+      } else if (hasBride) {
+        type = 'Bride';
+      } else if (hasGroom) {
+        type = 'Groom';
+      }
 
-        // Determine Quantities
-        const menMatch = selectionRaw.match(/Men x(\d+)/i);
-        if (menMatch) {
-          maleQty = menMatch[1];
-        }
+      // Fallback for legacy data (Type)
+      if (type === '-' && c.isAsoebi) {
+        const msg = (c.message || '').toLowerCase();
+        if (msg.includes('bride') && msg.includes('groom')) type = 'Bride & Groom';
+        else if (msg.includes('bride')) type = 'Bride';
+        else if (msg.includes('groom')) type = 'Groom';
+      }
 
-        const womenMatch = selectionRaw.match(/Women x(\d+)/i);
-        if (womenMatch) {
-          femaleQty = womenMatch[1];
+      // Fallback for legacy data (Quantities)
+      if (totalMen === 0 && totalWomen === 0 && (c.asoebiQuantity || 0) > 0) {
+        // If we can't distinguish, we'll try to infer from message, otherwise default to women (common case) or just show as generic
+        // However, the table only has Men/Women columns.
+        // We will default to Women column if unspecified, as it's more common for Asoebi to be female-dominated,
+        // unless message says "Men".
+        const msg = (c.message || '').toLowerCase();
+        if (msg.includes('men') && !msg.includes('women')) {
+           // It's likely men
+           // But we need to be careful not to double count if logic changes.
+           // Since totalMen is 0, we can safely assign.
+           // We won't modify totalMen variable but just use it in the return object logic
+           // Actually, let's just override totalMen/totalWomen for the display logic below
         }
       }
 
-      // Determine Amount Paid
-      // Look for a contribution from this guest for the same event
-      let amountPaid = 0;
-      if (guest.email && guest.asoebiPaid) {
-        // Find contributions by email and giftId
-        const contribs = contributions.filter(
-          c => c.giftId === guest.giftId && 
-               c.contributorEmail?.toLowerCase() === guest.email?.toLowerCase()
-        );
-        
-        // Sum amounts
-        amountPaid = contribs.reduce((sum, c) => sum + c.amount, 0);
+      // Final display values with fallback
+      let displayMen = totalMen;
+      let displayWomen = totalWomen;
+      
+      if (displayMen === 0 && displayWomen === 0 && (c.asoebiQuantity || 0) > 0) {
+         const msg = (c.message || '').toLowerCase();
+         if (msg.includes('men') && !msg.includes('women')) {
+            displayMen = c.asoebiQuantity || 0;
+         } else {
+            // Default to women if we can't tell, or if it says women
+            displayWomen = c.asoebiQuantity || 0;
+         }
       }
 
       // Status
-      const status = guest.asoebiPaid ? 'Paid' : 'Pending';
+      const status = c.status === 'completed' ? 'Paid' : (c.status || 'Paid');
 
-      const key = `${guest.giftId}:${guest.id}`;
+      // Delivery Key: Use contribution ID
+      const key = `${c.giftId}:contrib-${c.id}`;
       const delivered = Boolean(deliveryStatus[key]);
 
+      // Name fallback
+      const name = c.contributorName || c.contributorEmail || 'Anonymous';
+
       return {
-        id: guest.id,
-        name: `${guest.firstName} ${guest.lastName}`,
-        email: guest.email || '-',
+        id: c.id,
+        name,
+        email: c.contributorEmail || '-',
         type,
-        maleQty,
-        femaleQty,
-        amountPaid,
+        maleQty: displayMen > 0 ? displayMen : '-',
+        femaleQty: displayWomen > 0 ? displayWomen : '-',
+        amountPaid: c.amount,
         status,
-        selectionRaw,
-        giftId: guest.giftId,
+        giftId: c.giftId,
         eventTitle,
         delivered
       };
     });
 
-    let filtered = processedData.filter(item => item.status === 'Paid');
+    let filtered = processedData;
 
     if (typeFilter !== 'all') {
-      filtered = filtered.filter(item => item.type.toLowerCase() === typeFilter);
+      if (typeFilter === 'bride') filtered = filtered.filter(item => item.type.includes('Bride'));
+      if (typeFilter === 'groom') filtered = filtered.filter(item => item.type.includes('Groom'));
     }
 
     if (deliveryFilter !== 'all') {
@@ -185,15 +225,26 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         return true;
       });
     }
+    
+    // Sort by ID desc (newest first)
+    filtered.sort((a, b) => b.id - a.id);
 
     return filtered;
-  }, [guests, contributions, eventFilter, typeFilter, deliveryFilter, qtyFilter, deliveryStatus, gifts]);
+  }, [contributions, gifts, eventFilter, typeFilter, deliveryFilter, qtyFilter, deliveryStatus]);
 
   const selectedGift = useMemo(() => {
     if (eventFilter === 'all') return null;
     const gid = parseInt(eventFilter);
     return gifts.find(g => g.id === gid) || null;
   }, [eventFilter, gifts]);
+
+  const showTypeColumn = useMemo(() => {
+    if (selectedGift) {
+      return selectedGift.type === 'wedding';
+    }
+    // If viewing all, show if at least one wedding event exists in the filtered data
+    return gifts.some(g => g.type === 'wedding');
+  }, [selectedGift, gifts]);
 
   const getStock = (total?: number, sold?: number) => {
     if (total === undefined || total === null) return undefined;
@@ -207,40 +258,75 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       const n = Number(v);
       return Number.isFinite(n) ? n : 0;
     };
-    const calcGiftStock = (g: Gift) => ({
-      brideMen: Math.max(0, toNum(g.asoebiBrideMenQty) - toNum(g.soldAsoebiBrideMenQty)),
-      brideWomen: Math.max(0, toNum(g.asoebiBrideWomenQty) - toNum(g.soldAsoebiBrideWomenQty)),
-      groomMen: Math.max(0, toNum(g.asoebiGroomMenQty) - toNum(g.soldAsoebiGroomMenQty)),
-      groomWomen: Math.max(0, toNum(g.asoebiGroomWomenQty) - toNum(g.soldAsoebiGroomWomenQty)),
-      men: Math.max(0, toNum(g.asoebiQtyMen) - toNum(g.soldAsoebiQtyMen)),
-      women: Math.max(0, toNum(g.asoebiQtyWomen) - toNum(g.soldAsoebiQtyWomen)),
-      generic: Math.max(0, toNum(g.asoebiQuantity) - toNum(g.soldAsoebiQuantity)),
-      hasSelling: Boolean(g.isSellingAsoebi)
-    });
+    const calcGiftStock = (g: Gift) => {
+      const soldBM = toNum(g.soldAsoebiBrideMenQty);
+      const soldBW = toNum(g.soldAsoebiBrideWomenQty);
+      const soldGM = toNum(g.soldAsoebiGroomMenQty);
+      const soldGW = toNum(g.soldAsoebiGroomWomenQty);
+      const soldM = toNum(g.soldAsoebiQtyMen);
+      const soldW = toNum(g.soldAsoebiQtyWomen);
+      const soldGen = toNum(g.soldAsoebiQuantity);
+
+      return {
+        inStock: {
+          brideMen: Math.max(0, toNum(g.asoebiBrideMenQty) - soldBM),
+          brideWomen: Math.max(0, toNum(g.asoebiBrideWomenQty) - soldBW),
+          groomMen: Math.max(0, toNum(g.asoebiGroomMenQty) - soldGM),
+          groomWomen: Math.max(0, toNum(g.asoebiGroomWomenQty) - soldGW),
+          men: Math.max(0, toNum(g.asoebiQtyMen) - soldM),
+          women: Math.max(0, toNum(g.asoebiQtyWomen) - soldW),
+          generic: Math.max(0, toNum(g.asoebiQuantity) - soldGen),
+        },
+        soldOut: {
+          brideMen: soldBM,
+          brideWomen: soldBW,
+          groomMen: soldGM,
+          groomWomen: soldGW,
+          men: soldM,
+          women: soldW,
+          generic: soldGen,
+        },
+        hasSelling: Boolean(g.isSellingAsoebi)
+      };
+    };
+
     if (selectedGift) {
       const s = calcGiftStock(selectedGift);
       const hasAny =
         s.hasSelling ||
-        s.brideMen + s.brideWomen + s.groomMen + s.groomWomen + s.men + s.women + s.generic > 0;
+        Object.values(s.inStock).reduce((a, b) => a + b, 0) > 0 ||
+        Object.values(s.soldOut).reduce((a, b) => a + b, 0) > 0;
       return { ...s, show: hasAny };
     }
     // Aggregate across all gifts when "All Events"
     let total = {
-      brideMen: 0, brideWomen: 0, groomMen: 0, groomWomen: 0, men: 0, women: 0, generic: 0
+      inStock: { brideMen: 0, brideWomen: 0, groomMen: 0, groomWomen: 0, men: 0, women: 0, generic: 0 },
+      soldOut: { brideMen: 0, brideWomen: 0, groomMen: 0, groomWomen: 0, men: 0, women: 0, generic: 0 }
     };
     let anySelling = false;
     for (const g of gifts) {
       const s = calcGiftStock(g);
-      total.brideMen += s.brideMen;
-      total.brideWomen += s.brideWomen;
-      total.groomMen += s.groomMen;
-      total.groomWomen += s.groomWomen;
-      total.men += s.men;
-      total.women += s.women;
-      total.generic += s.generic;
+      total.inStock.brideMen += s.inStock.brideMen;
+      total.inStock.brideWomen += s.inStock.brideWomen;
+      total.inStock.groomMen += s.inStock.groomMen;
+      total.inStock.groomWomen += s.inStock.groomWomen;
+      total.inStock.men += s.inStock.men;
+      total.inStock.women += s.inStock.women;
+      total.inStock.generic += s.inStock.generic;
+
+      total.soldOut.brideMen += s.soldOut.brideMen;
+      total.soldOut.brideWomen += s.soldOut.brideWomen;
+      total.soldOut.groomMen += s.soldOut.groomMen;
+      total.soldOut.groomWomen += s.soldOut.groomWomen;
+      total.soldOut.men += s.soldOut.men;
+      total.soldOut.women += s.soldOut.women;
+      total.soldOut.generic += s.soldOut.generic;
+
       anySelling = anySelling || s.hasSelling;
     }
-    const hasAny = anySelling || (total.brideMen + total.brideWomen + total.groomMen + total.groomWomen + total.men + total.women + total.generic > 0);
+    const hasAny = anySelling || 
+      Object.values(total.inStock).reduce((a, b) => a + b, 0) > 0 ||
+      Object.values(total.soldOut).reduce((a, b) => a + b, 0) > 0;
     return { ...total, show: hasAny };
   }, [selectedGift, gifts]);
 
@@ -249,7 +335,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       'Name',
       'Email',
       'Event',
-      'Type',
+      ...(showTypeColumn ? ['Asoebi Type'] : []),
       'Men Qty',
       'Women Qty',
       'Amount Paid',
@@ -259,7 +345,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       r.name,
       r.email,
       r.eventTitle,
-      r.type,
+      ...(showTypeColumn ? [r.type] : []),
       r.maleQty,
       r.femaleQty,
       r.amountPaid,
@@ -298,23 +384,41 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
 
       {stockSummary.show && (
         <>
-          <div className="text-sm font-semibold text-gray-900 mb-2">In Stock</div>
+          <div className="mb-2">
+            <Select value={stockView} onValueChange={(v) => setStockView(v as 'in_stock' | 'sold_out')}>
+              <SelectTrigger className="w-[140px] h-8 text-sm font-semibold border-none shadow-none p-0 focus:ring-0 focus:ring-offset-0 bg-transparent text-gray-900 justify-start gap-2 [&>svg]:opacity-50 hover:bg-transparent data-[state=open]:bg-transparent">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="in_stock">In Stock</SelectItem>
+                <SelectItem value="sold_out">Sold Out</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div className="p-3 rounded-lg bg-primary text-white text-center">
               <div className="text-sm/5 opacity-90">Bride's Asoebi (Men)</div>
-              <div className="text-2xl font-semibold text-center">{stockSummary.brideMen}</div>
+              <div className="text-2xl font-semibold text-center">
+                {stockView === 'in_stock' ? stockSummary.inStock.brideMen : stockSummary.soldOut.brideMen}
+              </div>
             </div>
             <div className="p-3 rounded-lg bg-primary text-white text-center">
               <div className="text-sm/5 opacity-90">Bride's Asoebi (Women)</div>
-              <div className="text-2xl font-semibold text-center">{stockSummary.brideWomen}</div>
+              <div className="text-2xl font-semibold text-center">
+                {stockView === 'in_stock' ? stockSummary.inStock.brideWomen : stockSummary.soldOut.brideWomen}
+              </div>
             </div>
             <div className="p-3 rounded-lg bg-primary text-white text-center">
               <div className="text-sm/5 opacity-90">Groom's Asoebi (Men)</div>
-              <div className="text-2xl font-semibold text-center">{stockSummary.groomMen}</div>
+              <div className="text-2xl font-semibold text-center">
+                {stockView === 'in_stock' ? stockSummary.inStock.groomMen : stockSummary.soldOut.groomMen}
+              </div>
             </div>
             <div className="p-3 rounded-lg bg-primary text-white text-center">
               <div className="text-sm/5 opacity-90">Groom's Asoebi (Women)</div>
-              <div className="text-2xl font-semibold text-center">{stockSummary.groomWomen}</div>
+              <div className="text-2xl font-semibold text-center">
+                {stockView === 'in_stock' ? stockSummary.inStock.groomWomen : stockSummary.soldOut.groomWomen}
+              </div>
             </div>
           </div>
         </>
@@ -323,6 +427,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         <CardHeader>
           <CardTitle>Asoebi Orders</CardTitle>
           <div className="grid grid-cols-3 gap-2 mt-2 md:flex md:flex-wrap md:items-center">
+            {showTypeColumn && (
             <div className="flex items-center gap-1">
               <Label htmlFor="type-filter" className="hidden md:inline md:text-left">Type:</Label>
               <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
@@ -339,6 +444,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                 </SelectContent>
               </Select>
             </div>
+            )}
             <div className="flex items-center gap-1">
               <Label htmlFor="qty-filter" className="hidden md:inline md:text-left">Qty:</Label>
               <Select value={qtyFilter} onValueChange={(v) => setQtyFilter(v as any)}>
@@ -390,7 +496,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Type (Bride / Groom)</TableHead>
+                  {showTypeColumn && <TableHead>Asoebi Type</TableHead>}
                   <TableHead>Men Quantity</TableHead>
                   <TableHead>Women Quantity</TableHead>
                   <TableHead>Amount Paid</TableHead>
@@ -402,7 +508,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                 {asoebiData.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">{row.name}</TableCell>
-                    <TableCell>{row.type}</TableCell>
+                    {showTypeColumn && <TableCell>{row.type}</TableCell>}
                     <TableCell>{row.maleQty}</TableCell>
                     <TableCell>{row.femaleQty}</TableCell>
                     <TableCell>
@@ -423,7 +529,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                       <Checkbox
                         checked={row.delivered}
                         onCheckedChange={(checked) => {
-                          const key = `${row.giftId}:${row.id}`;
+                          const key = `${row.giftId}:contrib-${row.id}`;
                           const updated = { ...deliveryStatus, [key]: Boolean(checked) };
                           persistDeliveryStatus(updated);
                         }}

@@ -154,7 +154,7 @@ const HeroSection = () => {
       {/* Images - Hidden on small mobile, shown on medium and up */}
       <div className="flex-1 w-full lg:w-auto mt-8 lg:mt-0 mb-6 lg:mb-0 px-0 lg:px-4 flex items-center justify-center">
         <img 
-          src="/6ty1.JPG" 
+          src="/6ty2.JPG" 
           alt="Celebration" 
           className="w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[200px] xl:max-w-xs h-auto rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
         />
@@ -203,7 +203,8 @@ const HeroSection = () => {
                   <SelectItem value="birthday">Birthday</SelectItem>
                   <SelectItem value="graduation">Graduation</SelectItem>
                   <SelectItem value="convocation">Convocation</SelectItem>
-                  <SelectItem value="baby-shower">Baby Shower</SelectItem>
+                  <SelectItem value="baby_shower">Baby Shower</SelectItem>
+                  <SelectItem value="funeral">Funeral</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>

@@ -578,13 +578,13 @@ const Dashboard: React.FC = () => {
     setAsoebiBrideWomenDescription(g.asoebiBrideWomenDescription || '');
     setAsoebiGroomMenDescription(g.asoebiGroomMenDescription || '');
     setAsoebiGroomWomenDescription(g.asoebiGroomWomenDescription || '');
-    setAsoebiQuantity(g.asoebiQuantity !== undefined && g.asoebiQuantity !== null ? g.asoebiQuantity.toString() : '');
-    setAsoebiQtyMen(g.asoebiQtyMen !== undefined && g.asoebiQtyMen !== null ? g.asoebiQtyMen.toString() : '');
-    setAsoebiQtyWomen(g.asoebiQtyWomen !== undefined && g.asoebiQtyWomen !== null ? g.asoebiQtyWomen.toString() : '');
-    setAsoebiBrideMenQty(g.asoebiBrideMenQty !== undefined && g.asoebiBrideMenQty !== null ? g.asoebiBrideMenQty.toString() : '');
-    setAsoebiBrideWomenQty(g.asoebiBrideWomenQty !== undefined && g.asoebiBrideWomenQty !== null ? g.asoebiBrideWomenQty.toString() : '');
-    setAsoebiGroomMenQty(g.asoebiGroomMenQty !== undefined && g.asoebiGroomMenQty !== null ? g.asoebiGroomMenQty.toString() : '');
-    setAsoebiGroomWomenQty(g.asoebiGroomWomenQty !== undefined && g.asoebiGroomWomenQty !== null ? g.asoebiGroomWomenQty.toString() : '');
+    setAsoebiQuantity(g.asoebiQuantity !== undefined && g.asoebiQuantity !== null ? Math.max(0, parseInt(g.asoebiQuantity) - (g.soldAsoebiQuantity || 0)).toString() : '');
+    setAsoebiQtyMen(g.asoebiQtyMen !== undefined && g.asoebiQtyMen !== null ? Math.max(0, parseInt(g.asoebiQtyMen) - (g.soldAsoebiQtyMen || 0)).toString() : '');
+    setAsoebiQtyWomen(g.asoebiQtyWomen !== undefined && g.asoebiQtyWomen !== null ? Math.max(0, parseInt(g.asoebiQtyWomen) - (g.soldAsoebiQtyWomen || 0)).toString() : '');
+    setAsoebiBrideMenQty(g.asoebiBrideMenQty !== undefined && g.asoebiBrideMenQty !== null ? Math.max(0, parseInt(g.asoebiBrideMenQty) - (g.soldAsoebiBrideMenQty || 0)).toString() : '');
+    setAsoebiBrideWomenQty(g.asoebiBrideWomenQty !== undefined && g.asoebiBrideWomenQty !== null ? Math.max(0, parseInt(g.asoebiBrideWomenQty) - (g.soldAsoebiBrideWomenQty || 0)).toString() : '');
+    setAsoebiGroomMenQty(g.asoebiGroomMenQty !== undefined && g.asoebiGroomMenQty !== null ? Math.max(0, parseInt(g.asoebiGroomMenQty) - (g.soldAsoebiGroomMenQty || 0)).toString() : '');
+    setAsoebiGroomWomenQty(g.asoebiGroomWomenQty !== undefined && g.asoebiGroomWomenQty !== null ? Math.max(0, parseInt(g.asoebiGroomWomenQty) - (g.soldAsoebiGroomWomenQty || 0)).toString() : '');
     setEditGuestListMode(gift.guestListMode || 'restricted');
     setIsEditModalOpen(true);
   };
@@ -651,12 +651,12 @@ const Dashboard: React.FC = () => {
             return;
          }
        } else {
-         if (!asoebiPrice) {
-           alert('Please enter the Asoebi Price.');
-           setIsCreatingGift(false);
-           return;
-         }
-       }
+        if (!asoebiPrice && !asoebiPriceMen && !asoebiPriceWomen) {
+          alert('Please set at least one Asoebi price.');
+          setIsCreatingGift(false);
+          return;
+        }
+      }
      }
 
     const formData = new FormData();
@@ -806,8 +806,8 @@ const Dashboard: React.FC = () => {
            return;
         }
       } else {
-        if (!asoebiPrice) {
-          alert('Please enter the Asoebi Price.');
+        if (!asoebiPrice && !asoebiPriceMen && !asoebiPriceWomen) {
+          alert('Please set at least one Asoebi price.');
           setIsUpdatingGift(false);
           return;
         }
@@ -850,18 +850,18 @@ const Dashboard: React.FC = () => {
         if (asoebiBrideWomenDescription) formData.append('asoebiBrideWomenDescription', asoebiBrideWomenDescription);
         if (asoebiGroomMenDescription) formData.append('asoebiGroomMenDescription', asoebiGroomMenDescription);
         if (asoebiGroomWomenDescription) formData.append('asoebiGroomWomenDescription', asoebiGroomWomenDescription);
-        if (asoebiBrideMenQty) formData.append('asoebiBrideMenQty', asoebiBrideMenQty);
-        if (asoebiBrideWomenQty) formData.append('asoebiBrideWomenQty', asoebiBrideWomenQty);
-        if (asoebiGroomMenQty) formData.append('asoebiGroomMenQty', asoebiGroomMenQty);
-        if (asoebiGroomWomenQty) formData.append('asoebiGroomWomenQty', asoebiGroomWomenQty);
+        if (asoebiBrideMenQty) formData.append('asoebiBrideMenQty', (parseInt(asoebiBrideMenQty) + ((editingGift as any).soldAsoebiBrideMenQty || 0)).toString());
+        if (asoebiBrideWomenQty) formData.append('asoebiBrideWomenQty', (parseInt(asoebiBrideWomenQty) + ((editingGift as any).soldAsoebiBrideWomenQty || 0)).toString());
+        if (asoebiGroomMenQty) formData.append('asoebiGroomMenQty', (parseInt(asoebiGroomMenQty) + ((editingGift as any).soldAsoebiGroomMenQty || 0)).toString());
+        if (asoebiGroomWomenQty) formData.append('asoebiGroomWomenQty', (parseInt(asoebiGroomWomenQty) + ((editingGift as any).soldAsoebiGroomWomenQty || 0)).toString());
       } else {
         if (asoebiPrice) formData.append('asoebiPrice', asoebiPrice);
-        if (asoebiQuantity) formData.append('asoebiQuantity', asoebiQuantity);
+        if (asoebiQuantity) formData.append('asoebiQuantity', (parseInt(asoebiQuantity) + ((editingGift as any).soldAsoebiQuantity || 0)).toString());
       }
       if (asoebiPriceMen) formData.append('asoebiPriceMen', asoebiPriceMen);
       if (asoebiPriceWomen) formData.append('asoebiPriceWomen', asoebiPriceWomen);
-      if (asoebiQtyMen) formData.append('asoebiQtyMen', asoebiQtyMen);
-      if (asoebiQtyWomen) formData.append('asoebiQtyWomen', asoebiQtyWomen);
+      if (asoebiQtyMen) formData.append('asoebiQtyMen', (parseInt(asoebiQtyMen) + ((editingGift as any).soldAsoebiQtyMen || 0)).toString());
+      if (asoebiQtyWomen) formData.append('asoebiQtyWomen', (parseInt(asoebiQtyWomen) + ((editingGift as any).soldAsoebiQtyWomen || 0)).toString());
     }
 
     if (type === 'other') {
@@ -2526,11 +2526,12 @@ const Dashboard: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent className="border-0 shadow-lg">
                     <SelectItem value="wedding">Wedding</SelectItem>
-                    {/* <SelectItem value="birthday">Birthday</SelectItem>
+                    <SelectItem value="birthday">Birthday</SelectItem>
                     <SelectItem value="graduation">Graduation</SelectItem>
                     <SelectItem value="convocation">Convocation</SelectItem>
-                    <SelectItem value="baby-shower">Baby Shower</SelectItem>
-                    <SelectItem value="other">Other</SelectItem> */}
+                    <SelectItem value="baby_shower">Baby Shower</SelectItem>
+                    <SelectItem value="funeral">Funeral</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2809,29 +2810,81 @@ const Dashboard: React.FC = () => {
                       </div>
                     </>
                   ) : (
-                    <div>
-                      <Label htmlFor="asoebiPrice">Asoebi Price (₦)</Label>
-                      <Input
-                        id="asoebiPrice"
-                        type="number"
-                        value={asoebiPrice}
-                        onChange={(e) => setAsoebiPrice(e.target.value)}
-                        placeholder="50000"
-                        required={isSellingAsoebi}
-                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                      />
-                      <Label htmlFor="asoebiQuantity" className="mt-3 block">Quantity (Optional)</Label>
-                      <Input
-                        id="asoebiQuantity"
-                        type="number"
-                        value={asoebiQuantity}
-                        onChange={(e) => setAsoebiQuantity(e.target.value)}
-                        placeholder="Unlimited"
-                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                      />
-                      <p className="text-xs text-gray-500 mt-2 bg-blue-50 p-2 rounded border border-blue-100">
-                        <strong>Tip:</strong> Select <strong>Wedding</strong> as the Event Type above to set separate prices for Bride and Groom families.
-                      </p>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="asoebiPriceMen">Men Asoebi Price (₦)</Label>
+                          <Input
+                            id="asoebiPriceMen"
+                            type="number"
+                            value={asoebiPriceMen}
+                            onChange={(e) => setAsoebiPriceMen(e.target.value)}
+                            placeholder="e.g. 5000"
+                            className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="asoebiPriceWomen">Women Asoebi Price (₦)</Label>
+                          <Input
+                            id="asoebiPriceWomen"
+                            type="number"
+                            value={asoebiPriceWomen}
+                            onChange={(e) => setAsoebiPriceWomen(e.target.value)}
+                            placeholder="e.g. 5000"
+                            className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="asoebiQtyMen">Men Quantity (Optional)</Label>
+                          <Input
+                            id="asoebiQtyMen"
+                            type="number"
+                            value={asoebiQtyMen}
+                            onChange={(e) => setAsoebiQtyMen(e.target.value)}
+                            placeholder="Unlimited"
+                            className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="asoebiQtyWomen">Women Quantity (Optional)</Label>
+                          <Input
+                            id="asoebiQtyWomen"
+                            type="number"
+                            value={asoebiQtyWomen}
+                            onChange={(e) => setAsoebiQtyWomen(e.target.value)}
+                            placeholder="Unlimited"
+                            className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-gray-100">
+                         <Label className="mb-2 block">Or Single/Generic Asoebi</Label>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="asoebiPrice" className="text-xs text-gray-500">Price (₦)</Label>
+                              <Input
+                                id="asoebiPrice"
+                                type="number"
+                                value={asoebiPrice}
+                                onChange={(e) => setAsoebiPrice(e.target.value)}
+                                placeholder="50000"
+                                className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="asoebiQuantity" className="text-xs text-gray-500">Quantity</Label>
+                              <Input
+                                id="asoebiQuantity"
+                                type="number"
+                                value={asoebiQuantity}
+                                onChange={(e) => setAsoebiQuantity(e.target.value)}
+                                placeholder="Unlimited"
+                                className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                              />
+                            </div>
+                         </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -3187,7 +3240,9 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4 mt-3">
                           <div>
-                            <Label htmlFor="editAsoebiBrideMenQty">Men Quantity (Optional)</Label>
+                            <Label htmlFor="editAsoebiBrideMenQty">
+                              Men Quantity (Optional)
+                            </Label>
                             <Input
                               id="editAsoebiBrideMenQty"
                               type="number"
@@ -3198,7 +3253,9 @@ const Dashboard: React.FC = () => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="editAsoebiBrideWomenQty">Women Quantity (Optional)</Label>
+                            <Label htmlFor="editAsoebiBrideWomenQty">
+                              Women Quantity (Optional)
+                            </Label>
                             <Input
                               id="editAsoebiBrideWomenQty"
                               type="number"
@@ -3261,7 +3318,9 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4 mt-3">
                           <div>
-                            <Label htmlFor="editAsoebiGroomMenQty">Men Quantity (Optional)</Label>
+                            <Label htmlFor="editAsoebiGroomMenQty">
+                              Men Quantity (Optional)
+                            </Label>
                             <Input
                               id="editAsoebiGroomMenQty"
                               type="number"
@@ -3272,7 +3331,9 @@ const Dashboard: React.FC = () => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="editAsoebiGroomWomenQty">Women Quantity (Optional)</Label>
+                            <Label htmlFor="editAsoebiGroomWomenQty">
+                              Women Quantity (Optional)
+                            </Label>
                             <Input
                               id="editAsoebiGroomWomenQty"
                               type="number"
@@ -3286,29 +3347,87 @@ const Dashboard: React.FC = () => {
                       </div>
                     </>
                   ) : (
-                    <div>
-                      <Label htmlFor="editAsoebiPrice">Asoebi Price (₦)</Label>
-                      <Input
-                        id="editAsoebiPrice"
-                        type="number"
-                        value={asoebiPrice}
-                        onChange={(e) => setAsoebiPrice(e.target.value)}
-                        placeholder="50000"
-                        required={isSellingAsoebi}
-                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                      />
-                      <Label htmlFor="editAsoebiQuantity" className="mt-3 block">Quantity (Optional)</Label>
-                      <Input
-                        id="editAsoebiQuantity"
-                        type="number"
-                        value={asoebiQuantity}
-                        onChange={(e) => setAsoebiQuantity(e.target.value)}
-                        placeholder="Unlimited"
-                        className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                      />
-                      <p className="text-xs text-gray-500 mt-2 bg-blue-50 p-2 rounded border border-blue-100">
-                        <strong>Tip:</strong> Select <strong>Wedding</strong> as the Event Type above to set separate prices for Bride and Groom families.
-                      </p>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="editAsoebiPriceMen">Men Asoebi Price (₦)</Label>
+                          <Input
+                            id="editAsoebiPriceMen"
+                            type="number"
+                            value={asoebiPriceMen}
+                            onChange={(e) => setAsoebiPriceMen(e.target.value)}
+                            placeholder="e.g. 5000"
+                            className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="editAsoebiPriceWomen">Women Asoebi Price (₦)</Label>
+                          <Input
+                            id="editAsoebiPriceWomen"
+                            type="number"
+                            value={asoebiPriceWomen}
+                            onChange={(e) => setAsoebiPriceWomen(e.target.value)}
+                            placeholder="e.g. 5000"
+                            className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="editAsoebiQtyMen">
+                            Men Quantity (Optional)
+                          </Label>
+                          <Input
+                            id="editAsoebiQtyMen"
+                            type="number"
+                            value={asoebiQtyMen}
+                            onChange={(e) => setAsoebiQtyMen(e.target.value)}
+                            placeholder="Unlimited"
+                            className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="editAsoebiQtyWomen">
+                            Women Quantity (Optional)
+                          </Label>
+                          <Input
+                            id="editAsoebiQtyWomen"
+                            type="number"
+                            value={asoebiQtyWomen}
+                            onChange={(e) => setAsoebiQtyWomen(e.target.value)}
+                            placeholder="Unlimited"
+                            className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-gray-100">
+                         <Label className="mb-2 block">Or Single/Generic Asoebi</Label>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="editAsoebiPrice" className="text-xs text-gray-500">Price (₦)</Label>
+                              <Input
+                                id="editAsoebiPrice"
+                                type="number"
+                                value={asoebiPrice}
+                                onChange={(e) => setAsoebiPrice(e.target.value)}
+                                placeholder="50000"
+                                className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="editAsoebiQuantity" className="text-xs text-gray-500">
+                                Quantity
+                              </Label>
+                              <Input
+                                id="editAsoebiQuantity"
+                                type="number"
+                                value={asoebiQuantity}
+                                onChange={(e) => setAsoebiQuantity(e.target.value)}
+                                placeholder="Unlimited"
+                                className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                              />
+                            </div>
+                         </div>
+                      </div>
                     </div>
                   )}
                 </div>
