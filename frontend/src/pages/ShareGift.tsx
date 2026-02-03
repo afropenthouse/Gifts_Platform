@@ -1596,9 +1596,14 @@ const ShareGift: React.FC = () => {
                                   <div className="text-sm text-gray-600">
                                     ₦{Number(it.price || 0).toLocaleString()}
                                     {available < Infinity && (
-                                      <span className={`ml-2 text-xs ${available === 0 ? 'text-red-500 font-bold' : 'text-green-600'}`}>
-                                        ({available === 0 ? 'Out of Stock' : `${available} available`} )
-                                      </span>
+                                      available === 0 ? (
+                                        <>
+                                          <br />
+                                          <span className="text-xs text-red-500 font-bold">(Out of Stock)</span>
+                                        </>
+                                      ) : (
+                                        <span className="ml-2 text-xs text-green-600">({`${available} available`})</span>
+                                      )
                                     )}
                                   </div>
                                 </div>
