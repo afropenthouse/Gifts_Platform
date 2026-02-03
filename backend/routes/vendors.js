@@ -28,20 +28,25 @@ module.exports = () => {
     try {
       const { eventId } = req.query;
       const where = {
-        event: {
-          userId: req.user.id
-        }
-      };
-      if (eventId) {
-        where.eventId = parseInt(eventId);
+      Gift: {
+        userId: req.user.id
       }
-      const vendors = await prisma.vendor.findMany({
-        where,
-        include: {
-          event: {
-            select: { id: true, title: true, type: true }
+    };
+    if (eventId) {
+      where.eventId = parseInt(eventId);
+    }
+
+    const vendors = await prisma.vendor.findMany({
+      where,
+      include: {
+        Gift: {
+          select: {
+            id: true,
+            title: true,
+            type: true
           }
-        },
+        }
+      },
         orderBy: { dueDate: 'asc' }
       });
 
@@ -81,10 +86,11 @@ module.exports = () => {
           amountAgreed: parseFloat(amountAgreed),
           amountPaid: parseFloat(amountPaid),
           dueDate: new Date(dueDate),
-          status: 'Not Scheduled'
+          status: 'Not Scheduled',
+          updatedAt: new Date()
         },
         include: {
-          event: {
+          Gift: {
             select: { id: true, title: true, type: true }
           }
         }
@@ -112,12 +118,12 @@ module.exports = () => {
       const vendor = await prisma.vendor.findUnique({
         where: { id: vendorId },
         include: {
-          event: {
+          Gift: {
             select: { userId: true }
           }
         }
       });
-      if (!vendor || vendor.event.userId !== req.user.id) {
+      if (!vendor || vendor.Gift.userId !== req.user.id) {
         return res.status(403).json({ msg: 'Not authorized' });
       }
 
@@ -128,10 +134,11 @@ module.exports = () => {
           ...(vendorEmail !== undefined && { vendorEmail }),
           ...(amountAgreed !== undefined && { amountAgreed: parseFloat(amountAgreed) }),
           ...(amountPaid !== undefined && { amountPaid: parseFloat(amountPaid) }),
-          ...(dueDate !== undefined && { dueDate: new Date(dueDate) })
+          ...(dueDate !== undefined && { dueDate: new Date(dueDate) }),
+          updatedAt: new Date()
         },
         include: {
-          event: {
+          Gift: {
             select: { id: true, title: true, type: true }
           }
         }
@@ -165,12 +172,12 @@ module.exports = () => {
       const vendor = await prisma.vendor.findUnique({
         where: { id: vendorId },
         include: {
-          event: {
+          Gift: {
             select: { userId: true }
           }
         }
       });
-      if (!vendor || vendor.event.userId !== req.user.id) {
+      if (!vendor || vendor.Gift.userId !== req.user.id) {
         return res.status(403).json({ msg: 'Not authorized' });
       }
 
@@ -192,12 +199,12 @@ module.exports = () => {
       const vendor = await prisma.vendor.findUnique({
         where: { id: vendorId },
         include: {
-          event: {
+          Gift: {
             select: { userId: true }
           }
         }
       });
-      if (!vendor || vendor.event.userId !== req.user.id) {
+      if (!vendor || vendor.Gift.userId !== req.user.id) {
         return res.status(403).json({ msg: 'Not authorized' });
       }
 
@@ -241,7 +248,7 @@ module.exports = () => {
           accountName
         },
         include: {
-          event: {
+          Gift: {
             select: { id: true, title: true, type: true }
           }
         }
@@ -270,12 +277,12 @@ module.exports = () => {
       const vendor = await prisma.vendor.findUnique({
         where: { id: vendorId },
         include: {
-          event: {
+          Gift: {
             select: { userId: true }
           }
         }
       });
-      if (!vendor || vendor.event.userId !== req.user.id) {
+      if (!vendor || vendor.Gift.userId !== req.user.id) {
         return res.status(403).json({ msg: 'Not authorized' });
       }
 
@@ -293,7 +300,7 @@ module.exports = () => {
           releaseDate: null
         },
         include: {
-          event: {
+          Gift: {
             select: { id: true, title: true, type: true }
           }
         }

@@ -53,7 +53,8 @@ module.exports = () => {
           userId: req.user ? req.user.id : null, // Allow anonymous uploads
           giftId: parseInt(giftId),
           imageUrl,
-          event
+          event,
+          updatedAt: new Date()
         }
       });
 
@@ -69,12 +70,12 @@ module.exports = () => {
     try {
       const moments = await prisma.moment.findMany({
         where: {
-          gift: {
+          Gift: {
             userId: req.user.id
           }
         },
         include: {
-          gift: {
+          Gift: {
             select: { id: true, title: true, type: true, date: true }
           }
         },
@@ -121,10 +122,10 @@ module.exports = () => {
     try {
       const moment = await prisma.moment.findUnique({
         where: { id: momentId },
-        include: { gift: true }
+        include: { Gift: true }
       });
 
-      if (!moment || moment.gift.userId !== req.user.id) {
+      if (!moment || moment.Gift.userId !== req.user.id) {
         return res.status(404).json({ msg: 'Moment not found' });
       }
 

@@ -14,7 +14,7 @@ interface Moment {
   imageUrl: string;
   event: string;
   createdAt: string;
-  gift: {
+  Gift?: {
     id: number;
     title: string;
     type: string;
@@ -217,10 +217,11 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
 
   // Group moments by gift
   const momentsByGift = moments.reduce((acc, moment) => {
-    const giftId = moment.gift.id;
+    if (!moment.Gift) return acc;
+    const giftId = moment.Gift.id;
     if (!acc[giftId]) {
       acc[giftId] = {
-        gift: moment.gift,
+        gift: moment.Gift,
         moments: []
       };
     }

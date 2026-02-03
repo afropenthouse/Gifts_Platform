@@ -160,7 +160,7 @@ module.exports = () => {
         where: { id: withdrawal.id },
         data: {
           reference: response.data ? response.data.reference : null,
-          transferId: response.data ? response.data.id : null,
+          transferId: response.data ? String(response.data.id) : null,
           status: response.status ? 'completed' : 'failed',
         },
       });

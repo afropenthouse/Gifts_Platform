@@ -8,122 +8,146 @@ datasource db {
 }
 
 model Gift {
-  id             Int      @id @default(autoincrement())
-  userId         Int
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type           GiftType
-  title          String?
-  description    String?
-  date           DateTime?
-  deadline       DateTime?
-  address        String?
-  picture        String?
-  details        Json?
-  customType     String?
-  shareLink      String?   @unique
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  contributions  Contribution[]
-  guests         Guest[]
-  vendors        Vendor[]
-  moments        Moment[]
-  guestListMode  GuestListMode @default(restricted)
-  isSellingAsoebi Boolean   @default(false)
-  asoebiPrice    Decimal?  @db.Decimal(10, 2)
-  asoebiPriceMen Decimal?  @db.Decimal(10, 2)
-  asoebiPriceWomen Decimal? @db.Decimal(10, 2)
-  asoebiBrideMenPrice Decimal? @db.Decimal(10, 2)
-  asoebiBrideWomenPrice Decimal? @db.Decimal(10, 2)
-  asoebiGroomMenPrice Decimal? @db.Decimal(10, 2)
-  asoebiGroomWomenPrice Decimal? @db.Decimal(10, 2)
-  asoebiBrideDescription String?
-  asoebiGroomDescription String?
-  asoebiBrideMenDescription String?
+  id                          Int            @id @default(autoincrement())
+  userId                      Int
+  type                        GiftType
+  title                       String?
+  description                 String?
+  date                        DateTime?
+  picture                     String?
+  details                     Json?
+  customType                  String?
+  shareLink                   String?        @unique
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+  guestListMode               GuestListMode  @default(restricted)
+  isSellingAsoebi             Boolean        @default(false)
+  asoebiPrice                 Decimal?       @db.Decimal(10, 2)
+  address                     String?
+  asoebiPriceMen              Decimal?       @db.Decimal(10, 2)
+  asoebiPriceWomen            Decimal?       @db.Decimal(10, 2)
+  asoebiBrideMenPrice         Decimal?       @db.Decimal(10, 2)
+  asoebiBrideWomenPrice       Decimal?       @db.Decimal(10, 2)
+  asoebiGroomMenPrice         Decimal?       @db.Decimal(10, 2)
+  asoebiGroomWomenPrice       Decimal?       @db.Decimal(10, 2)
+  asoebiBrideDescription      String?
+  asoebiGroomDescription      String?
+  asoebiBrideMenDescription   String?
   asoebiBrideWomenDescription String?
-  asoebiGroomMenDescription String?
+  asoebiGroomMenDescription   String?
   asoebiGroomWomenDescription String?
-  asoebiQuantity   Int?
-  asoebiQtyMen     Int?
-  asoebiQtyWomen   Int?
-  asoebiBrideMenQty Int?
-  asoebiBrideWomenQty Int?
-  asoebiGroomMenQty Int?
-  asoebiGroomWomenQty Int?
+  deadline                    DateTime?
+  asoebiBrideMenQty           Int?
+  asoebiBrideWomenQty         Int?
+  asoebiGroomMenQty           Int?
+  asoebiGroomWomenQty         Int?
+  asoebiQtyMen                Int?
+  asoebiQtyWomen              Int?
+  asoebiQuantity              Int?
+  soldAsoebiBrideMenQty       Int?           @default(0)
+  soldAsoebiBrideWomenQty     Int?           @default(0)
+  soldAsoebiGroomMenQty       Int?           @default(0)
+  soldAsoebiGroomWomenQty     Int?           @default(0)
+  soldAsoebiQtyMen            Int?           @default(0)
+  soldAsoebiQtyWomen          Int?           @default(0)
+  soldAsoebiQuantity          Int?           @default(0)
+  asoebiItems                 AsoebiItem[]
+  contributions               Contribution[]
+  user                        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guests                      Guest[]
+  Moment                      Moment[]
+  Vendor                      Vendor[]
 
   @@index([userId])
   @@index([createdAt])
 }
 
+model AsoebiItem {
+  id        Int      @id @default(autoincrement())
+  giftId    Int
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stock     Int      @default(0)
+  sold      Int      @default(0)
+  category  String?
+  gift      Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@index([giftId])
+}
+
 model User {
-  id                        Int       @id @default(autoincrement())
-  name                      String
-  email                     String    @unique
-  password                  String
-  isVerified                Boolean   @default(false)
-  verificationToken         String?
-  verificationTokenExpires  DateTime?
-  resetPasswordToken        String?
-  resetPasswordExpires      DateTime?
-  wallet                    Decimal   @default(0) @db.Decimal(10, 2)
-  profilePicture            String?
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
-  gifts                     Gift[]
-  contributions             Contribution[]
-  guests                    Guest[]
-  withdrawals               Withdrawal[]
-  moments                   Moment[]
+  id                       Int            @id @default(autoincrement())
+  name                     String
+  email                    String         @unique
+  password                 String
+  isVerified               Boolean        @default(false)
+  verificationToken        String?
+  verificationTokenExpires DateTime?
+  resetPasswordToken       String?
+  resetPasswordExpires     DateTime?
+  profilePicture           String?
+  wallet                   Decimal        @default(0) @db.Decimal(10, 2)
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  contributions            Contribution[]
+  gifts                    Gift[]
+  guests                   Guest[]
+  moments                  Moment[]
+  withdrawals              Withdrawal[]
 
   @@index([email])
 }
 
 model Contribution {
-  id               Int     @id @default(autoincrement())
-  userId           Int?
-  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  giftId           Int
-  gift             Gift    @relation(fields: [giftId], references: [id], onDelete: Cascade)
-  contributorName  String?
-  contributorEmail String?
-  amount           Float
-  message          String?
-  transactionId    String? @unique
-  status           String  @default("completed")
-  commission       Float   @default(0)
-  isAsoebi         Boolean @default(false)
-  asoebiQuantity   Int     @default(0)
-  asoebiQtyMen     Int     @default(0)
-  asoebiQtyWomen   Int     @default(0)
-  asoebiBrideMenQty Int    @default(0)
-  asoebiBrideWomenQty Int  @default(0)
-  asoebiGroomMenQty Int    @default(0)
-  asoebiGroomWomenQty Int  @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                  Int      @id @default(autoincrement())
+  giftId              Int
+  contributorName     String?
+  contributorEmail    String?
+  amount              Float
+  message             String?
+  transactionId       String?  @unique
+  status              String   @default("completed")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  userId              Int?
+  isAsoebi            Boolean  @default(false)
+  commission          Float    @default(0)
+  asoebiQuantity      Int      @default(0)
+  asoebiBrideMenQty   Int      @default(0)
+  asoebiBrideWomenQty Int      @default(0)
+  asoebiGroomMenQty   Int      @default(0)
+  asoebiGroomWomenQty Int      @default(0)
+  asoebiQtyMen        Int      @default(0)
+  asoebiQtyWomen      Int      @default(0)
+  asoebiItemsDetails  Json?
+  gift                Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  user                User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([giftId])
 }
 
 model Guest {
-  id           Int         @id @default(autoincrement())
-  userId       Int
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  giftId       Int?
-  gift         Gift?       @relation(fields: [giftId], references: [id], onDelete: Cascade)
-  firstName    String
-  lastName     String
-  email        String?
-  phone        String?
-  allowed      Int         @default(1)
-  attending    String      @default("yes")
-  status       GuestStatus @default(invited)
-  tableSitting String      @default("Table sitting")
-  asoebi       Boolean     @default(false)
-  asoebiPaid   Boolean     @default(false)
+  id              Int         @id @default(autoincrement())
+  userId          Int
+  giftId          Int?
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  allowed         Int         @default(1)
+  attending       String      @default("yes")
+  status          GuestStatus @default(invited)
+  tableSitting    String      @default("Table sitting")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  asoebi          Boolean     @default(false)
+  asoebiPaid      Boolean     @default(false)
   asoebiSelection String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  gift            Gift?       @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([giftId])
@@ -131,59 +155,59 @@ model Guest {
 }
 
 model Withdrawal {
-  id             Int      @id @default(autoincrement())
-  userId         Int
-  user           User     @relation(fields: [userId], references: [id])
-  amount         Decimal  @db.Decimal(10, 2)
-  bankCode       String
-  bankName       String?
-  accountNumber  String
-  accountName    String?
-  reference      String?  @unique
-  status         String   @default("pending")
-  transferId     String?
-  sourceType     String?  @default("gift") // "gift" or "asoebi"
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  amount        Decimal  @db.Decimal(10, 2)
+  bankCode      String
+  bankName      String?
+  accountNumber String
+  accountName   String?
+  reference     String?  @unique
+  status        String   @default("pending")
+  transferId    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  sourceType    String?  @default("gift")
+  user          User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
-}
-
-model Vendor {
-  id             Int      @id @default(autoincrement())
-  eventId        Int
-  event          Gift     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  category       String
-  vendorEmail    String?
-  amountAgreed   Decimal  @db.Decimal(10, 2)
-  amountPaid     Decimal  @default(0) @db.Decimal(10, 2)
-  scheduledAmount Decimal @default(0) @db.Decimal(10, 2)
-  dueDate        DateTime
-  releaseDate    DateTime?
-  bankCode       String?
-  bankName       String?
-  accountNumber  String?
-  accountName    String?
-  status         String   @default("Not Scheduled")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@index([eventId])
 }
 
 model Moment {
   id        Int      @id @default(autoincrement())
   userId    Int?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   giftId    Int
-  gift      Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
   imageUrl  String
-  event     String   // the gift title
+  event     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  Gift      Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([giftId])
+}
+
+model Vendor {
+  id              Int       @id @default(autoincrement())
+  eventId         Int
+  category        String
+  amountAgreed    Decimal   @db.Decimal(10, 2)
+  amountPaid      Decimal   @default(0) @db.Decimal(10, 2)
+  dueDate         DateTime
+  status          String    @default("Not Scheduled")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  releaseDate     DateTime?
+  scheduledAmount Decimal   @default(0) @db.Decimal(10, 2)
+  vendorEmail     String?
+  accountName     String?
+  accountNumber   String?
+  bankCode        String?
+  bankName        String?
+  Gift            Gift      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
 }
 
 enum GiftType {
@@ -191,9 +215,9 @@ enum GiftType {
   birthday
   graduation
   convocation
+  other
   baby_shower
   funeral
-  other
 }
 
 enum GuestStatus {

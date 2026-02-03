@@ -13,7 +13,7 @@ import { Plus, Edit, Trash2, Filter, Download } from 'lucide-react';
 interface Vendor {
   id: number;
   eventId: number;
-  event: {
+  Gift: {
     id: number;
     title: string;
     type: string;
@@ -509,7 +509,7 @@ const VendorPaymentTracker: React.FC = () => {
         const balance = vendor.amountAgreed - vendor.amountPaid - (vendor.scheduledAmount || 0);
         return [
           `"${vendor.category}"`,
-          `"${vendor.event.title}"`,
+          `"${vendor.Gift.title}"`,
           vendor.amountAgreed,
           vendor.amountPaid,
           vendor.scheduledAmount || 0,
@@ -834,7 +834,7 @@ const VendorPaymentTracker: React.FC = () => {
                       <SelectContent>
                         {vendors.filter(v => (v.amountAgreed - v.amountPaid - (v.scheduledAmount || 0)) > 0).map(vendor => (
                           <SelectItem key={vendor.id} value={vendor.id.toString()}>
-                            {vendor.category} - {vendor.event.title}
+                            {vendor.category} - {vendor.Gift.title}
                           </SelectItem>
                         ))}
                       </SelectContent>

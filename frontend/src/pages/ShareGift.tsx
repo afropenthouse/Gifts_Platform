@@ -58,6 +58,16 @@ interface Gift {
   soldAsoebiBrideWomenQty?: number;
   soldAsoebiGroomMenQty?: number;
   soldAsoebiGroomWomenQty?: number;
+  asoebiItems?: AsoebiItem[];
+}
+
+interface AsoebiItem {
+  id: number;
+  name: string;
+  price: number | string;
+  stock: number;
+  sold?: number;
+  category?: string;
 }
 
 const ShareGift: React.FC = () => {
@@ -107,6 +117,7 @@ const ShareGift: React.FC = () => {
   const [menQuantity, setMenQuantity] = useState(0);
   const [womenQuantity, setWomenQuantity] = useState(0);
   const [asoebiType, setAsoebiType] = useState<'men' | 'women' | null>(null);
+  const [itemQuantities, setItemQuantities] = useState<Record<number, number>>({});
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.brideName} & ${gift.details.groomName}`
@@ -386,10 +397,96 @@ const ShareGift: React.FC = () => {
     let wPrice = 0;
     let selectionDescription = '';
     let typeDescription = '';
+    let itemsDetails: Array<{ asoebiItemId: number; name: string; unitPrice: number; quantity: number; subtotal: number }> = [];
     
     const hasBrideGroomPrices = (gift?.asoebiBrideMenPrice || gift?.asoebiBrideWomenPrice || gift?.asoebiGroomMenPrice || gift?.asoebiGroomWomenPrice);
     const genericPrice = Number(gift?.asoebiPrice || 0);
 
+    if (gift?.asoebiItems && gift.asoebiItems.length > 0) {
+      itemsDetails = gift.asoebiItems.map(it => {
+        const qty = itemQuantities[it.id] || 0;
+        const unit = Number(it.price || 0);
+        return {
+          asoebiItemId: it.id,
+          name: it.name,
+          unitPrice: unit,
+          quantity: qty,
+          subtotal: unit * qty
+        };
+      }).filter(d => d.quantity > 0);
+      totalAmount = itemsDetails.reduce((sum, d) => sum + d.subtotal, 0);
+      const totalQty = itemsDetails.reduce((sum, d) => sum + d.quantity, 0);
+      selectionDescription = itemsDetails.map(d => `${d.name} x${d.quantity}`).join(', ');
+      if (gift?.isSellingAsoebi && totalAmount > 0) {
+        setProcessingPayment(true);
+        try {
+          const name = lastRsvpData ? `${lastRsvpData.firstName} ${lastRsvpData.lastName}` : 'Guest';
+          const email = lastRsvpData?.email;
+          if (!email) {
+            alert("We need your email for the receipt. Please RSVP again with a valid email.");
+            setProcessingPayment(false);
+            return;
+          }
+          const initRes = await fetch(
+            `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contributorName: name,
+                contributorEmail: email,
+                amount: totalAmount,
+                currency: 'NGN',
+                message: `Asoebi Payment: ${selectionDescription}`,
+                isAsoebi: true,
+                guestId: rsvpGuestId,
+                asoebiQuantity: totalQty,
+                asoebiType: 'items',
+                asoebiSelection: selectionDescription,
+                asoebiItemsDetails: itemsDetails
+              }),
+            }
+          );
+          const initData = await initRes.json();
+          if (!initRes.ok) {
+            throw new Error(initData?.msg || 'Failed to initialize payment');
+          }
+          if (initData.data && initData.data.authorization_url) {
+            window.location.href = initData.data.authorization_url;
+          }
+        } catch (err: any) {
+          console.error(err);
+          alert(err?.message || 'Payment initialization failed');
+          setProcessingPayment(false);
+        }
+        return;
+      } else {
+        try {
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/asoebi-update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              shareLink: linkParam,
+              guestId: rsvpGuestId,
+              asoebi: true,
+              asoebiQuantity: totalQty,
+              asoebiSelection: selectionDescription
+            }),
+          });
+          if (res.ok) {
+            setRsvpThanksMessage("Asoebi request received! We'll be in touch.");
+            setRsvpGuestId(null);
+          } else {
+            const data = await res.json();
+            alert(`Failed to update asoebi request: ${data.msg || data.error || 'Unknown error'}`);
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Error updating asoebi request");
+        }
+        return;
+      }
+    }
     if (hasBrideGroomPrices) {
         if (!asoebiFamily) {
              alert("Please select Bride or Groom family");
@@ -548,10 +645,65 @@ const ShareGift: React.FC = () => {
     let wPrice = 0;
     let selectionDescription = '';
     let typeDescription = '';
+    let itemsDetails: Array<{ asoebiItemId: number; name: string; unitPrice: number; quantity: number; subtotal: number }> = [];
 
     const hasBrideGroomPrices = (gift?.asoebiBrideMenPrice || gift?.asoebiBrideWomenPrice || gift?.asoebiGroomMenPrice || gift?.asoebiGroomWomenPrice);
     const genericPrice = Number(gift?.asoebiPrice || 0);
 
+    if (gift?.asoebiItems && gift.asoebiItems.length > 0) {
+      itemsDetails = gift.asoebiItems.map(it => {
+        const qty = itemQuantities[it.id] || 0;
+        const unit = Number(it.price || 0);
+        return {
+          asoebiItemId: it.id,
+          name: it.name,
+          unitPrice: unit,
+          quantity: qty,
+          subtotal: unit * qty
+        };
+      }).filter(d => d.quantity > 0);
+      totalAmount = itemsDetails.reduce((sum, d) => sum + d.subtotal, 0);
+      const totalQty = itemsDetails.reduce((sum, d) => sum + d.quantity, 0);
+      selectionDescription = itemsDetails.map(d => `${d.name} x${d.quantity}`).join(', ');
+      if (totalAmount <= 0) {
+        alert('Please select at least one item');
+        return;
+      }
+      try {
+        setProcessingPayment(true);
+        const initRes = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/initialize-payment`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contributorName,
+              contributorEmail,
+              amount: totalAmount,
+              currency: 'NGN',
+              message: `Asoebi Payment: ${selectionDescription}`,
+              isAsoebi: true,
+              asoebiQuantity: totalQty,
+              asoebiType: 'items',
+              asoebiSelection: selectionDescription,
+              asoebiItemsDetails: itemsDetails
+            }),
+          }
+        );
+        const initData = await initRes.json();
+        if (!initRes.ok) {
+          throw new Error(initData?.msg || 'Failed to initialize payment');
+        }
+        if (initData.data && initData.data.authorization_url) {
+          window.location.href = initData.data.authorization_url;
+        }
+      } catch (err: any) {
+        console.error(err);
+        alert(err?.message || 'Payment initialization failed');
+        setProcessingPayment(false);
+      }
+      return;
+    }
     if (hasBrideGroomPrices) {
         if (!asoebiFamily) {
              alert("Please select Bride or Groom family");
@@ -1396,7 +1548,117 @@ const ShareGift: React.FC = () => {
           ) : (
             <>
               <div className="py-4 text-center space-y-4">
-                {gift?.type === 'wedding' && (Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && !asoebiFamily && (
+                {gift?.asoebiItems && gift.asoebiItems.length > 0 ? (
+                  <div className="space-y-4">
+                    {gift?.type === 'wedding' && !asoebiFamily && (
+                      <div className="mb-4 space-y-2">
+                        <p className="text-base text-black font-medium text-center">
+                          Whose Asoebi do you want?
+                        </p>
+                        <div className="flex gap-4 justify-center items-center">
+                          <div 
+                            className="cursor-pointer border rounded-lg p-3 text-center transition-all min-w-[100px] border-gray-200 hover:bg-[#2E235C] hover:text-white flex items-center justify-center"
+                            onClick={() => setAsoebiFamily('bride')}
+                          >
+                            <div className="font-medium">Bride's Asoebi</div>
+                          </div>
+                          
+                          <span className="text-gray-500 font-medium">or</span>
+
+                          <div 
+                            className="cursor-pointer border rounded-lg p-3 text-center transition-all min-w-[100px] border-gray-200 hover:bg-[#2E235C] hover:text-white flex items-center justify-center"
+                            onClick={() => setAsoebiFamily('groom')}
+                          >
+                            <div className="font-medium">Groom's Asoebi</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {gift?.type === 'wedding' && asoebiFamily && (
+                      <Button variant="ghost" size="sm" className="text-muted-foreground -ml-2 h-8 mb-2" onClick={() => setAsoebiFamily(null)}>
+                        <ChevronLeft className="w-4 h-4 mr-1" /> Back to Selection
+                      </Button>
+                    )}
+
+                    {(!gift?.type || gift.type !== 'wedding' || asoebiFamily) && (
+                      <>
+                        <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
+                          {gift.asoebiItems
+                            .filter(it => !gift?.type || gift.type !== 'wedding' || it.category === asoebiFamily)
+                            .map((it) => {
+                            const available = Math.max(0, (it.stock || 0) - (it.sold || 0));
+                            const qty = itemQuantities[it.id] || 0;
+                            return (
+                              <div key={it.id} className={`flex justify-between items-center border rounded-lg p-3 ${qty > 0 ? 'border-[#2E235C] bg-[#2E235C]/5' : 'border-gray-200'} ${available === 0 ? 'opacity-60' : ''}`}>
+                                <div>
+                                  <div className="font-medium text-[#2E235C]">{it.name}</div>
+                                  <div className="text-sm text-gray-600">
+                                    ₦{Number(it.price || 0).toLocaleString()}
+                                    {available < Infinity && (
+                                      <span className={`ml-2 text-xs ${available === 0 ? 'text-red-500 font-bold' : 'text-green-600'}`}>
+                                        ({available === 0 ? 'Out of Stock' : `${available} available`} )
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <Button 
+                                    variant="outline" size="icon" className="h-8 w-8 rounded-full"
+                                    onClick={() => {
+                                      const next = { ...itemQuantities };
+                                      next[it.id] = Math.max(0, (next[it.id] || 0) - 1);
+                                      setItemQuantities(next);
+                                    }}
+                                    disabled={qty === 0}
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max={available}
+                                    value={qty}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value) || 0;
+                                      const next = { ...itemQuantities };
+                                      next[it.id] = Math.min(available, Math.max(0, val));
+                                      setItemQuantities(next);
+                                    }}
+                                    disabled={available === 0}
+                                    className="w-14 h-8 text-center p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-gray-300 disabled:bg-gray-100"
+                                  />
+                                  <Button 
+                                    variant="outline" size="icon" className="h-8 w-8 rounded-full"
+                                    onClick={() => {
+                                      const next = { ...itemQuantities };
+                                      const nextVal = (next[it.id] || 0) + 1;
+                                      next[it.id] = Math.min(available, nextVal);
+                                      setItemQuantities(next);
+                                    }}
+                                    disabled={available <= qty}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="bg-muted/50 p-3 rounded-lg text-center mt-2">
+                          <p className="text-lg font-semibold text-[#2E235C]">
+                            Total: ₦{(gift.asoebiItems.reduce((sum, it) => {
+                              const qty = itemQuantities[it.id] || 0;
+                              return sum + (Number(it.price || 0) * qty);
+                            }, 0)).toLocaleString()}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                  {gift?.type === 'wedding' && (Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && !asoebiFamily && (
                     <div className="mb-4 space-y-2">
                         <p className="text-base text-black font-medium text-center">
                           Whose Asoebi do you want?
@@ -1425,11 +1687,9 @@ const ShareGift: React.FC = () => {
                   (asoebiFamily)) && (
                     <div className="space-y-4">
                         {gift?.type === 'wedding' && (Number(gift?.asoebiBrideMenPrice || 0) > 0 || Number(gift?.asoebiBrideWomenPrice || 0) > 0 || Number(gift?.asoebiGroomMenPrice || 0) > 0 || Number(gift?.asoebiGroomWomenPrice || 0) > 0) && (
-                             <div className="flex justify-start">
                                  <Button variant="ghost" size="sm" className="text-muted-foreground -ml-2 h-8" onClick={() => setAsoebiFamily(null)}>
                                      <ChevronLeft className="w-4 h-4 mr-1" /> Back
-                                 </Button>
-                             </div>
+                                </Button>
                         )}
 
                         {((!asoebiFamily && gift?.asoebiPriceMen && Number(gift.asoebiPriceMen) > 0) || 
@@ -1592,14 +1852,31 @@ const ShareGift: React.FC = () => {
                         </p>
                     </div>
                 )}
+                </>
+                )}
               </div>
               <div className="pt-2">
                 <Button 
                   className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C]" 
                   onClick={handleAsoebi}
-                  disabled={processingPayment || (asoebiFamily ? (menQuantity === 0 && womenQuantity === 0) : stock.generic === 0)}
+                  disabled={
+                    processingPayment || (
+                      gift?.asoebiItems && gift.asoebiItems.length > 0
+                        ? Object.values(itemQuantities).reduce((sum, v) => sum + (v || 0), 0) === 0
+                        : (asoebiFamily ? (menQuantity === 0 && womenQuantity === 0) : stock.generic === 0)
+                    )
+                  }
                 >
-                  {processingPayment ? 'Processing...' : ((Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0) ? 'Proceed to Payment' : 'Proceed')}
+                  {processingPayment ? 'Processing...' : (
+                    (
+                      gift?.asoebiItems && gift.asoebiItems.length > 0
+                        ? gift.asoebiItems.reduce((sum, it) => {
+                            const qty = itemQuantities[it.id] || 0;
+                            return sum + (Number(it.price || 0) * qty);
+                          }, 0) > 0
+                        : (Number(gift?.asoebiPrice || 0) > 0 || Number(gift?.asoebiPriceMen || 0) > 0 || Number(gift?.asoebiPriceWomen || 0) > 0)
+                    ) ? 'Proceed to Payment' : 'Proceed'
+                  )}
                 </Button>
               </div>
             </>

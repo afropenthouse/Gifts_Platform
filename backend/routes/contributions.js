@@ -9,7 +9,7 @@ module.exports = () => {
   // Initialize payment
   router.post('/:link(*)/initialize-payment', async (req, res) => {
     const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity, asoebiType, asoebiSelection,
-      asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = req.body;
+      asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails } = req.body;
 
     try {
       const gift = await prisma.gift.findUnique({ 
@@ -37,6 +37,7 @@ module.exports = () => {
         asoebiBrideWomenQty,
         asoebiGroomMenQty,
         asoebiGroomWomenQty,
+        asoebiItemsDetails,
         customizations: {
           title: `Contribution to ${gift.user.name}'s ${gift.type}`,
           description: gift.title || gift.type,
@@ -121,11 +122,11 @@ module.exports = () => {
         });
       }
 
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = response.data.metadata || {};
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails } = response.data.metadata || {};
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const amount = parseFloat((response.data.amount / 100).toFixed(2)); // Paystack amount in kobo, convert to Naira
 
-      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: response.data.amount, isAsoebi, guestId, asoebiType, asoebiSelection });
+      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: response.data.amount, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiItemsDetails });
 
       if (!giftId) {
         console.error('❌ No giftId in transaction meta');
@@ -215,6 +216,7 @@ module.exports = () => {
           asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
           asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
           asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
+          asoebiItemsDetails: asoebiItemsDetails || undefined,
           message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
           transactionId: response.data.id?.toString() || response.data.reference,
           status: 'completed',
@@ -222,6 +224,26 @@ module.exports = () => {
       });
 
       console.log('💾 Contribution created:', { id: contribution.id, amount, commission, giftId });
+
+      // Update stock for dynamic Asoebi items
+      if (isAsoebi && asoebiItemsDetails && Array.isArray(asoebiItemsDetails)) {
+        console.log('🔄 Updating stock for dynamic items:', asoebiItemsDetails.length);
+        for (const item of asoebiItemsDetails) {
+          if (item.asoebiItemId && item.quantity > 0) {
+            try {
+              await prisma.asoebiItem.update({
+                  where: { id: parseInt(item.asoebiItemId) },
+                  data: {
+                    sold: { increment: parseInt(item.quantity) }
+                  }
+                });
+                console.log(`✅ Updated sold count for item ${item.asoebiItemId}: +${item.quantity}`);
+            } catch (err) {
+              console.error(`❌ Failed to update stock for item ${item.asoebiItemId}:`, err);
+            }
+          }
+        }
+      }
 
       // If this is an Asoebi payment, update the guest record or create one if it doesn't exist
       if (isAsoebi) {
@@ -397,7 +419,7 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
-        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = response.data.metadata || {};
+        const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails } = response.data.metadata || {};
         const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
 
         console.log('Extracted meta data:', {
@@ -483,6 +505,7 @@ module.exports = () => {
             asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
             asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
             asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
+            asoebiItemsDetails: asoebiItemsDetails || undefined,
             message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
             transactionId: transactionId.toString(),
             status: 'completed',
@@ -490,6 +513,26 @@ module.exports = () => {
         });
 
         console.log('✓ Contribution created:', contribution.id, 'Amount:', amountInNaira);
+
+        // Update stock for dynamic Asoebi items
+        if (isAsoebi && asoebiItemsDetails && Array.isArray(asoebiItemsDetails)) {
+          console.log('🔄 Updating stock for dynamic items (webhook):', asoebiItemsDetails.length);
+          for (const item of asoebiItemsDetails) {
+            if (item.asoebiItemId && item.quantity > 0) {
+              try {
+                await prisma.asoebiItem.update({
+                  where: { id: parseInt(item.asoebiItemId) },
+                  data: {
+                    sold: { increment: parseInt(item.quantity) }
+                  }
+                });
+                console.log(`✅ Updated stock for item ${item.asoebiItemId}: -${item.quantity}`);
+              } catch (err) {
+                console.error(`❌ Failed to update stock for item ${item.asoebiItemId}:`, err);
+              }
+            }
+          }
+        }
 
         // If this is an Asoebi payment, update the guest record or create one if it doesn't exist
         if (isAsoebi) {

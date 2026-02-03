@@ -18,7 +18,8 @@ module.exports = () => {
         return res.status(400).json({ msg: 'First name and last name are required' });
       }
 
-      // Enforce case-insensitive uniqueness per event
+      // Enforce case-insensitive uniqueness per event - REMOVED per user request
+      /*
       const existing = await prisma.guest.findFirst({
         where: {
           giftId: giftId ? parseInt(giftId) : null,
@@ -30,6 +31,7 @@ module.exports = () => {
       if (existing) {
         return res.status(409).json({ msg: 'A guest with this name already exists for this event.' });
       }
+      */
 
       const guest = await prisma.guest.create({
         data: {

@@ -38,7 +38,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = req.body;
+    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
 
     try {
       let pictureUrl = null;
@@ -47,6 +47,16 @@ module.exports = () => {
       if (req.file) {
         const uploadResult = await uploadImage(req.file.buffer);
         pictureUrl = uploadResult.secure_url;
+      }
+
+      // Parse asoebiItems if present
+      let asoebiItemsParsed = [];
+      if (asoebiItems) {
+        try {
+          asoebiItemsParsed = typeof asoebiItems === 'string' ? JSON.parse(asoebiItems) : asoebiItems;
+        } catch (e) {
+          console.error("Error parsing asoebiItems", e);
+        }
       }
 
       // Generate unique shareLink
@@ -100,7 +110,18 @@ module.exports = () => {
           asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty) : null,
           asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty) : null,
           asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty) : null,
+          asoebiItems: {
+            create: asoebiItemsParsed.map(item => ({
+              name: item.name,
+              price: parseFloat(item.price),
+              stock: parseInt(item.stock || 0),
+              category: item.category || null
+            }))
+          }
         },
+        include: {
+          asoebiItems: true
+        }
       });
 
       res.json(gift);
@@ -116,6 +137,7 @@ module.exports = () => {
       const gifts = await prisma.gift.findMany({ 
         where: { userId: req.user.id },
         include: {
+          asoebiItems: true,
           contributions: {
             where: { status: 'completed' },
             select: {
@@ -125,7 +147,8 @@ module.exports = () => {
               asoebiBrideMenQty: true,
               asoebiBrideWomenQty: true,
               asoebiGroomMenQty: true,
-              asoebiGroomWomenQty: true
+              asoebiGroomWomenQty: true,
+              asoebiItemsDetails: true
             }
           }
         }
@@ -142,6 +165,8 @@ module.exports = () => {
           soldAsoebiGroomWomenQty: 0
         };
 
+        const soldItemsMap = {};
+
         if (gift.contributions) {
           gift.contributions.forEach(c => {
             sold.soldAsoebiQuantity += c.asoebiQuantity || 0;
@@ -151,7 +176,23 @@ module.exports = () => {
             sold.soldAsoebiBrideWomenQty += c.asoebiBrideWomenQty || 0;
             sold.soldAsoebiGroomMenQty += c.asoebiGroomMenQty || 0;
             sold.soldAsoebiGroomWomenQty += c.asoebiGroomWomenQty || 0;
+            
+            if (c.asoebiItemsDetails && Array.isArray(c.asoebiItemsDetails)) {
+               c.asoebiItemsDetails.forEach(item => {
+                  if (item.asoebiItemId) {
+                     soldItemsMap[item.asoebiItemId] = (soldItemsMap[item.asoebiItemId] || 0) + (item.quantity || 0);
+                  }
+               });
+            }
           });
+        }
+        
+        // Attach sold stats to asoebiItems
+        if (gift.asoebiItems) {
+            gift.asoebiItems = gift.asoebiItems.map(item => ({
+                ...item,
+                sold: soldItemsMap[item.id] || 0
+            }));
         }
         
         // Remove contributions array to keep response clean
@@ -168,7 +209,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty } = req.body;
+    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -189,9 +230,17 @@ module.exports = () => {
         pictureUrl = uploadResult.secure_url;
       }
 
-      const updatedGift = await prisma.gift.update({
-        where: { id: giftId },
-        data: {
+      // Parse asoebiItems if present
+      let asoebiItemsParsed = [];
+      if (asoebiItems) {
+        try {
+          asoebiItemsParsed = typeof asoebiItems === 'string' ? JSON.parse(asoebiItems) : asoebiItems;
+        } catch (e) {
+          console.error("Error parsing asoebiItems", e);
+        }
+      }
+
+      const updateData = {
           type,
           title,
           description,
@@ -223,7 +272,24 @@ module.exports = () => {
           asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty) : null,
           asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty) : null,
           asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty) : null,
-        },
+      };
+
+      if (asoebiItemsParsed.length > 0 || (isSellingAsoebi === 'true' || isSellingAsoebi === true)) {
+         updateData.asoebiItems = {
+            deleteMany: {},
+            create: asoebiItemsParsed.map(item => ({
+              name: item.name,
+              price: parseFloat(item.price),
+              stock: parseInt(item.stock || 0),
+              category: item.category || null
+            }))
+         };
+      }
+
+      const updatedGift = await prisma.gift.update({
+        where: { id: giftId },
+        data: updateData,
+        include: { asoebiItems: true }
       });
 
       const soldStats = await prisma.contribution.aggregate({
@@ -408,12 +474,17 @@ module.exports = () => {
         where: { shareLink: req.params.link },
         include: { 
           user: { select: { name: true, profilePicture: true } },
-          _count: { select: { contributions: true } }
+          _count: { select: { contributions: true } },
+          asoebiItems: true,
+          contributions: {
+             where: { status: 'completed', isAsoebi: true },
+             select: { asoebiItemsDetails: true }
+          }
         },
       });
       if (!gift) return res.status(404).json({ msg: 'Gift not found' });
 
-      // Aggregate sold Asoebi quantities
+      // Aggregate sold Asoebi quantities (Legacy)
       const soldStats = await prisma.contribution.aggregate({
         where: { 
           giftId: gift.id,
@@ -431,8 +502,31 @@ module.exports = () => {
         }
       });
 
+      // Calculate sold items for dynamic list
+      const soldItemsMap = {};
+      if (gift.contributions) {
+         gift.contributions.forEach(c => {
+             if (c.asoebiItemsDetails && Array.isArray(c.asoebiItemsDetails)) {
+                c.asoebiItemsDetails.forEach(item => {
+                   if (item.asoebiItemId) {
+                      soldItemsMap[item.asoebiItemId] = (soldItemsMap[item.asoebiItemId] || 0) + (item.quantity || 0);
+                   }
+                });
+             }
+         });
+      }
+
+      const asoebiItemsWithStats = gift.asoebiItems ? gift.asoebiItems.map(item => ({
+          ...item,
+          sold: soldItemsMap[item.id] || 0
+      })) : [];
+
+      // Remove contributions to clean up response
+      const { contributions, ...giftData } = gift;
+
       const giftWithStats = {
-        ...gift,
+        ...giftData,
+        asoebiItems: asoebiItemsWithStats,
         soldAsoebiQuantity: soldStats._sum.asoebiQuantity || 0,
         soldAsoebiQtyMen: soldStats._sum.asoebiQtyMen || 0,
         soldAsoebiQtyWomen: soldStats._sum.asoebiQtyWomen || 0,

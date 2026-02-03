@@ -7,6 +7,22 @@ import { Button } from '../components/ui/button';
 import { Checkbox } from '../components/ui/checkbox';
 import { FileDown } from 'lucide-react';
 
+interface AsoebiItem {
+  id: number;
+  name: string;
+  price: number | string;
+  stock: number;
+  sold: number;
+  category?: string;
+}
+
+interface AsoebiItemDetail {
+  asoebiItemId: number;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
 interface Guest {
   id: number;
   firstName: string;
@@ -34,6 +50,7 @@ interface Contribution {
   asoebiBrideWomenQty?: number;
   asoebiGroomMenQty?: number;
   asoebiGroomWomenQty?: number;
+  asoebiItemsDetails?: AsoebiItemDetail[];
   createdAt?: string;
 }
 
@@ -63,6 +80,7 @@ interface Gift {
   soldAsoebiBrideWomenQty?: number;
   soldAsoebiGroomMenQty?: number;
   soldAsoebiGroomWomenQty?: number;
+  asoebiItems?: AsoebiItem[];
 }
 
 interface AsoebiProps {
@@ -111,6 +129,17 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       // Get the gift title
       const gift = gifts.find(g => g.id === c.giftId);
       const eventTitle = gift ? gift.title : 'Unknown Event';
+
+      // Process dynamic items if available
+      const dynamicItems: Record<string, number> = {};
+      if (c.asoebiItemsDetails && Array.isArray(c.asoebiItemsDetails)) {
+        c.asoebiItemsDetails.forEach(item => {
+          if (item.name) {
+            const qty = typeof item.quantity === 'string' ? parseInt(item.quantity, 10) : item.quantity;
+            dynamicItems[item.name] = (dynamicItems[item.name] || 0) + (Number.isFinite(qty) ? qty : 0);
+          }
+        });
+      }
 
       // Helper to sum
       const sum = (...args: (number | undefined)[]) => args.reduce((a, b) => (a || 0) + (b || 0), 0) || 0;
@@ -194,6 +223,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         type,
         maleQty: displayMen > 0 ? displayMen : '-',
         femaleQty: displayWomen > 0 ? displayWomen : '-',
+        dynamicItems,
         amountPaid: c.amount,
         status,
         giftId: c.giftId,
@@ -238,12 +268,33 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     return gifts.find(g => g.id === gid) || null;
   }, [eventFilter, gifts]);
 
+  const dynamicColumns = useMemo(() => {
+    if (!selectedGift || !selectedGift.asoebiItems || selectedGift.asoebiItems.length === 0) {
+      return [];
+    }
+    return Array.from(new Set(selectedGift.asoebiItems.map(i => {
+      // User requested to remove category from column headers
+      return i.name;
+      /*
+      if (i.category) {
+        const cat = i.category.charAt(0).toUpperCase() + i.category.slice(1);
+        return `${i.name} (${cat})`;
+      }
+      return i.name;
+      */
+    })));
+  }, [selectedGift]);
+
   const showTypeColumn = useMemo(() => {
+    // User requested to hide Bride/Groom distinction
+    return false;
+    /*
     if (selectedGift) {
       return selectedGift.type === 'wedding';
     }
     // If viewing all, show if at least one wedding event exists in the filtered data
     return gifts.some(g => g.type === 'wedding');
+    */
   }, [selectedGift, gifts]);
 
   const getStock = (total?: number, sold?: number) => {
@@ -267,6 +318,32 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       const soldW = toNum(g.soldAsoebiQtyWomen);
       const soldGen = toNum(g.soldAsoebiQuantity);
 
+      // Calculate dynamic items stock
+      const dynamicStock: Record<string, { inStock: number; sold: number; category?: string }> = {};
+      if (g.asoebiItems && g.asoebiItems.length > 0) {
+        g.asoebiItems.forEach(item => {
+          let key = item.name;
+          // Category appending removed per user request
+          /*
+          if (item.category) {
+            const cat = item.category.charAt(0).toUpperCase() + item.category.slice(1);
+            key = `${item.name} (${cat})`;
+          }
+          */
+          
+          if (dynamicStock[key]) {
+            dynamicStock[key].inStock += Math.max(0, toNum(item.stock) - toNum(item.sold));
+            dynamicStock[key].sold += toNum(item.sold);
+          } else {
+            dynamicStock[key] = {
+              inStock: Math.max(0, toNum(item.stock) - toNum(item.sold)),
+              sold: toNum(item.sold),
+              category: item.category
+            };
+          }
+        });
+      }
+
       return {
         inStock: {
           brideMen: Math.max(0, toNum(g.asoebiBrideMenQty) - soldBM),
@@ -286,6 +363,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
           women: soldW,
           generic: soldGen,
         },
+        dynamicStock,
         hasSelling: Boolean(g.isSellingAsoebi)
       };
     };
@@ -295,13 +373,15 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       const hasAny =
         s.hasSelling ||
         Object.values(s.inStock).reduce((a, b) => a + b, 0) > 0 ||
-        Object.values(s.soldOut).reduce((a, b) => a + b, 0) > 0;
+        Object.values(s.soldOut).reduce((a, b) => a + b, 0) > 0 ||
+        Object.keys(s.dynamicStock).length > 0;
       return { ...s, show: hasAny };
     }
     // Aggregate across all gifts when "All Events"
     let total = {
       inStock: { brideMen: 0, brideWomen: 0, groomMen: 0, groomWomen: 0, men: 0, women: 0, generic: 0 },
-      soldOut: { brideMen: 0, brideWomen: 0, groomMen: 0, groomWomen: 0, men: 0, women: 0, generic: 0 }
+      soldOut: { brideMen: 0, brideWomen: 0, groomMen: 0, groomWomen: 0, men: 0, women: 0, generic: 0 },
+      dynamicStock: {} as Record<string, { inStock: number; sold: number; category?: string }>
     };
     let anySelling = false;
     for (const g of gifts) {
@@ -322,11 +402,21 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       total.soldOut.women += s.soldOut.women;
       total.soldOut.generic += s.soldOut.generic;
 
+      // Merge dynamic stocks
+      Object.entries(s.dynamicStock).forEach(([key, val]) => {
+         if (!total.dynamicStock[key]) {
+            total.dynamicStock[key] = { inStock: 0, sold: 0, category: val.category };
+         }
+         total.dynamicStock[key].inStock += val.inStock;
+         total.dynamicStock[key].sold += val.sold;
+      });
+
       anySelling = anySelling || s.hasSelling;
     }
     const hasAny = anySelling || 
       Object.values(total.inStock).reduce((a, b) => a + b, 0) > 0 ||
-      Object.values(total.soldOut).reduce((a, b) => a + b, 0) > 0;
+      Object.values(total.soldOut).reduce((a, b) => a + b, 0) > 0 ||
+      Object.keys(total.dynamicStock).length > 0;
     return { ...total, show: hasAny };
   }, [selectedGift, gifts]);
 
@@ -336,21 +426,27 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       'Email',
       'Event',
       ...(showTypeColumn ? ['Asoebi Type'] : []),
-      'Men Qty',
-      'Women Qty',
+      ...(dynamicColumns.length > 0 
+          ? dynamicColumns 
+          : ['Men Qty', 'Women Qty']),
       'Amount Paid',
       'Delivered'
     ];
-    const rows = asoebiData.map(r => [
-      r.name,
-      r.email,
-      r.eventTitle,
-      ...(showTypeColumn ? [r.type] : []),
-      r.maleQty,
-      r.femaleQty,
-      r.amountPaid,
-      r.delivered ? 'Yes' : 'No'
-    ]);
+    const rows = asoebiData.map(r => {
+      const dynamicCells = dynamicColumns.length > 0
+        ? dynamicColumns.map(col => (r as any).dynamicItems?.[col] || 0)
+        : [r.maleQty, r.femaleQty];
+
+      return [
+        r.name,
+        r.email,
+        r.eventTitle,
+        ...(showTypeColumn ? [r.type] : []),
+        ...dynamicCells,
+        r.amountPaid,
+        r.delivered ? 'Yes' : 'No'
+      ];
+    });
     const csv = [headers, ...rows]
       .map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
       .join('\n');
@@ -362,6 +458,11 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const totalMenInStock = stockSummary.inStock.brideMen + stockSummary.inStock.groomMen + stockSummary.inStock.men;
+  const totalMenSold = stockSummary.soldOut.brideMen + stockSummary.soldOut.groomMen + stockSummary.soldOut.men;
+  const totalWomenInStock = stockSummary.inStock.brideWomen + stockSummary.inStock.groomWomen + stockSummary.inStock.women;
+  const totalWomenSold = stockSummary.soldOut.brideWomen + stockSummary.soldOut.groomWomen + stockSummary.soldOut.women;
 
   return (
     <>
@@ -386,40 +487,48 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         <>
           <div className="mb-2">
             <Select value={stockView} onValueChange={(v) => setStockView(v as 'in_stock' | 'sold_out')}>
-              <SelectTrigger className="w-[140px] h-8 text-sm font-semibold border-none shadow-none p-0 focus:ring-0 focus:ring-offset-0 bg-transparent text-gray-900 justify-start gap-2 [&>svg]:opacity-50 hover:bg-transparent data-[state=open]:bg-transparent">
+              <SelectTrigger className="w-[180px] h-10 text-sm font-normal border rounded-md shadow-sm px-3 focus:ring-1 focus:ring-primary bg-white text-gray-900 justify-between">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="in_stock">In Stock</SelectItem>
-                <SelectItem value="sold_out">Sold Out</SelectItem>
+                <SelectItem value="in_stock" className="font-normal">Available Quantity</SelectItem>
+                <SelectItem value="sold_out" className="font-normal">Sold Quantity</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            {Object.entries(stockSummary.dynamicStock).map(([name, data]) => (
+               <div key={name} className={`p-3 rounded-lg text-white text-center ${
+                   data.category === 'bride' ? 'bg-[#2E235C]' : 
+                   data.category === 'groom' ? 'bg-[#2E235C]' : 'bg-primary'
+               }`}>
+                 <div className="text-sm/5 opacity-90">{name}</div>
+                 <div className="text-2xl font-semibold text-center">
+                   {stockView === 'in_stock' ? data.inStock : data.sold}
+                 </div>
+               </div>
+            ))}
+            
+            {(stockSummary.inStock.brideMen > 0 || stockSummary.soldOut.brideMen > 0 || stockSummary.inStock.groomMen > 0 || stockSummary.soldOut.groomMen > 0) && (
             <div className="p-3 rounded-lg bg-primary text-white text-center">
-              <div className="text-sm/5 opacity-90">Bride's Asoebi (Men)</div>
+              <div className="text-sm/5 opacity-90">Asoebi (Men)</div>
               <div className="text-2xl font-semibold text-center">
-                {stockView === 'in_stock' ? stockSummary.inStock.brideMen : stockSummary.soldOut.brideMen}
+                {stockView === 'in_stock' 
+                  ? (stockSummary.inStock.brideMen + stockSummary.inStock.groomMen) 
+                  : (stockSummary.soldOut.brideMen + stockSummary.soldOut.groomMen)}
               </div>
             </div>
+            )}
+            {(stockSummary.inStock.brideWomen > 0 || stockSummary.soldOut.brideWomen > 0 || stockSummary.inStock.groomWomen > 0 || stockSummary.soldOut.groomWomen > 0) && (
             <div className="p-3 rounded-lg bg-primary text-white text-center">
-              <div className="text-sm/5 opacity-90">Bride's Asoebi (Women)</div>
+              <div className="text-sm/5 opacity-90">Asoebi (Women)</div>
               <div className="text-2xl font-semibold text-center">
-                {stockView === 'in_stock' ? stockSummary.inStock.brideWomen : stockSummary.soldOut.brideWomen}
+                {stockView === 'in_stock' 
+                  ? (stockSummary.inStock.brideWomen + stockSummary.inStock.groomWomen) 
+                  : (stockSummary.soldOut.brideWomen + stockSummary.soldOut.groomWomen)}
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-primary text-white text-center">
-              <div className="text-sm/5 opacity-90">Groom's Asoebi (Men)</div>
-              <div className="text-2xl font-semibold text-center">
-                {stockView === 'in_stock' ? stockSummary.inStock.groomMen : stockSummary.soldOut.groomMen}
-              </div>
-            </div>
-            <div className="p-3 rounded-lg bg-primary text-white text-center">
-              <div className="text-sm/5 opacity-90">Groom's Asoebi (Women)</div>
-              <div className="text-2xl font-semibold text-center">
-                {stockView === 'in_stock' ? stockSummary.inStock.groomWomen : stockSummary.soldOut.groomWomen}
-              </div>
-            </div>
+            )}
           </div>
         </>
       )}
@@ -446,15 +555,15 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
             </div>
             )}
             <div className="flex items-center gap-1">
-              <Label htmlFor="qty-filter" className="hidden md:inline md:text-left">Qty:</Label>
+              <Label htmlFor="qty-filter" className="hidden md:inline md:text-left">Quantity:</Label>
               <Select value={qtyFilter} onValueChange={(v) => setQtyFilter(v as any)}>
                 <SelectTrigger className="w-full md:w-[170px]" id="qty-filter">
-                  <SelectValue placeholder="Qty" />
+                  <SelectValue placeholder="Quantity" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">
                     <span className="hidden md:inline">All</span>
-                    <span className="inline md:hidden">Qty</span>
+                    <span className="inline md:hidden">Quantity</span>
                   </SelectItem>
                 <SelectItem value="men">Men</SelectItem>
                 <SelectItem value="women">Women</SelectItem>
@@ -497,8 +606,16 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   {showTypeColumn && <TableHead>Asoebi Type</TableHead>}
-                  <TableHead>Men Quantity</TableHead>
-                  <TableHead>Women Quantity</TableHead>
+                  {dynamicColumns.length > 0 ? (
+                    dynamicColumns.map(colName => (
+                      <TableHead key={colName}>{colName}</TableHead>
+                    ))
+                  ) : (
+                    <>
+                      <TableHead>Men Quantity</TableHead>
+                      <TableHead>Women Quantity</TableHead>
+                    </>
+                  )}
                   <TableHead>Amount Paid</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Delivered</TableHead>
@@ -509,8 +626,20 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">{row.name}</TableCell>
                     {showTypeColumn && <TableCell>{row.type}</TableCell>}
-                    <TableCell>{row.maleQty}</TableCell>
-                    <TableCell>{row.femaleQty}</TableCell>
+                    {dynamicColumns.length > 0 ? (
+                      dynamicColumns.map(colName => (
+                        <TableCell key={colName}>
+                          {(row as any).dynamicItems && (row as any).dynamicItems[colName] 
+                            ? (row as any).dynamicItems[colName] 
+                            : '-'}
+                        </TableCell>
+                      ))
+                    ) : (
+                      <>
+                        <TableCell>{row.maleQty}</TableCell>
+                        <TableCell>{row.femaleQty}</TableCell>
+                      </>
+                    )}
                     <TableCell>
                       {row.amountPaid > 0 
                         ? `₦${row.amountPaid.toLocaleString()}` 
