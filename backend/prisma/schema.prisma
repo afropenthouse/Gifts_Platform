@@ -21,6 +21,7 @@ model Gift {
   createdAt                   DateTime       @default(now())
   updatedAt                   DateTime       @updatedAt
   guestListMode               GuestListMode  @default(restricted)
+  enableCashGifts             Boolean        @default(true)
   isSellingAsoebi             Boolean        @default(false)
   asoebiPrice                 Decimal?       @db.Decimal(10, 2)
   address                     String?

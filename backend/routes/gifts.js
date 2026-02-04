@@ -38,7 +38,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
+    const { type, title, description, date, deadline, address, details, customType, guestListMode, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
 
     try {
       let pictureUrl = null;
@@ -89,6 +89,7 @@ module.exports = () => {
           customType,
           shareLink,
           guestListMode: guestListMode || 'restricted',
+          enableCashGifts: enableCashGifts === 'true' || enableCashGifts === true,
           isSellingAsoebi: isSellingAsoebi === 'true' || isSellingAsoebi === true,
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
           asoebiPriceMen: asoebiPriceMen ? parseFloat(asoebiPriceMen) : null,
@@ -209,7 +210,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, deadline, address, details, customType, guestListMode, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
+    const { type, title, description, date, deadline, address, details, customType, guestListMode, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -251,6 +252,7 @@ module.exports = () => {
           details: details ? (typeof details === 'string' ? JSON.parse(details) : details) : null,
           customType,
           guestListMode,
+          enableCashGifts: enableCashGifts === 'true' || enableCashGifts === true,
           isSellingAsoebi: isSellingAsoebi === 'true' || isSellingAsoebi === true,
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
           asoebiPriceMen: asoebiPriceMen ? parseFloat(asoebiPriceMen) : null,

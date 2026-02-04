@@ -27,6 +27,7 @@ interface Gift {
   user: { name: string; profilePicture: string };
   _count?: { contributions: number };
   guestListMode?: string;
+  enableCashGifts?: boolean;
 }
 
 const QRGift: React.FC = () => {
@@ -339,13 +340,15 @@ const QRGift: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            <Button
-              className="w-full bg-[#2E235C] hover:bg-[#2E235C]/90 text-white"
-              size="lg"
-              onClick={() => setShowAmountModal(true)}
-            >
-              Send a Cash Gift
-            </Button>
+            {(gift?.enableCashGifts !== false) && (
+              <Button
+                className="w-full bg-[#2E235C] hover:bg-[#2E235C]/90 text-white"
+                size="lg"
+                onClick={() => setShowAmountModal(true)}
+              >
+                Send a Cash Gift
+              </Button>
+            )}
 
             <Button
               variant="outline"

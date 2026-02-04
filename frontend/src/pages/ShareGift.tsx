@@ -30,6 +30,7 @@ interface Gift {
   user: { name: string; profilePicture: string };
   _count?: { contributions: number };
   guestListMode?: string;
+  enableCashGifts?: boolean;
   isSellingAsoebi?: boolean;
   asoebiPrice?: string | number;
   asoebiPriceMen?: string | number;
@@ -917,7 +918,7 @@ const ShareGift: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <Navbar logoSrc={gift.type === 'wedding' ? "/logo2.png" : "/logo1.png"} />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
         <div className="w-full max-w-md flex flex-col items-center gap-6">
@@ -1018,6 +1019,7 @@ const ShareGift: React.FC = () => {
                       )
                     )}
 
+                    {(gift?.enableCashGifts !== false) && (
                     <Button
                       className="w-full text-white hover:bg-[#2E235C]/90"
                       style={{ backgroundColor: '#2E235C' }}
@@ -1027,12 +1029,10 @@ const ShareGift: React.FC = () => {
                       <Gift className="w-5 h-5 mr-[0.00007rem]" />
                       <span className='font-thin'>Send a Cash Gift</span>
                     </Button>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="text-center text-muted-foreground text-sm mt-2 font-playfair">
-              Strictly by invitation
             </div>
           </div>
 
@@ -1178,9 +1178,6 @@ const ShareGift: React.FC = () => {
         <DialogContent className="max-w-[19rem]" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
-            <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
-              Strictly by invitation
-            </div>
           </DialogHeader>
 
           {rsvpStep === 1 && (

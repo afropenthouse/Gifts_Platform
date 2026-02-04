@@ -58,6 +58,7 @@ interface Gift {
   createdAt: string;
   contributions?: Contribution[];
   guestListMode?: string;
+  enableCashGifts?: boolean;
   isSellingAsoebi?: boolean;
   asoebiPrice?: number | string;
   asoebiPriceMen?: number | string;
@@ -160,6 +161,7 @@ const Dashboard: React.FC = () => {
   const [editGuestListMode, setEditGuestListMode] = useState('restricted');
   const [isCreatingGift, setIsCreatingGift] = useState(false);
   const [isUpdatingGift, setIsUpdatingGift] = useState(false);
+  const [enableCashGifts, setEnableCashGifts] = useState(true);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   // RSVP duplicate error state
@@ -592,6 +594,7 @@ const Dashboard: React.FC = () => {
     setAsoebiGroomMenQty(g.asoebiGroomMenQty !== undefined && g.asoebiGroomMenQty !== null ? Math.max(0, parseInt(g.asoebiGroomMenQty) - (g.soldAsoebiGroomMenQty || 0)).toString() : '');
     setAsoebiGroomWomenQty(g.asoebiGroomWomenQty !== undefined && g.asoebiGroomWomenQty !== null ? Math.max(0, parseInt(g.asoebiGroomWomenQty) - (g.soldAsoebiGroomWomenQty || 0)).toString() : '');
     setEditGuestListMode(gift.guestListMode || 'restricted');
+    setEnableCashGifts(gift.enableCashGifts !== undefined ? gift.enableCashGifts : true);
     
     // Populate dynamic items
     const gItems = (gift as any).asoebiItems || [];
@@ -706,6 +709,7 @@ const Dashboard: React.FC = () => {
     }
     formData.append('details', JSON.stringify(details));
     formData.append('guestListMode', createGuestListMode);
+    formData.append('enableCashGifts', enableCashGifts.toString());
     formData.append('isSellingAsoebi', isSellingAsoebi.toString());
     if (isSellingAsoebi) {
       if (asoebiItemsState.length > 0) {
@@ -773,6 +777,7 @@ const Dashboard: React.FC = () => {
         setBrideName('');
         setCustomType('');
         setCreateGuestListMode('restricted');
+        setEnableCashGifts(true);
         setIsSellingAsoebi(false);
         setAsoebiPrice('');
         setAsoebiPriceMen('');
@@ -943,6 +948,7 @@ const Dashboard: React.FC = () => {
         setEditingGift(null);
         setIsEditModalOpen(false);
         setEditGuestListMode('restricted');
+        setEnableCashGifts(true);
         setIsSellingAsoebi(false);
         setAsoebiPrice('');
         setAsoebiPriceMen('');
@@ -2674,6 +2680,17 @@ const Dashboard: React.FC = () => {
                 </Select>
               </div>
 
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="enableCashGifts" 
+                  checked={enableCashGifts}
+                  onCheckedChange={(checked) => setEnableCashGifts(checked as boolean)}
+                />
+                <Label htmlFor="enableCashGifts" className="text-sm font-medium text-gray-900">
+                  Allow guests to send cash gifts?
+                </Label>
+              </div>
+
               <div>
                 <Label className="text-sm font-medium text-gray-900 mb-2 block">
                   Guest List Mode
@@ -3251,6 +3268,17 @@ const Dashboard: React.FC = () => {
                 {/* <p className="text-xs text-gray-500 mt-1">
                   You can change this later in the RSVP management section.
                 </p> */}
+              </div>
+
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="editEnableCashGifts" 
+                  checked={enableCashGifts}
+                  onCheckedChange={(checked) => setEnableCashGifts(checked as boolean)}
+                />
+                <Label htmlFor="editEnableCashGifts" className="text-sm font-medium text-gray-900">
+                  Allow guests to send cash gifts?
+                </Label>
               </div>
 
               <div className="flex items-center space-x-2 border p-4 rounded-lg">
