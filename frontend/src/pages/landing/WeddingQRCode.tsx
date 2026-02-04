@@ -107,31 +107,12 @@ const WeddingQRCode = () => {
             </div>
 
             <div className="relative">
-              <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/20">
-                <div className="text-center mb-6">
-                  <div className="w-32 h-32 bg-white rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
-                    <QrCode className="w-16 h-16" style={{ color: '#2E235C' }} />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-2">Your Wedding QR Code</h3>
-                  <p className="text-sm text-muted-foreground">Scan to send cash gifts instantly</p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-white/70 rounded-xl">
-                    <span className="text-sm font-medium">Display Options</span>
-                    <div className="flex gap-2">
-                      <div className="w-8 h-8 bg-primary/20 rounded flex items-center justify-center">
-                        <span className="text-xs">📱</span>
-                      </div>
-                      <div className="w-8 h-8 bg-primary/20 rounded flex items-center justify-center">
-                        <span className="text-xs">🖥️</span>
-                      </div>
-                      <div className="w-8 h-8 bg-primary/20 rounded flex items-center justify-center">
-                        <span className="text-xs">🖼️</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="/moments.JPG" 
+                  alt="Wedding memorable moments" 
+                  className="w-full h-auto object-cover"
+                />
               </div>
             </div>
           </div>

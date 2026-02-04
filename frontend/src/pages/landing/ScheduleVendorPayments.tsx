@@ -106,27 +106,12 @@ const ScheduleVendorPayments = () => {
             </div>
 
             <div className="relative">
-              <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/20">
-                <div className="flex items-center gap-3 mb-6">
-                  <Lock className="w-6 h-6" style={{ color: '#2E235C' }} />
-                  <h3 className="text-xl font-semibold text-foreground">Total Control</h3>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4 p-4 bg-white/70 rounded-xl">
-                    <Shield className="w-5 h-5 mt-1 flex-shrink-0" style={{ color: '#2E235C' }} />
-                    <div>
-                      <p className="text-foreground font-medium">Expense Tracking</p>
-                      <p className="text-sm text-muted-foreground">See all your wedding costs, due dates, and payment statuses at a glance.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4 p-4 bg-white/70 rounded-xl">
-                    <CheckCircle className="w-5 h-5 mt-1 flex-shrink-0" style={{ color: '#2E235C' }} />
-                    <div>
-                      <p className="text-foreground font-medium">Secure Payments</p>
-                      <p className="text-sm text-muted-foreground">Pay vendors on time, every time, with automatic and protected payments.</p>
-                    </div>
-                  </div>
-                </div>
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="/vendor.JPG" 
+                  alt="Wedding vendors and planning" 
+                  className="w-full h-auto object-cover"
+                />
               </div>
             </div>
           </div>

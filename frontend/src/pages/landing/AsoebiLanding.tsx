@@ -20,28 +20,39 @@ const AsoebiLanding = () => {
       <section className="relative py-20 px-4 md:py-32 md:px-6 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20"></div>
         <div className="container mx-auto max-w-6xl relative">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-primary/10 rounded-full">
-              <span className="text-sm font-medium" style={{ color: '#2E235C' }}>
-                Sell & Manage Asoebi — Without Stress
-              </span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-primary/10 rounded-full">
+                <span className="text-sm font-medium" style={{ color: '#2E235C' }}>
+                  Sell & Manage Asoebi — Without Stress
+                </span>
+              </div>
+              <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
+                Organise Asoebi payments the easy way, all in one place.
+              </h1>
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed">
+                Asoebi should bring excitement — not confusion. BeThere Weddings helps couples sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
+              </p>
+              <div className="mt-8">
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="px-10 py-4 text-primary text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  style={{ backgroundColor: '#ffff' }}
+                  onClick={openSignupModal}
+                >
+                  Create your wedding link
+                </Button>
+              </div>
             </div>
-            <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Organise Asoebi payments the easy way, all in one place.
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Asoebi should bring excitement — not confusion. BeThere Weddings helps couples sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
-            </p>
-            <div className="mt-8">
-              <Button
-                variant="hero"
-                size="lg"
-                className="px-10 py-4 text-primary text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                style={{ backgroundColor: '#ffff' }}
-                onClick={openSignupModal}
-              >
-                Create your wedding link
-              </Button>
+            <div className="relative">
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="/asobi.JPG" 
+                  alt="Asoebi traditional attire" 
+                  className="w-full h-auto object-cover"
+                />
+              </div>
             </div>
           </div>
         </div>

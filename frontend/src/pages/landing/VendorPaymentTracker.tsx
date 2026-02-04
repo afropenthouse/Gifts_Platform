@@ -102,32 +102,12 @@ const VendorPaymentTracker = () => {
             </div>
 
             <div className="relative">
-              <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/20">
-                <div className="flex items-center gap-3 mb-6">
-                  <BarChart3 className="w-6 h-6" style={{ color: '#2E235C' }} />
-                  <h3 className="text-xl font-semibold text-foreground">Complete Visibility</h3>
-                </div>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/70 rounded-xl p-4 text-center">
-                      <div className="text-2xl font-bold" style={{ color: '#2E235C' }}>100%</div>
-                      <div className="text-sm text-muted-foreground">Payment Tracking</div>
-                    </div>
-                    <div className="bg-white/70 rounded-xl p-4 text-center">
-                      <div className="text-2xl font-bold" style={{ color: '#2E235C' }}>0</div>
-                      <div className="text-sm text-muted-foreground">Missed Deadlines</div>
-                    </div>
-                  </div>
-                  <div className="bg-white/70 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Budget Overview</span>
-                      <span className="text-sm text-muted-foreground">85% Complete</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-primary h-2 rounded-full" style={{ width: '85%' }}></div>
-                    </div>
-                  </div>
-                </div>
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="/vendor.JPG" 
+                  alt="Wedding vendors and planning" 
+                  className="w-full h-auto object-cover"
+                />
               </div>
             </div>
           </div>
