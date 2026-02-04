@@ -3172,10 +3172,12 @@ const Dashboard: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent className="border-0 shadow-lg">
                     <SelectItem value="wedding">Wedding</SelectItem>
-                    {/* <SelectItem value="birthday">Birthday</SelectItem>
+                    <SelectItem value="birthday">Birthday</SelectItem>
                     <SelectItem value="graduation">Graduation</SelectItem>
                     <SelectItem value="convocation">Convocation</SelectItem>
-                    <SelectItem value="other">Other</SelectItem> */}
+                    <SelectItem value="baby_shower">Baby Shower</SelectItem>
+                    <SelectItem value="funeral">Funeral</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
