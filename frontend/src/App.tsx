@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from './context/AuthContext';
 import LoginModal from './components/LoginModal';
 import SignupModal from './components/SignupModal';
+import SignupRef from "./pages/SignupRef";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ShareGift from "./pages/ShareGift";
@@ -34,6 +35,7 @@ const App = () => {
         <Sonner />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/signup" element={<SignupRef />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/how-it-works" element={<HowItWorks />} />

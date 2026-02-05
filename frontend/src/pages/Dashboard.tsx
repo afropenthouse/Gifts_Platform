@@ -8,6 +8,7 @@ import QRCodePage from '../dashboard_ALL/QRCodePage';
 import VendorPaymentTracker from '../dashboard_ALL/VendorPaymentTracker';
 import Moments from '../dashboard_ALL/Moments';
 import Asoebi from '../dashboard_ALL/Asoebi';
+import InviteFriends from '../dashboard_ALL/InviteFriends';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
@@ -216,6 +217,7 @@ const Dashboard: React.FC = () => {
     { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null },
     { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null },
     { id: 'vendors', label: 'Manage Expenses', icon: Wallet, color: 'text-orange-500', badge: null },
+    { id: 'invite', label: 'Invite Friends', icon: Share2, color: 'text-blue-500', badge: null },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
 
@@ -880,6 +882,7 @@ const Dashboard: React.FC = () => {
     }
     formData.append('details', JSON.stringify(details));
     formData.append('guestListMode', editGuestListMode);
+    formData.append('enableCashGifts', enableCashGifts.toString());
     formData.append('isSellingAsoebi', isSellingAsoebi.toString());
     if (isSellingAsoebi) {
       if (asoebiItemsState.length > 0) {
@@ -1341,6 +1344,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'asoebi' && 'Asoebi Orders'}
                     {activeTab === 'qr' && 'Event QR Code'}
                     {activeTab === 'moments' && 'Moments'}
+                    {activeTab === 'invite' && 'Invite Friends'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
@@ -1350,6 +1354,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
                     {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share moments'}
                     {activeTab === 'moments' && 'Share your wedding QR code so your guest can capture and share their special moments from your events'}
+                    {activeTab === 'invite' && 'Refer friends and earn rewards when they use your link'}
                   </p>
                 </div>
                 
@@ -1705,6 +1710,13 @@ const Dashboard: React.FC = () => {
             {activeTab === 'asoebi' && (
               <div>
                 <Asoebi guests={guests} contributions={contributions} gifts={gifts} />
+              </div>
+            )}
+
+            {/* Invite Friends Section */}
+            {activeTab === 'invite' && (
+              <div>
+                <InviteFriends />
               </div>
             )}
 
@@ -2555,7 +2567,7 @@ const Dashboard: React.FC = () => {
           setShowLegacyAsoebi(false);
          }
       }}>
-        <DialogContent className="max-w-[90vw] sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-auto max-h-[80vh]">
+        <DialogContent className="w-[90vw] sm:w-full sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-y-auto max-h-[85vh]">
           <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-white z-10">
             <div className="flex items-center space-x-2">
               <div className="p-2 bg-gradient-to-r from-[#2E235C]/10 to-[#2E235C]/10 rounded-lg">
@@ -3822,7 +3834,7 @@ const Dashboard: React.FC = () => {
 
       {/* Share Link Modal */}
       <Dialog open={isShareLinkModalOpen} onOpenChange={setIsShareLinkModalOpen}>
-        <DialogContent className="max-w-[90vw] sm:max-w-lg max-h-[80vh] flex flex-col rounded-2xl border-0 shadow-2xl p-0 overflow-hidden bg-white">
+        <DialogContent className="w-[80vw] sm:w-full sm:max-w-lg max-h-[80vh] flex flex-col rounded-2xl border-0 shadow-2xl p-0 overflow-hidden bg-white">
           <div className="bg-gradient-to-r from-[#2E235C]/10 to-[#2E235C]/10 p-6 shrink-0">
             <DialogHeader>
               <div className="flex items-center space-x-2">

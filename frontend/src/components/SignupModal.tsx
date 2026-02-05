@@ -39,13 +39,21 @@ const SignupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
     }
 
     try {
+      // Check for referral code in localStorage or URL
+      const storedRefCode = localStorage.getItem('referralCode');
+      const urlParams = new URLSearchParams(window.location.search);
+      const referralCode = storedRefCode || urlParams.get('ref');
+
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, referralCode }),
       });
       const data = await res.json();
+      
+      // Clear referral code after successful signup attempt (optional, but good practice)
       if (res.ok) {
+        localStorage.removeItem('referralCode');
         setMessage(data.msg);
       } else {
         setError(data.msg || 'Signup failed');
