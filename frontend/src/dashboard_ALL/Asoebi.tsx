@@ -136,7 +136,18 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
         c.asoebiItemsDetails.forEach(item => {
           if (item.name) {
             const qty = typeof item.quantity === 'string' ? parseInt(item.quantity, 10) : item.quantity;
-            dynamicItems[item.name] = (dynamicItems[item.name] || 0) + (Number.isFinite(qty) ? qty : 0);
+            
+            let key = item.name;
+            // Try to find category from the gift definition
+            if (gift && gift.asoebiItems) {
+              const original = gift.asoebiItems.find(i => i.id === item.asoebiItemId) || gift.asoebiItems.find(i => i.name === item.name);
+              if (original && original.category) {
+                 const cat = original.category.charAt(0).toUpperCase() + original.category.slice(1);
+                 key = `${cat} (${item.name})`;
+              }
+            }
+            
+            dynamicItems[key] = (dynamicItems[key] || 0) + (Number.isFinite(qty) ? qty : 0);
           }
         });
       }
@@ -246,13 +257,19 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     }
     if (qtyFilter !== 'all') {
       filtered = filtered.filter(item => {
-        const male = parseInt(String(item.maleQty));
-        const female = parseInt(String(item.femaleQty));
-        const maleHas = Number.isFinite(male) && male > 0;
-        const femaleHas = Number.isFinite(female) && female > 0;
-        if (qtyFilter === 'men') return maleHas;
-        if (qtyFilter === 'women') return femaleHas;
-        return true;
+        if (qtyFilter === 'men') {
+           const male = parseInt(String(item.maleQty));
+           return Number.isFinite(male) && male > 0;
+        }
+        if (qtyFilter === 'women') {
+           const female = parseInt(String(item.femaleQty));
+           return Number.isFinite(female) && female > 0;
+        }
+        // Check dynamic items
+        if ((item as any).dynamicItems && (item as any).dynamicItems[qtyFilter] > 0) {
+          return true;
+        }
+        return false;
       });
     }
     
@@ -269,21 +286,31 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
   }, [eventFilter, gifts]);
 
   const dynamicColumns = useMemo(() => {
-    if (!selectedGift || !selectedGift.asoebiItems || selectedGift.asoebiItems.length === 0) {
-      return [];
+    let items: AsoebiItem[] = [];
+
+    if (selectedGift) {
+      if (selectedGift.asoebiItems) {
+        items = selectedGift.asoebiItems;
+      }
+    } else {
+      // Aggregate from all gifts
+      gifts.forEach(g => {
+        if (g.asoebiItems) {
+          items = [...items, ...g.asoebiItems];
+        }
+      });
     }
-    return Array.from(new Set(selectedGift.asoebiItems.map(i => {
-      // User requested to remove category from column headers
-      return i.name;
-      /*
+
+    if (items.length === 0) return [];
+
+    return Array.from(new Set(items.map(i => {
       if (i.category) {
         const cat = i.category.charAt(0).toUpperCase() + i.category.slice(1);
-        return `${i.name} (${cat})`;
+        return `${cat} (${i.name})`;
       }
       return i.name;
-      */
     })));
-  }, [selectedGift]);
+  }, [selectedGift, gifts]);
 
   const showTypeColumn = useMemo(() => {
     // User requested to hide Bride/Groom distinction
@@ -496,7 +523,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             {Object.entries(stockSummary.dynamicStock).map(([name, data]) => (
                <div key={name} className={`p-3 rounded-lg text-white text-center ${
                    data.category === 'bride' ? 'bg-[#2E235C]' : 
@@ -516,7 +543,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Asoebi Orders</CardTitle>
-          <div className="grid grid-cols-3 gap-2 mt-2 md:flex md:flex-wrap md:items-center">
+          <div className="flex flex-wrap items-center gap-2 mt-2">
             {showTypeColumn && (
             <div className="flex items-center gap-1">
               <Label htmlFor="type-filter" className="hidden md:inline md:text-left">Type:</Label>
@@ -536,20 +563,21 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
             </div>
             )}
             <div className="flex items-center gap-1">
-              <Label htmlFor="qty-filter" className="hidden md:inline md:text-left">Quantity:</Label>
-              <Select value={qtyFilter} onValueChange={(v) => setQtyFilter(v as any)}>
-                <SelectTrigger className="w-full md:w-[170px]" id="qty-filter">
-                  <SelectValue placeholder="Quantity" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    <span className="hidden md:inline">All</span>
-                    <span className="inline md:hidden">Quantity</span>
-                  </SelectItem>
-                <SelectItem value="men">Men</SelectItem>
-                <SelectItem value="women">Women</SelectItem>
-                </SelectContent>
-              </Select>
+               <Label htmlFor="qty-filter" className="hidden md:inline md:text-left whitespace-nowrap">Item:</Label>
+                <Select value={qtyFilter} onValueChange={(v) => setQtyFilter(v as any)}>
+                  <SelectTrigger className="w-full md:w-[170px]" id="qty-filter">
+                    <SelectValue placeholder="Item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <span className="hidden md:inline">All Items</span>
+                      <span className="inline md:hidden">All</span>
+                    </SelectItem>
+                    {dynamicColumns.map(col => (
+                      <SelectItem key={col} value={col}>{col}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
             </div>
             <div className="flex items-center gap-1">
               <Label htmlFor="delivery-filter" className="hidden md:inline md:text-left">Delivery:</Label>

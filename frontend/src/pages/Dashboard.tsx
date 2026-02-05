@@ -1443,11 +1443,11 @@ const Dashboard: React.FC = () => {
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 mt-6">
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Wallet Balance</p>
-                        <p className="text-2xl font-bold">₦{user.wallet}</p>
+                        <p className="text-2xl font-bold">₦{Math.floor(Number(user.wallet)).toLocaleString()}</p>
                       </div>
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Total Received</p>
-                        <p className="text-2xl font-bold">₦{totalContributions.toFixed(2)}</p>
+                        <p className="text-2xl font-bold">₦{Math.floor(totalContributions).toLocaleString()}</p>
                       </div>
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Active Events</p>
@@ -1463,7 +1463,7 @@ const Dashboard: React.FC = () => {
                       </div>
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Asoebi Revenue</p>
-                        <p className="text-2xl font-bold">₦{totalAsoebiRevenue.toFixed(2)}</p>
+                        <p className="text-2xl font-bold">₦{Math.floor(totalAsoebiRevenue).toLocaleString()}</p>
                       </div>
                     </div>
                   </div>
