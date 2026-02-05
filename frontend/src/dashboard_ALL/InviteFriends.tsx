@@ -67,7 +67,7 @@ const InviteFriends = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Invite Friends</h2>
           <p className="text-gray-600 mt-1">
-            Refer friends and earn rewards when they use your link!
+            Refer friends and earn rewards
           </p>
         </div>
       </div>

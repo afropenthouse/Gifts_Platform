@@ -1413,7 +1413,7 @@ const Dashboard: React.FC = () => {
                           Welcome back, {user.name}!
                         </h1>
                         <p className="text-white/90 max-w-2xl">
-                          You've received ₦{totalContributions.toFixed(2)} from {giftersCount} gifters and {asoebiOrdersCount} asoebi orders. 
+                          You've received ₦{Math.floor(totalContributions).toLocaleString()} from {giftersCount} gifters and {asoebiOrdersCount} asoebi orders. 
                           Keep sharing your RSVP links to receive more!
                         </p>
                       </div>

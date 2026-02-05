@@ -284,7 +284,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Moments</h2>
-          <p className="text-gray-600 mt-1">Share your wedding QR code so your guest can capture and share their special moments from your events</p>
+          <p className="text-gray-600 mt-1">Capture and share moments</p>
         </div>
         <div className="flex items-center gap-3">
           <Button 
