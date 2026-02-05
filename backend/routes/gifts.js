@@ -276,21 +276,60 @@ module.exports = () => {
           asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty) : null,
       };
 
-      if (asoebiItemsParsed.length > 0 || (isSellingAsoebi === 'true' || isSellingAsoebi === true)) {
-         updateData.asoebiItems = {
-            deleteMany: {},
-            create: asoebiItemsParsed.map(item => ({
-              name: item.name,
-              price: parseFloat(item.price),
-              stock: parseInt(item.stock || 0),
-              category: item.category || null
-            }))
-         };
-      }
-
-      const updatedGift = await prisma.gift.update({
+      // Perform main update first
+      await prisma.gift.update({
         where: { id: giftId },
         data: updateData,
+      });
+
+      // Handle Asoebi Items manually to preserve Sold history
+      if (asoebiItemsParsed.length > 0 || (isSellingAsoebi === 'true' || isSellingAsoebi === true)) {
+          const existingItems = await prisma.asoebiItem.findMany({ where: { giftId } });
+          const incomingIds = asoebiItemsParsed.filter(i => i.id).map(i => parseInt(i.id));
+          
+          // Delete removed items
+          const itemsToDelete = existingItems.filter(i => !incomingIds.includes(i.id));
+          if (itemsToDelete.length > 0) {
+             await prisma.asoebiItem.deleteMany({
+                 where: { id: { in: itemsToDelete.map(i => i.id) } }
+             });
+          }
+
+          // Update or Create items
+          for (const item of asoebiItemsParsed) {
+              if (item.id) {
+                  const existing = existingItems.find(e => e.id === parseInt(item.id));
+                  if (existing) {
+                      // Calculate Total Stock = Available (User Input) + Sold (Already Sold)
+                      const availableInput = parseInt(item.stock || 0);
+                      const totalStock = availableInput + existing.sold;
+                      
+                      await prisma.asoebiItem.update({
+                          where: { id: existing.id },
+                          data: {
+                              name: item.name,
+                              price: parseFloat(item.price),
+                              stock: totalStock,
+                              category: item.category || null
+                          }
+                      });
+                  }
+              } else {
+                  await prisma.asoebiItem.create({
+                      data: {
+                          giftId: giftId,
+                          name: item.name,
+                          price: parseFloat(item.price),
+                          stock: parseInt(item.stock || 0),
+                          category: item.category || null
+                      }
+                  });
+              }
+          }
+      }
+
+      const updatedGift = await prisma.gift.findUnique({
+        where: { id: giftId },
         include: { asoebiItems: true }
       });
 

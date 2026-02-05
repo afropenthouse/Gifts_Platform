@@ -509,26 +509,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                </div>
             ))}
             
-            {(stockSummary.inStock.brideMen > 0 || stockSummary.soldOut.brideMen > 0 || stockSummary.inStock.groomMen > 0 || stockSummary.soldOut.groomMen > 0) && (
-            <div className="p-3 rounded-lg bg-primary text-white text-center">
-              <div className="text-sm/5 opacity-90">Asoebi (Men)</div>
-              <div className="text-2xl font-semibold text-center">
-                {stockView === 'in_stock' 
-                  ? (stockSummary.inStock.brideMen + stockSummary.inStock.groomMen) 
-                  : (stockSummary.soldOut.brideMen + stockSummary.soldOut.groomMen)}
-              </div>
-            </div>
-            )}
-            {(stockSummary.inStock.brideWomen > 0 || stockSummary.soldOut.brideWomen > 0 || stockSummary.inStock.groomWomen > 0 || stockSummary.soldOut.groomWomen > 0) && (
-            <div className="p-3 rounded-lg bg-primary text-white text-center">
-              <div className="text-sm/5 opacity-90">Asoebi (Women)</div>
-              <div className="text-2xl font-semibold text-center">
-                {stockView === 'in_stock' 
-                  ? (stockSummary.inStock.brideWomen + stockSummary.inStock.groomWomen) 
-                  : (stockSummary.soldOut.brideWomen + stockSummary.soldOut.groomWomen)}
-              </div>
-            </div>
-            )}
+            {/* Removed Asoebi Men and Women sections */}
           </div>
         </>
       )}

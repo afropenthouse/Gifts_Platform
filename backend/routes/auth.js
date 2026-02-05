@@ -68,11 +68,12 @@ module.exports = () => {
     body('name').notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('referralCode').optional().isString(),
   ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { name, email, password } = req.body;
+    const { name, email, password, referralCode } = req.body;
 
     try {
       console.log(`\n🔐 [SIGNUP] New signup request for: ${email}`);
@@ -83,10 +84,32 @@ module.exports = () => {
         return res.status(400).json({ msg: 'User already exists' });
       }
 
+      // Check referral code if provided
+      let referrer = null;
+      if (referralCode) {
+        referrer = await prisma.user.findUnique({ where: { referralCode } });
+        if (referrer) {
+           console.log(`🤝 Referred by: ${referrer.name} (${referrer.email})`);
+        } else {
+           console.log(`⚠️ Invalid referral code provided: ${referralCode}`);
+        }
+      }
+
       console.log(`👤 Creating new user: ${name} (${email})`);
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
       const verificationToken = crypto.randomBytes(32).toString('hex');
+      
+      // Generate unique referral code for the new user
+      let newReferralCode;
+      let isUnique = false;
+      while (!isUnique) {
+        const randomPart = crypto.randomBytes(3).toString('hex').toUpperCase();
+        const namePart = name.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
+        newReferralCode = `${namePart}${randomPart}`;
+        const existing = await prisma.user.findUnique({ where: { referralCode: newReferralCode } });
+        if (!existing) isUnique = true;
+      }
 
       user = await prisma.user.create({ 
         data: { 
@@ -94,7 +117,9 @@ module.exports = () => {
           email, 
           password: hashedPassword, 
           verificationToken, 
-          verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) 
+          verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          referralCode: newReferralCode,
+          referredById: referrer ? referrer.id : null
         } 
       });
       console.log(`✅ User created with ID: ${user.id}`);

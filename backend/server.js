@@ -90,6 +90,7 @@ app.use('/api/users', require('./routes/users')());
 app.use('/api/guests', require('./routes/guests')());
 app.use('/api/vendors', require('./routes/vendors')());
 app.use('/api/moments', require('./routes/moments')());
+app.use('/api/referrals', require('./routes/referrals')());
 
 app.get('/', (req, res) => res.send('API running'));
 

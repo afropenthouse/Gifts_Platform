@@ -97,8 +97,29 @@ model User {
   guests                   Guest[]
   moments                  Moment[]
   withdrawals              Withdrawal[]
+  referralCode             String?                @unique
+  referredById             Int?
+  referredBy               User?                  @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals                User[]                 @relation("UserReferrals")
+  referralTransactions     ReferralTransaction[]
+  referralTransactionsReceived ReferralTransaction[] @relation("ReceivedReferralTransactions")
 
   @@index([email])
+}
+
+model ReferralTransaction {
+  id             Int      @id @default(autoincrement())
+  referrerId     Int
+  referredUserId Int
+  amount         Decimal  @db.Decimal(10, 2)
+  type           String // 'asoebi_commission', 'cash_gift_commission'
+  description    String?
+  createdAt      DateTime @default(now())
+  referrer       User     @relation(fields: [referrerId], references: [id])
+  referredUser   User     @relation("ReceivedReferralTransactions", fields: [referredUserId], references: [id])
+
+  @@index([referrerId])
+  @@index([referredUserId])
 }
 
 model Contribution {

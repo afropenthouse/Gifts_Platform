@@ -306,6 +306,50 @@ module.exports = () => {
         }
       }
 
+      // --- Referral Reward Logic ---
+      if (gift.user.referredById) {
+        try {
+          const referrerId = gift.user.referredById;
+          let rewardAmount = 0;
+          let rewardType = '';
+          let rewardDesc = '';
+
+          if (isAsoebi) {
+            // 100 Naira per Asoebi order
+            rewardAmount = 100;
+            rewardType = 'asoebi_commission';
+            rewardDesc = `Commission for Asoebi order by ${gift.user.name}`;
+          } else {
+            // 1% of Cash Gift
+            rewardAmount = amount * 0.01;
+            rewardType = 'cash_gift_commission';
+            rewardDesc = `1% Commission for Cash Gift received by ${gift.user.name}`;
+          }
+
+          if (rewardAmount > 0) {
+            await prisma.$transaction([
+              prisma.user.update({
+                where: { id: referrerId },
+                data: { wallet: { increment: rewardAmount } }
+              }),
+              prisma.referralTransaction.create({
+                data: {
+                  referrerId,
+                  referredUserId: gift.user.id,
+                  amount: rewardAmount,
+                  type: rewardType,
+                  description: rewardDesc
+                }
+              })
+            ]);
+            console.log(`💰 Referral reward credited: ${rewardAmount} to user ${referrerId}`);
+          }
+        } catch (refErr) {
+          console.error('❌ Failed to process referral reward:', refErr);
+        }
+      }
+      // -----------------------------
+
       // Update user's wallet
       const walletUpdateResult = await prisma.user.update({
         where: { id: gift.userId },
@@ -592,11 +636,55 @@ module.exports = () => {
             }
           } catch (err) {
             console.error('❌ Failed to update/create guest asoebi status:', err);
-          }
         }
+      }
 
-        // Update user's wallet
-        const updateResult = await prisma.user.update({
+      // --- Referral Reward Logic ---
+      if (gift.user.referredById) {
+        try {
+          const referrerId = gift.user.referredById;
+          let rewardAmount = 0;
+          let rewardType = '';
+          let rewardDesc = '';
+
+          if (isAsoebi) {
+            // 100 Naira per Asoebi order
+            rewardAmount = 100;
+            rewardType = 'asoebi_commission';
+            rewardDesc = `Commission for Asoebi order by ${gift.user.name}`;
+          } else {
+            // 1% of Cash Gift
+            rewardAmount = amountInNaira * 0.01;
+            rewardType = 'cash_gift_commission';
+            rewardDesc = `1% Commission for Cash Gift received by ${gift.user.name}`;
+          }
+
+          if (rewardAmount > 0) {
+            await prisma.$transaction([
+              prisma.user.update({
+                where: { id: referrerId },
+                data: { wallet: { increment: rewardAmount } }
+              }),
+              prisma.referralTransaction.create({
+                data: {
+                  referrerId,
+                  referredUserId: gift.user.id,
+                  amount: rewardAmount,
+                  type: rewardType,
+                  description: rewardDesc
+                }
+              })
+            ]);
+            console.log(`💰 Referral reward credited: ${rewardAmount} to user ${referrerId}`);
+          }
+        } catch (refErr) {
+          console.error('❌ Failed to process referral reward:', refErr);
+        }
+      }
+      // -----------------------------
+
+      // Update user's wallet
+      const updateResult = await prisma.user.update({
           where: { id: gift.userId },
           data: { wallet: { increment: amountReceived } },
         });

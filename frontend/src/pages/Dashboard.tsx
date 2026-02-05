@@ -197,7 +197,7 @@ const Dashboard: React.FC = () => {
   const [customMinute, setCustomMinute] = useState('00');
   const [customAmpm, setCustomAmpm] = useState('AM');
   const [isSettingReminders, setIsSettingReminders] = useState(false);
-  const [asoebiItemsState, setAsoebiItemsState] = useState<Array<{ name: string; price: string; stock: string; category?: string }>>([]);
+  const [asoebiItemsState, setAsoebiItemsState] = useState<Array<{ id?: number; name: string; price: string; stock: string; category?: string }>>([]);
   const [showLegacyAsoebi, setShowLegacyAsoebi] = useState(false);
   // Warning Modal State
   const [warningModalOpen, setWarningModalOpen] = useState(false);
@@ -601,9 +601,10 @@ const Dashboard: React.FC = () => {
     // Populate dynamic items
     const gItems = (gift as any).asoebiItems || [];
     setAsoebiItemsState(gItems.map((i: any) => ({
+      id: i.id,
       name: i.name,
       price: i.price.toString(),
-      stock: (i.stock || 0).toString(),
+      stock: Math.max(0, (Number(i.stock) || 0) - (Number(i.sold) || 0)).toString(),
       category: i.category
     })));
     
@@ -717,7 +718,7 @@ const Dashboard: React.FC = () => {
       if (asoebiItemsState.length > 0) {
         const items = asoebiItemsState
           .filter(i => i.name && i.price)
-          .map(i => ({ name: i.name, price: i.price, stock: i.stock || '0', category: i.category }));
+          .map(i => ({ id: i.id, name: i.name, price: i.price, stock: i.stock || '0', category: i.category }));
         if (items.length > 0) {
           formData.append('asoebiItems', JSON.stringify(items));
         }
@@ -1122,6 +1123,10 @@ const Dashboard: React.FC = () => {
 
 
   const totalContributions = contributions.reduce((sum, c) => sum + Number(c.amount), 0);
+  const totalAsoebiRevenue = contributions
+    .filter(c => c.isAsoebi)
+    .reduce((sum, c) => sum + Number(c.amount), 0);
+
   const recentTransactions = [
     ...contributions.map(c => ({ ...c, type: 'contribution' })),
     ...withdrawHistory.map(w => ({ ...w, type: 'withdrawal' }))
@@ -1435,7 +1440,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     
                     {/* Stats Row */}
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 mt-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 mt-6">
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Wallet Balance</p>
                         <p className="text-2xl font-bold">₦{user.wallet}</p>
@@ -1455,6 +1460,10 @@ const Dashboard: React.FC = () => {
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                         <p className="text-sm opacity-90">Asoebi Orders</p>
                         <p className="text-2xl font-bold">{asoebiOrdersCount}</p>
+                      </div>
+                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                        <p className="text-sm opacity-90">Asoebi Revenue</p>
+                        <p className="text-2xl font-bold">₦{totalAsoebiRevenue.toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
