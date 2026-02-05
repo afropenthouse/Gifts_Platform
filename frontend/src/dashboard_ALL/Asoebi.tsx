@@ -143,7 +143,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               const original = gift.asoebiItems.find(i => i.id === item.asoebiItemId) || gift.asoebiItems.find(i => i.name === item.name);
               if (original && original.category) {
                  const cat = original.category.charAt(0).toUpperCase() + original.category.slice(1);
-                 key = `${cat} (${item.name})`;
+                 key = `${item.name} (${cat})`;
               }
             }
             
@@ -306,7 +306,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     return Array.from(new Set(items.map(i => {
       if (i.category) {
         const cat = i.category.charAt(0).toUpperCase() + i.category.slice(1);
-        return `${cat} (${i.name})`;
+        return `${i.name} (${cat})`;
       }
       return i.name;
     })));
@@ -350,13 +350,11 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       if (g.asoebiItems && g.asoebiItems.length > 0) {
         g.asoebiItems.forEach(item => {
           let key = item.name;
-          // Category appending removed per user request
-          /*
+          // Category appending restored per user request
           if (item.category) {
             const cat = item.category.charAt(0).toUpperCase() + item.category.slice(1);
             key = `${item.name} (${cat})`;
           }
-          */
           
           if (dynamicStock[key]) {
             dynamicStock[key].inStock += Math.max(0, toNum(item.stock) - toNum(item.sold));
