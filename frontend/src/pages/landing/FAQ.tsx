@@ -28,11 +28,11 @@ const FAQ = () => {
     },
     {
       question: "Are there any fees for using the service?",
-      answer: "Creating an account is free. For cash gifts, a small processing fee applies to cover transaction costs. For Asoebi sales, there is a fixed platform fee of ₦500 per item."
+      answer: "Creating an account is free. For cash gifts, a small processing fee applies to cover transaction costs."
     },
     {
       question: "How do I RSVP for a wedding?",
-      answer: "When you receive an invitation link, simply click on it and look for the RSVP button. Fill in your details, indicate whether you'll be attending, and you're all set! You'll even receive an email confirmation."
+      answer: "When you receive an invitation link, simply click on it and look for the RSVP button. Fill in your details, indicate whether you'll be attending, and you're all set! You'll receive an email confirmation."
     },
     {
       question: "Can I manage my wedding budget here?",
@@ -81,7 +81,7 @@ const FAQ = () => {
               We're here to help! Reach out to our support team anytime.
             </p>
             <a 
-              href="mailto:support@bethere.com" 
+              href="mailto:teambethere@gmail.com" 
               className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#2E235C] hover:bg-[#2E235C]/90 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               Contact Support

@@ -106,7 +106,7 @@ const ScheduleVendorPayments = () => {
             </div>
 
             <div className="relative">
-              <div className="rounded-2xl overflow-hidden shadow-2xl">
+              <div className="rounded-2xl overflow-hidden shadow-2xl max-w-md mx-auto">
                 <img 
                   src="/vendor.JPG" 
                   alt="Wedding vendors and planning" 

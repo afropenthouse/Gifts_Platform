@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Label } from '../components/ui/label';
 import { Button } from '../components/ui/button';
 import { Checkbox } from '../components/ui/checkbox';
-import { FileDown } from 'lucide-react';
+import { FileDown, Banknote } from 'lucide-react';
 
 interface AsoebiItem {
   id: number;
@@ -285,6 +285,12 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     return gifts.find(g => g.id === gid) || null;
   }, [eventFilter, gifts]);
 
+  const totalRevenue = useMemo(() => {
+    return contributions
+      .filter(c => c.isAsoebi && (eventFilter === 'all' || c.giftId === parseInt(eventFilter)))
+      .reduce((sum, c) => sum + (c.amount || 0), 0);
+  }, [contributions, eventFilter]);
+
   const dynamicColumns = useMemo(() => {
     let items: AsoebiItem[] = [];
 
@@ -533,6 +539,13 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
                  </div>
                </div>
             ))}
+
+            <div className="p-3 rounded-lg text-white text-center bg-primary">
+               <div className="text-sm/5 opacity-90">Total Revenue</div>
+               <div className="text-2xl font-semibold text-center">
+                 ₦{totalRevenue.toLocaleString()}
+               </div>
+            </div>
             
             {/* Removed Asoebi Men and Women sections */}
           </div>
@@ -594,10 +607,17 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
               </Select>
             </div>
             <div className="flex items-center pt-2 md:pt-0">
-              <Button className="w-auto bg-[#2E235C] text-white hover:bg-[#2E235C]/90 px-2" size="sm" onClick={exportCSV}>
-                <FileDown className="w-4 h-4 mr-1" />
-                Download CSV
-              </Button>
+              <div className="flex w-full justify-end md:w-auto">
+                <Button
+                  className="min-w-[140px] w-full md:w-[170px] bg-[#2E235C] text-white hover:bg-[#2E235C]/90 px-2 md:ml-2 ml-auto h-10 -mt-2"
+                  size="sm"
+                  onClick={exportCSV}
+                  style={{ maxWidth: '170px' }}
+                >
+                  {/* <FileDown className="w-4 h-4 mr-1" /> */}
+                  Download CSV
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>

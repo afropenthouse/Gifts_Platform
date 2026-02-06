@@ -48,7 +48,7 @@ const AsoebiLanding = () => {
             <div className="relative">
               <div className="rounded-2xl overflow-hidden shadow-2xl">
                 <img 
-                  src="/asobi.JPG" 
+                  src="/asoebi.JPG" 
                   alt="Asoebi traditional attire" 
                   className="w-full h-auto object-cover"
                 />

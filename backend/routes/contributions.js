@@ -53,6 +53,11 @@ module.exports = () => {
         metadata,
       };
 
+      // Enforce minimum amount of 1000 Naira
+      if (parseFloat(amount) < 1000) {
+        return res.status(400).json({ msg: 'Minimum amount is ₦1000' });
+      }
+
       const response = await initializePayment(payload);
 
       if (!response?.status) {
@@ -651,7 +656,7 @@ module.exports = () => {
             // 100 Naira per Asoebi order
             rewardAmount = 100;
             rewardType = 'asoebi_commission';
-            rewardDesc = `Commission for Asoebi order by ${gift.user.name}`;
+            rewardDesc = `Commission for Asoebi order from ${gift.user.name}`;
           } else {
             // 1% of Cash Gift
             rewardAmount = amountInNaira * 0.01;

@@ -97,21 +97,12 @@ const CollectCashGifts = () => {
             </div>
 
             <div className="relative">
-              <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/20">
-                <h3 className="text-xl font-semibold text-foreground mb-6 text-center">When guests can send gifts</h3>
-                <div className="space-y-4">
-                  {timingFeatures.map((feature, index) => (
-                    <div key={index} className="flex items-start gap-4 p-4 bg-white/70 rounded-xl hover:bg-white/90 transition-colors">
-                      <div className="flex-shrink-0 mt-1">
-                        {feature.icon}
-                      </div>
-                      <div>
-                        <p className="text-foreground font-medium">{feature.title}</p>
-                        <p className="text-sm text-muted-foreground">{feature.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="rounded-2xl overflow-hidden shadow-2xl max-w-md mx-auto">
+                <img 
+                  src="/cash.JPG" 
+                  alt="Cash gifts and wedding contributions" 
+                  className="w-full h-auto object-cover"
+                />
               </div>
             </div>
           </div>

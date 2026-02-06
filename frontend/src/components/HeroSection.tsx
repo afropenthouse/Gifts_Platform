@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,16 @@ const HeroSection = () => {
   const [brideName, setBrideName] = useState('');
   const [customType, setCustomType] = useState('');
   const [fileError, setFileError] = useState('');
+
+  const [currentImage, setCurrentImage] = useState(0);
+  const images = ["/6ty2.JPG", "/6ty3.JPG"];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % images.length);
+    }, 5000); 
+    return () => clearInterval(timer);
+  }, []);
 
   const handleCreateGiftClick = () => {
     if (!user) {
@@ -153,11 +163,22 @@ const HeroSection = () => {
 
       {/* Images - Hidden on small mobile, shown on medium and up */}
       <div className="flex-1 w-full lg:w-auto mt-8 lg:mt-0 mb-6 lg:mb-0 px-0 lg:px-4 flex items-center justify-center">
-        <img 
-          src="/6ty2.JPG" 
-          alt="Celebration" 
-          className="w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[200px] xl:max-w-xs h-auto rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
-        />
+        <div className="relative w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[200px] xl:max-w-xs overflow-hidden rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <div
+            className="flex transition-transform duration-[2000ms] ease-in-out"
+            style={{ transform: `translateX(-${currentImage * 100}%)` }}
+          >
+            {images.map((src, index) => (
+              <div key={index} className="w-full flex-shrink-0 flex items-center justify-center">
+                <img
+                  src={src}
+                  alt={`Celebration ${index + 1}`}
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
 

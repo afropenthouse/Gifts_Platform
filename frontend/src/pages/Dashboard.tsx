@@ -1481,18 +1481,18 @@ const Dashboard: React.FC = () => {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h3 className="font-semibold text-gray-900">Create Event</h3>
-                          <p className="text-sm text-gray-600">Start a new gift link</p>
+                          
                         </div>
                       </div>
                       
                       <div className="space-y-4">
                         <p className="text-center text-gray-600 text-sm">
-                          Create an RSVP link for your wedding, birthday, or any special occasion
+                          Create an RSVP link for your wedding, birthday, or any special occasion.
                         </p>
                       </div>
                       
                       <Button 
-                        className="w-full mt-4 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
+                        className="w-full mt-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsCreateModalOpen(true);

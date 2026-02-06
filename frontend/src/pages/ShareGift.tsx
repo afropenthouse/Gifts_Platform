@@ -419,6 +419,10 @@ const ShareGift: React.FC = () => {
       const totalQty = itemsDetails.reduce((sum, d) => sum + d.quantity, 0);
       selectionDescription = itemsDetails.map(d => `${d.name} x${d.quantity}`).join(', ');
       if (gift?.isSellingAsoebi && totalAmount > 0) {
+        if (totalAmount < 1000) {
+          alert("Minimum amount for Asoebi payment is ₦1000");
+          return;
+        }
         setProcessingPayment(true);
         try {
           const name = lastRsvpData ? `${lastRsvpData.firstName} ${lastRsvpData.lastName}` : 'Guest';
@@ -805,7 +809,7 @@ const ShareGift: React.FC = () => {
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = 100;
+    const minAmount = 1000;
     if (!amount || parseFloat(amount) < minAmount) {
       const currencySymbol = '₦';
       alert(`Please enter an amount of at least ${currencySymbol}${minAmount}`);
@@ -1071,16 +1075,16 @@ const ShareGift: React.FC = () => {
                   id="amount"
                   type="number"
                   step="0.01"
-                  min="100"
+                  min="1000"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="100"
+                  placeholder="1000"
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Minimum {currency === 'NGN' ? '₦100' : currency === 'USD' ? '$1' : currency === 'CAD' ? 'C$1' : currency === 'EUR' ? '€1' : currency === 'GBP' ? '£1' : currency === 'AUD' ? 'A$1' : currency === 'ZAR' ? 'R1' : currency === 'KES' ? 'KSh1' : currency === 'GHS' ? '₵1' : currency === 'UGX' ? 'USh1' : 'TSh1'}
+                Minimum {currency === 'NGN' ? '₦1000' : currency === 'USD' ? '$1' : currency === 'CAD' ? 'C$1' : currency === 'EUR' ? '€1' : currency === 'GBP' ? '£1' : currency === 'AUD' ? 'A$1' : currency === 'ZAR' ? 'R1' : currency === 'KES' ? 'KSh1' : currency === 'GHS' ? '₵1' : currency === 'UGX' ? 'USh1' : 'TSh1'}
               </p>
             </div>
 
