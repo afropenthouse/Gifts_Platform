@@ -37,9 +37,6 @@ const Navbar = ({ logoSrc = "/logo2.png" }: NavbarProps) => {
             <Link to="/how-it-works" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               How it Works
             </Link>
-            <Link to="/faq" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
-              FAQ
-            </Link>
             <Link to="/wedding-rsvp" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               RSVP
             </Link>
@@ -57,6 +54,9 @@ const Navbar = ({ logoSrc = "/logo2.png" }: NavbarProps) => {
             </Link> */}
             <Link to="/schedule-vendor-payments" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
               Manage Expenses
+            </Link>
+            <Link to="/faq" className="text-foreground hover:text-[#7a0f2a] transition-colors text-base font-medium">
+              FAQs
             </Link>
             {user ? (
               <>
@@ -100,9 +100,6 @@ const Navbar = ({ logoSrc = "/logo2.png" }: NavbarProps) => {
                   <Link to="/how-it-works" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     How it Works
                   </Link>
-                  <Link to="/faq" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
-                    FAQ
-                  </Link>
                   <Link to="/wedding-rsvp" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     RSVP
                   </Link>
@@ -117,6 +114,9 @@ const Navbar = ({ logoSrc = "/logo2.png" }: NavbarProps) => {
                   </Link> */}
                   <Link to="/schedule-vendor-payments" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
                     Manage Expenses
+                  </Link>
+                  <Link to="/faq" className="text-foreground hover:text-[#7a0f2a] transition-colors" onClick={() => setIsOpen(false)}>
+                    FAQs
                   </Link>
                   {user ? (
                     <>
