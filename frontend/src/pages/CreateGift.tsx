@@ -29,6 +29,7 @@ const CreateGift: React.FC = () => {
   const [asoebiGroomWomenPrice, setAsoebiGroomWomenPrice] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shareLink, setShareLink] = useState('');
+  const [story, setStory] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -118,6 +119,7 @@ const CreateGift: React.FC = () => {
     if (type === 'other') {
       formData.append('customType', customType);
     }
+    formData.append('story', story);
 
     const token = localStorage.getItem('token');
     try {
@@ -319,6 +321,16 @@ const CreateGift: React.FC = () => {
             </div>
           </>
         )}
+        <div>
+          <Label htmlFor="story">Share the story of your journey with your guest here</Label>
+          <Textarea
+            id="story"
+            value={story}
+            onChange={(e) => setStory(e.target.value)}
+            className="min-h-[150px]"
+            placeholder="Share your story..."
+          />
+        </div>
         <Button type="submit">Create Gift</Button>
       </form>
 

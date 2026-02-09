@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import Navbar from '../components/Navbar';
 import confetti from 'canvas-confetti';
 import { useToast } from '../hooks/use-toast';
+import { Gift as GiftIcon, Camera } from 'lucide-react';
 //Testing
 declare global {
   interface Window {
@@ -20,7 +21,7 @@ interface Gift {
   type: string;
   title: string;
   description: string;
-  date: string; g
+  date: string;
   picture: string;
   details: any;
   customType?: string;
@@ -322,60 +323,126 @@ const QRGift: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <Navbar logoSrc={gift.type === 'wedding' ? "/logo2.png" : "/logo1.png"} />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
         <div className="w-full max-w-md flex flex-col items-center gap-6">
           <img
-            src="/logo2.png"
+            src={gift.type === 'wedding' ? "/logo2.png" : "/logo1.png"}
             alt="BeThere Weddings logo"
             className="h-12 w-auto"
           />
 
-          <div className="text-center">
+          {/* <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               {gift.title}
             </h1>
             <p className="text-gray-600">Celebrate with them by sharing your moments at their event and sending cash gifts!</p>
-          </div>
+          </div> */}
 
-          <div className="space-y-3">
-            {(gift?.enableCashGifts !== false) && (
+          {gift.picture ? (
+            <div className="bg-white rounded-2xl shadow-card overflow-hidden border border-border/50 hover:shadow-lg transition-shadow cursor-pointer w-full">
+              <div className="relative w-full overflow-hidden">
+                <img
+                  src={gift.picture}
+                  alt={gift.title}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    imageRendering: 'auto',
+                    filter: 'none',
+                    opacity: 1,
+                    transition: 'none',
+                    display: 'block',
+                  }}
+                  draggable={false}
+                />
+
+                <div className="absolute inset-0 flex items-end">
+                  <div className="w-full p-4 pb-6">
+                    <div className="space-y-3">
+                      {(gift?.enableCashGifts !== false) && (
+                        <Button
+                          className="w-full bg-[#2E235C] hover:bg-[#2E235C]/90 text-white"
+                          size="lg"
+                          onClick={() => setShowAmountModal(true)}
+                        >
+                          <GiftIcon className="w-5 h-5 mr-2" />
+                          Send a Cash Gift
+                        </Button>
+                      )}
+
+                      <Button
+                        className="w-full bg-white text-[#2E235C] hover:bg-gray-100"
+                        size="lg"
+                        onClick={() => {
+                          const uploadInput = document.createElement('input');
+                          uploadInput.type = 'file';
+                          uploadInput.accept = 'image/*';
+                          uploadInput.multiple = true;
+                          uploadInput.style.display = 'none';
+                          document.body.appendChild(uploadInput);
+
+                          uploadInput.onchange = (e) => {
+                            const files = (e.target as HTMLInputElement).files;
+                            if (files && files.length > 0) {
+                              handleMomentUpload(files, gift.id);
+                            }
+                            document.body.removeChild(uploadInput);
+                          };
+                          uploadInput.click();
+                        }}
+                      >
+                        <Camera className="w-5 h-5 mr-2" />
+                        Upload Pictures
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 w-full">
+              {(gift?.enableCashGifts !== false) && (
+                <Button
+                  className="w-full bg-[#2E235C] hover:bg-[#2E235C]/90 text-white"
+                  size="lg"
+                  onClick={() => setShowAmountModal(true)}
+                >
+                  <GiftIcon className="w-5 h-5 mr-2" />
+                  Send a Cash Gift
+                </Button>
+              )}
+
               <Button
-                className="w-full bg-[#2E235C] hover:bg-[#2E235C]/90 text-white"
+                variant="outline"
+                className="w-full border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
                 size="lg"
-                onClick={() => setShowAmountModal(true)}
+                onClick={() => {
+                  const uploadInput = document.createElement('input');
+                  uploadInput.type = 'file';
+                  uploadInput.accept = 'image/*';
+                  uploadInput.multiple = true;
+                  // Append to body to ensure iOS compatibility
+                  uploadInput.style.display = 'none';
+                  document.body.appendChild(uploadInput);
+
+                  uploadInput.onchange = (e) => {
+                    const files = (e.target as HTMLInputElement).files;
+                    if (files && files.length > 0) {
+                      handleMomentUpload(files, gift.id);
+                    }
+                    document.body.removeChild(uploadInput);
+                  };
+                  uploadInput.click();
+                }}
               >
-                Send a Cash Gift
+                <Camera className="w-5 h-5 mr-2" />
+                Upload Pictures
               </Button>
-            )}
-
-            <Button
-              variant="outline"
-              className="w-full border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white"
-              size="lg"
-              onClick={() => {
-                const uploadInput = document.createElement('input');
-                uploadInput.type = 'file';
-                uploadInput.accept = 'image/*';
-                uploadInput.multiple = true;
-                // Append to body to ensure iOS compatibility
-                uploadInput.style.display = 'none';
-                document.body.appendChild(uploadInput);
-
-                uploadInput.onchange = (e) => {
-                  const files = (e.target as HTMLInputElement).files;
-                  if (files && files.length > 0) {
-                    handleMomentUpload(files, gift.id);
-                  }
-                  document.body.removeChild(uploadInput);
-                };
-                uploadInput.click();
-              }}
-            >
-              📸 Upload Pictures
-            </Button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

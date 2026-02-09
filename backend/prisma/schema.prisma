@@ -18,6 +18,7 @@ model Gift {
   details                     Json?
   customType                  String?
   shareLink                   String?        @unique
+  story                       String?
   createdAt                   DateTime       @default(now())
   updatedAt                   DateTime       @updatedAt
   guestListMode               GuestListMode  @default(restricted)

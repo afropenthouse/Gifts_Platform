@@ -228,7 +228,7 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
               We're so excited to see you on our big day.
             </p>
             <p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.5;">
-              Click the button to send Cash gift and show your support
+              Click the button to send a cash gift and to show your support.
             </p>
           </div>
 
@@ -256,7 +256,7 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
     await transporter.sendMail({
       from: mailFrom,
       to: recipient,
-      subject: `${heading} – Save the Date`,
+      subject,
       html,
     });
     return { delivered: true };
@@ -277,7 +277,27 @@ const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
   const eventDate = formatEventDate(gift?.date);
   const accent = '#2E235C';
   const muted = '#f6f4ff';
+
+  let subject = `${heading} – Save the Date`;
   
+  if (gift?.date) {
+    const eventDateObj = new Date(gift.date);
+    const now = new Date();
+    // Calculate difference in days (approximate)
+    const diffTime = eventDateObj - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 0 && diffDays <= 30) {
+      if (diffDays === 1) {
+         subject = `1 Day to Go! - ${heading}`;
+      } else {
+         subject = `${diffDays} Days to Go! - ${heading}`;
+      }
+    } else if (diffDays === 0) {
+       subject = `Today is the Day! - ${heading}`;
+    }
+  }
+
   const html = `
     <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
       <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">

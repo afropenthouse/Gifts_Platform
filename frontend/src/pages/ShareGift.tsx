@@ -22,6 +22,7 @@ interface Gift {
   type: string;
   title: string;
   description: string;
+  story?: string;
   date: string;
   deadline?: string;
   picture: string;
@@ -96,6 +97,7 @@ const ShareGift: React.FC = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
   const [verifyMessage, setVerifyMessage] = useState('');
+  const [showStoryModal, setShowStoryModal] = useState(false);
 
   useEffect(() => {
     document.title = "BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding";
@@ -284,7 +286,7 @@ const ShareGift: React.FC = () => {
       // Optionally revert to defaults when navigating away (keep simple: reset title)
       document.title = 'BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding';
     };
-  }, [gift]);
+  }, [gift, heading]);
 
   useEffect(() => {
     if (!loading && gift) {
@@ -1040,6 +1042,18 @@ const ShareGift: React.FC = () => {
             </div>
           </div>
 
+          {/* Story Section */}
+          {gift.story && (
+            <div className="-mt-5 w-full max-w-md px-4 text-center">
+              <button 
+                onClick={() => setShowStoryModal(true)}
+                className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+              >
+                Read our Story
+              </button>
+            </div>
+          )}
+
           {/* Description - shown below card if available */}
           {/* {gift.description && (
             <div className="mt-6 p-4 bg-card rounded-lg border border-border/50">
@@ -1050,6 +1064,19 @@ const ShareGift: React.FC = () => {
       </div>
 
       {/* Amount Modal */}
+      <Dialog open={showStoryModal} onOpenChange={setShowStoryModal}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" onInteractOutside={(e) => { e.preventDefault(); }}>
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-playfair text-center text-[#2E235C] mb-4">Our Story</DialogTitle>
+          </DialogHeader>
+          <div className="px-4 pb-6">
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light text-lg">
+              {gift.story}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showAmountModal} onOpenChange={setShowAmountModal}>
         <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>

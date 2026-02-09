@@ -42,7 +42,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Checkbox } from '../components/ui/checkbox';
 import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import * as XLSX from 'xlsx';
 import { Toaster } from '../components/ui/toaster';
 
 interface Gift {
@@ -56,6 +55,7 @@ interface Gift {
   details?: any;
   customType?: string;
   shareLink: string;
+  story?: string;
   createdAt: string;
   contributions?: Contribution[];
   guestListMode?: string;
@@ -117,6 +117,7 @@ const Dashboard: React.FC = () => {
   const [groomName, setGroomName] = useState('');
   const [brideName, setBrideName] = useState('');
   const [customType, setCustomType] = useState('');
+  const [story, setStory] = useState('');
   const [fileError, setFileError] = useState('');
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -196,6 +197,7 @@ const Dashboard: React.FC = () => {
   const [customHour, setCustomHour] = useState('9');
   const [customMinute, setCustomMinute] = useState('00');
   const [customAmpm, setCustomAmpm] = useState('AM');
+  const [reminderEventDate, setReminderEventDate] = useState('');
   const [isSettingReminders, setIsSettingReminders] = useState(false);
   const [asoebiItemsState, setAsoebiItemsState] = useState<Array<{ id?: number; name: string; price: string; stock: string; category?: string }>>([]);
   const [showLegacyAsoebi, setShowLegacyAsoebi] = useState(false);
@@ -571,6 +573,7 @@ const Dashboard: React.FC = () => {
       setReminder('none');
       setCustomType('');
     }
+    setStory(gift.story || '');
     // Access isSellingAsoebi and asoebiPrice directly from gift object (updated backend returns these)
     // Note: TypeScript interface needs update, but for now accessing as any
     const g = gift as any;
@@ -752,7 +755,8 @@ const Dashboard: React.FC = () => {
     if (type === 'other') {
       formData.append('customType', customType);
     }
-
+    formData.append('story', story);
+    
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts`, {
@@ -770,6 +774,7 @@ const Dashboard: React.FC = () => {
 
         setType('');
         setTitle('');
+        setStory('');
         setDescription('');
         setDate('');
         setDeadline('');
@@ -869,6 +874,7 @@ const Dashboard: React.FC = () => {
     if (pictureFile) {
       formData.append('picture', pictureFile);
     }
+    formData.append('story', story);
 
     const details = {} as any;
     if (type === 'wedding') {
@@ -940,6 +946,7 @@ const Dashboard: React.FC = () => {
 
         setType('');
         setTitle('');
+        setStory('');
         setDescription('');
         setDate('');
         setDeadline('');
@@ -1077,7 +1084,7 @@ const Dashboard: React.FC = () => {
     setIsSettingReminders(true);
     try {
       const token = localStorage.getItem('token');
-      const body: any = { reminder: reminderType };
+      const body: any = { reminder: reminderType, eventDate: reminderEventDate };
       if (reminderType === 'custom') {
         // Convert 12-hour to 24-hour
         let hour24 = parseInt(customHour);
@@ -1106,6 +1113,7 @@ const Dashboard: React.FC = () => {
         });
         setIsSetRemindersModalOpen(false);
         setReminderType('1week');
+        setReminderEventDate('');
         setCustomReminderDate('');
         setCustomHour('9');
         setCustomMinute('00');
@@ -1600,6 +1608,7 @@ const Dashboard: React.FC = () => {
   onRSVP={() => setActiveTab('rsvp')}
   onSetReminder={(gift) => {
     setSelectedEventForRSVP(gift.id);
+    setReminderEventDate(gift.date ? gift.date.split('T')[0] : '');
     setIsSetRemindersModalOpen(true);
   }}
   onViewDetails={(gift) => {
@@ -3012,6 +3021,9 @@ const Dashboard: React.FC = () => {
                   <ImageIcon className="inline w-4 h-4 mr-2 text-gray-600" />
                   Event Invite
                 </Label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Upload your pre-wedding picture or event invite (Guest will see this when they RSVP or send cash gift)
+                </p>
                 <div className="mt-2">
                   {picture ? (
                     <div className="relative mb-4">
@@ -3105,6 +3117,19 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              <div>
+                <Label htmlFor="story" className="text-sm font-medium text-gray-900 mb-2 block">
+                  Share the story of your journey with your guest here
+                </Label>
+                <Textarea
+                  id="story"
+                  value={story}
+                  onChange={(e) => setStory(e.target.value)}
+                  className="min-h-[150px] border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  placeholder="Share your story..."
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 pt-6">
@@ -3144,6 +3169,7 @@ const Dashboard: React.FC = () => {
         if (!open) {
           setType('');
           setTitle('');
+          setStory('');
           setDate('');
           setDeadline('');
           setPicture('');
@@ -3645,6 +3671,19 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              <div>
+                <Label htmlFor="story" className="text-sm font-medium text-gray-900 mb-2 block">
+                  Share the story of your journey with your guest here
+                </Label>
+                <Textarea
+                  id="story"
+                  value={story}
+                  onChange={(e) => setStory(e.target.value)}
+                  className="min-h-[150px] border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  placeholder="Share your story..."
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 pt-6">
@@ -4276,9 +4315,10 @@ const Dashboard: React.FC = () => {
         
         try {
           const buffer = await excelFile.arrayBuffer();
-          const workbook = XLSX.read(buffer, { type: 'array' });
+          const { read, utils } = await import('xlsx');
+          const workbook = read(buffer, { type: 'array' });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          const rows: any[] = utils.sheet_to_json(sheet, { defval: '' });
 
           const parsedGuests = rows.map((row) => {
             const firstName = row.firstName || row.FirstName || row['First Name'] || row['First name'] || '';
@@ -4974,6 +5014,16 @@ const Dashboard: React.FC = () => {
           <div className="space-y-4 mt-4">
             <div>
               <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                Event Date
+              </Label>
+              <Input
+                type="date"
+                value={reminderEventDate}
+                onChange={(e) => setReminderEventDate(e.target.value)}
+                className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 mb-4"
+              />
+
+              <Label className="text-sm font-medium text-gray-900 mb-2 block">
                 Reminder Timing
               </Label>
               <Select value={reminderType} onValueChange={setReminderType}>
@@ -4981,6 +5031,7 @@ const Dashboard: React.FC = () => {
                   <SelectValue placeholder="Select timing" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="14days">14 days to go</SelectItem>
                   <SelectItem value="1week">1 week before event</SelectItem>
                   <SelectItem value="3days">3 days before event</SelectItem>
                   <SelectItem value="1day">1 day before event</SelectItem>
@@ -5058,7 +5109,7 @@ const Dashboard: React.FC = () => {
             <Button
               onClick={handleSetReminders}
               className="flex-1 h-11 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
-              disabled={isSettingReminders || (reminderType === 'custom' && !customReminderDate)}
+              disabled={isSettingReminders || (reminderType === 'custom' && !customReminderDate) || (reminderType !== 'custom' && reminderType !== 'none' && !reminderEventDate)}
             >
               {isSettingReminders ? (
                 <>

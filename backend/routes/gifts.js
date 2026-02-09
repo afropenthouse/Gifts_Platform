@@ -81,6 +81,7 @@ module.exports = () => {
           type,
           title,
           description,
+          story,
           date: date ? new Date(date) : null,
           deadline: deadline ? new Date(deadline) : null,
           address,
@@ -210,7 +211,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, deadline, address, details, customType, guestListMode, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
+    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -245,6 +246,7 @@ module.exports = () => {
           type,
           title,
           description,
+          story,
           date: date ? new Date(date) : null,
           deadline: deadline ? new Date(deadline) : null,
           address,
@@ -369,7 +371,7 @@ module.exports = () => {
   // Set reminder for gift
   router.post('/:id/set-reminder', auth(), async (req, res) => {
     const giftId = parseInt(req.params.id);
-    const { reminder, reminderDateTime } = req.body;
+    const { reminder, reminderDateTime, eventDate } = req.body;
 
     try {
       const gift = await prisma.gift.findUnique({
@@ -381,6 +383,19 @@ module.exports = () => {
         return res.status(404).json({ msg: 'Gift not found' });
       }
 
+      // If eventDate is provided, update the gift's date first
+      let currentGiftDate = gift.date;
+      if (eventDate) {
+        const updatedDate = new Date(eventDate);
+        if (!isNaN(updatedDate.getTime())) {
+          await prisma.gift.update({
+            where: { id: giftId },
+            data: { date: updatedDate }
+          });
+          currentGiftDate = updatedDate;
+        }
+      }
+
       const details = gift.details || {};
       details.reminder = reminder;
       let scheduledDateTime;
@@ -388,21 +403,24 @@ module.exports = () => {
         details.reminderDateTime = reminderDateTime;
         scheduledDateTime = new Date(reminderDateTime);
       } else if (reminder !== 'custom' && reminder !== 'none') {
-        if (!gift.date) {
+        if (!currentGiftDate) {
           return res.status(400).json({ msg: 'Event date is required for this reminder type' });
         }
         // For predefined, set default time 09:00 on the calculated date
-        const eventDate = new Date(gift.date);
+        const eventDateObj = new Date(currentGiftDate);
         let reminderDate;
         switch (reminder) {
+          case '14days':
+            reminderDate = new Date(eventDateObj.getTime() - 14 * 24 * 60 * 60 * 1000);
+            break;
           case '1week':
-            reminderDate = new Date(eventDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+            reminderDate = new Date(eventDateObj.getTime() - 7 * 24 * 60 * 60 * 1000);
             break;
           case '3days':
-            reminderDate = new Date(eventDate.getTime() - 3 * 24 * 60 * 60 * 1000);
+            reminderDate = new Date(eventDateObj.getTime() - 3 * 24 * 60 * 60 * 1000);
             break;
           case '1day':
-            reminderDate = new Date(eventDate.getTime() - 1 * 24 * 60 * 60 * 1000);
+            reminderDate = new Date(eventDateObj.getTime() - 1 * 24 * 60 * 60 * 1000);
             break;
         }
         if (reminderDate) {
