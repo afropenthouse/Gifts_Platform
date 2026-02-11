@@ -63,7 +63,11 @@ const SignupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
         localStorage.removeItem('referralCode');
         setMessage(data.msg);
       } else {
-        setError(data.msg || 'Signup failed');
+        if (data.errors && Array.isArray(data.errors)) {
+          setError(data.errors.map((err: any) => err.msg).join(', '));
+        } else {
+          setError(data.msg || 'Signup failed');
+        }
       }
     } catch (err) {
       setError('Server error');

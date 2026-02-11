@@ -68,11 +68,13 @@ module.exports = () => {
     body('name').notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('referralCode').optional().isString(),
     body('agreedToTerms').custom(value => value === true || value === 'true').withMessage('You must agree to the Terms and Conditions'),
   ], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) {
+      console.log('❌ [SIGNUP VALIDATION ERROR]', errors.array());
+      return res.status(400).json({ errors: errors.array() });
+    }
 
     const { name, email, password, referralCode, agreedToTerms } = req.body;
 
