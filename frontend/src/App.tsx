@@ -22,6 +22,9 @@ import VendorPaymentTracker from "./pages/landing/VendorPaymentTracker";
 import ScheduleVendorPayments from "./pages/landing/ScheduleVendorPayments";
 import AsoebiLanding from "./pages/landing/AsoebiLanding";
 import FAQ from "./pages/landing/FAQ";
+import TermsAndConditions from "./pages/landing/TermsAndConditions";
+import PaymentPolicy from "./pages/landing/PaymentPolicy";
+import PrivacyPolicy from "./pages/landing/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +49,9 @@ const App = () => {
           <Route path="/schedule-vendor-payments" element={<ScheduleVendorPayments />} />
           <Route path="/asoebi" element={<AsoebiLanding />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/payment-policy" element={<PaymentPolicy />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/gift/:link" element={<ShareGift />} />
           <Route path="/gift/:slug/:id" element={<ShareGift />} />
           <Route path="/qr-gift/:link" element={<QRGift />} />

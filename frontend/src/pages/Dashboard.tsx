@@ -219,7 +219,7 @@ const Dashboard: React.FC = () => {
     { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null },
     { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null },
     { id: 'vendors', label: 'Manage Expenses', icon: Wallet, color: 'text-orange-500', badge: null },
-    { id: 'invite', label: 'Invite Friends', icon: Share2, color: 'text-blue-500', badge: null },
+    { id: 'invite', label: 'Invite & Earn', icon: Share2, color: 'text-blue-500', badge: null },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null },
   ];
 
@@ -1357,7 +1357,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'asoebi' && 'Asoebi Orders'}
                     {activeTab === 'qr' && 'Event QR Code'}
                     {activeTab === 'moments' && 'Moments'}
-                    {activeTab === 'invite' && 'Invite Friends'}
+                    {activeTab === 'invite' && 'Invite & Earn'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}

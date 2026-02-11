@@ -25,14 +25,19 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <button onClick={openLoginModal} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Login
-                </button>
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Terms & Conditions
+                </a>
               </li>
               <li>
-                <button onClick={openSignupModal} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Sign Up
-                </button>
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a href="/payment-policy" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Payment Policy
+                </a>
               </li>
             </ul>
           </div>

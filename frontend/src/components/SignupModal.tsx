@@ -6,11 +6,13 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Eye, EyeOff } from 'lucide-react';
+import { Checkbox } from '../components/ui/checkbox';
 
 const SignupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -35,6 +37,11 @@ const SignupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError("Please enter a complete and valid email address");
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms and Conditions to proceed");
       return;
     }
 
@@ -122,6 +129,22 @@ const SignupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="terms" 
+                  checked={agreedToTerms} 
+                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                />
+                <Label 
+                  htmlFor="terms" 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  I agree to the{' '}
+                  <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                    Terms and Conditions
+                  </Link>
+                </Label>
               </div>
               {error && <p className="text-red-500">{error}</p>}
               <Button type="submit" className="w-full" style={{ backgroundColor: '#2E235C' }}>Sign Up</Button>
