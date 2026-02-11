@@ -69,11 +69,12 @@ module.exports = () => {
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('referralCode').optional().isString(),
+    body('agreedToTerms').custom(value => value === true || value === 'true').withMessage('You must agree to the Terms and Conditions'),
   ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { name, email, password, referralCode } = req.body;
+    const { name, email, password, referralCode, agreedToTerms } = req.body;
 
     try {
       console.log(`\n🔐 [SIGNUP] New signup request for: ${email}`);
@@ -119,7 +120,9 @@ module.exports = () => {
           verificationToken, 
           verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
           referralCode: newReferralCode,
-          referredById: referrer ? referrer.id : null
+          referredById: referrer ? referrer.id : null,
+          agreedToTerms: true,
+          agreedToTermsAt: new Date()
         } 
       });
       console.log(`✅ User created with ID: ${user.id}`);

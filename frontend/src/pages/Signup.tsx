@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Checkbox } from '../components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
 
@@ -10,6 +11,7 @@ const Signup: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [message, setMessage] = useState('');
   const [verificationUrl, setVerificationUrl] = useState('');
   const [error, setError] = useState('');
@@ -36,11 +38,16 @@ const Signup: React.FC = () => {
       return;
     }
 
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms and Conditions to proceed");
+      return;
+    }
+
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, agreedToTerms }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -104,6 +111,22 @@ const Signup: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="terms" 
+                  checked={agreedToTerms} 
+                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                />
+                <Label 
+                  htmlFor="terms" 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  I agree to the{' '}
+                  <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                    Terms and Conditions
+                  </Link>
+                </Label>
               </div>
               {error && <p className="text-red-500">{error}</p>}
               <Button type="submit" className="w-full" style={{ backgroundColor: '#2E235C' }}>Sign Up</Button>
