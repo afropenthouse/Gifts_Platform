@@ -38,7 +38,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, date, deadline, address, details, customType, guestListMode, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
+    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
 
     try {
       let pictureUrl = null;
@@ -75,6 +75,18 @@ module.exports = () => {
         var existing = await prisma.gift.findUnique({ where: { shareLink } });
       } while (existing);
 
+      const detailsParsed = details ? (typeof details === 'string' ? JSON.parse(details) : details) : {};
+      
+      // Automatically set a reminder for 1 week (7 days) before the event if date is provided
+      if (date) {
+        const eventDateObj = new Date(date);
+        const reminderDate = new Date(eventDateObj.getTime() - 7 * 24 * 60 * 60 * 1000);
+        reminderDate.setHours(9, 0, 0, 0); // 9 AM
+        
+        detailsParsed.reminder = '1week';
+        detailsParsed.reminderDateTime = reminderDate.toISOString();
+      }
+
       const gift = await prisma.gift.create({
         data: {
           userId: req.user.id,
@@ -86,7 +98,7 @@ module.exports = () => {
           deadline: deadline ? new Date(deadline) : null,
           address,
           picture: pictureUrl,
-          details: details ? (typeof details === 'string' ? JSON.parse(details) : details) : null,
+          details: detailsParsed,
           customType,
           shareLink,
           guestListMode: guestListMode || 'restricted',
@@ -242,6 +254,21 @@ module.exports = () => {
         }
       }
 
+      const detailsParsed = details ? (typeof details === 'string' ? JSON.parse(details) : details) : {};
+      
+      // Automatically update/set reminder for 1 week (7 days) before the event if date is provided
+      if (date) {
+        const eventDateObj = new Date(date);
+        const reminderDate = new Date(eventDateObj.getTime() - 7 * 24 * 60 * 60 * 1000);
+        reminderDate.setHours(9, 0, 0, 0); // 9 AM
+        
+        // Only set automatically if no reminder exists or if it was already an automatic 1week reminder
+        if (!detailsParsed.reminder || detailsParsed.reminder === 'none' || detailsParsed.reminder === '1week') {
+          detailsParsed.reminder = '1week';
+          detailsParsed.reminderDateTime = reminderDate.toISOString();
+        }
+      }
+
       const updateData = {
           type,
           title,
@@ -251,7 +278,7 @@ module.exports = () => {
           deadline: deadline ? new Date(deadline) : null,
           address,
           picture: pictureUrl,
-          details: details ? (typeof details === 'string' ? JSON.parse(details) : details) : null,
+          details: detailsParsed,
           customType,
           guestListMode,
           enableCashGifts: enableCashGifts === 'true' || enableCashGifts === true,

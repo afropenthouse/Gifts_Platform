@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
 import { useToast } from '../hooks/use-toast';
-import { Plus, Edit, Trash2, Filter, Download } from 'lucide-react';
+import { Plus, Edit, Trash2, Filter, Download, Search } from 'lucide-react';
 
 interface Vendor {
   id: number;
@@ -53,6 +53,7 @@ const VendorPaymentTracker: React.FC = () => {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
   const [filterEvent, setFilterEvent] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states
@@ -492,9 +493,15 @@ const VendorPaymentTracker: React.FC = () => {
     setBankName('');
   };
 
-  const filteredVendors = filterEvent
-    ? vendors.filter(v => v.eventId === filterEvent)
-    : vendors;
+  const filteredVendors = vendors.filter(v => {
+    const matchesEvent = filterEvent ? v.eventId === filterEvent : true;
+    const matchesSearch = searchQuery
+      ? v.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (v.vendorEmail && v.vendorEmail.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        v.Gift.title.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+    return matchesEvent && matchesSearch;
+  });
 
   const totalBudget = filteredVendors.reduce((sum, v) => sum + Number(v.amountAgreed), 0);
   const totalPaid = filteredVendors.reduce((sum, v) => sum + Number(v.amountPaid), 0);
@@ -543,145 +550,169 @@ const VendorPaymentTracker: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Expenses</h2>
-          <p className="text-gray-600 mt-1">Track payments for your wedding vendors</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 lg:flex-nowrap">
-          <Select value={filterEvent ? filterEvent.toString() : 'all'} onValueChange={(value) => {
-            setFilterEvent(value === 'all' ? null : parseInt(value));
-          }}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by event" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Events</SelectItem>
-              {events.map(event => (
-                <SelectItem key={event.id} value={event.id.toString()}>
-                  {event.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]">
-                {/* <Plus className="w-4 h-4 mr-2" /> */}
-                Add Vendor
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New Vendor</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleAddVendor} className="space-y-4">
-                <div>
-                  <Label htmlFor="event">Event</Label>
-                  <Select value={eventId} onValueChange={setEventId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select event" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {events.map(event => (
-                        <SelectItem key={event.id} value={event.id.toString()}>
-                          {event.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="category">Vendor Category</Label>
-                  <Select value={category} onValueChange={(value) => {
-                    setCategory(value);
-                    if (value !== 'Other') {
-                      setCustomCategory('');
-                    }
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MC">MC</SelectItem>
-                      <SelectItem value="Caterer">Caterer</SelectItem>
-                      <SelectItem value="Decor">Decor</SelectItem>
-                      <SelectItem value="Photography">Photography</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {category === 'Other' && (
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Expenses</h2>
+            <p className="text-gray-600 mt-1">Track payments for your wedding vendors</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-[#2E235C] hover:bg-[#1a1435]">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Vendor
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Vendor</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddVendor} className="space-y-4">
                   <div>
-                    <Label htmlFor="customCategory">Custom Category</Label>
+                    <Label htmlFor="event">Event</Label>
+                    <Select value={eventId} onValueChange={setEventId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select event" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {events.map(event => (
+                          <SelectItem key={event.id} value={event.id.toString()}>
+                            {event.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="category">Vendor Category</Label>
+                    <Select value={category} onValueChange={(value) => {
+                      setCategory(value);
+                      if (value !== 'Other') {
+                        setCustomCategory('');
+                      }
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MC">MC</SelectItem>
+                        <SelectItem value="Caterer">Caterer</SelectItem>
+                        <SelectItem value="Decor">Decor</SelectItem>
+                        <SelectItem value="Photography">Photography</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {category === 'Other' && (
+                    <div>
+                      <Label htmlFor="customCategory">Custom Category</Label>
+                      <Input
+                        id="customCategory"
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        placeholder="Enter custom category"
+                        required
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <Label htmlFor="vendorEmail">Vendor Email Address <span className="text-gray-400 text-xs">(optional)</span></Label>
                     <Input
-                      id="customCategory"
-                      value={customCategory}
-                      onChange={(e) => setCustomCategory(e.target.value)}
-                      placeholder="Enter custom category"
+                      id="vendorEmail"
+                      type="email"
+                      value={vendorEmail}
+                      onChange={(e) => setVendorEmail(e.target.value)}
+                      placeholder="vendor@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="amountAgreed">Amount Agreed (₦)</Label>
+                    <Input
+                      id="amountAgreed"
+                      type="number"
+                      value={amountAgreed}
+                      onChange={(e) => setAmountAgreed(e.target.value)}
+                      placeholder="0.00"
                       required
                     />
                   </div>
-                )}
-                <div>
-                  <Label htmlFor="vendorEmail">Vendor Email Address <span className="text-gray-400 text-xs">(optional)</span></Label>
-                  <Input
-                    id="vendorEmail"
-                    type="email"
-                    value={vendorEmail}
-                    onChange={(e) => setVendorEmail(e.target.value)}
-                    placeholder="vendor@example.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="amountAgreed">Amount Agreed (₦)</Label>
-                  <Input
-                    id="amountAgreed"
-                    type="number"
-                    value={amountAgreed}
-                    onChange={(e) => setAmountAgreed(e.target.value)}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="amountPaid">Amount Paid (₦)</Label>
-                  <Input
-                    id="amountPaid"
-                    type="number"
-                    value={amountPaid}
-                    onChange={(e) => setAmountPaid(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dueDate">Due Date</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => setIsAddModalOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="flex-1" disabled={isSubmitting}>
-                    {isSubmitting ? 'Adding...' : 'Add Vendor'}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-          <Button className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]" onClick={() => setIsScheduleModalOpen(true)}>
-            Schedule Payment
-          </Button>
-          <Button variant="outline" onClick={handleDownload} className="border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white">
-            <Download className="w-4 h-4 mr-2" />
-            Download
-          </Button>
+                  <div>
+                    <Label htmlFor="amountPaid">Amount Paid (₦)</Label>
+                    <Input
+                      id="amountPaid"
+                      type="number"
+                      value={amountPaid}
+                      onChange={(e) => setAmountPaid(e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dueDate">Due Date</Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => setIsAddModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                      {isSubmitting ? 'Adding...' : 'Add Vendor'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Button className="bg-[#2E235C] hover:bg-[#1a1435]" onClick={() => setIsScheduleModalOpen(true)}>
+              Schedule Payment
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col lg:flex-row items-center gap-4">
+          <div className="relative w-full lg:flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search by category, email or event title..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11 border-gray-200 focus:ring-[#2E235C]"
+            />
+          </div>
+          <div className="flex items-center gap-3 w-full lg:w-auto">
+            <Select value={filterEvent ? filterEvent.toString() : 'all'} onValueChange={(value) => {
+              setFilterEvent(value === 'all' ? null : parseInt(value));
+            }}>
+              <SelectTrigger className="w-full lg:w-48 h-11 border-gray-200">
+                <Filter className="w-4 h-4 mr-2 text-gray-400" />
+                <SelectValue placeholder="All Events" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Events</SelectItem>
+                {events.map(event => (
+                  <SelectItem key={event.id} value={event.id.toString()}>
+                    {event.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              variant="outline" 
+              onClick={handleDownload} 
+              className="h-11 border-gray-200 text-gray-700 hover:bg-gray-50 shrink-0"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Download CSV</span>
+              <span className="sm:hidden">Export</span>
+            </Button>
+          </div>
+        </div>
+      </div>
 
           <Dialog open={isEditModalOpen} onOpenChange={(open) => {
             setIsEditModalOpen(open);
@@ -1004,8 +1035,6 @@ const VendorPaymentTracker: React.FC = () => {
               )}
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] border-0">

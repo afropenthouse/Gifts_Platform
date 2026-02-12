@@ -91,6 +91,7 @@ model User {
   resetPasswordExpires     DateTime?
   profilePicture           String?
   wallet                   Decimal        @default(0) @db.Decimal(10, 2)
+  isActive                 Boolean        @default(true)
   agreedToTerms            Boolean        @default(false)
   agreedToTermsAt          DateTime?
   createdAt                DateTime       @default(now())

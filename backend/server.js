@@ -60,9 +60,15 @@ prisma.$connect()
     console.log('Prisma connected to database');
     
     // Start the reminder and vendor payment check services
-    // Both run every 24 hours (86400000 ms)
+    // Both run every 24 hours (86400000 ms) to conserve DB resources
     const CHECK_INTERVAL_24H = 86400000; // 24 hours
-    console.log(`Starting scheduled services (Interval: ${CHECK_INTERVAL_24H}ms for all)...`);
+    
+    console.log(`Starting scheduled services...`);
+    console.log(`- Scheduled services running every 24 hours`);
+
+    // Run once on startup
+    checkAndSendReminders().catch(err => console.error('Initial reminder check failed:', err));
+    checkAndReleaseVendorPayments().catch(err => console.error('Initial vendor payment check failed:', err));
 
     setInterval(async () => {
       try {
@@ -91,6 +97,7 @@ app.use('/api/guests', require('./routes/guests')());
 app.use('/api/vendors', require('./routes/vendors')());
 app.use('/api/moments', require('./routes/moments')());
 app.use('/api/referrals', require('./routes/referrals')());
+app.use('/api/admin', require('./routes/admin')());
 
 app.get('/', (req, res) => res.send('API running'));
 

@@ -17,7 +17,7 @@ const checkAndReleaseVendorPayments = async () => {
         bankCode: { not: null }
       },
       include: {
-        event: {
+        Gift: {
           select: { userId: true }
         }
       }

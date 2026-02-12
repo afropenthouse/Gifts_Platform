@@ -24,6 +24,18 @@ const transporter = emailEnabled
     })
   : null;
 
+if (emailEnabled && transporter) {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('📧 SMTP Connection Error:', error);
+    } else {
+      console.log('📧 SMTP Server is ready to take our messages');
+    }
+  });
+} else if (!emailEnabled) {
+  console.warn('📧 Email Service disabled: SMTP_USER or SMTP_PASS not set in .env');
+}
+
 const formatEventHeading = (gift) => {
   if (!gift) return 'Event Celebration';
   if (gift.type === 'wedding' && gift.details?.groomName && gift.details?.brideName) {
@@ -206,6 +218,26 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   const calendarUrl = eventUrl ? `${eventUrl}/calendar` : '#';
   const directionsUrl = eventAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` : '#';
   const websiteUrl = eventUrl || '#';
+
+  let subject = `${heading} – Save the Date`;
+  
+  if (gift?.date) {
+    const eventDateObj = new Date(gift.date);
+    const now = new Date();
+    // Calculate difference in days (approximate)
+    const diffTime = eventDateObj - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 0 && diffDays <= 30) {
+      if (diffDays === 1) {
+         subject = `1 Day to Go! - ${heading}`;
+      } else {
+         subject = `${diffDays} Days to Go! - ${heading}`;
+      }
+    } else if (diffDays === 0) {
+       subject = `Today is the Day! - ${heading}`;
+    }
+  }
 
   const html = `
     <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">

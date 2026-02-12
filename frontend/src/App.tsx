@@ -26,6 +26,8 @@ import TermsAndConditions from "./pages/landing/TermsAndConditions";
 import PaymentPolicy from "./pages/landing/PaymentPolicy";
 import PrivacyPolicy from "./pages/landing/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,9 @@ const App = () => {
           <Route path="/qr-gift/:slug/:id" element={<QRGift />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <LoginModal open={loginModalOpen} onClose={closeModals} />
