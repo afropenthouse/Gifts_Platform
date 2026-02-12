@@ -48,6 +48,33 @@ const sendRemindersForGift = async (gift) => {
 
 const checkAndSendReminders = async () => {
   try {
+    // 1. Backfill default reminders for any gift that doesn't have one set
+    // Fetch all gifts with dates and filter in JS for safety across different DBs.
+    const allGiftsWithDates = await prisma.gift.findMany({
+      where: { date: { not: null } }
+    });
+
+    for (const gift of allGiftsWithDates) {
+      const details = gift.details || {};
+      if (!details.reminder || details.reminder === 'none') {
+        const eventDateObj = new Date(gift.date);
+        const reminderDate = new Date(eventDateObj.getTime() - 7 * 24 * 60 * 60 * 1000);
+        reminderDate.setHours(9, 0, 0, 0);
+
+        // Only set if the reminder date hasn't passed yet
+        if (reminderDate > new Date()) {
+          details.reminder = '1week';
+          details.reminderDateTime = reminderDate.toISOString();
+
+          await prisma.gift.update({
+            where: { id: gift.id },
+            data: { details }
+          });
+          console.log(`Auto-backfilled 7-day reminder for existing gift ${gift.id}`);
+        }
+      }
+    }
+
     const now = new Date();
     // Fetch all gifts that might have reminders
     // Note: In a production app with many records, we should index and query specifically for pending reminders.

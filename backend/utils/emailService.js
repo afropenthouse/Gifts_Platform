@@ -260,7 +260,7 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
               We're so excited to see you on our big day.
             </p>
             <p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.5;">
-              Click the button to send a cash gift and to show your support.
+              Click the button to send a cash gift and to get direction
             </p>
           </div>
 
