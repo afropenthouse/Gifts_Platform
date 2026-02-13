@@ -424,12 +424,10 @@ module.exports = () => {
 
       if (!payloadBuffer) {
         console.error('❌ Webhook Error: rawBody is missing. Check server.js middleware.');
-        // If rawBody is missing, verification will likely fail, but we'll try fallback as last resort
+        return res.status(500).send('Internal Server Error: Missing Raw Body');
       }
 
-      const finalPayload = payloadBuffer || Buffer.from(JSON.stringify(req.body || {}));
-
-      if (!verifyWebhookSignature(finalPayload, signature, secret)) {
+      if (!verifyWebhookSignature(payloadBuffer, signature, secret)) {
         console.error('❌ Invalid webhook signature');
         console.error('Verification failed - signature mismatch. Ensure PAYSTACK_WEBHOOK_SECRET matches Paystack dashboard.');
         return res.status(401).send('Unauthorized');

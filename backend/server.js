@@ -43,7 +43,12 @@ app.use((req, res, next) => {
 app.use(express.json({
   limit: '50mb',
   verify: (req, res, buf) => {
-    if (req.originalUrl.startsWith('/api/contributions/webhook') || req.originalUrl.startsWith('/api/vendors/webhook')) {
+    const webhookPaths = [
+      '/api/contributions/webhook',
+      '/api/vendors/webhook',
+      '/api/v1/campaigns/paystack/webhook'
+    ];
+    if (webhookPaths.some(path => req.originalUrl.startsWith(path))) {
       req.rawBody = buf;
     }
   }
@@ -89,9 +94,11 @@ prisma.$connect()
   .catch((err) => console.error('Prisma connection error:', err));
 
 // Routes
+const contributionsRouter = require('./routes/contributions')();
 app.use('/api/auth', require('./routes/auth')());
 app.use('/api/gifts', require('./routes/gifts')());
-app.use('/api/contributions', require('./routes/contributions')());
+app.use('/api/contributions', contributionsRouter);
+app.use('/api/v1/campaigns/paystack', contributionsRouter); // Alias for old webhook URL
 app.use('/api/users', require('./routes/users')());
 app.use('/api/guests', require('./routes/guests')());
 app.use('/api/vendors', require('./routes/vendors')());
