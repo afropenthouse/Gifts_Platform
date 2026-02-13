@@ -43,7 +43,7 @@ app.use((req, res, next) => {
 app.use(express.json({
   limit: '50mb',
   verify: (req, res, buf) => {
-    if (req.originalUrl === '/api/contributions/webhook' || req.originalUrl === '/api/vendors/webhook') {
+    if (req.originalUrl.startsWith('/api/contributions/webhook') || req.originalUrl.startsWith('/api/vendors/webhook')) {
       req.rawBody = buf;
     }
   }

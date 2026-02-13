@@ -419,12 +419,19 @@ module.exports = () => {
         return res.status(500).send('Server error');
       }
 
-      // rawBody is set in server.js verify hook; fallback to reconstructed body
-      const payloadBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
+      // rawBody is set in server.js verify hook
+      const payloadBuffer = req.rawBody;
 
-      if (!verifyWebhookSignature(payloadBuffer, signature, secret)) {
-        console.error('Invalid webhook signature');
-        console.error('Verification failed - signature mismatch');
+      if (!payloadBuffer) {
+        console.error('❌ Webhook Error: rawBody is missing. Check server.js middleware.');
+        // If rawBody is missing, verification will likely fail, but we'll try fallback as last resort
+      }
+
+      const finalPayload = payloadBuffer || Buffer.from(JSON.stringify(req.body || {}));
+
+      if (!verifyWebhookSignature(finalPayload, signature, secret)) {
+        console.error('❌ Invalid webhook signature');
+        console.error('Verification failed - signature mismatch. Ensure PAYSTACK_WEBHOOK_SECRET matches Paystack dashboard.');
         return res.status(401).send('Unauthorized');
       }
 
