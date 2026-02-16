@@ -224,18 +224,19 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   if (gift?.date) {
     const eventDateObj = new Date(gift.date);
     const now = new Date();
-    // Calculate difference in days (approximate)
     const diffTime = eventDateObj - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return { delivered: false, skipped: true, reason: 'Event is today, reminder not sent' };
+    }
     
     if (diffDays > 0 && diffDays <= 30) {
       if (diffDays === 1) {
-         subject = `1 Day to Go! - ${heading}`;
+        subject = `Tomorrow is the Day! - ${heading}`;
       } else {
-         subject = `${diffDays} Days to Go! - ${heading}`;
+        subject = `${diffDays} Days to Go! - ${heading}`;
       }
-    } else if (diffDays === 0) {
-       subject = `Today is the Day! - ${heading}`;
     }
   }
 
