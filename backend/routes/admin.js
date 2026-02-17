@@ -147,5 +147,111 @@ module.exports = () => {
     }
   });
 
+  // Delete User
+  router.delete('/users/:id', adminAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: parseInt(id) }
+      });
+
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
+
+      await prisma.user.delete({
+        where: { id: parseInt(id) }
+      });
+
+      res.json({ msg: 'User deleted successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error deleting user' });
+    }
+  });
+
+  // Get Contributions with optional type filter
+  router.get('/contributions', adminAuth, async (req, res) => {
+    const { type } = req.query;
+
+    try {
+      const where = {
+        status: 'completed'
+      };
+
+      if (type === 'asoebi') {
+        where.isAsoebi = true;
+      } else if (type === 'cash') {
+        where.isAsoebi = false;
+      }
+
+      const contributions = await prisma.contribution.findMany({
+        where,
+        orderBy: {
+          createdAt: 'desc'
+        },
+        include: {
+          gift: {
+            select: {
+              title: true,
+              type: true
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      });
+
+      res.json(contributions);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error fetching contributions' });
+    }
+  });
+
+  // Get all events (gifts)
+  router.get('/events', adminAuth, async (req, res) => {
+    try {
+      const gifts = await prisma.gift.findMany({
+        orderBy: {
+          createdAt: 'desc'
+        },
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          createdAt: true,
+          deadline: true,
+          shareLink: true,
+          enableCashGifts: true,
+          isSellingAsoebi: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          _count: {
+            select: {
+              contributions: true,
+              guests: true
+            }
+          }
+        }
+      });
+
+      res.json(gifts);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error fetching events' });
+    }
+  });
+
   return router;
 };

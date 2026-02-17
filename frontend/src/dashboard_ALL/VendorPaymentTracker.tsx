@@ -54,6 +54,7 @@ const VendorPaymentTracker: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
   const [filterEvent, setFilterEvent] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [balanceFilter, setBalanceFilter] = useState<'all' | 'paid' | 'outstanding'>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states
@@ -500,7 +501,14 @@ const VendorPaymentTracker: React.FC = () => {
         (v.vendorEmail && v.vendorEmail.toLowerCase().includes(searchQuery.toLowerCase())) ||
         v.Gift.title.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
-    return matchesEvent && matchesSearch;
+    const balance = v.amountAgreed - v.amountPaid - (v.scheduledAmount || 0);
+    const matchesBalance =
+      balanceFilter === 'all'
+        ? true
+        : balanceFilter === 'paid'
+        ? balance <= 0
+        : balance > 0;
+    return matchesEvent && matchesSearch && matchesBalance;
   });
 
   const totalBudget = filteredVendors.reduce((sum, v) => sum + Number(v.amountAgreed), 0);
@@ -684,11 +692,11 @@ const VendorPaymentTracker: React.FC = () => {
               className="pl-10 h-11 border-gray-200 focus:ring-[#2E235C]"
             />
           </div>
-          <div className="flex items-center gap-3 w-full lg:w-auto">
+          <div className="flex flex-row flex-wrap items-center gap-3 w-full lg:w-auto">
             <Select value={filterEvent ? filterEvent.toString() : 'all'} onValueChange={(value) => {
               setFilterEvent(value === 'all' ? null : parseInt(value));
             }}>
-              <SelectTrigger className="w-full lg:w-48 h-11 border-gray-200">
+              <SelectTrigger className="w-1/2 sm:w-48 h-11 border-gray-200">
                 <Filter className="w-4 h-4 mr-2 text-gray-400" />
                 <SelectValue placeholder="All Events" />
               </SelectTrigger>
@@ -699,6 +707,19 @@ const VendorPaymentTracker: React.FC = () => {
                     {event.title}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={balanceFilter}
+              onValueChange={(value) => setBalanceFilter(value as 'all' | 'paid' | 'outstanding')}
+            >
+              <SelectTrigger className="w-1/2 sm:w-44 h-11 border-gray-200">
+                <SelectValue placeholder="All Balances" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Balances</SelectItem>
+                <SelectItem value="outstanding">Outstanding</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
               </SelectContent>
             </Select>
             <Button 
