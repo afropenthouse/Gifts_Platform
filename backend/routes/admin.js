@@ -25,7 +25,6 @@ module.exports = () => {
     return res.status(401).json({ msg: 'Invalid admin credentials' });
   });
 
-  // Get Metrics
   router.get('/metrics', adminAuth, async (req, res) => {
     try {
       const totalUsers = await prisma.user.count();
@@ -72,6 +71,7 @@ module.exports = () => {
         include: {
           gift: {
             select: {
+              id: true,
               title: true
             }
           }
@@ -147,30 +147,50 @@ module.exports = () => {
     }
   });
 
-  // Delete User
   router.delete('/users/:id', adminAuth, async (req, res) => {
     const { id } = req.params;
+    const userId = parseInt(id, 10);
+
     try {
       const user = await prisma.user.findUnique({
-        where: { id: parseInt(id) }
+        where: { id: userId }
       });
 
       if (!user) {
         return res.status(404).json({ msg: 'User not found' });
       }
 
-      await prisma.user.delete({
-        where: { id: parseInt(id) }
+      await prisma.$transaction(async (tx) => {
+        await tx.referralTransaction.deleteMany({
+          where: {
+            OR: [
+              { referrerId: userId },
+              { referredUserId: userId }
+            ]
+          }
+        });
+
+        await tx.withdrawal.deleteMany({
+          where: { userId }
+        });
+
+        await tx.user.updateMany({
+          where: { referredById: userId },
+          data: { referredById: null }
+        });
+
+        await tx.user.delete({
+          where: { id: userId }
+        });
       });
 
       res.json({ msg: 'User deleted successfully' });
     } catch (err) {
-      console.error(err);
+      console.error('Error deleting user via admin route:', err);
       res.status(500).json({ msg: 'Server error deleting user' });
     }
   });
 
-  // Get Contributions with optional type filter
   router.get('/contributions', adminAuth, async (req, res) => {
     const { type } = req.query;
 
@@ -193,6 +213,7 @@ module.exports = () => {
         include: {
           gift: {
             select: {
+              id: true,
               title: true,
               type: true
             }

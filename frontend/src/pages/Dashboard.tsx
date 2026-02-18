@@ -4209,8 +4209,19 @@ const Dashboard: React.FC = () => {
               tableSitting: guestTableSitting === 'Other' ? customTableSitting : guestTableSitting,
             }),
           });
+          const data = await res.json().catch(() => null);
+
           if (res.ok) {
-            const updatedGuest = await res.json();
+            const updatedGuest = data;
+
+            const normalized = (s: string) => s.trim().toLowerCase();
+            const duplicateExists = guests.some(g =>
+              g.id !== editingGuest.id &&
+              (editingGuest.giftId ? g.giftId === editingGuest.giftId : true) &&
+              normalized(g.firstName) === normalized(guestFirstName) &&
+              normalized(g.lastName) === normalized(guestLastName)
+            );
+
             const updatedGuests = guests.map(g => 
               g.id === editingGuest.id ? updatedGuest : g
             );
@@ -4221,15 +4232,25 @@ const Dashboard: React.FC = () => {
             setGuestTableSitting('Table seating');
             setEditingGuest(null);
             setIsAddGuestModalOpen(false);
+
+            if (duplicateExists) {
+              setWarningTitle('Guest Updated');
+              setWarningMessage('Another guest with this name already exists for this event.');
+              setWarningModalOpen(true);
+            }
           } else {
             setErrorTitle('Update Failed');
-            setErrorMessage('Failed to update guest. Please try again.');
+            setErrorMessage(
+              (data && typeof data === 'object' && 'msg' in data && data.msg) 
+                ? String(data.msg) 
+                : 'Failed to update guest. Please try again.'
+            );
             setErrorModalOpen(true);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error(err);
           setErrorTitle('Error');
-          setErrorMessage('An error occurred while updating the guest.');
+          setErrorMessage(err?.message || 'An error occurred while updating the guest.');
           setErrorModalOpen(true);
         } finally {
           setIsAddingGuest(false);

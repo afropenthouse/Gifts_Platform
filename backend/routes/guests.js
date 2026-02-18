@@ -96,20 +96,7 @@ module.exports = () => {
         return res.status(404).json({ msg: 'Guest not found' });
       }
 
-      // Enforce case-insensitive uniqueness per event (excluding current guest)
       const targetGiftId = giftId ? parseInt(giftId) : guest.giftId;
-      const duplicate = await prisma.guest.findFirst({
-        where: {
-          id: { not: guestId },
-          giftId: targetGiftId,
-          firstName: { equals: trimmedFirst, mode: 'insensitive' },
-          lastName: { equals: trimmedLast, mode: 'insensitive' },
-        },
-      });
-
-      if (duplicate) {
-        return res.status(409).json({ msg: 'A guest with this name already exists for this event.' });
-      }
 
       const updateData = {
         firstName: trimmedFirst,
