@@ -71,7 +71,6 @@ type AdminTab = 'overview' | 'users' | 'transactions' | 'asoebi' | 'cashGifts' |
 
 const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'users', label: 'Users', icon: Users },
   { id: 'transactions', label: 'Transactions', icon: Gift },
   { id: 'cashGifts', label: 'Cash Gifts', icon: Wallet },
   { id: 'asoebi', label: 'Asoebi', icon: ShoppingBag },
@@ -310,8 +309,6 @@ const AdminDashboard = () => {
   };
 
   const renderOverview = () => {
-    const recentUsers = users.slice(0, 5);
-
     return (
       <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -355,7 +352,7 @@ const AdminDashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent Users</CardTitle>
+            <CardTitle>User Management</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -364,21 +361,42 @@ const AdminDashboard = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead>Wallet</TableHead>
+                  <TableHead>Gifts</TableHead>
+                  <TableHead>Contributions</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentUsers.map((user) => (
+                {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell className="text-sm">{user.email}</TableCell>
                     <TableCell className="text-sm">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </TableCell>
+                    <TableCell className="text-sm">₦{Number(user.wallet).toLocaleString()}</TableCell>
+                    <TableCell className="text-center">{user._count.gifts}</TableCell>
+                    <TableCell className="text-center">{user._count.contributions}</TableCell>
+                    <TableCell className="text-center">
+                      <Switch checked={user.isActive} onCheckedChange={() => handleToggleUser(user.id)} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="inline-flex items-center gap-1 text-gray-700 border-gray-200 hover:bg-gray-50"
+                        onClick={() => openDeleteDialog(user)}
+                      >
+                        Actions
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
-                {recentUsers.length === 0 && (
+                {users.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
                       No users found
                     </TableCell>
                   </TableRow>
@@ -390,64 +408,6 @@ const AdminDashboard = () => {
       </>
     );
   };
-
-  const renderUsers = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>User Management</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead>Wallet</TableHead>
-              <TableHead>Gifts</TableHead>
-              <TableHead>Contributions</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell className="text-sm">{user.email}</TableCell>
-                <TableCell className="text-sm">
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="text-sm">₦{Number(user.wallet).toLocaleString()}</TableCell>
-                <TableCell className="text-center">{user._count.gifts}</TableCell>
-                <TableCell className="text-center">{user._count.contributions}</TableCell>
-                <TableCell className="text-center">
-                  <Switch checked={user.isActive} onCheckedChange={() => handleToggleUser(user.id)} />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="inline-flex items-center gap-1 text-gray-700 border-gray-200 hover:bg-gray-50"
-                    onClick={() => openDeleteDialog(user)}
-                  >
-                    Actions
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {users.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
-                  No users found
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
 
   const renderContributions = (tab: AdminTab) => {
     const rows = filteredContributions(tab);
@@ -633,18 +593,6 @@ const AdminDashboard = () => {
           <button
             type="button"
             className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'users'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            onClick={() => setActiveTab('users')}
-          >
-            <Users className="w-4 h-4" />
-            Users
-          </button>
-          <button
-            type="button"
-            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
               activeTab === 'transactions'
                 ? 'bg-gray-900 text-white'
                 : 'text-gray-700 hover:bg-gray-100'
@@ -792,7 +740,6 @@ const AdminDashboard = () => {
         )}
 
         {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'users' && renderUsers()}
         {activeTab === 'transactions' && renderContributions('transactions')}
         {activeTab === 'cashGifts' && renderContributions('cashGifts')}
         {activeTab === 'asoebi' && renderContributions('asoebi')}
