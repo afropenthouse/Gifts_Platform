@@ -10,13 +10,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Users, Gift, DollarSign, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu } from "lucide-react";
+import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3 } from "lucide-react";
 
 interface Metrics {
   totalUsers: number;
   totalGifts: number;
   totalContributions: number;
   totalAsoebiContributions: number;
+  totalWalletBalance: number;
+  guestListOpenEvents: number;
+  guestListRestrictedEvents: number;
 }
 
 interface User {
@@ -67,12 +70,15 @@ interface EventItem {
   };
 }
 
-type AdminTab = 'overview' | 'users' | 'transactions' | 'asoebi' | 'cashGifts' | 'events';
+type AdminTab = 'overview' | 'metrics' | 'transactions' | 'asoebi' | 'cashGifts' | 'events' | 'wallets';
+type TimeFilter = 'all' | '7days' | '14days' | '30days' | '3months' | 'year';
 
 const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'metrics', label: 'Metrics', icon: BarChart3 },
+  { id: 'wallets', label: 'Wallets', icon: Wallet },
   { id: 'transactions', label: 'Transactions', icon: Gift },
-  { id: 'cashGifts', label: 'Cash Gifts', icon: Wallet },
+  { id: 'cashGifts', label: 'Cash Gifts', icon: Banknote },
   { id: 'asoebi', label: 'Asoebi', icon: ShoppingBag },
   { id: 'events', label: 'Events', icon: CalendarDays },
 ];
@@ -87,6 +93,7 @@ const AdminDashboard = () => {
   const [loadingContributions, setLoadingContributions] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [selectedEventId, setSelectedEventId] = useState<number | 'all'>('all');
+  const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>('all');
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [deleteUserName, setDeleteUserName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -298,6 +305,40 @@ const AdminDashboard = () => {
     [selectedEventId]
   );
 
+  const filterByTime = useCallback(
+    (items: Contribution[]) => {
+      if (selectedTimeFilter === 'all') {
+        return items;
+      }
+
+      const now = new Date();
+      let filterDate = new Date();
+
+      switch (selectedTimeFilter) {
+        case '7days':
+          filterDate.setDate(now.getDate() - 7);
+          break;
+        case '14days':
+          filterDate.setDate(now.getDate() - 14);
+          break;
+        case '30days':
+          filterDate.setDate(now.getDate() - 30);
+          break;
+        case '3months':
+          filterDate.setMonth(now.getMonth() - 3);
+          break;
+        case 'year':
+          filterDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          return items;
+      }
+
+      return items.filter((item) => new Date(item.createdAt) >= filterDate);
+    },
+    [selectedTimeFilter]
+  );
+
   const filteredContributions = (tab: AdminTab) => {
     let rows = allContributions;
     if (tab === 'asoebi') {
@@ -305,7 +346,9 @@ const AdminDashboard = () => {
     } else if (tab === 'cashGifts') {
       rows = rows.filter((c) => !c.isAsoebi);
     }
-    return filterByEvent(rows);
+    
+    rows = filterByEvent(rows);
+    return filterByTime(rows);
   };
 
   const renderOverview = () => {
@@ -333,7 +376,7 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Cash Gifts</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <Banknote className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">₦{(metrics?.totalContributions || 0).toLocaleString()}</div>
@@ -405,6 +448,181 @@ const AdminDashboard = () => {
             </Table>
           </CardContent>
         </Card>
+      </>
+    );
+  };
+
+  const renderWallets = () => {
+    const totalBalance = users.reduce((acc, user) => acc + Number(user.wallet), 0);
+
+    return (
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Wallet Balance</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₦{totalBalance.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>User Wallet Balances</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Wallet Balance</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell className="text-sm">{user.email}</TableCell>
+                    <TableCell className="text-sm">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold text-green-600">
+                      ₦{Number(user.wallet).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {users.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </>
+    );
+  };
+
+  const renderMetrics = () => {
+    const totalEvents = metrics?.totalGifts || 0;
+    const openEvents = metrics?.guestListOpenEvents || 0;
+    const restrictedEvents = metrics?.guestListRestrictedEvents || 0;
+    const openPercentage = totalEvents ? Math.round((openEvents / totalEvents) * 100) : 0;
+    const restrictedPercentage = totalEvents ? Math.round((restrictedEvents / totalEvents) * 100) : 0;
+
+    return (
+      <>
+        <div className="mb-6">
+          <h2 className="text-xl md:text-2xl font-semibold">Platform metrics</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            High-level view of users, gifts and cash activity across the platform.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Total Users
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl md:text-4xl font-bold tracking-tight">
+                {metrics?.totalUsers || 0}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Total Events
+              </CardTitle>
+              <Gift className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl md:text-4xl font-bold tracking-tight">
+                {metrics?.totalGifts || 0}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Cash Gifts (₦)
+              </CardTitle>
+              <Banknote className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl md:text-4xl font-bold tracking-tight">
+                ₦{(metrics?.totalContributions || 0).toLocaleString()}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Asoebi Sales (₦)
+              </CardTitle>
+              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl md:text-4xl font-bold tracking-tight">
+                ₦{(metrics?.totalAsoebiContributions || 0).toLocaleString()}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mb-3">
+          <h3 className="text-base md:text-lg font-semibold">Guest list modes</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            See how many events are open to anyone versus strictly by guest list.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Open Guest Events
+              </CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl md:text-4xl font-bold tracking-tight">
+                {openEvents}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {openPercentage}% of all events
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Closed Guest Events
+              </CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl md:text-4xl font-bold tracking-tight">
+                {restrictedEvents}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {restrictedPercentage}% of all events
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </>
     );
   };
@@ -593,6 +811,30 @@ const AdminDashboard = () => {
           <button
             type="button"
             className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
+              activeTab === 'metrics'
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            onClick={() => setActiveTab('metrics')}
+          >
+            <BarChart3 className="w-4 h-4" />
+            Metrics
+          </button>
+          <button
+            type="button"
+            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
+              activeTab === 'wallets'
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            onClick={() => setActiveTab('wallets')}
+          >
+            <Wallet className="w-4 h-4" />
+            Wallets
+          </button>
+          <button
+            type="button"
+            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
               activeTab === 'transactions'
                 ? 'bg-gray-900 text-white'
                 : 'text-gray-700 hover:bg-gray-100'
@@ -611,7 +853,7 @@ const AdminDashboard = () => {
             }`}
             onClick={() => setActiveTab('cashGifts')}
           >
-            <Wallet className="w-4 h-4" />
+            <Banknote className="w-4 h-4" />
             Cash Gifts
           </button>
           <button
@@ -713,9 +955,33 @@ const AdminDashboard = () => {
             activeTab === 'cashGifts' ||
             activeTab === 'asoebi' ||
             activeTab === 'events') && (
-          <div className="flex justify-end mb-4">
+          <div className="flex flex-wrap justify-end gap-4 mb-4">
+            {(activeTab === 'transactions' || activeTab === 'cashGifts' || activeTab === 'asoebi') && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="admin-time-filter" className="hidden md:inline whitespace-nowrap">
+                  Time Period:
+                </Label>
+                <Select
+                  value={selectedTimeFilter}
+                  onValueChange={(value) => setSelectedTimeFilter(value as TimeFilter)}
+                >
+                  <SelectTrigger id="admin-time-filter" className="w-[180px]">
+                    <SelectValue placeholder="All Time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="7days">Last 7 days</SelectItem>
+                    <SelectItem value="14days">Last 14 days</SelectItem>
+                    <SelectItem value="30days">Last 30 days</SelectItem>
+                    <SelectItem value="3months">Last 3 months</SelectItem>
+                    <SelectItem value="year">Last year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             <div className="flex items-center gap-2">
-              <Label htmlFor="admin-event-filter" className="hidden md:inline">
+              <Label htmlFor="admin-event-filter" className="hidden md:inline whitespace-nowrap">
                 Event:
               </Label>
               <Select
@@ -740,6 +1006,8 @@ const AdminDashboard = () => {
         )}
 
         {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'metrics' && renderMetrics()}
+        {activeTab === 'wallets' && renderWallets()}
         {activeTab === 'transactions' && renderContributions('transactions')}
         {activeTab === 'cashGifts' && renderContributions('cashGifts')}
         {activeTab === 'asoebi' && renderContributions('asoebi')}

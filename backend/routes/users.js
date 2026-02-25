@@ -44,12 +44,33 @@ module.exports = () => {
       const giftIds = gifts.map(g => g.id);
 
       // Sum all contributions for user's gifts
-      const result = await prisma.contribution.aggregate({
-        where: { giftId: { in: giftIds } },
+      const contributionsSum = await prisma.contribution.aggregate({
+        where: { 
+          giftId: { in: giftIds },
+          status: 'completed'
+        },
+        _sum: { amount: true, commission: true }
+      });
+
+      // Sum all withdrawals for user
+      const withdrawalsSum = await prisma.withdrawal.aggregate({
+        where: { 
+          userId: req.user.id,
+          status: { in: ['completed', 'pending'] }
+        },
         _sum: { amount: true }
       });
 
-      const correctWalletBalance = parseFloat(result._sum.amount) || 0;
+      // Sum referral rewards
+      const referralSum = await prisma.referralTransaction.aggregate({
+        where: { referrerId: req.user.id },
+        _sum: { amount: true }
+      });
+
+      const totalIn = (parseFloat(contributionsSum._sum.amount) || 0) - (parseFloat(contributionsSum._sum.commission) || 0) + (parseFloat(referralSum._sum.amount) || 0);
+      const totalOut = parseFloat(withdrawalsSum._sum.amount) || 0;
+      const correctWalletBalance = totalIn - totalOut;
+      
       const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
 
       // Update user's wallet
@@ -62,6 +83,14 @@ module.exports = () => {
         msg: 'Wallet recalculated',
         previousWallet: parseFloat(currentUser.wallet),
         newWallet: correctWalletBalance,
+        details: {
+          totalIn,
+          totalOut,
+          contributions: contributionsSum._sum.amount,
+          commissions: contributionsSum._sum.commission,
+          referrals: referralSum._sum.amount,
+          withdrawals: withdrawalsSum._sum.amount
+        },
         user: updatedUser
       });
     } catch (err) {
@@ -92,7 +121,8 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Withdrawal amount too low after fee deduction.' });
       }
 
-      if (user.wallet < withdrawAmount) {
+      // Use Number() for safe comparison with Decimal
+      if (Number(user.wallet) < withdrawAmount) {
         return res.status(400).json({ msg: 'Insufficient balance' });
       }
 
@@ -122,11 +152,19 @@ module.exports = () => {
         },
       });
 
-      // Deduct from wallet
-      await prisma.user.update({
-        where: { id: req.user.id },
-        data: { wallet: { decrement: withdrawAmount } }
-      });
+      // Deduct from wallet with an extra safety check
+      try {
+        await prisma.user.update({
+          where: { 
+            id: req.user.id,
+            wallet: { gte: withdrawAmount }
+          },
+          data: { wallet: { decrement: withdrawAmount } }
+        });
+      } catch (err) {
+        // If the update fails (likely due to balance changing), return error
+        return res.status(400).json({ msg: 'Insufficient balance or balance updated' });
+      }
 
       // 1. Create transfer recipient
       const recipientRes = await createTransferRecipient({

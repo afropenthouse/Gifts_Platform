@@ -27,56 +27,77 @@ module.exports = () => {
 
   router.get('/metrics', adminAuth, async (req, res) => {
     try {
-      const totalUsers = await prisma.user.count();
-      const totalGifts = await prisma.gift.count();
-      const totalContributions = await prisma.contribution.aggregate({
-        _sum: {
-          amount: true,
-        },
-        where: {
-          status: 'completed',
-          isAsoebi: false
-        }
-      });
+      const [
+        totalUsers,
+        totalGifts,
+        totalContributions,
+        totalAsoebiContributions,
+        totalWallet,
+        openGuestEvents,
+        restrictedGuestEvents,
+      ] = await Promise.all([
+        prisma.user.count(),
+        prisma.gift.count(),
+        prisma.contribution.aggregate({
+          _sum: {
+            amount: true,
+          },
+          where: {
+            status: 'completed',
+            isAsoebi: false
+          }
+        }),
+        prisma.contribution.aggregate({
+          _sum: {
+            amount: true,
+          },
+          where: {
+            status: 'completed',
+            isAsoebi: true
+          }
+        }),
+        prisma.user.aggregate({
+          _sum: {
+            wallet: true,
+          },
+        }),
+        prisma.gift.count({
+          where: { guestListMode: 'open' },
+        }),
+        prisma.gift.count({
+          where: { guestListMode: 'restricted' },
+        }),
+      ]);
 
-      const totalAsoebiContributions = await prisma.contribution.aggregate({
-        _sum: {
-          amount: true,
-        },
-        where: {
-          status: 'completed',
-          isAsoebi: true
-        }
-      });
-
-      const recentUsers = await prisma.user.findMany({
-        take: 5,
-        orderBy: {
-          createdAt: 'desc'
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          createdAt: true,
-          isActive: true
-        }
-      });
-
-      const recentContributions = await prisma.contribution.findMany({
-        take: 10,
-        orderBy: {
-          createdAt: 'desc'
-        },
-        include: {
-          gift: {
-            select: {
-              id: true,
-              title: true
+      const [recentUsers, recentContributions] = await Promise.all([
+        prisma.user.findMany({
+          take: 5,
+          orderBy: {
+            createdAt: 'desc'
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            createdAt: true,
+            isActive: true
+          }
+        }),
+        prisma.contribution.findMany({
+          take: 10,
+          orderBy: {
+            createdAt: 'desc'
+          },
+          include: {
+            gift: {
+              select: {
+                id: true,
+                title: true
+              }
             }
           }
-        }
-      });
+        })
+      ]);
 
       res.json({
         metrics: {
@@ -84,6 +105,9 @@ module.exports = () => {
           totalGifts,
           totalContributions: totalContributions._sum.amount || 0,
           totalAsoebiContributions: totalAsoebiContributions._sum.amount || 0,
+          totalWalletBalance: Number(totalWallet._sum.wallet || 0),
+          guestListOpenEvents: openGuestEvents,
+          guestListRestrictedEvents: restrictedGuestEvents,
         },
         recentUsers,
         recentContributions
