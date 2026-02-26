@@ -14,6 +14,9 @@ const emailEnabled = Boolean(smtpUser && smtpPass);
 
 const transporter = emailEnabled
   ? nodemailer.createTransport({
+      pool: true,
+      maxConnections: 1,
+      rateLimit: 5,
       host: smtpHost,
       port: smtpPort,
       secure: smtpSecure,
@@ -387,7 +390,7 @@ const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
       <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
         
         <div style="padding: 28px 28px 18px; text-align: center;">
-          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">Thanks for coming!</h2>
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">Thanks for Coming!</h2>
           <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
         </div>
 
@@ -417,7 +420,7 @@ const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
     await transporter.sendMail({
       from: mailFrom,
       to: recipient,
-      subject: `Thanks for coming! - ${heading}`,
+      subject: `Thanks for Coming! - ${heading}`,
       html,
     });
     return { delivered: true };
