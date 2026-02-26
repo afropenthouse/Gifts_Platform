@@ -16,10 +16,16 @@ const checkAndReleaseVendorPayments = async () => {
         accountNumber: { not: null },
         bankCode: { not: null }
       },
-      include: {
-        Gift: {
-          select: { userId: true }
-        }
+      select: {
+        id: true,
+        accountName: true,
+        vendorEmail: true,
+        accountNumber: true,
+        bankCode: true,
+        scheduledAmount: true,
+        category: true,
+        eventId: true,
+        // Gift: { select: { userId: true } } // Not actually used in the loop?
       }
     });
 

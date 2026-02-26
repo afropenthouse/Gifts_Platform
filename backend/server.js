@@ -56,7 +56,7 @@ app.use(express.json({
 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const { checkAndSendReminders } = require('./utils/reminderService');
+const { checkAndSendReminders, checkAndSendPostEventEmails } = require('./utils/reminderService');
 const { checkAndReleaseVendorPayments } = require('./utils/vendorPaymentService');
 
 // Verify Prisma DB connection on startup
@@ -73,13 +73,15 @@ prisma.$connect()
 
     // Run once on startup
     checkAndSendReminders().catch(err => console.error('Initial reminder check failed:', err));
+    checkAndSendPostEventEmails().catch(err => console.error('Initial post-event email check failed:', err));
     checkAndReleaseVendorPayments().catch(err => console.error('Initial vendor payment check failed:', err));
 
     setInterval(async () => {
       try {
         await checkAndSendReminders();
+        await checkAndSendPostEventEmails();
       } catch (err) {
-        console.error('Error in reminder service:', err);
+        console.error('Error in reminder/post-event service:', err);
       }
     }, CHECK_INTERVAL_24H);
 

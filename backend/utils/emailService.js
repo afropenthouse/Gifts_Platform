@@ -364,6 +364,69 @@ const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
   }
 };
 
+const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
+  if (!emailEnabled || !transporter) {
+    console.warn('Post-event email skipped: SMTP configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipient) {
+    return { delivered: false, reason: 'No recipient provided' };
+  }
+
+  const heading = formatEventHeading(gift);
+  const accent = '#2E235C';
+  const muted = '#f6f4ff';
+  
+  // Always use production URL for post-event emails as requested
+  const baseUrl = 'https://www.bethereweddings.com';
+  const qrCodeUrl = gift?.shareLink ? `${baseUrl}/qr-gift/${gift.shareLink}` : '#';
+
+  const html = `
+    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+        
+        <div style="padding: 28px 28px 18px; text-align: center;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">Thanks for coming!</h2>
+          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">${heading}</p>
+        </div>
+
+        <div style="padding: 0 24px 24px; text-align: center;">
+          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+            <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${guestName || 'there'},</p>
+            <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
+              Thank you so much for celebrating with us. Your presence made our day even more special.
+            </p>
+            <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
+              We hope you had a wonderful time!
+            </p>
+          </div>
+          
+          <div style="margin-top: 24px;">
+             <p style="margin: 0 0 12px; font-size: 14px; color: #4b5563;">If you took photos, share it here</p>
+             <a href="${qrCodeUrl}" style="display: inline-block; background-color: ${accent}; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+               Share Photos
+             </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: mailFrom,
+      to: recipient,
+      subject: `Thanks for coming! - ${heading}`,
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send post-event email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
 const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, amount, gift, isAsoebi }) => {
   if (!emailEnabled || !transporter) {
     console.warn('Contributor thank you email skipped: SMTP configuration is missing');
@@ -498,6 +561,7 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
 module.exports = { 
   sendRsvpEmail, 
   sendOwnerNotificationEmail, 
+  sendPostEventEmail,
   sendReminderEmail, 
   sendRsvpCancellationEmail,
   sendContributorThankYouEmail,
