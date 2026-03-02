@@ -344,7 +344,21 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
     };
     const calcGiftStock = (g: Gift) => {
       // Calculate sold quantities from contributions instead of relying on gift fields
-      const giftContribs = contributions.filter(c => c.giftId === g.id && c.isAsoebi && c.status === 'completed');
+      // Use a more robust filter to catch legacy data (older contributions)
+      const giftContribs = contributions.filter(c => 
+        c.giftId === g.id && 
+        c.status === 'completed' && 
+        (c.isAsoebi || 
+         (c.asoebiQuantity || 0) > 0 || 
+         (c.asoebiItemsDetails?.length || 0) > 0 ||
+         (c.asoebiQtyMen || 0) > 0 ||
+         (c.asoebiQtyWomen || 0) > 0 ||
+         (c.asoebiBrideMenQty || 0) > 0 ||
+         (c.asoebiBrideWomenQty || 0) > 0 ||
+         (c.asoebiGroomMenQty || 0) > 0 ||
+         (c.asoebiGroomWomenQty || 0) > 0
+        )
+      );
       
       let soldBM = 0;
       let soldBW = 0;
@@ -370,12 +384,17 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       // First, initialize sold counts from contributions for dynamic items
       const dynamicSoldCounts: Record<number, number> = {}; // itemID -> totalSold
       giftContribs.forEach(c => {
-        if (c.asoebiItemsDetails && Array.isArray(c.asoebiItemsDetails)) {
+        if (c.asoebiItemsDetails && Array.isArray(c.asoebiItemsDetails) && c.asoebiItemsDetails.length > 0) {
           c.asoebiItemsDetails.forEach(detail => {
             if (detail.asoebiItemId) {
               dynamicSoldCounts[detail.asoebiItemId] = (dynamicSoldCounts[detail.asoebiItemId] || 0) + toNum(detail.quantity);
             }
           });
+        } else if ((c.asoebiQuantity || 0) > 0 && g.asoebiItems?.length === 1) {
+          // Fallback for legacy data: if only one dynamic item exists and contribution has general asoebiQuantity, 
+          // count it toward that single item.
+          const onlyItem = g.asoebiItems[0];
+          dynamicSoldCounts[onlyItem.id] = (dynamicSoldCounts[onlyItem.id] || 0) + toNum(c.asoebiQuantity);
         }
       });
 
