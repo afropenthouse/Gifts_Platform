@@ -336,26 +336,6 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
           <p className="text-gray-600 mt-1">Let guests capture and share moments with your event QR code</p>
         </div>
         <div className="flex items-center gap-3">
-          {moments.length > 0 && (
-            <Button
-              onClick={() => handleDownloadAll()}
-              disabled={downloadingAll}
-              variant="outline"
-              className="border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white transition-colors"
-            >
-              {downloadingAll ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Zipping...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download All
-                </>
-              )}
-            </Button>
-          )}
           <Button 
             onClick={() => onTabChange('qr')} 
             className="bg-[#2E235C] hover:bg-[#2E235C]/90 whitespace-nowrap"
@@ -512,15 +492,15 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
                   )}
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="default"
                   size="sm"
-                  className="w-full sm:w-auto text-[#2E235C] hover:bg-[#2E235C] hover:text-white transition-colors justify-start sm:justify-center"
+                  className="w-full sm:w-auto bg-[#2E235C] text-white hover:bg-[#2E235C]/90 transition-colors justify-start sm:justify-center"
                   onClick={() => handleDownloadAll(giftMoments, gift.title.replace(/\s+/g, '-').toLowerCase())}
                   disabled={downloadingAll}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   <span className="sm:hidden">Download moments</span>
-                  <span className="hidden sm:inline">Download all for this event</span>
+                  <span className="hidden sm:inline">Download all</span>
                 </Button>
               </CardHeader>
               <CardContent>
@@ -536,7 +516,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
                         alt={moment.event}
                         className="w-full aspect-square md:aspect-auto md:h-48 object-cover rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
                       />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg" />
+                      <div className="absolute inset-0 bg-[#2E235C]/0 group-hover:bg-[#2E235C]/20 transition-colors rounded-lg" />
                       
                       {/* Actions overlay */}
                       <div className="absolute top-2 right-2 flex gap-2">
