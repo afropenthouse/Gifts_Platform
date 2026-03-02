@@ -343,16 +343,42 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       return Number.isFinite(n) ? n : 0;
     };
     const calcGiftStock = (g: Gift) => {
-      const soldBM = toNum(g.soldAsoebiBrideMenQty);
-      const soldBW = toNum(g.soldAsoebiBrideWomenQty);
-      const soldGM = toNum(g.soldAsoebiGroomMenQty);
-      const soldGW = toNum(g.soldAsoebiGroomWomenQty);
-      const soldM = toNum(g.soldAsoebiQtyMen);
-      const soldW = toNum(g.soldAsoebiQtyWomen);
-      const soldGen = toNum(g.soldAsoebiQuantity);
+      // Calculate sold quantities from contributions instead of relying on gift fields
+      const giftContribs = contributions.filter(c => c.giftId === g.id && c.isAsoebi && c.status === 'completed');
+      
+      let soldBM = 0;
+      let soldBW = 0;
+      let soldGM = 0;
+      let soldGW = 0;
+      let soldM = 0;
+      let soldW = 0;
+      let soldGen = 0;
+
+      giftContribs.forEach(c => {
+        soldBM += toNum(c.asoebiBrideMenQty);
+        soldBW += toNum(c.asoebiBrideWomenQty);
+        soldGM += toNum(c.asoebiGroomMenQty);
+        soldGW += toNum(c.asoebiGroomWomenQty);
+        soldM += toNum(c.asoebiQtyMen);
+        soldW += toNum(c.asoebiQtyWomen);
+        soldGen += toNum(c.asoebiQuantity);
+      });
 
       // Calculate dynamic items stock
       const dynamicStock: Record<string, { inStock: number; sold: number; category?: string }> = {};
+      
+      // First, initialize sold counts from contributions for dynamic items
+      const dynamicSoldCounts: Record<number, number> = {}; // itemID -> totalSold
+      giftContribs.forEach(c => {
+        if (c.asoebiItemsDetails && Array.isArray(c.asoebiItemsDetails)) {
+          c.asoebiItemsDetails.forEach(detail => {
+            if (detail.asoebiItemId) {
+              dynamicSoldCounts[detail.asoebiItemId] = (dynamicSoldCounts[detail.asoebiItemId] || 0) + toNum(detail.quantity);
+            }
+          });
+        }
+      });
+
       if (g.asoebiItems && g.asoebiItems.length > 0) {
         g.asoebiItems.forEach(item => {
           let key = item.name;
@@ -362,13 +388,15 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
             key = `${item.name} (${cat})`;
           }
           
+          const soldCount = dynamicSoldCounts[item.id] || 0;
+          
           if (dynamicStock[key]) {
-            dynamicStock[key].inStock += Math.max(0, toNum(item.stock) - toNum(item.sold));
-            dynamicStock[key].sold += toNum(item.sold);
+            dynamicStock[key].inStock += Math.max(0, toNum(item.stock) - soldCount);
+            dynamicStock[key].sold += soldCount;
           } else {
             dynamicStock[key] = {
-              inStock: Math.max(0, toNum(item.stock) - toNum(item.sold)),
-              sold: toNum(item.sold),
+              inStock: Math.max(0, toNum(item.stock) - soldCount),
+              sold: soldCount,
               category: item.category
             };
           }

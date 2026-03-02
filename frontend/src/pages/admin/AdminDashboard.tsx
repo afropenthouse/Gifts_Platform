@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye } from "lucide-react";
+import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +23,7 @@ import {
 interface Metrics {
   totalUsers: number;
   totalGifts: number;
+  totalGifters: number;
   totalContributions: number;
   totalAsoebiContributions: number;
   totalWalletBalance: number;
@@ -87,14 +88,15 @@ interface GuestRow {
   gift?: { id: number; title: string | null } | null;
 }
 
-type AdminTab = 'overview' | 'transactions' | 'events' | 'guests';
+type AdminTab = 'overview' | 'transactions' | 'events' | 'guests' | 'emails';
 type TimeFilter = 'all' | '7days' | '14days' | '30days' | '3months' | 'year';
 
 const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'transactions', label: 'Transactions', icon: Gift },
-  { id: 'guests', label: 'Guests', icon: Users },
+  { id: 'guests', label: 'Guest Users', icon: Users },
   { id: 'events', label: 'Events', icon: CalendarDays },
+  { id: 'emails', label: 'Bulk Emails', icon: Mail },
 ];
 
 const AdminDashboard = () => {
@@ -112,6 +114,9 @@ const AdminDashboard = () => {
   const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>('all');
   const [selectedTxnType, setSelectedTxnType] = useState<'all' | 'cash' | 'asoebi'>('all');
   const [guestEmailFilter, setGuestEmailFilter] = useState<'all' | 'yes' | 'no'>('all');
+  const [userSearch, setUserSearch] = useState('');
+  const [txnSearch, setTxnSearch] = useState('');
+  const [guestSearch, setGuestSearch] = useState('');
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [deleteUserName, setDeleteUserName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -208,7 +213,7 @@ const AdminDashboard = () => {
       setLoadingGuests(true);
       setGuests([]);
       const params = new URLSearchParams();
-      if (guestEmailFilter !== 'all') params.set('hasEmail', guestEmailFilter);
+      params.set('hasEmail', 'yes');
       if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
       const response = await fetch(`${baseUrl}/api/admin/guests?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -229,7 +234,7 @@ const AdminDashboard = () => {
     } finally {
       setLoadingGuests(false);
     }
-  }, [guestEmailFilter, loadingGuests, navigate, selectedEventId]);
+  }, [loadingGuests, navigate, selectedEventId]);
 
   const fetchEvents = useCallback(async () => {
     if (loadingEvents || events.length > 0) {
@@ -284,10 +289,10 @@ const AdminDashboard = () => {
   }, [activeTab, fetchContributions, fetchEvents]);
 
   useEffect(() => {
-    if (activeTab === 'guests') {
+    if (activeTab === 'guests' || activeTab === 'emails') {
       fetchGuests();
     }
-  }, [activeTab, guestEmailFilter, selectedEventId]);
+  }, [activeTab, selectedEventId]);
 
   const handleToggleUser = async (userId: number) => {
     const token = localStorage.getItem('adminToken');
@@ -414,7 +419,87 @@ const AdminDashboard = () => {
     return filterByTime(rows);
   };
 
+  const renderEmails = () => {
+    const userEmails = users.map((u) => u.email.toLowerCase().trim()).filter(Boolean);
+    const guestEmails = guests.map((g) => g.email?.toLowerCase().trim()).filter(Boolean) as string[];
+    const allEmails = Array.from(new Set([...userEmails, ...guestEmails])).sort();
+
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Bulk Email List</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Combined list of unique emails from users and guests.
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              const emailString = allEmails.join(', ');
+              navigator.clipboard.writeText(emailString);
+              toast.success("All emails copied to clipboard");
+            }}
+          >
+            Copy All Emails
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-4 mb-4">
+            <div className="text-sm text-muted-foreground">
+              Total Unique Emails: <span className="font-semibold">{allEmails.length}</span>
+            </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>#</TableHead>
+                <TableHead>Email Address</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allEmails.map((email, index) => (
+                <TableRow key={email}>
+                  <TableCell className="text-sm font-medium">{index + 1}</TableCell>
+                  <TableCell className="text-sm">{email}</TableCell>
+                  <TableCell className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(email);
+                        toast.success("Email copied to clipboard");
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {allEmails.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
+                    No emails found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    );
+  };
+
   const renderOverview = () => {
+    const filteredUsers = users.filter((u) => {
+      const search = userSearch.toLowerCase();
+      return (
+        u.name.toLowerCase().includes(search) ||
+        u.email.toLowerCase().includes(search)
+      );
+    });
+
     return (
       <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -470,11 +555,11 @@ const AdminDashboard = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Gifts</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Gifters</CardTitle>
               <Gift className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics?.totalGifts || 0}</div>
+              <div className="text-2xl font-bold">{metrics?.totalGifters || 0}</div>
             </CardContent>
           </Card>
           <Card>
@@ -498,8 +583,15 @@ const AdminDashboard = () => {
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>User Management</CardTitle>
+            <div className="relative w-64">
+              <Input
+                placeholder="Search users..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -509,14 +601,12 @@ const AdminDashboard = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead>Wallet</TableHead>
-                  <TableHead>Gifts</TableHead>
-                  <TableHead>Contributions</TableHead>
                   <TableHead className="text-center">Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell className="text-sm">{user.email}</TableCell>
@@ -524,20 +614,16 @@ const AdminDashboard = () => {
                       {new Date(user.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-sm">₦{Number(user.wallet).toLocaleString()}</TableCell>
-                    <TableCell className="text-center">{user._count.gifts}</TableCell>
-                    <TableCell className="text-center">{user._count.contributions}</TableCell>
                     <TableCell className="text-center">
-                      <button
-                        onClick={() => handleToggleUser(user.id)}
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                           user.isActive
                             ? "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-700"
                         }`}
-                        title={user.isActive ? "Click to suspend" : "Click to activate"}
                       >
                         {user.isActive ? "Active" : "Suspended"}
-                      </button>
+                      </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -550,6 +636,22 @@ const AdminDashboard = () => {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem
+                            onClick={() => handleToggleUser(user.id)}
+                          >
+                            {user.isActive ? (
+                              <>
+                                <UserMinus className="mr-2 h-4 w-4" />
+                                Suspend
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Activate
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
                             className="text-red-600"
                             onClick={() => openDeleteDialog(user)}
                           >
@@ -561,9 +663,9 @@ const AdminDashboard = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {users.length === 0 && (
+                {filteredUsers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                       No users found
                     </TableCell>
                   </TableRow>
@@ -668,13 +770,13 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Total Events
+                Total Gifters
               </CardTitle>
               <Gift className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl md:text-4xl font-bold tracking-tight">
-                {metrics?.totalGifts || 0}
+                {metrics?.totalGifters || 0}
               </div>
             </CardContent>
           </Card>
@@ -752,16 +854,34 @@ const AdminDashboard = () => {
   };
 
   const renderContributions = (tab: AdminTab) => {
-    const rows = filteredContributions(tab);
+    let rows = filteredContributions(tab);
+
+    if (txnSearch) {
+      const search = txnSearch.toLowerCase();
+      rows = rows.filter((c) => {
+        return (
+          (c.contributorName?.toLowerCase() || 'anonymous').includes(search) ||
+          (c.gift?.title?.toLowerCase() || '').includes(search) ||
+          c.amount.toString().includes(search)
+        );
+      });
+    }
 
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>
             {tab === 'transactions'
               ? 'All Transactions'
               : 'Transactions'}
           </CardTitle>
+          <div className="relative w-64">
+            <Input
+              placeholder="Search transactions..."
+              value={txnSearch}
+              onChange={(e) => setTxnSearch(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {loadingContributions ? (
@@ -825,58 +945,59 @@ const AdminDashboard = () => {
       ? events
       : events.filter((event) => event.id === selectedEventId);
 
-    // Calculate stats if an event is selected
-    const selectedEvent = selectedEventId !== 'all' ? events.find(e => e.id === selectedEventId) : null;
-    const eventContributions = selectedEventId !== 'all' 
-      ? allContributions.filter(c => c.gift?.id === selectedEventId)
-      : [];
+    // Calculate stats
+    const eventContributions = selectedEventId === 'all'
+      ? allContributions
+      : allContributions.filter(c => c.gift?.id === selectedEventId);
     
     const totalAmount = eventContributions.reduce((sum, c) => sum + Number(c.amount), 0);
     const asoebiAmount = eventContributions.filter(c => c.isAsoebi).reduce((sum, c) => sum + Number(c.amount), 0);
     const cashAmount = totalAmount - asoebiAmount;
+    
+    const totalGuests = selectedEventId === 'all'
+      ? events.reduce((sum, e) => sum + e._count.guests, 0)
+      : events.find(e => e.id === selectedEventId)?._count.guests || 0;
 
     return (
     <div className="space-y-6">
-      {selectedEvent && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Total Received</CardTitle>
-              <Banknote className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">₦{totalAmount.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Cash Gifts</CardTitle>
-              <Gift className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">₦{cashAmount.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Asoebi Sales</CardTitle>
-              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">₦{asoebiAmount.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Total Guests</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">{selectedEvent._count.guests}</div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total Received</CardTitle>
+            <Banknote className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">₦{totalAmount.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Cash Gifts</CardTitle>
+            <Gift className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">₦{cashAmount.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Asoebi Sales</CardTitle>
+            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">₦{asoebiAmount.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total Guests</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{totalGuests}</div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>
@@ -953,30 +1074,43 @@ const AdminDashboard = () => {
   };
 
   const renderGuests = () => {
-    const rows = guests.filter((g) => {
+    let rows = guests.filter((g) => {
       if (selectedEventId !== 'all') {
         return g.gift?.id === selectedEventId;
       }
       return true;
-    }).filter((g) => {
-      if (guestEmailFilter === 'yes') return Boolean(g.email);
-      if (guestEmailFilter === 'no') return !g.email;
-      return true;
-    });
+    }).filter((g) => Boolean(g.email));
 
-    const total = guests.length;
-    const withEmail = guests.filter(g => Boolean(g.email)).length;
-    const withoutEmail = total - withEmail;
+    if (guestSearch) {
+      const search = guestSearch.toLowerCase();
+      rows = rows.filter((g) => {
+        return (
+          g.firstName.toLowerCase().includes(search) ||
+          g.lastName.toLowerCase().includes(search) ||
+          (g.email?.toLowerCase() || '').includes(search) ||
+          (g.gift?.title?.toLowerCase() || '').includes(search)
+        );
+      });
+    }
+
+    const totalWithEmail = rows.length;
 
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Guests</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Guest Users</CardTitle>
+          <div className="relative w-64">
+            <Input
+              placeholder="Search guests..."
+              value={guestSearch}
+              onChange={(e) => setGuestSearch(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-4 mb-4">
             <div className="text-sm text-muted-foreground">
-              Total: <span className="font-semibold">{total}</span> • With email: <span className="font-semibold">{withEmail}</span> • Without email: <span className="font-semibold">{withoutEmail}</span>
+              Total Guest Users: <span className="font-semibold">{totalWithEmail}</span>
             </div>
           </div>
           {loadingGuests ? (
@@ -1031,59 +1165,30 @@ const AdminDashboard = () => {
             className="h-8 w-auto self-start"
           />
           <div>
-            <div className="text-sm font-semibold text-gray-900">BeThere Admin</div>
+            <div className="text-sm font-semibold text-gray-900">Admin</div>
             <div className="text-xs text-muted-foreground">Control center</div>
           </div>
         </div>
         <nav className="space-y-1">
-          <button
-            type="button"
-            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'overview'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            onClick={() => setActiveTab('overview')}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Overview
-          </button>
-          <button
-            type="button"
-            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'transactions'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            onClick={() => setActiveTab('transactions')}
-          >
-            <Gift className="w-4 h-4" />
-            Transactions
-          </button>
-          <button
-            type="button"
-            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'guests'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            onClick={() => setActiveTab('guests')}
-          >
-            <Users className="w-4 h-4" />
-            Guests
-          </button>
-          <button
-            type="button"
-            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'events'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            onClick={() => setActiveTab('events')}
-          >
-            <CalendarDays className="w-4 h-4" />
-            Events
-          </button>
+          {adminTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
+                  isActive
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
         </nav>
         <div className="mt-auto pt-6 border-t">
           <Button
@@ -1230,26 +1335,6 @@ const AdminDashboard = () => {
                 </Select>
               </div>
             )}
-            {activeTab === 'guests' && (
-              <div className="flex items-center gap-2">
-                <Label htmlFor="admin-guest-email" className="hidden md:inline whitespace-nowrap">
-                  Email:
-                </Label>
-                <Select
-                  value={guestEmailFilter}
-                  onValueChange={(value) => setGuestEmailFilter(value as 'all' | 'yes' | 'no')}
-                >
-                  <SelectTrigger id="admin-guest-email" className="w-[160px]">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="yes">With email</SelectItem>
-                    <SelectItem value="no">Without email</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div className="flex items-center gap-2">
               <Label htmlFor="admin-event-filter" className="hidden md:inline whitespace-nowrap">
                 Event:
@@ -1275,10 +1360,13 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'transactions' && renderContributions('transactions')}
-        {activeTab === 'guests' && renderGuests()}
-        {activeTab === 'events' && renderEvents()}
+        <div className="space-y-6">
+          {activeTab === 'overview' && renderOverview()}
+          {activeTab === 'transactions' && renderContributions('transactions')}
+          {activeTab === 'guests' && renderGuests()}
+          {activeTab === 'events' && renderEvents()}
+          {activeTab === 'emails' && renderEmails()}
+        </div>
       </main>
 
       <Dialog

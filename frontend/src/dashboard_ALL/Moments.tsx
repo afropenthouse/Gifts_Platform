@@ -491,17 +491,17 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
           {Object.entries(momentsByGift)
             .filter(([giftId]) => filterGiftId === 'all' || giftId === filterGiftId)
             .map(([giftId, { gift, moments: giftMoments }]) => (
-            <Card key={giftId} className="border-0 shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <Card key={giftId} className="border-0 shadow-lg overflow-hidden">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 space-y-0">
                 <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-3">
+                  <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-xl">
                     {gift.title}
-                    <span className="text-sm font-normal text-gray-500">
+                    <span className="text-xs sm:text-sm font-normal text-gray-500 whitespace-nowrap">
                       ({giftMoments.length} moment{giftMoments.length !== 1 ? 's' : ''})
                     </span>
                   </CardTitle>
                   {gift.date && (
-                    <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       {new Date(gift.date).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -514,12 +514,13 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-[#2E235C] hover:bg-[#2E235C] hover:text-white transition-colors"
+                  className="w-full sm:w-auto text-[#2E235C] hover:bg-[#2E235C] hover:text-white transition-colors justify-start sm:justify-center"
                   onClick={() => handleDownloadAll(giftMoments, gift.title.replace(/\s+/g, '-').toLowerCase())}
                   disabled={downloadingAll}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download all for this event
+                  <span className="sm:hidden">Download moments</span>
+                  <span className="hidden sm:inline">Download all for this event</span>
                 </Button>
               </CardHeader>
               <CardContent>

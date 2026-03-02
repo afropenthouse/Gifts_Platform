@@ -57,6 +57,7 @@ module.exports = () => {
       const [
         totalUsers,
         totalGifts,
+        totalGifters,
         totalContributions,
         totalAsoebiContributions,
         totalWallet,
@@ -65,6 +66,12 @@ module.exports = () => {
       ] = await Promise.all([
         prisma.user.count({ where: dateFilter }),
         prisma.gift.count({ where: dateFilter }),
+        prisma.contribution.count({
+          where: {
+            status: 'completed',
+            ...dateFilter
+          }
+        }),
         prisma.contribution.aggregate({
           _sum: {
             amount: true,
@@ -133,6 +140,7 @@ module.exports = () => {
         metrics: {
           totalUsers,
           totalGifts,
+          totalGifters,
           totalContributions: totalContributions._sum.amount || 0,
           totalAsoebiContributions: totalAsoebiContributions._sum.amount || 0,
           totalWalletBalance: Number(totalWallet._sum.wallet || 0),
