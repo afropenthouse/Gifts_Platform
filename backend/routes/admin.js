@@ -27,6 +27,33 @@ module.exports = () => {
 
   router.get('/metrics', adminAuth, async (req, res) => {
     try {
+      const { time } = req.query;
+      let dateFilter = {};
+
+      if (time && time !== 'all') {
+        const now = new Date();
+        const filterDate = new Date();
+
+        switch (time) {
+          case '7days':
+            filterDate.setDate(now.getDate() - 7);
+            break;
+          case '14days':
+            filterDate.setDate(now.getDate() - 14);
+            break;
+          case '30days':
+            filterDate.setDate(now.getDate() - 30);
+            break;
+          case '3months':
+            filterDate.setMonth(now.getMonth() - 3);
+            break;
+          case 'year':
+            filterDate.setFullYear(now.getFullYear() - 1);
+            break;
+        }
+        dateFilter = { createdAt: { gte: filterDate } };
+      }
+
       const [
         totalUsers,
         totalGifts,
@@ -36,15 +63,16 @@ module.exports = () => {
         openGuestEvents,
         restrictedGuestEvents,
       ] = await Promise.all([
-        prisma.user.count(),
-        prisma.gift.count(),
+        prisma.user.count({ where: dateFilter }),
+        prisma.gift.count({ where: dateFilter }),
         prisma.contribution.aggregate({
           _sum: {
             amount: true,
           },
           where: {
             status: 'completed',
-            isAsoebi: false
+            isAsoebi: false,
+            ...dateFilter
           }
         }),
         prisma.contribution.aggregate({
@@ -53,19 +81,21 @@ module.exports = () => {
           },
           where: {
             status: 'completed',
-            isAsoebi: true
+            isAsoebi: true,
+            ...dateFilter
           }
         }),
         prisma.user.aggregate({
           _sum: {
             wallet: true,
           },
+          where: dateFilter
         }),
         prisma.gift.count({
-          where: { guestListMode: 'open' },
+          where: { guestListMode: 'open', ...dateFilter },
         }),
         prisma.gift.count({
-          where: { guestListMode: 'restricted' },
+          where: { guestListMode: 'restricted', ...dateFilter },
         }),
       ]);
 
@@ -296,6 +326,97 @@ module.exports = () => {
       console.error(err);
       res.status(500).json({ msg: 'Server error fetching events' });
     }
+  });
+
+  // Get all guests (admin)
+  router.get('/guests', adminAuth, async (req, res) => {
+    try {
+      const { hasEmail, eventId } = req.query;
+      const where = {};
+      if (hasEmail === 'yes') {
+        where.email = { not: null };
+      } else if (hasEmail === 'no') {
+        where.email = null;
+      }
+      if (eventId && !isNaN(parseInt(eventId))) {
+        where.giftId = parseInt(eventId);
+      }
+
+      const guests = await prisma.guest.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          createdAt: true,
+          giftId: true,
+          gift: {
+            select: { id: true, title: true }
+          }
+        }
+      });
+
+      res.json(guests);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error fetching guests' });
+    }
+  });
+
+  // Bulk delete users by email
+  router.post('/users/bulk-delete', adminAuth, async (req, res) => {
+    const { emails } = req.body;
+    if (!Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ msg: 'Provide emails as a non-empty array' });
+    }
+
+    const results = [];
+    for (const email of emails) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { email }
+        });
+        if (!user) {
+          results.push({ email, status: 'not_found' });
+          continue;
+        }
+
+        const userId = user.id;
+
+        await prisma.$transaction(async (tx) => {
+          await tx.referralTransaction.deleteMany({
+            where: {
+              OR: [
+                { referrerId: userId },
+                { referredUserId: userId }
+              ]
+            }
+          });
+
+          await tx.withdrawal.deleteMany({
+            where: { userId }
+          });
+
+          await tx.user.updateMany({
+            where: { referredById: userId },
+            data: { referredById: null }
+          });
+
+          await tx.user.delete({
+            where: { id: userId }
+          });
+        });
+
+        results.push({ email, status: 'deleted' });
+      } catch (err) {
+        console.error(`Error deleting user ${email}:`, err);
+        results.push({ email, status: 'error', error: err.message });
+      }
+    }
+
+    res.json({ results });
   });
 
   return router;

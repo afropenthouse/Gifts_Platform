@@ -10,7 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3 } from "lucide-react";
+import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Metrics {
   totalUsers: number;
@@ -70,16 +78,22 @@ interface EventItem {
   };
 }
 
-type AdminTab = 'overview' | 'metrics' | 'transactions' | 'asoebi' | 'cashGifts' | 'events' | 'wallets';
+interface GuestRow {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  createdAt: string;
+  gift?: { id: number; title: string | null } | null;
+}
+
+type AdminTab = 'overview' | 'transactions' | 'events' | 'guests';
 type TimeFilter = 'all' | '7days' | '14days' | '30days' | '3months' | 'year';
 
 const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'metrics', label: 'Metrics', icon: BarChart3 },
-  { id: 'wallets', label: 'Wallets', icon: Wallet },
   { id: 'transactions', label: 'Transactions', icon: Gift },
-  { id: 'cashGifts', label: 'Cash Gifts', icon: Banknote },
-  { id: 'asoebi', label: 'Asoebi', icon: ShoppingBag },
+  { id: 'guests', label: 'Guests', icon: Users },
   { id: 'events', label: 'Events', icon: CalendarDays },
 ];
 
@@ -87,13 +101,17 @@ const AdminDashboard = () => {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [allContributions, setAllContributions] = useState<Contribution[]>([]);
+  const [guests, setGuests] = useState<GuestRow[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingContributions, setLoadingContributions] = useState(false);
+  const [loadingGuests, setLoadingGuests] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [selectedEventId, setSelectedEventId] = useState<number | 'all'>('all');
   const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>('all');
+  const [selectedTxnType, setSelectedTxnType] = useState<'all' | 'cash' | 'asoebi'>('all');
+  const [guestEmailFilter, setGuestEmailFilter] = useState<'all' | 'yes' | 'no'>('all');
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [deleteUserName, setDeleteUserName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -112,7 +130,7 @@ const AdminDashboard = () => {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
       const [metricsRes, usersRes] = await Promise.all([
-        fetch(`${baseUrl}/api/admin/metrics`, {
+        fetch(`${baseUrl}/api/admin/metrics?time=${selectedTimeFilter}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${baseUrl}/api/admin/users`, {
@@ -136,7 +154,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, selectedTimeFilter]);
 
   const fetchContributions = useCallback(async () => {
     if (loadingContributions || allContributions.length > 0) {
@@ -175,6 +193,43 @@ const AdminDashboard = () => {
       setLoadingContributions(false);
     }
   }, [allContributions.length, loadingContributions, navigate]);
+
+  const fetchGuests = useCallback(async () => {
+    if (loadingGuests) {
+      return;
+    }
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      setLoadingGuests(true);
+      setGuests([]);
+      const params = new URLSearchParams();
+      if (guestEmailFilter !== 'all') params.set('hasEmail', guestEmailFilter);
+      if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
+      const response = await fetch(`${baseUrl}/api/admin/guests?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 401) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+        return;
+      }
+      if (!response.ok) {
+        toast.error('Failed to fetch guests');
+        return;
+      }
+      const data = await response.json();
+      setGuests(data);
+    } catch (error) {
+      toast.error('Failed to fetch guests');
+    } finally {
+      setLoadingGuests(false);
+    }
+  }, [guestEmailFilter, loadingGuests, navigate, selectedEventId]);
 
   const fetchEvents = useCallback(async () => {
     if (loadingEvents || events.length > 0) {
@@ -217,16 +272,22 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
     fetchEvents();
-  }, [fetchDashboardData, fetchEvents]);
+  }, [fetchDashboardData, fetchEvents, selectedTimeFilter]);
 
   useEffect(() => {
-    if (activeTab === 'transactions' || activeTab === 'asoebi' || activeTab === 'cashGifts') {
+    if (activeTab === 'transactions' || activeTab === 'events') {
       fetchContributions();
     }
     if (activeTab === 'events') {
       fetchEvents();
     }
   }, [activeTab, fetchContributions, fetchEvents]);
+
+  useEffect(() => {
+    if (activeTab === 'guests') {
+      fetchGuests();
+    }
+  }, [activeTab, guestEmailFilter, selectedEventId]);
 
   const handleToggleUser = async (userId: number) => {
     const token = localStorage.getItem('adminToken');
@@ -341,10 +402,12 @@ const AdminDashboard = () => {
 
   const filteredContributions = (tab: AdminTab) => {
     let rows = allContributions;
-    if (tab === 'asoebi') {
-      rows = rows.filter((c) => c.isAsoebi);
-    } else if (tab === 'cashGifts') {
-      rows = rows.filter((c) => !c.isAsoebi);
+    if (tab === 'transactions') {
+      if (selectedTxnType === 'asoebi') {
+        rows = rows.filter((c) => c.isAsoebi);
+      } else if (selectedTxnType === 'cash') {
+        rows = rows.filter((c) => !c.isAsoebi);
+      }
     }
     
     rows = filterByEvent(rows);
@@ -354,6 +417,47 @@ const AdminDashboard = () => {
   const renderOverview = () => {
     return (
       <>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Transactions</CardTitle>
+              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ₦{((metrics?.totalContributions || 0) + (metrics?.totalAsoebiContributions || 0)).toLocaleString()}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Wallet Balance</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₦{(metrics?.totalWalletBalance || 0).toLocaleString()}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Cash Gifts</CardTitle>
+              <Banknote className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₦{(metrics?.totalContributions || 0).toLocaleString()}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Asoebi Sales</CardTitle>
+              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₦{(metrics?.totalAsoebiContributions || 0).toLocaleString()}</div>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -375,20 +479,20 @@ const AdminDashboard = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Cash Gifts</CardTitle>
-              <Banknote className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Open Guest Events</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₦{(metrics?.totalContributions || 0).toLocaleString()}</div>
+              <div className="text-2xl font-bold">{metrics?.guestListOpenEvents || 0}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Asoebi Sales</CardTitle>
-              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Closed Guest Events</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₦{(metrics?.totalAsoebiContributions || 0).toLocaleString()}</div>
+              <div className="text-2xl font-bold">{metrics?.guestListRestrictedEvents || 0}</div>
             </CardContent>
           </Card>
         </div>
@@ -423,17 +527,37 @@ const AdminDashboard = () => {
                     <TableCell className="text-center">{user._count.gifts}</TableCell>
                     <TableCell className="text-center">{user._count.contributions}</TableCell>
                     <TableCell className="text-center">
-                      <Switch checked={user.isActive} onCheckedChange={() => handleToggleUser(user.id)} />
+                      <button
+                        onClick={() => handleToggleUser(user.id)}
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${
+                          user.isActive
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                        title={user.isActive ? "Click to suspend" : "Click to activate"}
+                      >
+                        {user.isActive ? "Active" : "Suspended"}
+                      </button>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="inline-flex items-center gap-1 text-gray-700 border-gray-200 hover:bg-gray-50"
-                        onClick={() => openDeleteDialog(user)}
-                      >
-                        Actions
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => openDeleteDialog(user)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -636,9 +760,7 @@ const AdminDashboard = () => {
           <CardTitle>
             {tab === 'transactions'
               ? 'All Transactions'
-              : tab === 'asoebi'
-              ? 'Asoebi Orders'
-              : 'Cash Gifts'}
+              : 'Transactions'}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -703,78 +825,196 @@ const AdminDashboard = () => {
       ? events
       : events.filter((event) => event.id === selectedEventId);
 
+    // Calculate stats if an event is selected
+    const selectedEvent = selectedEventId !== 'all' ? events.find(e => e.id === selectedEventId) : null;
+    const eventContributions = selectedEventId !== 'all' 
+      ? allContributions.filter(c => c.gift?.id === selectedEventId)
+      : [];
+    
+    const totalAmount = eventContributions.reduce((sum, c) => sum + Number(c.amount), 0);
+    const asoebiAmount = eventContributions.filter(c => c.isAsoebi).reduce((sum, c) => sum + Number(c.amount), 0);
+    const cashAmount = totalAmount - asoebiAmount;
+
     return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Events</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loadingEvents ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">
-            Loading events...
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Guests</TableHead>
-                <TableHead>Contributions</TableHead>
-                <TableHead>Deadline</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell className="font-medium">
-                    {event.title || 'Untitled'}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {event.type === 'wedding'
-                      ? 'Wedding'
-                      : event.type === 'birthday'
-                      ? 'Birthday'
-                      : event.type === 'graduation'
-                      ? 'Graduation'
-                      : event.type === 'convocation'
-                      ? 'Convocation'
-                      : 'Other'}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {event.user?.name || event.user?.email}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {event._count.guests}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {event._count.contributions}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {event.deadline
-                      ? new Date(event.deadline).toLocaleDateString()
-                      : '-'}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {new Date(event.createdAt).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {rows.length === 0 && (
+    <div className="space-y-6">
+      {selectedEvent && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium">Total Received</CardTitle>
+              <Banknote className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">₦{totalAmount.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium">Cash Gifts</CardTitle>
+              <Gift className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">₦{cashAmount.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium">Asoebi Sales</CardTitle>
+              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">₦{asoebiAmount.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium">Total Guests</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">{selectedEvent._count.guests}</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Events</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingEvents ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              Loading events...
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
-                    No events found
-                  </TableCell>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Guests</TableHead>
+                  <TableHead>Contributions</TableHead>
+                  <TableHead>Deadline</TableHead>
+                  <TableHead>Created</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {rows.map((event) => (
+                  <TableRow key={event.id}>
+                    <TableCell className="font-medium">
+                      {event.title || 'Untitled'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {event.type === 'wedding'
+                        ? 'Wedding'
+                        : event.type === 'birthday'
+                        ? 'Birthday'
+                        : event.type === 'graduation'
+                        ? 'Graduation'
+                        : event.type === 'convocation'
+                        ? 'Convocation'
+                        : 'Other'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {event.user?.name || event.user?.email}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {event._count.guests}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {event._count.contributions}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {event.deadline
+                        ? new Date(event.deadline).toLocaleDateString()
+                        : '-'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {new Date(event.createdAt).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {rows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                      No events found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
+  };
+
+  const renderGuests = () => {
+    const rows = guests.filter((g) => {
+      if (selectedEventId !== 'all') {
+        return g.gift?.id === selectedEventId;
+      }
+      return true;
+    }).filter((g) => {
+      if (guestEmailFilter === 'yes') return Boolean(g.email);
+      if (guestEmailFilter === 'no') return !g.email;
+      return true;
+    });
+
+    const total = guests.length;
+    const withEmail = guests.filter(g => Boolean(g.email)).length;
+    const withoutEmail = total - withEmail;
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Guests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-4 mb-4">
+            <div className="text-sm text-muted-foreground">
+              Total: <span className="font-semibold">{total}</span> • With email: <span className="font-semibold">{withEmail}</span> • Without email: <span className="font-semibold">{withoutEmail}</span>
+            </div>
+          </div>
+          {loadingGuests ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">Loading guests...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Date Added</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((guest) => (
+                  <TableRow key={guest.id}>
+                    <TableCell className="font-medium">
+                      {guest.firstName} {guest.lastName}
+                    </TableCell>
+                    <TableCell className="text-sm">{guest.email || '-'}</TableCell>
+                    <TableCell className="text-sm">{guest.gift?.title || '-'}</TableCell>
+                    <TableCell className="text-sm">{new Date(guest.createdAt).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+                {rows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                      No guests found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    );
   };
 
   if (loading) {
@@ -784,14 +1024,14 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       <aside className="hidden md:flex w-64 flex-col border-r bg-white px-4 py-6">
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex flex-col gap-4 mb-8">
           <img
             src="/logo2.png"
             alt="BeThere Weddings logo"
-            className="h-8 w-auto"
+            className="h-8 w-auto self-start"
           />
           <div>
-            <div className="text-sm font-semibold">BeThere Admin</div>
+            <div className="text-sm font-semibold text-gray-900">BeThere Admin</div>
             <div className="text-xs text-muted-foreground">Control center</div>
           </div>
         </div>
@@ -811,30 +1051,6 @@ const AdminDashboard = () => {
           <button
             type="button"
             className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'metrics'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            onClick={() => setActiveTab('metrics')}
-          >
-            <BarChart3 className="w-4 h-4" />
-            Metrics
-          </button>
-          <button
-            type="button"
-            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'wallets'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            onClick={() => setActiveTab('wallets')}
-          >
-            <Wallet className="w-4 h-4" />
-            Wallets
-          </button>
-          <button
-            type="button"
-            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
               activeTab === 'transactions'
                 ? 'bg-gray-900 text-white'
                 : 'text-gray-700 hover:bg-gray-100'
@@ -847,26 +1063,14 @@ const AdminDashboard = () => {
           <button
             type="button"
             className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'cashGifts'
+              activeTab === 'guests'
                 ? 'bg-gray-900 text-white'
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
-            onClick={() => setActiveTab('cashGifts')}
+            onClick={() => setActiveTab('guests')}
           >
-            <Banknote className="w-4 h-4" />
-            Cash Gifts
-          </button>
-          <button
-            type="button"
-            className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'asoebi'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            onClick={() => setActiveTab('asoebi')}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Asoebi
+            <Users className="w-4 h-4" />
+            Guests
           </button>
           <button
             type="button"
@@ -895,12 +1099,40 @@ const AdminDashboard = () => {
       <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
         <div className="flex items-center justify-between mb-4 md:mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Monitor users, cash gifts, Asoebi sales and platform activity.
-            </p>
+            <h1 className="text-2xl md:text-3xl font-bold">
+              {activeTab === 'overview' ? 'Admin Dashboard' : adminTabs.find(t => t.id === activeTab)?.label}
+            </h1>
+            {activeTab === 'overview' && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Monitor users, cash gifts, Asoebi sales and platform activity.
+              </p>
+            )}
           </div>
-          <div className="md:hidden flex items-center">
+          <div className="flex items-center gap-4">
+            {activeTab === 'overview' && (
+              <div className="hidden md:flex items-center gap-2">
+                <Label htmlFor="overview-time-filter" className="whitespace-nowrap">
+                  Filter:
+                </Label>
+                <Select
+                  value={selectedTimeFilter}
+                  onValueChange={(value) => setSelectedTimeFilter(value as TimeFilter)}
+                >
+                  <SelectTrigger id="overview-time-filter" className="w-[180px]">
+                    <SelectValue placeholder="All Time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="7days">Last 7 days</SelectItem>
+                    <SelectItem value="14days">Last 14 days</SelectItem>
+                    <SelectItem value="30days">Last 30 days</SelectItem>
+                    <SelectItem value="3months">Last 3 months</SelectItem>
+                    <SelectItem value="year">Last year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="md:hidden flex items-center">
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -949,14 +1181,13 @@ const AdminDashboard = () => {
             </Sheet>
           </div>
         </div>
+      </div>
+
 
         {events.length > 0 &&
-          (activeTab === 'transactions' ||
-            activeTab === 'cashGifts' ||
-            activeTab === 'asoebi' ||
-            activeTab === 'events') && (
+          (activeTab === 'transactions' || activeTab === 'events' || activeTab === 'guests') && (
           <div className="flex flex-wrap justify-end gap-4 mb-4">
-            {(activeTab === 'transactions' || activeTab === 'cashGifts' || activeTab === 'asoebi') && (
+            {activeTab === 'transactions' && (
               <div className="flex items-center gap-2">
                 <Label htmlFor="admin-time-filter" className="hidden md:inline whitespace-nowrap">
                   Time Period:
@@ -979,7 +1210,46 @@ const AdminDashboard = () => {
                 </Select>
               </div>
             )}
-            
+            {activeTab === 'transactions' && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="admin-txn-type" className="hidden md:inline whitespace-nowrap">
+                  Type:
+                </Label>
+                <Select
+                  value={selectedTxnType}
+                  onValueChange={(value) => setSelectedTxnType(value as 'all' | 'cash' | 'asoebi')}
+                >
+                  <SelectTrigger id="admin-txn-type" className="w-[160px]">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="cash">Cash Gift</SelectItem>
+                    <SelectItem value="asoebi">Asoebi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {activeTab === 'guests' && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="admin-guest-email" className="hidden md:inline whitespace-nowrap">
+                  Email:
+                </Label>
+                <Select
+                  value={guestEmailFilter}
+                  onValueChange={(value) => setGuestEmailFilter(value as 'all' | 'yes' | 'no')}
+                >
+                  <SelectTrigger id="admin-guest-email" className="w-[160px]">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="yes">With email</SelectItem>
+                    <SelectItem value="no">Without email</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <Label htmlFor="admin-event-filter" className="hidden md:inline whitespace-nowrap">
                 Event:
@@ -1006,11 +1276,8 @@ const AdminDashboard = () => {
         )}
 
         {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'metrics' && renderMetrics()}
-        {activeTab === 'wallets' && renderWallets()}
         {activeTab === 'transactions' && renderContributions('transactions')}
-        {activeTab === 'cashGifts' && renderContributions('cashGifts')}
-        {activeTab === 'asoebi' && renderContributions('asoebi')}
+        {activeTab === 'guests' && renderGuests()}
         {activeTab === 'events' && renderEvents()}
       </main>
 

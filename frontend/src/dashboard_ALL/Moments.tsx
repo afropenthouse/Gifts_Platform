@@ -7,7 +7,9 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
-import { ImageIcon, Upload, X, Calendar, Gift, Filter, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ImageIcon, Upload, X, Calendar, Gift, Filter, Download, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 interface Moment {
   id: number;
@@ -47,6 +49,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
   const [deleting, setDeleting] = useState(false);
   const [filterGiftId, setFilterGiftId] = useState<string>('all');
   const [viewingMoment, setViewingMoment] = useState<Moment | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -215,6 +218,52 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
     }
   };
 
+  const handleDownloadAll = async (momentsToDownload?: any, folderName: string = "all-moments") => {
+    // Ensure we have an array. If momentsToDownload is a React event, use getVisibleMoments instead.
+    const visibleMoments = Array.isArray(momentsToDownload) ? momentsToDownload : getVisibleMoments();
+    if (visibleMoments.length === 0) return;
+
+    setDownloadingAll(true);
+    const zip = new JSZip();
+    const folder = zip.folder(folderName);
+
+    try {
+      toast({
+        title: "Preparing download",
+        description: `Downloading ${visibleMoments.length} moments...`,
+      });
+
+      const downloadPromises = visibleMoments.map(async (moment) => {
+        try {
+          const response = await fetch(moment.imageUrl);
+          const blob = await response.blob();
+          const extension = moment.imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
+          folder?.file(`moment-${moment.id}.${extension}`, blob);
+        } catch (err) {
+          console.error(`Failed to download image ${moment.id}:`, err);
+        }
+      });
+
+      await Promise.all(downloadPromises);
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `${folderName}-${new Date().getTime()}.zip`);
+
+      toast({
+        title: "Download complete",
+        description: "Your moments have been zipped and downloaded.",
+      });
+    } catch (err) {
+      console.error('Error creating zip:', err);
+      toast({
+        title: "Download failed",
+        description: "An error occurred while preparing the download.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
+
   // Group moments by gift
   const momentsByGift = moments.reduce((acc, moment) => {
     if (!moment.Gift) return acc;
@@ -287,6 +336,26 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
           <p className="text-gray-600 mt-1">Let guests capture and share moments with your event QR code</p>
         </div>
         <div className="flex items-center gap-3">
+          {moments.length > 0 && (
+            <Button
+              onClick={() => handleDownloadAll()}
+              disabled={downloadingAll}
+              variant="outline"
+              className="border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white transition-colors"
+            >
+              {downloadingAll ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Zipping...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download All
+                </>
+              )}
+            </Button>
+          )}
           <Button 
             onClick={() => onTabChange('qr')} 
             className="bg-[#2E235C] hover:bg-[#2E235C]/90 whitespace-nowrap"
@@ -423,24 +492,35 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
             .filter(([giftId]) => filterGiftId === 'all' || giftId === filterGiftId)
             .map(([giftId, { gift, moments: giftMoments }]) => (
             <Card key={giftId} className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  
-                  {gift.title}
-                  <span className="text-sm font-normal text-gray-500">
-                    ({giftMoments.length} moment{giftMoments.length !== 1 ? 's' : ''})
-                  </span>
-                </CardTitle>
-                {gift.date && (
-                  <p className="text-sm text-gray-600 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    {new Date(gift.date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                )}
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-3">
+                    {gift.title}
+                    <span className="text-sm font-normal text-gray-500">
+                      ({giftMoments.length} moment{giftMoments.length !== 1 ? 's' : ''})
+                    </span>
+                  </CardTitle>
+                  {gift.date && (
+                    <p className="text-sm text-gray-600 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(gift.date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-[#2E235C] hover:bg-[#2E235C] hover:text-white transition-colors"
+                  onClick={() => handleDownloadAll(giftMoments, gift.title.replace(/\s+/g, '-').toLowerCase())}
+                  disabled={downloadingAll}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download all for this event
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
