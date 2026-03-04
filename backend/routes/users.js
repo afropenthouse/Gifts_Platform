@@ -246,7 +246,35 @@ module.exports = () => {
         recipient_code: recipientRes.data.recipient_code,
         narration: `Withdrawal from Wallet (Fee: ₦${fee.toFixed(2)})`,
       };
-      const response = await initiateTransfer(transferPayload);
+      
+      let response;
+      try {
+        response = await initiateTransfer(transferPayload);
+      } catch (transferError) {
+        console.error('Paystack transfer failed:', transferError);
+        
+        // Refund wallet if transfer initiation fails
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: { wallet: { increment: withdrawAmount } }
+        });
+        
+        // Update withdrawal status to failed
+        await prisma.withdrawal.update({
+          where: { id: withdrawal.id },
+          data: { status: 'failed' },
+        });
+
+        const errorMsg = transferError.data?.message || transferError.message || 'Transfer failed';
+        if (errorMsg.toLowerCase().includes('balance')) {
+          return res.status(400).json({ 
+            msg: 'Withdrawal currently unavailable. Please contact support.',
+            error: 'Insufficient Paystack balance'
+          });
+        }
+        
+        return res.status(500).json({ msg: 'Withdrawal failed', error: errorMsg });
+      }
 
       // Update withdrawal with transfer details
       await prisma.withdrawal.update({
@@ -265,28 +293,8 @@ module.exports = () => {
         totalToReceive: totalToReceive
       });
     } catch (error) {
-      console.error(error);
-      // If transfer fails, refund the amount
-      try {
-        await prisma.user.update({
-          where: { id: req.user.id },
-          data: { wallet: { increment: parseFloat(amount) } }
-        });
-        // Update withdrawal status to failed if it was created
-        if (req.body.amount) {
-          await prisma.withdrawal.updateMany({
-            where: {
-              userId: req.user.id,
-              amount: parseFloat(amount),
-              status: 'pending',
-            },
-            data: { status: 'failed' },
-          });
-        }
-      } catch (refundError) {
-        console.error('Refund failed:', refundError);
-      }
-      res.status(500).json({ msg: 'Withdrawal failed', error: error.message });
+      console.error('Global withdrawal error:', error);
+      res.status(500).json({ msg: 'An unexpected error occurred', error: error.message });
     }
   });
 
