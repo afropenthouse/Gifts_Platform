@@ -33,6 +33,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "../components/ui/input-otp"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../components/ui/command';
@@ -124,6 +129,10 @@ const Dashboard: React.FC = () => {
   const [withdrawBank, setWithdrawBank] = useState('');
   const [withdrawAccount, setWithdrawAccount] = useState('');
   const [withdrawAccountName, setWithdrawAccountName] = useState('');
+  const [showOtpStep, setShowOtpStep] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [successWithdrawAmount, setSuccessWithdrawAmount] = useState('');
 
   const [banks, setBanks] = useState([]);
   const [bankSearch, setBankSearch] = useState('');
@@ -140,7 +149,7 @@ const Dashboard: React.FC = () => {
   const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string, asoebi?: boolean, asoebiPaid?: boolean, asoebiSelection?: string}>>([]);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<number | null>(null);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
-  const [editingGuest, setEditingGuest] = useState<{id: number, firstName: string, lastName: string, allowed: number, attending: string, tableSitting?: string} | null>(null);
+  const [editingGuest, setEditingGuest] = useState<{id: number, firstName: string, lastName: string, allowed: number, attending: string, tableSitting?: string, giftId?: number} | null>(null);
   const [guestFirstName, setGuestFirstName] = useState('');
   const [guestLastName, setGuestLastName] = useState('');
   const [guestAllowed, setGuestAllowed] = useState('1');
@@ -994,10 +1003,45 @@ const Dashboard: React.FC = () => {
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isWithdrawing) return; // Prevent duplicate submissions
+    if (isWithdrawing || isSendingOtp) return; // Prevent duplicate submissions
     
-    setIsWithdrawing(true);
     const token = localStorage.getItem('token');
+
+    if (!showOtpStep) {
+      setIsSendingOtp(true);
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/send-otp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setShowOtpStep(true);
+          toast({
+            title: "Verification code sent",
+            description: "Please check your email for the verification code.",
+          });
+        } else {
+          alert(data.msg || 'Failed to send OTP');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error sending OTP');
+      } finally {
+        setIsSendingOtp(false);
+      }
+      return;
+    }
+
+    if (!otp || otp.length < 6) {
+      alert('Please enter a valid 6-digit verification code');
+      return;
+    }
+
+    setIsWithdrawing(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/withdraw`, {
         method: 'POST',
@@ -1009,10 +1053,12 @@ const Dashboard: React.FC = () => {
           amount: withdrawAmount,
           bank_code: withdrawBank,
           account_number: withdrawAccount,
+          otp: otp
         }),
       });
       const data = await res.json();
       if (res.ok) {
+        setSuccessWithdrawAmount(withdrawAmount);
         setShowWithdrawSuccess(true);
         const profileRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -1025,22 +1071,12 @@ const Dashboard: React.FC = () => {
         setWithdrawBank('');
         setWithdrawAccount('');
         setWithdrawAccountName('');
+        setOtp('');
+        setShowOtpStep(false);
         setIsWithdrawModalOpen(false);
       } else {
         alert(data.msg || 'Withdrawal failed');
       }
-          {/* Withdraw Success Modal */}
-          <Dialog open={showWithdrawSuccess} onOpenChange={setShowWithdrawSuccess}>
-            <DialogContent className="max-w-[90vw] sm:max-w-[400px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-auto">
-              <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-white z-10">
-                <DialogTitle className="text-xl font-semibold text-gray-900">Withdrawal initiated successfully!</DialogTitle>
-              </DialogHeader>
-              <div className="px-6 py-6 text-center">
-                <p className="text-lg text-gray-700 mb-4">Your withdrawal request has been sent and is being processed.</p>
-                <Button className="w-full mt-2" onClick={() => setShowWithdrawSuccess(false)}>OK</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
     } catch (err) {
       console.error(err);
       alert('An error occurred');
@@ -1068,12 +1104,28 @@ const Dashboard: React.FC = () => {
           setWithdrawAccountName(data.account_name);
         } else {
           setWithdrawAccountName('');
-          alert(data.msg);
+          
+          let errorMessage = data.msg || 'Account details could not be verified.';
+          
+          // Check for Paystack test mode limit error
+          if (errorMessage.toLowerCase().includes('test mode daily limit')) {
+            errorMessage = "Bank verification limit reached in test mode. Please use test bank code 001 (GTBank) or contact support.";
+          }
+          
+          toast({
+            title: "Verification Failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
         setWithdrawAccountName('');
-        alert('Error resolving account: ' + err.message);
+        toast({
+          title: "Verification Error",
+          description: "An error occurred while verifying the account.",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -3739,139 +3791,182 @@ const Dashboard: React.FC = () => {
             </div>
           </DialogHeader>
           <form onSubmit={handleWithdraw} className="px-6 pb-6">
-            <div className="space-y-5 mt-4">
-
-              <div>
-                <Label htmlFor="amount" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Amount (₦)
-                </Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                  placeholder="Enter amount"
-                  required
-                  min="100"
-                />
-                <p className="text-xs text-gray-500 mt-2">Available balance: ₦{user.wallet}</p>
-                <p className="text-xs text-gray-500 mt-1">Minimum withdrawal amount is ₦100.</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-900 mb-2 block">
-                  Bank
-                </Label>
-                <Popover open={isBankDropdownOpen} onOpenChange={setIsBankDropdownOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={isBankDropdownOpen}
-                      className="w-full h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 justify-between"
-                    >
-                      {withdrawBank
-                        ? banks.find((bank: any) => bank.code === withdrawBank)?.name
-                        : "Select your bank"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" side="bottom" align="start">
-                    <Command>
-                      <CommandInput 
-                        placeholder="Search banks..." 
-                        value={bankSearch}
-                        onValueChange={setBankSearch}
-                      />
-                      <CommandEmpty>No bank found.</CommandEmpty>
-                      <CommandList className="max-h-[300px]">
-                        <CommandGroup>
-                          {banks
-                            .filter((bank: any) =>
-                              bank.name.toLowerCase().includes(bankSearch.toLowerCase())
-                            )
-                            .map((bank: any) => (
-                              <CommandItem
-                                key={bank.code}
-                                value={bank.name}
-                                onSelect={() => {
-                                  setWithdrawBank(bank.code);
-                                  setBankSearch('');
-                                  setIsBankDropdownOpen(false);
-                                }}
-                              >
-                                {bank.name}
-                              </CommandItem>
-                            ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <Label htmlFor="account" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Account Number
-                </Label>
-                <Input
-                  id="account"
-                  value={withdrawAccount}
-                  onChange={(e) => setWithdrawAccount(e.target.value)}
-                  className="h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
-                  placeholder="Enter account number"
-                  required
-                  maxLength={10}
-                />
-              </div>
-              <div>
-                <Label htmlFor="accountName" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Account Name
-                </Label>
-                <Input
-                  id="accountName"
-                  value={withdrawAccountName}
-                  readOnly
-                  className="h-12 bg-gray-50 border-gray-300"
-                  placeholder="Account name will appear here"
-                />
-              </div>
-              
-              {/* Fee Info */}
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Withdrawal Amount:</span>
-                  <span className="font-semibold">₦{withdrawAmount || '0.00'}</span>
+            {!showOtpStep ? (
+              <div className="space-y-5 mt-4">
+                <div>
+                  <Label htmlFor="amount" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Amount (₦)
+                  </Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    className="h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    placeholder="Enter amount"
+                    required
+                    min="100"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Available balance: ₦{user.wallet}</p>
+                  <p className="text-xs text-gray-500 mt-1">Minimum withdrawal amount is ₦100.</p>
                 </div>
-                <div className="flex justify-between text-sm mt-2">
-                  <span className="text-gray-600">Amount to Receive:</span>
-                  <span className="text-green-600 font-semibold">₦{withdrawAmount || '0.00'}</span>
+                <div>
+                  <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                    Bank
+                  </Label>
+                  <Popover open={isBankDropdownOpen} onOpenChange={setIsBankDropdownOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isBankDropdownOpen}
+                        className="w-full h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20 justify-between"
+                      >
+                        {withdrawBank
+                          ? banks.find((bank: any) => bank.code === withdrawBank)?.name
+                          : "Select your bank"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" side="bottom" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search banks..." 
+                          value={bankSearch}
+                          onValueChange={setBankSearch}
+                        />
+                        <CommandEmpty>No bank found.</CommandEmpty>
+                        <CommandList className="max-h-[300px]">
+                          <CommandGroup>
+                            {banks
+                              .filter((bank: any) =>
+                                bank.name.toLowerCase().includes(bankSearch.toLowerCase())
+                              )
+                              .map((bank: any, index: number) => (
+                                <CommandItem
+                                  key={`${bank.code}-${index}`}
+                                  value={bank.name}
+                                  onSelect={() => {
+                                    setWithdrawBank(bank.code);
+                                    setBankSearch('');
+                                    setIsBankDropdownOpen(false);
+                                  }}
+                                >
+                                  {bank.name}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label htmlFor="account" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Account Number
+                  </Label>
+                  <Input
+                    id="account"
+                    value={withdrawAccount}
+                    onChange={(e) => setWithdrawAccount(e.target.value)}
+                    className="h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                    placeholder="Enter account number"
+                    required
+                    maxLength={10}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="accountName" className="text-sm font-medium text-gray-900 mb-2 block">
+                    Account Name
+                  </Label>
+                  <Input
+                    id="accountName"
+                    value={withdrawAccountName}
+                    readOnly
+                    className="h-12 bg-gray-50 border-gray-300"
+                    placeholder="Account name will appear here"
+                  />
+                </div>
+                
+                {/* Fee Info */}
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Withdrawal Amount:</span>
+                    <span className="font-semibold">₦{withdrawAmount || '0.00'}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-2">
+                    <span className="text-gray-600">Amount to Receive:</span>
+                    <span className="text-green-600 font-semibold">₦{withdrawAmount || '0.00'}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-6 mt-4 flex flex-col items-center py-4">
+                <div className="text-center space-y-2">
+                  <h3 className="font-medium text-gray-900">Verify it's you</h3>
+                  <p className="text-sm text-gray-600 max-w-[280px] mx-auto">
+                    We've sent a 6-digit verification code to <span className="font-semibold">{user.email}</span>. Please enter it below.
+                  </p>
+                </div>
+                
+                <div className="py-4">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={(value) => setOtp(value)}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                
+                <Button 
+                  type="button" 
+                  variant="link" 
+                  className="text-[#2E235C] text-sm"
+                  onClick={() => {
+                    setShowOtpStep(false);
+                    setOtp('');
+                  }}
+                >
+                  Edit withdrawal details
+                </Button>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-6">
               <Button
                 type="button"
                 variant="outline"
                 className="flex-1 h-11"
-                onClick={() => setIsWithdrawModalOpen(false)}
-                disabled={isWithdrawing}
+                onClick={() => {
+                  setIsWithdrawModalOpen(false);
+                  setShowOtpStep(false);
+                  setOtp('');
+                }}
+                disabled={isWithdrawing || isSendingOtp}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="flex-1 h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                disabled={!withdrawAccountName || isWithdrawing}
+                className={`flex-1 h-11 bg-gradient-to-r ${showOtpStep ? 'from-[#2E235C] to-[#2E235C]' : 'from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'}`}
+                disabled={(!withdrawAccountName && !showOtpStep) || isWithdrawing || isSendingOtp || (showOtpStep && otp.length < 6)}
               >
-                {isWithdrawing ? (
+                {isWithdrawing || isSendingOtp ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Processing...
+                    {isSendingOtp ? 'Sending OTP...' : 'Processing...'}
                   </>
                 ) : (
                   <>
                     <ArrowDownToLine className="w-5 h-5 mr-2" />
-                    Withdraw Funds
+                    {showOtpStep ? 'Verify & Withdraw' : 'Withdraw Funds'}
                   </>
                 )}
               </Button>
@@ -5146,6 +5241,29 @@ const Dashboard: React.FC = () => {
       </Dialog>
 
       <Toaster />
+
+      {/* Withdraw Success Modal */}
+      <Dialog open={showWithdrawSuccess} onOpenChange={setShowWithdrawSuccess}>
+        <DialogContent className="max-w-[90vw] sm:max-w-[400px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-auto">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-white z-10">
+            <DialogTitle className="text-xl font-semibold text-gray-900">Withdrawal initiated successfully!</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 py-6 text-center">
+            <p className="text-lg text-gray-700 mb-4">Your withdrawal request has been sent and is being processed.</p>
+            <div className="flex flex-col items-center justify-center p-6 bg-green-50 rounded-xl mb-6">
+              <CheckCircle className="w-16 h-16 text-green-600 mb-2" />
+              <p className="text-green-800 font-semibold text-2xl flex items-center gap-1">
+                ₦{parseFloat(successWithdrawAmount).toLocaleString()}
+              </p>
+              <p className="text-green-600 text-sm">Successfully Processed</p>
+            </div>
+            <Button className="w-full bg-[#2E235C]" onClick={() => {
+              setShowWithdrawSuccess(false);
+              setSuccessWithdrawAmount('');
+            }}>OK</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

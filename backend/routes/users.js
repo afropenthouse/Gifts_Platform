@@ -1,10 +1,47 @@
 const express = require('express');
+const crypto = require('crypto');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
 const { initiateTransfer, resolveAccount, getBanks, createTransferRecipient } = require('../utils/paystack');
+const { sendWithdrawalOtpEmail } = require('../utils/emailService');
 
 module.exports = () => {
   const router = express.Router();
+
+  // Send withdrawal OTP
+  router.post('/send-otp', auth(), async (req, res) => {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
+
+      // Generate 6-digit OTP
+      const otp = crypto.randomInt(100000, 999999).toString();
+      const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Store in verificationToken fields as a workaround for schema migration issues
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          verificationToken: otp,
+          verificationTokenExpires: expires
+        }
+      });
+
+      // Send email
+      await sendWithdrawalOtpEmail({
+        recipientEmail: user.email,
+        recipientName: user.name,
+        otp
+      });
+
+      res.json({ msg: 'OTP sent to your email' });
+    } catch (err) {
+      console.error('Error sending withdrawal OTP:', err);
+      res.status(500).json({ msg: 'Failed to send OTP' });
+    }
+  });
 
   // Update profile
   router.put('/profile', auth(), async (req, res) => {
@@ -101,13 +138,31 @@ module.exports = () => {
 
   // Withdraw funds
   router.post('/withdraw', auth(), async (req, res) => {
-    const { amount, bank_code, account_number, sourceType } = req.body;
+    const { amount, bank_code, account_number, sourceType, otp } = req.body;
 
     try {
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       if (!user) {
         return res.status(404).json({ msg: 'User not found' });
       }
+
+      // Verify OTP
+      if (!otp) {
+        return res.status(400).json({ msg: 'OTP is required' });
+      }
+
+      if (user.verificationToken !== otp || !user.verificationTokenExpires || user.verificationTokenExpires < new Date()) {
+        return res.status(400).json({ msg: 'Invalid or expired OTP' });
+      }
+
+      // Clear OTP after successful verification start
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verificationToken: null,
+          verificationTokenExpires: null
+        }
+      });
 
       const withdrawAmount = parseFloat(amount);
       if (isNaN(withdrawAmount) || withdrawAmount < 100) {
@@ -285,7 +340,10 @@ module.exports = () => {
       }
     } catch (error) {
       console.error(error);
-      res.status(500).json({ msg: 'Error resolving account' });
+      res.status(error.data ? 400 : 500).json({ 
+        msg: error.message || 'Error resolving account',
+        details: error.data || null
+      });
     }
   });
 
