@@ -9,7 +9,7 @@ const AsoebiLanding = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Sell & Manage Asoebi - BeThere Experience";
+    document.title = "Sell & Manage Asoebi - BeThere ";
   }, []);
 
   return (
@@ -31,7 +31,7 @@ const AsoebiLanding = () => {
                 Organise Asoebi payments the easy way, all in one place.
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed">
-                Asoebi should bring excitement — not confusion. BeThere Experience helps couples sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
+                Asoebi should bring excitement — not confusion. BeThere  helps couples sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
               </p>
               <div className="mt-8">
                 <Button
@@ -174,11 +174,11 @@ const AsoebiLanding = () => {
         </div>
       </section>
 
-      {/* Built for Nigerian Experience */}
+      {/* Built for Nigerian  */}
       <section className="py-20 px-4 md:px-6 bg-white">
         <div className="container mx-auto max-w-6xl">
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-center mb-12" style={{ color: '#2E235C' }}>
-                Built for Nigerian Experience
+                Built for Nigerian 
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div className="text-center p-6">
@@ -189,7 +189,7 @@ const AsoebiLanding = () => {
                 <div className="text-center p-6">
                     <ShoppingBag className="w-12 h-12 mx-auto mb-4 text-primary" />
                     <h3 className="font-bold mb-2">Flexible</h3>
-                    <p className="text-muted-foreground">Works for traditional & white Experience</p>
+                    <p className="text-muted-foreground">Works for traditional & white </p>
                 </div>
                 <div className="text-center p-6">
                     <Share2 className="w-12 h-12 mx-auto mb-4 text-primary" />

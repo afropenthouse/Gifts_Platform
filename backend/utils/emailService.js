@@ -382,7 +382,7 @@ const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   const muted = '#f6f4ff';
   
   // Always use production URL for post-event emails as requested
-  const baseUrl = 'https://www.bethereexperience.com';
+  const baseUrl = 'https://www.bethere.com';
   const qrCodeUrl = gift?.shareLink ? `${baseUrl}/qr-gift/${gift.shareLink}` : '#';
 
   const html = `

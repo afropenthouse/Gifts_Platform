@@ -1241,7 +1241,7 @@ const Dashboard: React.FC = () => {
             {/* Logo/Brand */}
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center gap-3 mb-9">
-                <img src="/logo1.png" alt="Logo" className="h-14 w-auto"/>
+                <img src="/logo1.png" alt="Logo" className="h-10 w-auto"/>
                 {/* <h1 className="text-xl font-semibold text-primary">MyCashGift</h1> */}
               </div>
               <h2 className="text-lg font-semi-bold text-gray-900 mt-3">Welcome, {user.name}</h2>
@@ -1366,7 +1366,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'asoebi' && 'Track asoebi orders and payments'}
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
                     {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share moments'}
-                    {activeTab === 'moments' && 'Share your wedding QR code so your guest can capture and share their special moments from your events'}
+                    {activeTab === 'moments' && 'Share your QR code at your event so your guests can share pictures from your events with you'}
                     {activeTab === 'invite' && 'Refer friends and earn rewards when they use your link'}
                   </p>
                 </div>
@@ -1775,7 +1775,7 @@ const Dashboard: React.FC = () => {
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Processing Time</p>
-                          <p className="font-medium">24-48 hours</p>
+                          <p className="font-medium">Instant</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Minimum Amount</p>
@@ -3022,7 +3022,7 @@ const Dashboard: React.FC = () => {
                   Event Invite
                 </Label>
                 <p className="text-xs text-gray-500 mb-2">
-                  Upload your pre-wedding picture or event invite (Guest will see this when they RSVP or send cash gift)
+                  Upload a picture or event invite (Guest will see this when they RSVP or send cash gift)
                 </p>
                 <div className="mt-2">
                   {picture ? (

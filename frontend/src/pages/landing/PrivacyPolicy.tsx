@@ -49,7 +49,7 @@ const PrivacyPolicy = () => {
                 <li>Facilitating RSVPs and gift collections.</li>
                 <li>Sending you technical notices, updates, and security alerts.</li>
                 <li>Responding to your comments and questions.</li>
-                <li>Personalizing your experience on our platform.</li>
+                <li>Personalizing your  on our platform.</li>
               </ul>
             </section>
 

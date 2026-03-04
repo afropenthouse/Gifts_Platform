@@ -10,7 +10,7 @@ const VendorPaymentTracker = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Wedding Expense Manager - BeThere Experience";
+    document.title = "Wedding Expense Manager - BeThere ";
   }, []);
 
   const features = [
@@ -84,7 +84,7 @@ const VendorPaymentTracker = () => {
                   Managing wedding vendors often means juggling payments, balances, and due dates across different conversations and spreadsheets.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Be There Experience gives couples and event planners a simple way to track vendor costs and payments in one organized dashboard.
+                  BeThere gives couples and event planners a simple way to track vendor costs and payments in one organized dashboard.
                 </p>
               </div>
 

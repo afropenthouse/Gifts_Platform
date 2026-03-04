@@ -11,8 +11,8 @@ import { HelpCircle } from "lucide-react";
 const FAQ = () => {
   const faqs = [
     {
-      question: "What is BeThere Experience?",
-      answer: "BeThere Experience is an all-in-one platform that helps couples manage their wedding planning effortlessly. From collecting cash gifts and selling Asoebi to managing RSVPs and vendor payments, we've got you covered."
+      question: "What is BeThere ?",
+      answer: "BeThere  is an all-in-one platform that helps couples manage their wedding planning effortlessly. From collecting cash gifts and selling Asoebi to managing RSVPs and vendor payments, we've got you covered."
     },
     {
       question: "How do I send a cash gift?",
@@ -54,7 +54,7 @@ const FAQ = () => {
               Frequently Asked Questions
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Everything you need to know about using BeThere Experience to plan your perfect day.
+              Everything you need to know about using BeThere  to plan your perfect day.
             </p>
           </div>
 

@@ -100,7 +100,7 @@ const ShareGift: React.FC = () => {
   const [showStoryModal, setShowStoryModal] = useState(false);
 
   useEffect(() => {
-    document.title = "BeThere Experience - Collect RSVPs & Cash Gifts for your Wedding";
+    document.title = "BeThere  - Collect RSVPs & Cash Gifts for your Wedding";
   }, []);
   const [showRsvpThanks, setShowRsvpThanks] = useState(false);
   const [rsvpThanksMessage, setRsvpThanksMessage] = useState('');
@@ -267,7 +267,7 @@ const ShareGift: React.FC = () => {
     const image = gift.picture || (gift.type === 'wedding' ? '/logo1.png' : '/logo1.png');
 
     // Title
-    document.title = `${title} — BeThere Experience`;
+    document.title = `${title} — BeThere `;
 
     // Standard meta description
     setMeta({ attr: 'name', name: 'description' }, description);
@@ -284,7 +284,7 @@ const ShareGift: React.FC = () => {
 
     return () => {
       // Optionally revert to defaults when navigating away (keep simple: reset title)
-      document.title = 'BeThere Experience - Collect RSVPs & Cash Gifts for your Wedding';
+      document.title = 'BeThere  - Collect RSVPs & Cash Gifts for your Wedding';
     };
   }, [gift, heading]);
 
@@ -928,14 +928,19 @@ const ShareGift: React.FC = () => {
 
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
         <div className="w-full max-w-md flex flex-col items-center gap-6">
-          <img
-            src={gift.type === 'wedding' ? "/logo1.png" : "/logo1.png"}
-            alt="BeThere Experience logo"
-            className="h-12 w-auto"
-          />
+    <img
+      src={gift.type === 'wedding' ? "/logo1.png" : "/logo1.png"}
+      alt="BeThere  logo"
+      className="h-12 w-auto"
+    />
+    {/* RSVP link Title below the logo */}
+    <h2 className="text-xl font-script font-normal text-primary text-black mb-2 text-center mt-1">
+      {heading}
+    </h2>
 
           {/* Gift Card - Same style as home page */}
-          <div className="bg-white rounded-2xl shadow-card overflow-hidden border border-border/50 hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-white rounded-2xl shadow-card overflow-hidden border border-border/50 hover:shadow-lg transition-shadow cursor-pointer -mt-7">
+  
             <div className="relative w-full overflow-hidden">
               {gift.picture && (
                 <img

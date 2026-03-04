@@ -11,7 +11,7 @@ const Index = () => {
   const { openLoginModal, openSignupModal } = useAuth();
   
   useEffect(() => {
-    document.title = "BeThere Experience - Manage RSVPs, Cash Gifts, Asoebi, and Vendor Payments - in one place";
+    document.title = "BeThere  - Manage RSVPs, Cash Gifts, Asoebi, and Vendor Payments - in one place";
   }, []);
 
   return (
@@ -22,8 +22,7 @@ const Index = () => {
       <section className="py-8 px-4 md:py-12 md:px-6">
         <div className="container mx-auto max-w-4xl text-center">
           <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8 md:mb-12">
-            BeThere Experience is an all-in-one wedding platform for couples to manage their wedding in one place.
-            Couples can share a single wedding link with guests to RSVP, manage guest lists, collect cash gifts, sell Asoebi or group items, and coordinate vendor payments all without using multiple tools.
+            Bethere helps you coordinate your entire event in one place. Manage guests, track RSVPs, collect cash gifts, coordinate asoebi sales, and monitor expenses seamlessly.
           </p>
           
           <div className="relative -mx-4 md:mx-0 rounded-none md:rounded-xl overflow-hidden shadow-2xl border-y md:border border-border/50">

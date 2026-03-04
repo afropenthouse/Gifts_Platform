@@ -329,7 +329,7 @@ const QRGift: React.FC = () => {
         <div className="w-full max-w-md flex flex-col items-center gap-6">
           <img
             src={gift.type === 'wedding' ? "/logo1.png" : "/logo1.png"}
-            alt="BeThere Experience logo"
+            alt="BeThere  logo"
             className="h-12 w-auto"
           />
 

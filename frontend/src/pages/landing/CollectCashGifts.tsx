@@ -10,7 +10,7 @@ const CollectCashGifts = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Collect Cash Gifts for Your Wedding - BeThere Experience";
+    document.title = "Collect Cash Gifts for Your Wedding - BeThere ";
   }, []);
 
   const timingFeatures = [
@@ -79,7 +79,7 @@ const CollectCashGifts = () => {
                   Cash gifts are one of the most common wedding gifts today — but collecting them shouldn’t feel awkward or disorganized.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Be There Experience allows couples to receive cash gifts through a secure, trusted link that guests can access anytime.
+                  Be There  allows couples to receive cash gifts through a secure, trusted link that guests can access anytime.
                 </p>
               </div>
 
@@ -117,7 +117,7 @@ const CollectCashGifts = () => {
               Why Choose Cash Gifts?
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Simple, secure, and perfect for modern Experience
+              Simple, secure, and perfect for modern 
             </p>
           </div>
 
@@ -147,7 +147,7 @@ const CollectCashGifts = () => {
             Ready to Receive Cash Gifts Digitally?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Make your wedding gifting experience smooth, secure, and stress-free
+            Make your wedding gifting  smooth, secure, and stress-free
           </p>
           <Button
             variant="hero"

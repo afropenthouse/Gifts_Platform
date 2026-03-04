@@ -137,15 +137,15 @@ const HeroSection = () => {
           className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold text-foreground mb-4 md:mb-6 leading-snug md:leading-tight"
         >
           <span style={{ color: '#2E235C' }}>Everything your </span>
-          <span className="text-gold" style={{ color: '#C9A14A' }}>Wedding needs</span>
-          <span style={{ color: '#2E235C' }}>.</span>
+          <span className="text-gold" style={{ color: '#C9A14A' }}>Event needs</span>
+          
           <br />
-          <span className="font-serif font-semibold block" style={{ color: '#2E235C' }}>In one simple link.</span>
+          <span className="font-serif font-semibold block" style={{ color: '#2E235C' }}>In one simple link</span>
         </h1>
 
         {/* Subtitle */}
         <p className="text-base md:text-lg lg:text-xl text-black max-w-xl mb-6 md:mb-8 mx-auto lg:mx-0 font-sans font-thin">
-          Manage RSVPs, collect cash gifts, sell Asoebi, and track wedding expenses  - all in one place.
+          Manage RSVPs, collect cash gifts, sell Asoebi, and track event expenses all in one place.
         </p>
 
         {/* CTA Buttons */}

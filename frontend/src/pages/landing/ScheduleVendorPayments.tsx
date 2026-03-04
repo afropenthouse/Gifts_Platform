@@ -10,7 +10,7 @@ const ScheduleVendorPayments = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Manage Wedding Expenses & Schedule Vendor Payments - BeThere Experience";
+    document.title = "Manage Wedding Expenses & Schedule Vendor Payments - BeThere";
   }, []);
 
   const howItWorks = [

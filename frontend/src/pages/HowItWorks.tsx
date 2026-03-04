@@ -8,7 +8,7 @@ const HowItWorks = () => {
   const { openLoginModal, openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "BeThere Experience - How It Works";
+    document.title = "BeThere  - How It Works";
   }, []);
 
   const steps = [
@@ -50,14 +50,14 @@ const HowItWorks = () => {
             How It <span style={{ color: '#2E235C' }}>Works</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-6">
-            BeThere Experience is an all-in-one wedding platform for couples to manage their wedding in one place. 
+            BeThere  is an all-in-one wedding platform for couples to manage their wedding in one place. 
             Couples can share a single wedding link with guests to RSVP, manage guest lists, collect cash gifts, sell Asoebi or group items, and coordinate vendor payments — all without using multiple tools.
           </p>
 
           <br className="hidden md:block" />
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Five simple steps to turn your celebration into a memorable experience with RSVPs and cash gifts from everyone you love.
+            Five simple steps to turn your celebration into a memorable  with RSVPs and cash gifts from everyone you love.
           </p>
           
         </div>

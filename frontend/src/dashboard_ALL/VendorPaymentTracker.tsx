@@ -562,7 +562,7 @@ const VendorPaymentTracker: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">Expenses</h2>
-            <p className="text-gray-600 mt-1">Track payments for your wedding vendors</p>
+            <p className="text-gray-600 mt-1">Track all payments for your events here</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>

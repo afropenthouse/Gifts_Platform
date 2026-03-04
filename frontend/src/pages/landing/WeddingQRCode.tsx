@@ -10,7 +10,7 @@ const WeddingQRCode = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Wedding QR Code for Cash Gifts - BeThere Experience";
+    document.title = "Wedding QR Code for Cash Gifts - BeThere";
   }, []);
 
   const benefits = [
@@ -26,7 +26,7 @@ const WeddingQRCode = () => {
     },
     {
       icon: <Sparkles className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Elegant Experience",
+      title: "Elegant ",
       description: "Clean, modern gifting that fits your wedding aesthetic"
     },
     {
@@ -72,7 +72,7 @@ const WeddingQRCode = () => {
                   At the wedding venue, guests shouldn’t be asking for account numbers or worrying about transfers.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Be There Experience provides a dedicated QR code that guests can scan to send cash gifts instantly using their phones.
+                  Be There  provides a dedicated QR code that guests can scan to send cash gifts instantly using their phones.
                 </p>
               </div>
 
@@ -196,7 +196,7 @@ const WeddingQRCode = () => {
             Ready for Effortless Gifting?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Give your guests the modern gifting experience they expect
+            Give your guests the modern gifting  they expect
           </p>
           <Button
             variant="hero"
