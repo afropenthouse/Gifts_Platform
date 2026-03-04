@@ -10,7 +10,7 @@ const WeddingRSVP = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Wedding RSVP Made Simple - BeThere Weddings";
+    document.title = "Wedding RSVP Made Simple - BeThere Experience";
   }, []);
 
   const features = [
@@ -69,7 +69,7 @@ const WeddingRSVP = () => {
                   Planning a wedding is already a lot. Chasing guests for attendance confirmation shouldn’t be part of it.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Be There Weddings helps couples easily collect RSVPs online and see, in real time, who is attending their wedding. Guests simply click a link, respond in seconds, and you stay organized.
+                  Be There Experience helps couples easily collect RSVPs online and see, in real time, who is attending their wedding. Guests simply click a link, respond in seconds, and you stay organized.
                 </p>
               </div>
 
@@ -137,7 +137,7 @@ const WeddingRSVP = () => {
             Ready to Simplify Your Wedding RSVPs?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join thousands of couples who trust Be There Weddings for their special day
+            Join thousands of couples who trust Be There Experience for their special day
           </p>
           <Button
             variant="hero"

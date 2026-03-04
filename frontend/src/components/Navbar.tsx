@@ -26,7 +26,7 @@ const Navbar = ({ logoSrc = "/logo2.png" }: NavbarProps) => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 pl-8">
           {/* <img src="/logo3.png" alt="MyCashgift" className="h-28 w-auto" /> */}
-            <img src={logoSrc} alt="BeThere Weddings" className="h-10 w-auto" />
+            <img src={logoSrc} alt="BeThere Experience" className="h-10 w-auto" />
             {/* <span className="text-lg font-bold text-foreground hidden sm:block">mycashgift</span> */}
           </Link>
 

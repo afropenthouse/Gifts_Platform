@@ -17,7 +17,7 @@ const TermsAndConditions = () => {
               Terms and Conditions
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Please read these terms carefully before using BeThere Weddings.
+              Please read these terms carefully before using BeThere Experience.
             </p>
           </div>
 
@@ -27,7 +27,7 @@ const TermsAndConditions = () => {
                 <UserCheck className="w-6 h-6" /> 1. Acceptance of Terms
               </h2>
               <p className="text-muted-foreground">
-                By accessing or using the BeThere Weddings platform, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you may not use our services.
+                By accessing or using the BeThere Experience platform, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you may not use our services.
               </p>
             </section>
 
@@ -49,7 +49,7 @@ const TermsAndConditions = () => {
                 <CreditCard className="w-6 h-6" /> 3. Cash Gifts and Payments
               </h2>
               <p className="text-muted-foreground">
-                BeThere Weddings facilitates the collection of cash gifts and payments for services like Asoebi. We partner with secure third-party payment processors (e.g., Paystack) to handle transactions. By using our payment features, you also agree to the terms of our payment processors.
+                BeThere Experience facilitates the collection of cash gifts and payments for services like Asoebi. We partner with secure third-party payment processors (e.g., Paystack) to handle transactions. By using our payment features, you also agree to the terms of our payment processors.
               </p>
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
                 <li>Processing fees may apply to transactions.</li>
@@ -76,7 +76,7 @@ const TermsAndConditions = () => {
                 <HelpCircle className="w-6 h-6" /> 5. Limitation of Liability
               </h2>
               <p className="text-muted-foreground">
-                BeThere Weddings acts as a facilitator and is not responsible for disputes between guests and couples, or between couples and vendors. We are not liable for any financial losses resulting from unauthorized access to your account if you failed to secure it.
+                BeThere Experience acts as a facilitator and is not responsible for disputes between guests and couples, or between couples and vendors. We are not liable for any financial losses resulting from unauthorized access to your account if you failed to secure it.
               </p>
             </section>
 

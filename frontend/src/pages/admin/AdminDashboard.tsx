@@ -1161,7 +1161,7 @@ const AdminDashboard = () => {
         <div className="flex flex-col gap-4 mb-8">
           <img
             src="/logo2.png"
-            alt="BeThere Weddings logo"
+            alt="BeThere Experience logo"
             className="h-8 w-auto self-start"
           />
           <div>

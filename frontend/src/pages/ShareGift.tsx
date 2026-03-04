@@ -100,7 +100,7 @@ const ShareGift: React.FC = () => {
   const [showStoryModal, setShowStoryModal] = useState(false);
 
   useEffect(() => {
-    document.title = "BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding";
+    document.title = "BeThere Experience - Collect RSVPs & Cash Gifts for your Wedding";
   }, []);
   const [showRsvpThanks, setShowRsvpThanks] = useState(false);
   const [rsvpThanksMessage, setRsvpThanksMessage] = useState('');
@@ -267,7 +267,7 @@ const ShareGift: React.FC = () => {
     const image = gift.picture || (gift.type === 'wedding' ? '/logo2.png' : '/logo1.png');
 
     // Title
-    document.title = `${title} — BeThere Weddings`;
+    document.title = `${title} — BeThere Experience`;
 
     // Standard meta description
     setMeta({ attr: 'name', name: 'description' }, description);
@@ -284,7 +284,7 @@ const ShareGift: React.FC = () => {
 
     return () => {
       // Optionally revert to defaults when navigating away (keep simple: reset title)
-      document.title = 'BeThere Weddings - Collect RSVPs & Cash Gifts for your Wedding';
+      document.title = 'BeThere Experience - Collect RSVPs & Cash Gifts for your Wedding';
     };
   }, [gift, heading]);
 
@@ -930,7 +930,7 @@ const ShareGift: React.FC = () => {
         <div className="w-full max-w-md flex flex-col items-center gap-6">
           <img
             src={gift.type === 'wedding' ? "/logo2.png" : "/logo1.png"}
-            alt="BeThere Weddings logo"
+            alt="BeThere Experience logo"
             className="h-12 w-auto"
           />
 

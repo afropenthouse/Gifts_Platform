@@ -10,7 +10,7 @@ const WeddingQRCode = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Wedding QR Code for Cash Gifts - BeThere Weddings";
+    document.title = "Wedding QR Code for Cash Gifts - BeThere Experience";
   }, []);
 
   const benefits = [
@@ -72,7 +72,7 @@ const WeddingQRCode = () => {
                   At the wedding venue, guests shouldn’t be asking for account numbers or worrying about transfers.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Be There Weddings provides a dedicated QR code that guests can scan to send cash gifts instantly using their phones.
+                  Be There Experience provides a dedicated QR code that guests can scan to send cash gifts instantly using their phones.
                 </p>
               </div>
 
