@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
           {/* Brand Section */}
           <div>
-            <img src="/logo2.png" alt="BeThere" className="h-10 w-auto mb-3 md:mb-4" />
+            <img src="/logo1.png" alt="BeThere" className="h-10 w-auto mb-3 md:mb-4" />
             <p className="text-sm text-muted-foreground">
               One trusted link to RSVP and receive all your cash gifts in one place.
             </p>

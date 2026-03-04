@@ -1241,7 +1241,7 @@ const Dashboard: React.FC = () => {
             {/* Logo/Brand */}
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center gap-3 mb-9">
-                <img src="/logo2.png" alt="Logo" className="h-14 w-auto"/>
+                <img src="/logo1.png" alt="Logo" className="h-14 w-auto"/>
                 {/* <h1 className="text-xl font-semibold text-primary">MyCashGift</h1> */}
               </div>
               <h2 className="text-lg font-semi-bold text-gray-900 mt-3">Welcome, {user.name}</h2>

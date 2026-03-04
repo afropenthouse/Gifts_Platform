@@ -264,7 +264,7 @@ const ShareGift: React.FC = () => {
     const title = heading;
     const baseDescription = gift.description ? String(gift.description).trim() : '';
     const description = baseDescription ? `${title} — ${baseDescription}` : `${title} — Join us and send a cash gift using this RSVP link.`;
-    const image = gift.picture || (gift.type === 'wedding' ? '/logo2.png' : '/logo1.png');
+    const image = gift.picture || (gift.type === 'wedding' ? '/logo1.png' : '/logo1.png');
 
     // Title
     document.title = `${title} — BeThere Experience`;
@@ -924,12 +924,12 @@ const ShareGift: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar logoSrc={gift.type === 'wedding' ? "/logo2.png" : "/logo1.png"} />
+      <Navbar logoSrc={gift.type === 'wedding' ? "/logo1.png" : "/logo1.png"} />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
         <div className="w-full max-w-md flex flex-col items-center gap-6">
           <img
-            src={gift.type === 'wedding' ? "/logo2.png" : "/logo1.png"}
+            src={gift.type === 'wedding' ? "/logo1.png" : "/logo1.png"}
             alt="BeThere Experience logo"
             className="h-12 w-auto"
           />

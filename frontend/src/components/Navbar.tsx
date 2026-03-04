@@ -9,7 +9,7 @@ interface NavbarProps {
   logoSrc?: string;
 }
 
-const Navbar = ({ logoSrc = "/logo2.png" }: NavbarProps) => {
+const Navbar = ({ logoSrc = "/logo1.png" }: NavbarProps) => {
   const { user, logout, openLoginModal, openSignupModal } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);

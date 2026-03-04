@@ -1160,7 +1160,7 @@ const AdminDashboard = () => {
       <aside className="hidden md:flex w-64 flex-col border-r bg-white px-4 py-6">
         <div className="flex flex-col gap-4 mb-8">
           <img
-            src="/logo2.png"
+            src="/logo1.png"
             alt="BeThere Experience logo"
             className="h-8 w-auto self-start"
           />
