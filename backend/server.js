@@ -13,7 +13,8 @@ const allowedOrigins = [
   'http://localhost:5173',
   'https://gifts-platform.vercel.app',
   'https://www.bethere.com',
-  'https://bethere.com',
+  'https://bethereexperience.com',
+  'https://www.bethereexperience.com',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
