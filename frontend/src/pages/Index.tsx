@@ -51,8 +51,8 @@ const Index = () => {
             {[
               {
                 step: 'Step 1',
-                title: 'Create your wedding link',
-                body: 'Set up your event in minutes. Add your guest list, Asoebi options, vendors, and wedding details.',
+                title: 'Create your event link',
+                body: 'Set up your event in minutes. Add your guest list, Asoebi options, vendors, and event details.',
               },
               {
                 step: 'Step 2',
@@ -66,8 +66,8 @@ const Index = () => {
               },
               {
                 step: 'Step 4',
-                title: 'Manage vendors & wedding expenses',
-                body: 'Track vendor balances, schedule payments, and stay on top of your wedding expenses without spreadsheets or WhatsApp follow-ups.',
+                title: 'Manage vendors & event expenses',
+                body: 'Track vendor balances, schedule payments, and stay on top of your event expenses without spreadsheets or WhatsApp follow-ups.',
               },
               {
                 step: 'Step 5',

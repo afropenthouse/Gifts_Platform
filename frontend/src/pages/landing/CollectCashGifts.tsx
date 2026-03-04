@@ -10,7 +10,7 @@ const CollectCashGifts = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Collect Cash Gifts for Your Wedding - BeThere ";
+    document.title = "Collect Cash Gifts for Your Event - BeThere ";
   }, []);
 
   const timingFeatures = [
@@ -61,14 +61,14 @@ const CollectCashGifts = () => {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-primary/10 rounded-full">
               <span className="text-sm font-medium" style={{ color: '#2E235C' }}>
-                Modern Wedding Gifting
+                Modern Event Gifting
               </span>
             </div>
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Collect Cash Gifts for Your Wedding
+              Collect Cash Gifts for Your Event
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Receive wedding cash gifts securely — before, during, or after your event.
+              Receive event cash gifts securely — before, during, or after your event.
             </p>
           </div>
 
@@ -76,10 +76,10 @@ const CollectCashGifts = () => {
             <div className="space-y-6">
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Cash gifts are one of the most common wedding gifts today — but collecting them shouldn’t feel awkward or disorganized.
+                  Cash gifts are one of the most common event gifts today — but collecting them shouldn’t feel awkward or disorganized.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Be There  allows couples to receive cash gifts through a secure, trusted link that guests can access anytime.
+                  Be There allows you to receive cash gifts through a secure, trusted link that guests can access anytime.
                 </p>
               </div>
 
@@ -147,7 +147,7 @@ const CollectCashGifts = () => {
             Ready to Receive Cash Gifts Digitally?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Make your wedding gifting  smooth, secure, and stress-free
+            Make your event gifting  smooth, secure, and stress-free
           </p>
           <Button
             variant="hero"

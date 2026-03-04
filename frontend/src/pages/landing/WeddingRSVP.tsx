@@ -10,7 +10,7 @@ const WeddingRSVP = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Wedding RSVP Made Simple - BeThere ";
+    document.title = "Event RSVP Made Simple - BeThere ";
   }, []);
 
   const features = [
@@ -51,14 +51,14 @@ const WeddingRSVP = () => {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-primary/10 rounded-full">
               <span className="text-sm font-medium" style={{ color: '#2E235C' }}>
-                Wedding Planning Made Easy
+                Event Planning Made Easy
               </span>
             </div>
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Wedding RSVP Made Simple
+              Event RSVP Made Simple
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Collect, manage, and track wedding RSVPs in one simple link — no stress, no spreadsheets.
+              Collect, manage, and track event RSVPs in one simple link — no stress, no spreadsheets.
             </p>
           </div>
 
@@ -66,10 +66,10 @@ const WeddingRSVP = () => {
             <div className="space-y-6">
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Planning a wedding is already a lot. Chasing guests for attendance confirmation shouldn’t be part of it.
+                  Planning an event is already a lot. Chasing guests for attendance confirmation shouldn’t be part of it.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  BeThere helps couples easily collect RSVPs online and see, in real time, who is attending their wedding. Guests simply click a link, respond in seconds, and you stay organized.
+                  BeThere helps couples easily collect RSVPs online and see, in real time, who is attending their event. Guests simply click a link, respond in seconds, and you stay organized.
                 </p>
               </div>
 
@@ -81,7 +81,7 @@ const WeddingRSVP = () => {
                   style={{ backgroundColor: '#ffff' }}
                   onClick={openSignupModal}
                 >
-                  Create Your Wedding RSVP Link
+                  Create Your Event RSVP Link
                 </Button>
               </div>
             </div>
@@ -90,7 +90,7 @@ const WeddingRSVP = () => {
               <div className="rounded-2xl overflow-hidden shadow-2xl max-w-md mx-auto">
                 <img 
                   src="/6ty2.JPG" 
-                  alt="Wedding RSVP and guest management" 
+                  alt="Event RSVP and guest management" 
                   className="w-full h-auto object-cover"
                 />
               </div>
@@ -107,7 +107,7 @@ const WeddingRSVP = () => {
               Everything You Need for Perfect RSVPs
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Simple, powerful features that make wedding planning stress-free
+              Simple, powerful features that make event planning stress-free
             </p>
           </div>
 
@@ -134,7 +134,7 @@ const WeddingRSVP = () => {
       <section className="py-16 px-4 md:py-24 md:px-6 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="container mx-auto max-w-4xl text-center">
           <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-6">
-            Ready to Simplify Your Wedding RSVPs?
+            Ready to Simplify Your Event RSVPs?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             Join thousands of couples who trust Be There  for their special day

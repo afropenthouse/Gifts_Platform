@@ -100,7 +100,7 @@ const ShareGift: React.FC = () => {
   const [showStoryModal, setShowStoryModal] = useState(false);
 
   useEffect(() => {
-    document.title = "BeThere  - Collect RSVPs & Cash Gifts for your Wedding";
+    document.title = "BeThere  - Collect RSVPs & Cash Gifts for your Event";
   }, []);
   const [showRsvpThanks, setShowRsvpThanks] = useState(false);
   const [rsvpThanksMessage, setRsvpThanksMessage] = useState('');
@@ -284,7 +284,7 @@ const ShareGift: React.FC = () => {
 
     return () => {
       // Optionally revert to defaults when navigating away (keep simple: reset title)
-      document.title = 'BeThere  - Collect RSVPs & Cash Gifts for your Wedding';
+      document.title = 'BeThere  - Collect RSVPs & Cash Gifts for your Event';
     };
   }, [gift, heading]);
 

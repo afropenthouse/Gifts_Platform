@@ -31,7 +31,7 @@ const PrivacyPolicy = () => {
               </p>
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
                 <li><strong>Account Information:</strong> Name, email address, password, and contact details.</li>
-                <li><strong>Event Information:</strong> Wedding dates, guest lists, and event descriptions.</li>
+                <li><strong>Event Information:</strong> Event dates, guest lists, and event descriptions.</li>
                 <li><strong>Payment Information:</strong> We use third-party payment processors (like Paystack) to handle financial transactions. We do not store your full credit card or bank details on our servers.</li>
               </ul>
             </section>

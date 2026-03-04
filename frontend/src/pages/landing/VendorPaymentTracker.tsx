@@ -10,7 +10,7 @@ const VendorPaymentTracker = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Wedding Expense Manager - BeThere ";
+    document.title = "Event Expense Manager - BeThere ";
   }, []);
 
   const features = [
@@ -41,7 +41,7 @@ const VendorPaymentTracker = () => {
     },
     {
       icon: <TrendingUp className="w-8 h-8" style={{ color: '#2E235C' }} />,
-      title: "Calculate total wedding spend",
+      title: "Calculate total events spend",
       description: "Automatic budget tracking and summaries"
     },
   ];
@@ -70,10 +70,10 @@ const VendorPaymentTracker = () => {
               </span>
             </div>
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Wedding Expenses
+              Event Expenses
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Track all your wedding vendor payments in one place.
+              Track all your event vendor payments in one place.
             </p>
           </div>
 
@@ -81,7 +81,7 @@ const VendorPaymentTracker = () => {
             <div className="space-y-6">
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Managing wedding vendors often means juggling payments, balances, and due dates across different conversations and spreadsheets.
+                  Managing event vendors often means juggling payments, balances, and due dates across different conversations and spreadsheets.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
                   BeThere gives couples and event planners a simple way to track vendor costs and payments in one organized dashboard.
@@ -96,7 +96,7 @@ const VendorPaymentTracker = () => {
                   style={{ backgroundColor: '#ffff' }}
                   onClick={openSignupModal}
                 >
-                  Track Wedding Expense
+                  Track Event Expense
                 </Button>
               </div>
             </div>
@@ -105,7 +105,7 @@ const VendorPaymentTracker = () => {
               <div className="rounded-2xl overflow-hidden shadow-2xl">
                 <img 
                   src="/vendor.JPG" 
-                  alt="Wedding vendors and planning" 
+                  alt="Event vendors and planning" 
                   className="w-full h-auto object-cover"
                 />
               </div>
@@ -154,7 +154,7 @@ const VendorPaymentTracker = () => {
               Why Track Payments?
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Professional payment tracking brings peace of mind to your wedding planning
+              Professional payment tracking brings peace of mind to your event planning
             </p>
           </div>
 
@@ -176,7 +176,7 @@ const VendorPaymentTracker = () => {
             Ready to Organize Your Vendor Payments?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Take control of your wedding budget with professional payment tracking
+            Take control of your event budget with professional payment tracking
           </p>
           <Button
             variant="hero"

@@ -10,7 +10,7 @@ const ScheduleVendorPayments = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Manage Wedding Expenses & Schedule Vendor Payments - BeThere";
+    document.title = "Manage Event Expenses & Schedule Vendor Payments - BeThere";
   }, []);
 
   const howItWorks = [
@@ -18,7 +18,7 @@ const ScheduleVendorPayments = () => {
       step: "1",
       icon: <Calendar className="w-8 h-8" style={{ color: '#2E235C' }} />,
       title: "Add & Track Expenses",
-      description: "List all your wedding expenses and vendors in one place."
+      description: "List all your event expenses and vendors in one place."
     },
     {
       step: "2",
@@ -74,10 +74,10 @@ const ScheduleVendorPayments = () => {
               </span>
             </div>
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Track & Schedule All Wedding Expenses
+              Track & Schedule All Event Expenses
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Organize, track, and pay all your wedding expenses and vendors in one secure dashboard.
+              Organize, track, and pay all your event expenses and vendors in one secure dashboard.
             </p>
           </div>
 
@@ -85,7 +85,7 @@ const ScheduleVendorPayments = () => {
             <div className="space-y-6">
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Managing wedding expenses can be overwhelming. With BeThere, you can add every vendor, set payment schedules, and see all your costs in one place.
+                  Managing event expenses can be overwhelming. With BeThere, you can add every vendor, set payment schedules, and see all your costs in one place.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
                   No more spreadsheets or payment confusion—just clarity, control, and peace of mind for your big day.
@@ -109,7 +109,7 @@ const ScheduleVendorPayments = () => {
               <div className="rounded-2xl overflow-hidden shadow-2xl max-w-md mx-auto">
                 <img 
                   src="/vendor.JPG" 
-                  alt="Wedding vendors and planning" 
+                  alt="Event vendors and planning" 
                   className="w-full h-auto object-cover"
                 />
               </div>
@@ -123,10 +123,10 @@ const ScheduleVendorPayments = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-4">
-              How to Manage Wedding Expenses
+              How to Manage Event Expenses
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A simple step-by-step process to keep your wedding finances organized and stress-free
+              A simple step-by-step process to keep your event finances organized and stress-free
             </p>
           </div>
 
@@ -206,7 +206,7 @@ const ScheduleVendorPayments = () => {
             Ready to Schedule Secure Payments?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Build trust with your vendors and eliminate payment stress from your wedding planning
+            Build trust with your vendors and eliminate payment stress from your event planning
           </p>
           <Button
             variant="hero"

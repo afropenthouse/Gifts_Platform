@@ -12,11 +12,11 @@ const FAQ = () => {
   const faqs = [
     {
       question: "What is BeThere ?",
-      answer: "BeThere  is an all-in-one platform that helps couples manage their wedding planning effortlessly. From collecting cash gifts and selling Asoebi to managing RSVPs and vendor payments, we've got you covered."
+      answer: "Bethere helps you coordinate your entire event in one place. Manage guests, track RSVPs, collect cash gifts, coordinate asoebi sales, and monitor expenses seamlessly."
     },
     {
       question: "How do I send a cash gift?",
-      answer: "It's simple! Just click on the unique link shared by the couple, select the 'Send Cash Gift' option, enter the amount you wish to contribute, and complete the secure payment process."
+      answer: "It's simple! Just click on the unique link shared by the host, select the 'Send Cash Gift' option, enter the amount you wish to contribute, and complete the secure payment process."
     },
     {
       question: "Is my payment information secure?",
@@ -24,19 +24,19 @@ const FAQ = () => {
     },
     {
       question: "Can I purchase Asoebi on the platform?",
-      answer: "Yes! Couples can list their Asoebi fabrics, and guests can purchase them directly through the event page. We handle the tracking so the couple knows exactly who ordered what."
+      answer: "Yes! Host can list their Asoebi fabrics, and guests can purchase them directly through the event page. We handle the tracking so the host knows exactly who ordered what."
     },
     {
       question: "Are there any fees for using the service?",
       answer: "Creating an account is free. For cash gifts, a small processing fee applies to cover transaction costs."
     },
     {
-      question: "How do I RSVP for a wedding?",
+      question: "How do I RSVP for an event?",
       answer: "When you receive an invitation link, simply click on it and look for the RSVP button. Fill in your details, indicate whether you'll be attending, and you're all set! You'll receive an email confirmation."
     },
     {
-      question: "Can I manage my wedding budget here?",
-      answer: "Yes, our 'Manage Expenses' feature allows you to schedule and track payments to your vendors, helping you stay on top of your wedding budget and avoid missed deadlines."
+      question: "Can I manage my event budget here?",
+      answer: "Yes, our 'Manage Expenses' feature allows you to schedule and track payments to your vendors, helping you stay on top of your event budget and avoid missed deadlines."
     }
   ];
 

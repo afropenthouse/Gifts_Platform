@@ -1244,7 +1244,7 @@ const Dashboard: React.FC = () => {
                 <img src="/logo1.png" alt="Logo" className="h-10 w-auto"/>
                 {/* <h1 className="text-xl font-semibold text-primary">MyCashGift</h1> */}
               </div>
-              <h2 className="text-lg font-semi-bold text-gray-900 mt-3">Welcome, {user.name}</h2>
+              <h2 className="text-lg font-semi-bold -mb-5 text-gray-900 mt-3">Welcome, {user.name}</h2>
             </div>
 
             {/* User Profile Section */}
@@ -1495,7 +1495,7 @@ const Dashboard: React.FC = () => {
                       
                       <div className="space-y-4">
                         <p className="text-center text-gray-600 text-sm">
-                          Create an RSVP link for your wedding, birthday, or any special occasion.
+                          Create an RSVP link for your event, birthday, or any special occasion.
                         </p>
                       </div>
                       

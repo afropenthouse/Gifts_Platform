@@ -11,7 +11,7 @@ const Footer = () => {
           <div>
             <img src="/logo1.png" alt="BeThere" className="h-10 w-auto mb-3 md:mb-4" />
             <p className="text-sm text-muted-foreground">
-              One trusted link to RSVP and receive all your cash gifts in one place.
+              Manage RSVPs, collect cash gifts, sell Asoebi, and track event expenses all in one place.
             </p>
           </div>
 
@@ -48,7 +48,7 @@ const Footer = () => {
             <ul className="space-y-2 text-sm">
               <li>
                 <a href="/wedding-rsvp" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Wedding RSVP
+                  Event RSVP
                 </a>
               </li>
               <li>
@@ -63,7 +63,7 @@ const Footer = () => {
               </li>
               <li>
                 <a href="/wedding-qr-code" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Wedding QR Code
+                  Event QR Code
                 </a>
               </li>
               <li>

@@ -10,7 +10,7 @@ const WeddingQRCode = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Wedding QR Code for Cash Gifts - BeThere";
+    document.title = "Event QR Code for Cash Gifts - BeThere";
   }, []);
 
   const benefits = [
@@ -27,7 +27,7 @@ const WeddingQRCode = () => {
     {
       icon: <Sparkles className="w-8 h-8" style={{ color: '#2E235C' }} />,
       title: "Elegant ",
-      description: "Clean, modern gifting that fits your wedding aesthetic"
+      description: "Clean, modern gifting that fits your event aesthetic"
     },
     {
       icon: <Clock className="w-8 h-8" style={{ color: '#2E235C' }} />,
@@ -58,10 +58,10 @@ const WeddingQRCode = () => {
               </span>
             </div>
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
-              Wedding QR Code for Cash Gifts
+              Event QR Code for Cash Gifts
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Let guests scan and send cash gifts instantly at your wedding.
+              Let guests scan and send cash gifts instantly at your event.
             </p>
           </div>
 
@@ -69,7 +69,7 @@ const WeddingQRCode = () => {
             <div className="space-y-6">
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  At the wedding venue, guests shouldn’t be asking for account numbers or worrying about transfers.
+                  At the event venue, guests shouldn’t be asking for account numbers or worrying about transfers.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
                   Be There  provides a dedicated QR code that guests can scan to send cash gifts instantly using their phones.
@@ -101,7 +101,7 @@ const WeddingQRCode = () => {
                   style={{ backgroundColor: '#ffff' }}
                   onClick={openSignupModal}
                 >
-                  Generate Your Wedding QR Code
+                  Generate Your Event QR Code
                 </Button>
               </div>
             </div>
@@ -110,7 +110,7 @@ const WeddingQRCode = () => {
               <div className="rounded-2xl overflow-hidden shadow-2xl">
                 <img 
                   src="/moments.JPG" 
-                  alt="Wedding memorable moments" 
+                  alt="Event memorable moments" 
                   className="w-full h-auto object-cover"
                 />
               </div>
@@ -159,7 +159,7 @@ const WeddingQRCode = () => {
               Perfect for Your Venue
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Display your QR code beautifully at your wedding reception
+              Display your QR code beautifully at your event reception
             </p>
           </div>
 

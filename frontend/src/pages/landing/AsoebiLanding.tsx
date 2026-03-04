@@ -31,7 +31,7 @@ const AsoebiLanding = () => {
                 Organise Asoebi payments the easy way, all in one place.
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed">
-                Asoebi should bring excitement — not confusion. BeThere  helps couples sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
+                Asoebi should bring excitement — not confusion. BeThere  helps you sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
               </p>
               <div className="mt-8">
                 <Button
@@ -41,7 +41,7 @@ const AsoebiLanding = () => {
                   style={{ backgroundColor: '#ffff' }}
                   onClick={openSignupModal}
                 >
-                  Create your wedding link
+                  Create your event link
                 </Button>
               </div>
             </div>
@@ -84,7 +84,7 @@ const AsoebiLanding = () => {
               <LinkIcon className="w-12 h-12 mb-6 text-primary" />
               <h3 className="text-2xl font-bold mb-4" style={{ color: '#2E235C' }}>Share one simple link</h3>
               <p className="text-lg text-muted-foreground mb-4">
-                Guests click your wedding link to:
+                Guests click your event link to:
               </p>
               <ul className="space-y-2 mb-4 text-muted-foreground">
                 <li className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-500" /> Choose whose Asoebi they want</li>
@@ -209,7 +209,7 @@ const AsoebiLanding = () => {
       <section className="py-20 px-4 md:px-6 bg-primary text-white">
         <div className="container mx-auto max-w-4xl text-center">
             <h2 className="text-3xl md:text-4xl font-serif font-bold mb-8">
-                Part of Your Wedding, Not a Separate Tool
+                Part of Your Event, Not a Separate Tool
             </h2>
             <p className="text-xl mb-12 opacity-90">
                 Asoebi works seamlessly with:
@@ -234,14 +234,14 @@ const AsoebiLanding = () => {
             Start Selling Asoebi the Smart Way
           </h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Create your wedding link and start collecting Asoebi payments in minutes.
+            Create your event link and start collecting Asoebi payments in minutes.
           </p>
           <Button
             size="lg"
             className="px-10 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
             onClick={openSignupModal}
           >
-            Create your wedding link
+            Create your event link
           </Button>
         </div>
       </section>

@@ -96,7 +96,7 @@ const PaymentPolicy = () => {
           <div className="text-center p-8 bg-[#2E235C]/5 rounded-2xl">
             <h3 className="text-lg font-semibold text-[#2E235C] mb-2">Legal Compliance</h3>
             <p className="text-sm text-muted-foreground">
-              BeThere  operates in compliance with Nigerian financial regulations. We are committed to ensuring a safe and transparent environment for wedding gifting.
+              BeThere  operates in compliance with Nigerian financial regulations. We are committed to ensuring a safe and transparent environment for event gifting.
             </p>
           </div>
         </div>
