@@ -1520,7 +1520,7 @@ const ShareGift: React.FC = () => {
                   setShowAmountModal(true);
                 }}
               >
-                Send the Couple a Cash Gift
+                Send a Cash Gift
               </Button>
 
               <p
