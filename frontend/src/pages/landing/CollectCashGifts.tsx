@@ -68,7 +68,7 @@ const CollectCashGifts = () => {
               Collect Cash Gifts for Your Event
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Receive event cash gifts securely — before, during, or after your event.
+              Receive event cash gifts securely - before, during, or after your event.
             </p>
           </div>
 
@@ -76,7 +76,7 @@ const CollectCashGifts = () => {
             <div className="space-y-6">
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Cash gifts are one of the most common event gifts today — but collecting them shouldn’t feel awkward or disorganized.
+                  Cash gifts are one of the most common event gifts today - but collecting them shouldn’t feel awkward or disorganized.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
                   Be There allows you to receive cash gifts through a secure, trusted link that guests can access anytime.

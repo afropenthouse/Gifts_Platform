@@ -263,11 +263,11 @@ const ShareGift: React.FC = () => {
 
     const title = heading;
     const baseDescription = gift.description ? String(gift.description).trim() : '';
-    const description = baseDescription ? `${title} — ${baseDescription}` : `${title} — Join us and send a cash gift using this RSVP link.`;
+    const description = baseDescription ? `${title} - ${baseDescription}` : `${title} - Join us and send a cash gift using this RSVP link.`;
     const image = gift.picture || (gift.type === 'wedding' ? '/logo1.png' : '/logo1.png');
 
     // Title
-    document.title = `${title} — BeThere `;
+    document.title = `${title} - BeThere `;
 
     // Standard meta description
     setMeta({ attr: 'name', name: 'description' }, description);

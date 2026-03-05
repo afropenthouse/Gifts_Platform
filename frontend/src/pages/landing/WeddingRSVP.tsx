@@ -58,7 +58,7 @@ const WeddingRSVP = () => {
               Event RSVP Made Simple
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Collect, manage, and track event RSVPs in one simple link — no stress, no spreadsheets.
+              Collect, manage, and track event RSVPs in one simple link - no stress, no spreadsheets.
             </p>
           </div>
 

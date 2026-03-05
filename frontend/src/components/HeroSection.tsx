@@ -23,7 +23,7 @@ const HeroSection = () => {
   const [fileError, setFileError] = useState('');
 
   const [currentImage, setCurrentImage] = useState(0);
-  const images = ["/6ty2.JPG", "/6ty3.JPG"];
+  const images = ["/6ty2.JPG", "/6ty3.JPG", "grad.webp", "birth.webp"];
 
   useEffect(() => {
     const timer = setInterval(() => {

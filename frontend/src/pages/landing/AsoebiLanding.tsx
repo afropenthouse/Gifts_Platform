@@ -24,14 +24,14 @@ const AsoebiLanding = () => {
             <div className="text-center lg:text-left">
               <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-primary/10 rounded-full">
                 <span className="text-sm font-medium" style={{ color: '#2E235C' }}>
-                  Sell & Manage Asoebi — Without Stress
+                  Sell & Manage Asoebi - Without Stress
                 </span>
               </div>
               <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: '#2E235C' }}>
                 Organise Asoebi payments the easy way, all in one place.
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed">
-                Asoebi should bring excitement — not confusion. BeThere  helps you sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
+                Asoebi should bring excitement - not confusion. BeThere  helps you sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
               </p>
               <div className="mt-8">
                 <Button
