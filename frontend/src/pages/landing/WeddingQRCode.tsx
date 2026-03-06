@@ -93,11 +93,11 @@ const WeddingQRCode = () => {
                 </div>
               </div>
 
-              <div className="pt-4">
+              <div className="pt-8">
                 <Button
                   variant="hero"
                   size="lg"
-                  className="px-10 py-4 text-primary text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full md:w-auto px-10 py-4 text-primary text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
                   style={{ backgroundColor: '#ffff' }}
                   onClick={openSignupModal}
                 >
@@ -201,7 +201,7 @@ const WeddingQRCode = () => {
           <Button
             variant="hero"
             size="lg"
-            className="px-10 py-4 text-primary text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+            className="w-full md:w-auto px-10 py-4 text-primary text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
             style={{ backgroundColor: '#ffff' }}
             onClick={openSignupModal}
           >

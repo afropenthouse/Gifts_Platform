@@ -238,7 +238,7 @@ const AsoebiLanding = () => {
           </p>
           <Button
             size="lg"
-            className="px-10 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+            className="w-full md:w-auto px-10 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 whitespace-nowrap"
             onClick={openSignupModal}
           >
             Create your event link
