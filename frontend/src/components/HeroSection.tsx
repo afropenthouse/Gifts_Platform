@@ -24,7 +24,7 @@ const HeroSection = () => {
 
   const [currentImage, setCurrentImage] = useState(0);
   // const images = ["/6ty2.JPG", "/6ty3.JPG", "grad.webp", "birth.webp"];
-  const images = ["/6ty2.JPG", "/gra1.JPG"];
+  const images = ["/dav.JPG", "gra.JPG", "6ty2.JPG"];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -164,17 +164,17 @@ const HeroSection = () => {
 
       {/* Images - Hidden on small mobile, shown on medium and up */}
       <div className="flex-1 w-full lg:w-auto mt-8 lg:mt-0 mb-6 lg:mb-0 px-0 lg:px-4 flex items-center justify-center">
-        <div className="relative w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[200px] xl:max-w-xs overflow-hidden rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <div className="relative w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[200px] xl:max-w-xs overflow-hidden rounded-lg md:rounded-xl">
           <div
             className="flex transition-transform duration-[2000ms] ease-in-out"
             style={{ transform: `translateX(-${currentImage * 100}%)` }}
           >
             {images.map((src, index) => (
-              <div key={index} className="w-full flex-shrink-0 flex items-center justify-center">
+                  <div key={index} className="w-full flex-shrink-0 flex items-center justify-center">
                 <img
                   src={src}
                   alt={`Celebration ${index + 1}`}
-                  className="w-full h-auto object-cover"
+                      className="w-full h-auto object-cover"
                 />
               </div>
             ))}
