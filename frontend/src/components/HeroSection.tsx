@@ -24,7 +24,7 @@ const HeroSection = () => {
 
   const [currentImage, setCurrentImage] = useState(0);
   // const images = ["/6ty2.JPG", "/6ty3.JPG", "grad.webp", "birth.webp"];
-  const images = ["/dav.JPG", "gra.JPG", "6ty2.JPG"];
+  const images = ["/dav.JPG", "hero.png", "gra.JPG", "6ty2.JPG"];
 
   useEffect(() => {
     const timer = setInterval(() => {
