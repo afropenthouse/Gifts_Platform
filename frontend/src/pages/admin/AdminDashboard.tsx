@@ -25,11 +25,13 @@ interface Metrics {
   totalUsers: number;
   totalGifts: number;
   totalGifters: number;
+  totalAsoebi: number;
   totalContributions: number;
   totalAsoebiContributions: number;
   totalWalletBalance: number;
   guestListOpenEvents: number;
   guestListRestrictedEvents: number;
+  totalRevenue: number;
 }
 
 interface User {
@@ -699,20 +701,30 @@ const AdminDashboard = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Open Guest Events</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Asoebi</CardTitle>
+              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics?.guestListOpenEvents || 0}</div>
+              <div className="text-2xl font-bold">{metrics?.totalAsoebi || 0}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Closed Guest Events</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Events</CardTitle>
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics?.guestListRestrictedEvents || 0}</div>
+              <div className="text-2xl font-bold">
+                {(metrics?.guestListOpenEvents || 0) + (metrics?.guestListRestrictedEvents || 0)}
+              </div>
+              <div className="flex gap-2 mt-1">
+                <span className="text-[10px] text-muted-foreground bg-gray-50 px-1.5 py-0.5 rounded">
+                  {metrics?.guestListOpenEvents || 0} Open
+                </span>
+                <span className="text-[10px] text-muted-foreground bg-gray-50 px-1.5 py-0.5 rounded">
+                  {metrics?.guestListRestrictedEvents || 0} Closed
+                </span>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -954,33 +966,22 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Open Guest Events
+                Total Events
               </CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl md:text-4xl font-bold tracking-tight">
-                {openEvents}
+              <div className="text-3xl font-bold tracking-tight">
+                {openEvents + restrictedEvents}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {openPercentage}% of all events
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Closed Guest Events
-              </CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl md:text-4xl font-bold tracking-tight">
-                {restrictedEvents}
+              <div className="flex gap-2 mt-2">
+                <span className="text-xs text-muted-foreground bg-gray-50 px-2 py-1 rounded">
+                  {openEvents} Open ({openPercentage}%)
+                </span>
+                <span className="text-xs text-muted-foreground bg-gray-50 px-2 py-1 rounded">
+                  {restrictedEvents} Closed ({restrictedPercentage}%)
+                </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {restrictedPercentage}% of all events
-              </p>
             </CardContent>
           </Card>
         </div>
@@ -1003,21 +1004,41 @@ const AdminDashboard = () => {
     }
 
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>
-            {tab === 'transactions'
-              ? 'All Transactions'
-              : 'Transactions'}
-          </CardTitle>
-          <div className="relative w-64">
-            <Input
-              placeholder="Search transactions..."
-              value={txnSearch}
-              onChange={(e) => setTxnSearch(e.target.value)}
-            />
+      <>
+        {tab === 'transactions' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Platform Revenue</CardTitle>
+                <Banknote className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  ₦{(metrics?.totalRevenue || 0).toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  From commissions and fees
+                </p>
+              </CardContent>
+            </Card>
           </div>
-        </CardHeader>
+        )}
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>
+              {tab === 'transactions'
+                ? 'All Transactions'
+                : 'Transactions'}
+            </CardTitle>
+            <div className="relative w-64">
+              <Input
+                placeholder="Search transactions..."
+                value={txnSearch}
+                onChange={(e) => setTxnSearch(e.target.value)}
+              />
+            </div>
+          </CardHeader>
         <CardContent>
           {loadingContributions ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
@@ -1072,6 +1093,7 @@ const AdminDashboard = () => {
           )}
         </CardContent>
       </Card>
+    </>
     );
   };
 

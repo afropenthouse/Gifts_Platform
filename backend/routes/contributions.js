@@ -200,9 +200,9 @@ module.exports = () => {
            // But we construct the prisma create object explicitly below.
         }
       } else {
-        // Standard 5% commission
-        commission = amount * 0.05;
-        amountReceived = amount * 0.95;
+        // Standard 4% commission (updated from 5% per user request)
+        commission = amount * 0.04;
+        amountReceived = amount * 0.96;
       }
 
       // Create contribution record
