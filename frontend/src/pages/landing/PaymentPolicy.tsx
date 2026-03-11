@@ -74,7 +74,7 @@ const PaymentPolicy = () => {
               </p>
               <ul className="list-disc pl-6 space-y-3 text-muted-foreground">
                 <li><strong>Identity Verification:</strong> We may require couples to verify their identity before large payouts are processed.</li>
-                <li><strong>Reporting:</strong> If you suspect an event page is fraudulent, please report it immediately to <a href="mailto:teambethere@gmail.com" className="text-blue-600 underline">teambethere@gmail.com</a>.</li>
+                <li><strong>Reporting:</strong> If you suspect an event page is fraudulent, please report it immediately to <a href="mailto:mailto:support@bethereexperience.com" className="text-blue-600 underline">mailto:support@bethereexperience.com</a>.</li>
                 <li><strong>Legal Protection:</strong> We cooperate with law enforcement in cases of proven financial fraud. BeThere  is not liable for gifts sent to verified users, but we will assist in investigations where possible.</li>
               </ul>
             </section>

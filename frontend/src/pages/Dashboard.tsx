@@ -1446,7 +1446,7 @@ const Dashboard: React.FC = () => {
                             <CheckCircle className="w-4 h-4 mr-2" />
                             Total Attending: {totalAttending}
                           </Button>
-                          <Button variant="outline" size="sm" className="w-auto" onClick={() => window.open('mailto:teambethere@gmail.com.com')}>
+                          <Button variant="outline" size="sm" className="w-auto" onClick={() => window.open('mailto:support@bethereexperience.com')}>
                             <HelpCircle className="w-4 h-4 mr-2" />
                             Help
                           </Button>
@@ -5097,7 +5097,7 @@ const Dashboard: React.FC = () => {
               variant="outline"
               className="w-full justify-start h-12"
               onClick={() => {
-                window.open('mailto:teambethere@gmail.com.com');
+                window.open('mailto:support@bethereexperience.com');
                 setIsAnalyticsModalOpen(false);
               }}
             >
