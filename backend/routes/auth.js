@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../prismaClient');
 const auth = require('../middleware/auth');
+const { sendWelcomeEmail } = require('../utils/emailService');
 
 module.exports = () => {
   const router = express.Router();
@@ -159,6 +160,14 @@ module.exports = () => {
         console.error(`⚠️  Verification email failed to send for user ${user.id}:`, emailResult?.error?.message || emailResult?.error);
       } else {
         console.log(`✅ Verification email sent successfully to ${email}`);
+      }
+
+      // Send welcome email
+      try {
+        await sendWelcomeEmail({ recipientEmail: email, recipientName: name });
+        console.log(`✅ Welcome email sent to ${email}`);
+      } catch (welcomeError) {
+        console.error(`⚠️  Failed to send welcome email to ${email}:`, welcomeError);
       }
 
       res.json({
