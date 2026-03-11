@@ -427,5 +427,57 @@ module.exports = () => {
     res.json({ results });
   });
 
+  router.get('/wallet-stats', adminAuth, async (req, res) => {
+    try {
+      const users = await prisma.user.findMany({
+        select: {
+          wallet: true,
+        },
+      });
+      const totalBalance = users.reduce((acc, user) => acc + Number(user.wallet), 0);
+      res.json({ totalBalance });
+    } catch (error) {
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  router.post('/send-bulk-welcome', adminAuth, async (req, res) => {
+    const { emails } = req.body;
+    const { sendWelcomeEmail } = require('../utils/emailService');
+
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ msg: 'No emails provided' });
+    }
+
+    try {
+      const results = await Promise.all(
+        emails.map(async (email) => {
+          try {
+            // Try to find user name if it's a registered user
+            const user = await prisma.user.findUnique({ where: { email } });
+            const guest = !user ? await prisma.guest.findFirst({ where: { email } }) : null;
+            const name = user?.name || guest?.firstName || 'there';
+
+            return await sendWelcomeEmail({ recipientEmail: email, recipientName: name });
+          } catch (err) {
+            return { delivered: false, error: err.message, email };
+          }
+        })
+      );
+
+      const successful = results.filter((r) => r.delivered).length;
+      const failed = results.filter((r) => !r.delivered).length;
+
+      res.json({
+        msg: `Sent ${successful} emails successfully, ${failed} failed.`,
+        successful,
+        failed,
+      });
+    } catch (error) {
+      console.error('Bulk email error:', error);
+      res.status(500).json({ msg: 'Failed to send bulk emails' });
+    }
+  });
+
   return router;
 };

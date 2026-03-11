@@ -619,6 +619,83 @@ const sendWithdrawalOtpEmail = async ({ recipientEmail, recipientName, otp }) =>
   }
 };
 
+const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
+  if (!emailEnabled || !transporter) {
+    console.warn('Welcome email skipped: SMTP configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipientEmail) {
+    return { delivered: false, reason: 'No recipient email provided' };
+  }
+
+  const accent = '#2E235C';
+  const muted = '#f6f4ff';
+  const cleanRecipientName = (recipientName || 'there').trim();
+   const dashboardUrl = 'https://bethereexperience.com/dashboard';
+   
+   const html = `
+     <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+       <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+         <div style="padding: 28px 28px 18px; text-align: center;">
+           <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">Thank you for joining BeThere</h2>
+           <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">We're excited to have you on board!</p>
+         </div>
+
+        <div style="padding: 0 24px 24px; text-align: center;">
+          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 20px;">
+            <p style="margin: 0; font-size: 16px; color: #111827; font-weight: 600;">Hi ${cleanRecipientName},</p>
+            <p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
+              Thank you for signing up for BeThere! We're thrilled to help you celebrate your special moments.
+            </p>
+            <p style="margin-bottom: 8px; color: #111827;">BeThere helps you to:</p>
+  
+  <ul style="display: inline-block; list-style-type: disc; padding: 0; margin: 0; text-align: left; color: #4b5563; font-size: 14px; line-height: 1.6;">
+    <li style="margin-bottom: 4px; padding-left: 8px;">Manage RSVPs</li>
+    <li style="margin-bottom: 4px; padding-left: 8px;">Sell Asoebi</li>
+    <li style="margin-bottom: 4px; padding-left: 8px;">Collect cash gifts all in one place.</li>
+  </ul>
+            <p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
+              Ready to get started?
+            </p>
+
+            <div style="margin-top: 32px;">
+            <a href="${dashboardUrl}" style="display: inline-block; background-color: ${accent}; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(46,35,92,0.2);">
+              Create RSVP Link
+            </a>
+          </div>
+          </div>
+
+          
+
+          <p style="margin: 24px 0 0; font-size: 12px; color: #9ca3af;">
+            If you have any questions, simply reply to this email. We're here to help!
+          </p>
+        </div>
+
+        <div style="background: #fafafa; padding: 16px; text-align: center; border-top: 1px solid #f3f4f6;">
+          <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+            &copy; ${new Date().getFullYear()} BeThere. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+     await transporter.sendMail({
+       from: mailFrom,
+       to: recipientEmail,
+       subject: 'Thank you for joining BeThere',
+       html,
+     });
+     return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send welcome email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
 module.exports = { 
   sendRsvpEmail, 
   sendOwnerNotificationEmail, 
@@ -627,5 +704,6 @@ module.exports = {
   sendRsvpCancellationEmail,
   sendContributorThankYouEmail,
   sendGiftReceivedEmail,
-  sendWithdrawalOtpEmail
+  sendWithdrawalOtpEmail,
+  sendWelcomeEmail
 };
