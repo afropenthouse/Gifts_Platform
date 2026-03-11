@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,6 +118,10 @@ const AdminDashboard = () => {
   const [userSearch, setUserSearch] = useState('');
   const [txnSearch, setTxnSearch] = useState('');
   const [guestSearch, setGuestSearch] = useState('');
+  const [emailSearch, setEmailSearch] = useState('');
+  const [emailSourceFilter, setEmailSourceFilter] = useState<'all' | 'user' | 'guest'>('all');
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
+  const [sendingBulk, setSendingBulk] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [deleteUserName, setDeleteUserName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -361,6 +366,57 @@ const AdminDashboard = () => {
     navigate('/admin/login');
   };
 
+  const handleSendBulkEmail = async () => {
+    if (selectedEmails.length === 0) {
+      toast.error('Please select at least one email');
+      return;
+    }
+
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    try {
+      setSendingBulk(true);
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/admin/send-bulk-welcome`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ emails: selectedEmails }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        toast.success(data.msg);
+        setSelectedEmails([]);
+      } else {
+        toast.error(data.msg || 'Failed to send emails');
+      }
+    } catch (error) {
+      toast.error('Failed to send emails');
+    } finally {
+      setSendingBulk(false);
+    }
+  };
+
+  const toggleEmailSelection = (email: string) => {
+    setSelectedEmails(prev =>
+      prev.includes(email)
+        ? prev.filter(e => e !== email)
+        : [...prev, email]
+    );
+  };
+
+  const selectAllEmails = (emails: string[]) => {
+    if (selectedEmails.length === emails.length) {
+      setSelectedEmails([]);
+    } else {
+      setSelectedEmails(emails);
+    }
+  };
+
   const filterByEvent = useCallback(
     (items: Contribution[]) => {
       if (selectedEventId === 'all') {
@@ -422,70 +478,149 @@ const AdminDashboard = () => {
   const renderEmails = () => {
     const userEmails = users.map((u) => u.email.toLowerCase().trim()).filter(Boolean);
     const guestEmails = guests.map((g) => g.email?.toLowerCase().trim()).filter(Boolean) as string[];
-    const allEmails = Array.from(new Set([...userEmails, ...guestEmails])).sort();
+    
+    // Create base email list based on source filter
+    let baseEmails: string[] = [];
+    if (emailSourceFilter === 'all') {
+      baseEmails = Array.from(new Set([...userEmails, ...guestEmails]));
+    } else if (emailSourceFilter === 'user') {
+      baseEmails = Array.from(new Set(userEmails));
+    } else {
+      baseEmails = Array.from(new Set(guestEmails));
+    }
+    
+    const filteredEmails = baseEmails.sort().filter(email => 
+      email.toLowerCase().includes(emailSearch.toLowerCase())
+    );
 
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Bulk Email List</CardTitle>
+            <CardTitle>Bulk Welcome Emails</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Combined list of unique emails from users and guests.
+              Send the welcome email template to selected users and guests.
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              const emailString = allEmails.join(', ');
-              navigator.clipboard.writeText(emailString);
-              toast.success("All emails copied to clipboard");
-            }}
-          >
-            Copy All Emails
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => selectAllEmails(filteredEmails)}
+            >
+              {selectedEmails.length === filteredEmails.length && filteredEmails.length > 0 ? 'Deselect All' : 'Select All Filtered'}
+            </Button>
+            <Button 
+              disabled={selectedEmails.length === 0 || sendingBulk}
+              onClick={handleSendBulkEmail}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {sendingBulk ? 'Sending...' : `Send to ${selectedEmails.length} selected`}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            <div className="text-sm text-muted-foreground">
-              Total Unique Emails: <span className="font-semibold">{allEmails.length}</span>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
+            <div className="relative flex-1">
+              <Input
+                placeholder="Search emails..."
+                value={emailSearch}
+                onChange={(e) => setEmailSearch(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Label htmlFor="email-source-filter" className="text-sm font-medium whitespace-nowrap">Filter By Source:</Label>
+              <Select
+                value={emailSourceFilter}
+                onValueChange={(value) => {
+                  setEmailSourceFilter(value as 'all' | 'user' | 'guest');
+                  setSelectedEmails([]); // Clear selection when switching filters to avoid hidden selections
+                }}
+              >
+                <SelectTrigger id="email-source-filter" className="w-[140px]">
+                  <SelectValue placeholder="All Sources" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="user">Users Only</SelectItem>
+                  <SelectItem value="guest">Guests Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="text-sm text-muted-foreground bg-gray-100 px-3 py-1 rounded-full">
+              Total Filtered: <span className="font-semibold text-gray-900">{filteredEmails.length}</span>
+            </div>
+            <div className="text-sm text-muted-foreground bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+              Selected: <span className="font-semibold text-purple-700">{selectedEmails.length}</span>
             </div>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Email Address</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {allEmails.map((email, index) => (
-                <TableRow key={email}>
-                  <TableCell className="text-sm font-medium">{index + 1}</TableCell>
-                  <TableCell className="text-sm">{email}</TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(email);
-                        toast.success("Email copied to clipboard");
-                      }}
-                    >
-                      Copy
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {allEmails.length === 0 && (
+          
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader className="bg-gray-50">
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
-                    No emails found
-                  </TableCell>
+                  <TableHead className="w-[50px]">
+                    <Checkbox 
+                      checked={selectedEmails.length > 0 && selectedEmails.length === filteredEmails.length}
+                      onCheckedChange={() => selectAllEmails(filteredEmails)}
+                    />
+                  </TableHead>
+                  <TableHead>Email Address</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredEmails.map((email) => {
+                  const isUser = userEmails.includes(email);
+                  const isGuest = guestEmails.includes(email);
+                  
+                  return (
+                    <TableRow key={email} className={selectedEmails.includes(email) ? 'bg-purple-50/30' : ''}>
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedEmails.includes(email)}
+                          onCheckedChange={() => toggleEmailSelection(email)}
+                        />
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">{email}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {isUser && (
+                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold uppercase">User</span>
+                          )}
+                          {isGuest && (
+                            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold uppercase">Guest</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(email);
+                            toast.success("Copied!");
+                          }}
+                        >
+                          Copy
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filteredEmails.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No emails match your search.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     );
