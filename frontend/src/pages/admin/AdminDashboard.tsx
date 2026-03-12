@@ -121,6 +121,7 @@ const AdminDashboard = () => {
   const [txnSearch, setTxnSearch] = useState('');
   const [guestSearch, setGuestSearch] = useState('');
   const [emailSearch, setEmailSearch] = useState('');
+  const [eventSearch, setEventSearch] = useState('');
   const [emailSourceFilter, setEmailSourceFilter] = useState<'all' | 'user' | 'guest'>('all');
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [sendingBulk, setSendingBulk] = useState(false);
@@ -1098,9 +1099,20 @@ const AdminDashboard = () => {
   };
 
   const renderEvents = () => {
-    const rows = selectedEventId === 'all'
+    let rows = selectedEventId === 'all'
       ? events
       : events.filter((event) => event.id === selectedEventId);
+
+    if (eventSearch) {
+      const search = eventSearch.toLowerCase();
+      rows = rows.filter((event) => {
+        return (
+          (event.title?.toLowerCase() || '').includes(search) ||
+          (event.user?.name?.toLowerCase() || '').includes(search) ||
+          (event.user?.email?.toLowerCase() || '').includes(search)
+        );
+      });
+    }
 
     // Calculate stats
     const eventContributions = selectedEventId === 'all'
@@ -1157,8 +1169,15 @@ const AdminDashboard = () => {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Events</CardTitle>
+          <div className="relative w-64">
+            <Input
+              placeholder="Search events or host email..."
+              value={eventSearch}
+              onChange={(e) => setEventSearch(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {loadingEvents ? (
@@ -1166,63 +1185,60 @@ const AdminDashboard = () => {
               Loading events...
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Guests</TableHead>
-                  <TableHead>Contributions</TableHead>
-                  <TableHead>Deadline</TableHead>
-                  <TableHead>Created</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell className="font-medium">
-                      {event.title || 'Untitled'}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {event.type === 'wedding'
-                        ? 'Wedding'
-                        : event.type === 'birthday'
-                        ? 'Birthday'
-                        : event.type === 'graduation'
-                        ? 'Graduation'
-                        : event.type === 'convocation'
-                        ? 'Convocation'
-                        : 'Other'}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {event.user?.name || event.user?.email}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {event._count.guests}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {event._count.contributions}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {event.deadline
-                        ? new Date(event.deadline).toLocaleDateString()
-                        : '-'}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(event.createdAt).toLocaleDateString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {rows.length === 0 && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
-                      No events found
-                    </TableCell>
+                    <TableHead>Event</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Host (Name & Email)</TableHead>
+                    <TableHead className="text-center">Guests</TableHead>
+                    <TableHead className="text-center">Contributions</TableHead>
+                    <TableHead>Deadline</TableHead>
+                    <TableHead>Created</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((event) => (
+                    <TableRow key={event.id}>
+                      <TableCell className="font-medium">
+                        {event.title || 'Untitled'}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <span className="capitalize">{event.type}</span>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-900">{event.user?.name || 'No Name'}</span>
+                          <span className="text-xs text-muted-foreground">{event.user?.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {event._count.guests}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {event._count.contributions}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {event.deadline
+                          ? new Date(event.deadline).toLocaleDateString()
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {new Date(event.createdAt).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {rows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                        No events found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
