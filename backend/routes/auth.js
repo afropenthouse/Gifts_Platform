@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+const { sendEmail, mailFrom } = require('../utils/email');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../prismaClient');
@@ -10,59 +10,6 @@ const { sendWelcomeEmail } = require('../utils/emailService');
 
 module.exports = () => {
   const router = express.Router();
-
-  // Email transporter with explicit SMTP config and timeouts for reliability
-  const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
-  const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '465', 10);
-  const smtpSecure = process.env.EMAIL_SECURE
-    ? process.env.EMAIL_SECURE === 'true'
-    : process.env.SMTP_SECURE
-    ? process.env.SMTP_SECURE === 'true'
-    : true;
-  const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-  const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
-  const mailFrom = process.env.MAIL_FROM || smtpUser;
-
-  console.log('📧 Email Configuration:');
-  console.log(`   Host: ${smtpHost}`);
-  console.log(`   Port: ${smtpPort}`);
-  console.log(`   Secure: ${smtpSecure}`);
-  console.log(`   User: ${smtpUser ? '✓ Set' : '✗ NOT SET'}`);
-  console.log(`   Pass: ${smtpPass ? '✓ Set' : '✗ NOT SET'}`);
-  console.log(`   From: ${mailFrom}`);
-  console.log(`   Frontend URL: ${process.env.FRONTEND_URL}`);
-
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpSecure,
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-  });
-
-  async function sendEmail(mailOptions) {
-    try {
-      console.log(`\n📨 Attempting to send email to: ${mailOptions.to}`);
-      console.log(`   From: ${mailOptions.from}`);
-      console.log(`   Subject: ${mailOptions.subject}`);
-      
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`✅ Email sent successfully!`);
-      console.log(`   Response: ${info.response}`);
-      return { delivered: true };
-    } catch (error) {
-      console.error(`❌ Email send failed!`);
-      console.error(`   Error Code: ${error.code}`);
-      console.error(`   Error Message: ${error?.message || error}`);
-      console.error(`   Full Error:`, error);
-      return { delivered: false, error };
-    }
-  }
 
   // Signup
   router.post('/signup', [
@@ -137,29 +84,49 @@ module.exports = () => {
       const mailOptions = {
         from: mailFrom,
         to: email,
-        subject: 'Verify Your Email - Wedding Gifts',
+        subject: 'Verify Your Email - BeThere',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; border-radius: 10px;">
-            <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; text-align: center;">Welcome to Wedding Gifts!</h2>
-              <p style="color: #666; text-align: center;">Thank you for signing up. Please verify your email address to get started.</p>
-              <div style="text-align: center; margin: 20px 0;">
-                <a href="${verificationUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email</a>
+          <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+            <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+              <div style="padding: 28px 28px 18px; text-align: center;">
+                <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #2E235C; letter-spacing: 0.4px;">Welcome to BeThere!</h2>
+                <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">Verify your email address to get started</p>
               </div>
-              <p style="color: #666; text-align: center;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #007bff; text-align: center;">${verificationUrl}</p>
-              <p style="color: #666; text-align: center;">This link will expire in 24 hours.</p>
+
+              <div style="padding: 0 24px 24px; text-align: center;">
+                <div style="margin: 0 auto 8px; max-width: 420px; background: #f6f4ff; border: 1px solid #e7e4f5; border-radius: 14px; padding: 20px;">
+                  <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                    Thank you for signing up for BeThere! Please click the button below to verify your email and unlock all features.
+                  </p>
+
+                  <div style="margin-top: 24px;">
+                    <a href="${verificationUrl}" style="display: inline-block; background-color: #2E235C; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                      Verify Email
+                    </a>
+                  </div>
+                </div>
+
+                <p style="margin: 24px 0 0; font-size: 12px; color: #9ca3af;">
+                  If the button doesn't work, copy and paste this link: <br/>
+                  <a href="${verificationUrl}" style="color: #2E235C; word-break: break-all;">${verificationUrl}</a>
+                </p>
+              </div>
+
+              <div style="background: #fafafa; padding: 16px; text-align: center; border-top: 1px solid #f3f4f6;">
+                <p style="margin: 0; font-size: 11px; color: #9ca3af;">
+                  This link will expire in 24 hours. &copy; ${new Date().getFullYear()} BeThere.
+                </p>
+              </div>
             </div>
           </div>
         `,
       };
 
-      const emailResult = await sendEmail(mailOptions);
-
-      if (!emailResult.delivered) {
-        console.error(`⚠️  Verification email failed to send for user ${user.id}:`, emailResult?.error?.message || emailResult?.error);
-      } else {
+      try {
+        await sendEmail(mailOptions);
         console.log(`✅ Verification email sent successfully to ${email}`);
+      } catch (emailError) {
+        console.error(`⚠️  Verification email failed to send for user ${user.id}:`, emailError?.response?.data || emailError?.message || emailError);
       }
 
       // Send welcome email
@@ -266,24 +233,45 @@ module.exports = () => {
       const mailOptions = {
         from: mailFrom,
         to: email,
-        subject: 'Reset Your Password - Wedding Gifts',
+        subject: 'Reset Your Password - BeThere',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; border-radius: 10px;">
-            <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; text-align: center;">Reset Your Password</h2>
-              <p style="color: #666; text-align: center;">You requested a password reset. Click the button below to reset your password.</p>
-              <div style="text-align: center; margin: 20px 0;">
-                <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+          <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+            <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+              <div style="padding: 28px 28px 18px; text-align: center;">
+                <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #2E235C; letter-spacing: 0.4px;">Reset Password</h2>
+                <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">Securely reset your BeThere account password</p>
               </div>
-              <p style="color: #666; text-align: center;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #007bff; text-align: center;">${resetUrl}</p>
-              <p style="color: #666; text-align: center;">This link will expire in 1 hour.</p>
+
+              <div style="padding: 0 24px 24px; text-align: center;">
+                <div style="margin: 0 auto 8px; max-width: 420px; background: #f6f4ff; border: 1px solid #e7e4f5; border-radius: 14px; padding: 20px;">
+                  <p style="margin: 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                    You requested a password reset for your BeThere account. Click the button below to choose a new password.
+                  </p>
+
+                  <div style="margin-top: 24px;">
+                    <a href="${resetUrl}" style="display: inline-block; background-color: #2E235C; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                      Reset Password
+                    </a>
+                  </div>
+                </div>
+
+                <p style="margin: 24px 0 0; font-size: 12px; color: #9ca3af;">
+                  If you did not request this, please ignore this email. <br/>
+                  <a href="${resetUrl}" style="color: #2E235C; word-break: break-all;">${resetUrl}</a>
+                </p>
+              </div>
+
+              <div style="background: #fafafa; padding: 16px; text-align: center; border-top: 1px solid #f3f4f6;">
+                <p style="margin: 0; font-size: 11px; color: #9ca3af;">
+                  This link will expire in 1 hour. &copy; ${new Date().getFullYear()} BeThere.
+                </p>
+              </div>
             </div>
           </div>
         `,
       };
 
-      await transporter.sendMail(mailOptions);
+      await sendEmail(mailOptions);
 
       res.json({ msg: 'If an account with that email exists, a reset link has been sent.' });
     } catch (err) {

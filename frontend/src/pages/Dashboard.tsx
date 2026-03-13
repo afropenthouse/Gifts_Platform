@@ -1885,7 +1885,7 @@ const Dashboard: React.FC = () => {
                                   )}
                                 </div>
                                 <div>
-                                  <p className="font-medium">{isContribution ? (transaction.isAsoebi ? 'Asoebi Sales' : `Gifts ${gift?.title || 'Gift'}`) : `Withdrawal${transaction.sourceType && transaction.sourceType !== 'wallet' && transaction.sourceType !== 'combined' ? ` - ${transaction.sourceType === 'asoebi' ? 'Asoebi Sales' : 'Wedding Gifts'}` : ''}`}</p>
+                                  <p className="font-medium">{isContribution ? (transaction.isAsoebi ? 'Asoebi Sales' : `Gifts ${gift?.title || 'Gift'}`) : `Withdrawal${transaction.sourceType && transaction.sourceType !== 'wallet' && transaction.sourceType !== 'combined' ? ` - ${transaction.sourceType === 'asoebi' ? 'Asoebi Sales' : 'BeThere'}` : ''}`}</p>
                                   <p className="text-sm text-gray-500">
                                     {new Date(transaction.createdAt).toLocaleDateString()} • {isContribution ? (transaction.contributorName || 'Anonymous') : 'Bank Transfer'}
                                   </p>

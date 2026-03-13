@@ -1,42 +1,10 @@
-const nodemailer = require('nodemailer');
+const { sendEmail, mailFrom } = require('./email');
 
-const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
-const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '465', 10);
-const smtpSecure = process.env.EMAIL_SECURE
-  ? process.env.EMAIL_SECURE === 'true'
-  : process.env.SMTP_SECURE
-  ? process.env.SMTP_SECURE === 'true'
-  : true;
-const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
-const mailFrom = process.env.MAIL_FROM || smtpUser;
-const emailEnabled = Boolean(smtpUser && smtpPass);
+const SENDER_API_KEY = process.env.SENDER_API_KEY;
+const emailEnabled = Boolean(SENDER_API_KEY);
 
-const transporter = emailEnabled
-  ? nodemailer.createTransport({
-      pool: true,
-      maxConnections: 1,
-      rateLimit: 5,
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpSecure,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    })
-  : null;
-
-if (emailEnabled && transporter) {
-  transporter.verify((error, success) => {
-    if (error) {
-      console.error('📧 SMTP Connection Error:', error);
-    } else {
-      console.log('📧 SMTP Server is ready to take our messages');
-    }
-  });
-} else if (!emailEnabled) {
-  console.warn('📧 Email Service disabled: SMTP_USER or SMTP_PASS not set in .env');
+if (!emailEnabled) {
+  console.warn('📧 Email Service disabled: SENDER_API_KEY not set in .env');
 }
 
 const formatEventHeading = (gift) => {
@@ -57,8 +25,8 @@ const formatEventDate = (date) => {
 };
 
 const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }) => {
-  if (!emailEnabled || !transporter) {
-    console.warn('RSVP email skipped: SMTP configuration is missing');
+  if (!emailEnabled) {
+    console.warn('RSVP email skipped: SENDER_API_KEY is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -131,7 +99,7 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
   `;
 
   try {
-    await transporter.sendMail({
+    await sendEmail({
       from: mailFrom,
       to: recipient,
       subject: `${heading} – RSVP Confirmation`,
@@ -145,7 +113,7 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
 };
 
 const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, guestEmail, attending, gift }) => {
-  if (!emailEnabled || !transporter) {
+  if (!emailEnabled) {
     return { delivered: false, skipped: true };
   }
 
@@ -189,7 +157,7 @@ const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, gu
   `;
 
   try {
-    await transporter.sendMail({
+    await sendEmail({
       from: mailFrom,
       to: ownerEmail,
       subject: `New RSVP: ${guestName} ${status}`,
@@ -203,8 +171,8 @@ const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, gu
 };
 
 const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
-  if (!emailEnabled || !transporter) {
-    console.warn('Reminder email skipped: SMTP configuration is missing');
+  if (!emailEnabled) {
+    console.warn('Reminder email skipped: SENDER_API_KEY is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -289,7 +257,7 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   `;
 
   try {
-    await transporter.sendMail({
+    await sendEmail({
       from: mailFrom,
       to: recipient,
       subject,
@@ -303,8 +271,8 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
 };
 
 const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
-  if (!emailEnabled || !transporter) {
-    console.warn('RSVP cancellation email skipped: SMTP configuration is missing');
+  if (!emailEnabled) {
+    console.warn('RSVP cancellation email skipped: SENDER_API_KEY is missing');
     return { delivered: false, skipped: true };
   }
   if (!recipient) return { delivered: false, reason: 'No recipient provided' };
@@ -354,7 +322,7 @@ const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
   `;
   
   try {
-    await transporter.sendMail({
+    await sendEmail({
       from: mailFrom,
       to: recipient,
       subject: `${heading} – Event Cancelled`,
@@ -368,8 +336,8 @@ const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
 };
 
 const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
-  if (!emailEnabled || !transporter) {
-    console.warn('Post-event email skipped: SMTP configuration is missing');
+  if (!emailEnabled) {
+    console.warn('Post-event email skipped: SENDER_API_KEY is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -417,7 +385,7 @@ const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   `;
 
   try {
-    await transporter.sendMail({
+    await sendEmail({
       from: mailFrom,
       to: recipient,
       subject: `Thanks for Coming! - ${heading}`,
@@ -431,8 +399,8 @@ const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
 };
 
 const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, amount, gift, isAsoebi }) => {
-  if (!emailEnabled || !transporter) {
-    console.warn('Contributor thank you email skipped: SMTP configuration is missing');
+  if (!emailEnabled) {
+    console.warn('Contributor thank you email skipped: SENDER_API_KEY is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -480,7 +448,7 @@ const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, a
   `;
 
   try {
-    await transporter.sendMail({
+    await sendEmail({
       from: mailFrom,
       to: recipientEmail,
       subject,
@@ -494,8 +462,8 @@ const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, a
 };
 
 const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributorName, amount, gift, message, isAsoebi }) => {
-  if (!emailEnabled || !transporter) {
-    console.warn('Gift received email skipped: SMTP configuration is missing');
+  if (!emailEnabled) {
+    console.warn('Gift received email skipped: SENDER_API_KEY is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -548,7 +516,7 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
   `;
 
   try {
-    await transporter.sendMail({
+    await sendEmail({
       from: mailFrom,
       to: recipientEmail,
       subject,
@@ -562,8 +530,8 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
 };
 
 const sendWithdrawalOtpEmail = async ({ recipientEmail, recipientName, otp }) => {
-  if (!emailEnabled || !transporter) {
-    console.warn('Withdrawal OTP email skipped: SMTP configuration is missing');
+  if (!emailEnabled) {
+    console.warn('Withdrawal OTP email skipped: SENDER_API_KEY is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -606,7 +574,7 @@ const sendWithdrawalOtpEmail = async ({ recipientEmail, recipientName, otp }) =>
   `;
 
   try {
-    await transporter.sendMail({
+    await sendEmail({
       from: mailFrom,
       to: recipientEmail,
       subject: 'Withdrawal Verification Code',
@@ -620,8 +588,8 @@ const sendWithdrawalOtpEmail = async ({ recipientEmail, recipientName, otp }) =>
 };
 
 const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
-  if (!emailEnabled || !transporter) {
-    console.warn('Welcome email skipped: SMTP configuration is missing');
+  if (!emailEnabled) {
+    console.warn('Welcome email skipped: SENDER_API_KEY is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -646,15 +614,24 @@ const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
           <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 20px;">
             <p style="margin: 0; font-size: 16px; color: #111827; font-weight: 600;">Hi ${cleanRecipientName},</p>
             <p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
-              Thank you for signing up for BeThere! We're thrilled to help you celebrate your special moments.
+              Thank you for signing up to BeThere! We're thrilled to help you celebrate your special moments.
             </p>
             <p style="margin-bottom: 8px; color: #111827;">BeThere helps you to:</p>
   
-  <ul style="display: inline-block; list-style-type: disc; padding: 0; margin: 0; text-align: left; color: #4b5563; font-size: 14px; line-height: 1.6;">
-    <li style="margin-bottom: 4px; padding-left: 8px;">Manage RSVPs</li>
-    <li style="margin-bottom: 4px; padding-left: 8px;">Sell Asoebi</li>
-    <li style="margin-bottom: 4px; padding-left: 8px;">Collect cash gifts all in one place.</li>
-  </ul>
+  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto; text-align: left;">
+    <tr>
+      <td style="padding-bottom: 4px; vertical-align: top; width: 16px; color: #4b5563;">•</td>
+      <td style="padding-bottom: 4px; color: #4b5563; font-size: 14px; line-height: 1.6;">Manage RSVPs</td>
+    </tr>
+    <tr>
+      <td style="padding-bottom: 4px; vertical-align: top; width: 16px; color: #4b5563;">•</td>
+      <td style="padding-bottom: 4px; color: #4b5563; font-size: 14px; line-height: 1.6;">Sell Asoebi</td>
+    </tr>
+    <tr>
+      <td style="padding-bottom: 4px; vertical-align: top; width: 16px; color: #4b5563;">•</td>
+      <td style="padding-bottom: 4px; color: #4b5563; font-size: 14px; line-height: 1.6;">Collect cash gifts all in one place.</td>
+    </tr>
+  </table>
             <p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
               Ready to get started?
             </p>
@@ -683,10 +660,10 @@ const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
   `;
 
   try {
-     await transporter.sendMail({
+     await sendEmail({
        from: mailFrom,
        to: recipientEmail,
-       subject: 'Thank you for joining BeThere',
+       subject: 'Thank you for joining BeThere 🎉',
        html,
      });
      return { delivered: true };

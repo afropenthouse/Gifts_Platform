@@ -81,7 +81,7 @@ const FAQ = () => {
               We're here to help! Reach out to our support team anytime.
             </p>
             <a 
-              href="mailto:teambethere@gmail.com" 
+              href="mailto:mailto:support@bethereexperience.com" 
               className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#2E235C] hover:bg-[#2E235C]/90 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               Contact Support
