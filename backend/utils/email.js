@@ -1,7 +1,22 @@
-const axios = require('axios');
+const nodemailer = require('nodemailer');
 
-const SENDER_API_KEY = process.env.SENDER_API_KEY;
-const mailFromRaw = process.env.MAIL_FROM || 'BeThere <teambethere@gmail.com>';
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = process.env.SMTP_PORT || 587;
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
+const mailFromRaw = process.env.MAIL_FROM || 'BeThere <support@bethereexperience.com>';
+
+// Create Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+  host: SMTP_HOST,
+  port: SMTP_PORT,
+  secure: SMTP_SECURE, // true for 465, false for other ports
+  auth: {
+    user: SMTP_USER,
+    pass: SMTP_PASS,
+  },
+});
 
 // Parse "Name <email@example.com>" into { name, email }
 const parseFrom = (fromStr) => {
@@ -14,65 +29,62 @@ const parseFrom = (fromStr) => {
 
 const mailFrom = parseFrom(mailFromRaw);
 
-console.log('📧 Sender.net Email Configuration:');
-console.log(`   API Key: ${SENDER_API_KEY ? '✓ Set' : '✗ NOT SET'}`);
-console.log(`   From Name: ${mailFrom.name}`);
-console.log(`   From Email: ${mailFrom.email}`);
+console.log('📧 Email Configuration (Nodemailer):');
+console.log(`   Host: ${SMTP_HOST}`);
+console.log(`   Port: ${SMTP_PORT}`);
+console.log(`   User: ${SMTP_USER ? '✓ Set' : '✗ NOT SET'}`);
+console.log(`   Pass: ${SMTP_PASS ? '✓ Set' : '✗ NOT SET'}`);
+console.log(`   From: ${mailFrom.name} <${mailFrom.email}>`);
 
+// Verify transporter on startup
+if (SMTP_USER && SMTP_PASS) {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('❌ Nodemailer Transporter Error:', error.message);
+    } else {
+      console.log('✅ Nodemailer Transporter is ready');
+    }
+  });
+}
+
+/**
+ * Sends an email using Nodemailer
+ * @param {Object} mailOptions - { to, subject, html, text, from }
+ */
 async function sendEmail(mailOptions) {
-  if (!SENDER_API_KEY) {
-    console.error('❌ SENDER_API_KEY not set in .env');
-    return { delivered: false, error: 'SENDER_API_KEY missing' };
+  if (!SMTP_USER || !SMTP_PASS) {
+    console.error('❌ Nodemailer configuration missing in .env');
+    return { delivered: false, error: 'SMTP configuration missing' };
   }
 
   try {
-    console.log(`\n📨 Attempting to send email via Sender.net to: ${mailOptions.to}`);
+    console.log(`\n📨 Attempting to send email via Nodemailer to: ${mailOptions.to}`);
     console.log(`   Subject: ${mailOptions.subject}`);
     
-    const response = await axios.post('https://api.sender.net/v2/message/send', {
-      to: {
-        email: mailOptions.to,
-        name: mailOptions.toName || ''
-      },
-      from: {
-        email: mailFrom.email,
-        name: mailFrom.name
-      },
+    const info = await transporter.sendMail({
+      from: mailOptions.from || mailFromRaw,
+      to: mailOptions.to,
       subject: mailOptions.subject,
+      text: mailOptions.text || '',
       html: mailOptions.html,
-      text: mailOptions.text || ''
-    }, {
-      headers: {
-        'Authorization': `Bearer ${SENDER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
     });
 
-    if (response.status === 200 || response.status === 201 || response.status === 202) {
-      console.log(`✅ Email sent successfully via Sender.net!`);
-      return { delivered: true, data: response.data };
-    } else {
-      console.error(`❌ Email send failed via Sender.net!`);
-      console.error(`   Status: ${response.status}`);
-      console.error(`   Response:`, response.data);
-      return { delivered: false, error: response.data };
-    }
+    console.log(`✅ Email sent successfully! Message ID: ${info.messageId}`);
+    return { delivered: true, data: info };
   } catch (error) {
-    console.error(`❌ Email send failed via Sender.net!`);
-    const status = error?.response?.status;
-    const message = error?.response?.data?.message || error.message;
-    console.error(`   Status: ${status}`);
-    console.error(`   Error: ${message}`);
-    
-    if (status === 401) {
-      console.error('   💡 TIP: Your API token might be missing "Transactional" permissions, or Transactional emails are not enabled in your Sender.net dashboard.');
-    } else if (status === 403) {
-      console.error('   💡 TIP: Your account might be suspended or your domain is not verified in Sender.net.');
-    }
-    
-    return { delivered: false, error: message };
+    console.error(`❌ Email send failed via Nodemailer!`);
+    console.error(`   Error: ${error.message}`);
+    return { delivered: false, error: error.message };
   }
 }
+
+/* 
+// Legacy Sender.net Logic (Commented out)
+const axios = require('axios');
+const SENDER_API_KEY = process.env.SENDER_API_KEY;
+async function sendEmailSenderNet(mailOptions) {
+  // ... (Sender.net implementation)
+}
+*/
 
 module.exports = { sendEmail, mailFrom: mailFromRaw };

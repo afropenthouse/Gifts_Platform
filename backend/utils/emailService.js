@@ -1,10 +1,9 @@
 const { sendEmail, mailFrom } = require('./email');
 
-const SENDER_API_KEY = process.env.SENDER_API_KEY;
-const emailEnabled = Boolean(SENDER_API_KEY);
+const emailEnabled = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
 
 if (!emailEnabled) {
-  console.warn('📧 Email Service disabled: SENDER_API_KEY not set in .env');
+  console.warn('📧 Email Service disabled: SMTP_USER or SMTP_PASS not set in .env');
 }
 
 const formatEventHeading = (gift) => {
@@ -26,7 +25,7 @@ const formatEventDate = (date) => {
 
 const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }) => {
   if (!emailEnabled) {
-    console.warn('RSVP email skipped: SENDER_API_KEY is missing');
+    console.warn('RSVP email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -172,7 +171,7 @@ const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, gu
 
 const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   if (!emailEnabled) {
-    console.warn('Reminder email skipped: SENDER_API_KEY is missing');
+    console.warn('Reminder email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -272,7 +271,7 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
 
 const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
   if (!emailEnabled) {
-    console.warn('RSVP cancellation email skipped: SENDER_API_KEY is missing');
+    console.warn('RSVP cancellation email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
   }
   if (!recipient) return { delivered: false, reason: 'No recipient provided' };
@@ -337,7 +336,7 @@ const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
 
 const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   if (!emailEnabled) {
-    console.warn('Post-event email skipped: SENDER_API_KEY is missing');
+    console.warn('Post-event email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -400,7 +399,7 @@ const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
 
 const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, amount, gift, isAsoebi }) => {
   if (!emailEnabled) {
-    console.warn('Contributor thank you email skipped: SENDER_API_KEY is missing');
+    console.warn('Contributor thank you email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -463,7 +462,7 @@ const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, a
 
 const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributorName, amount, gift, message, isAsoebi }) => {
   if (!emailEnabled) {
-    console.warn('Gift received email skipped: SENDER_API_KEY is missing');
+    console.warn('Gift received email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -531,7 +530,7 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
 
 const sendWithdrawalOtpEmail = async ({ recipientEmail, recipientName, otp }) => {
   if (!emailEnabled) {
-    console.warn('Withdrawal OTP email skipped: SENDER_API_KEY is missing');
+    console.warn('Withdrawal OTP email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
   }
 
@@ -589,7 +588,7 @@ const sendWithdrawalOtpEmail = async ({ recipientEmail, recipientName, otp }) =>
 
 const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
   if (!emailEnabled) {
-    console.warn('Welcome email skipped: SENDER_API_KEY is missing');
+    console.warn('Welcome email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
   }
 
