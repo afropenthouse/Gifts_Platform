@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const SENDER_API_KEY = process.env.SENDER_API_KEY;
-const mailFromRaw = process.env.MAIL_FROM || 'BeThere <teambethere@gmail.com>';
+const mailFromRaw = process.env.MAIL_FROM || 'BeThere <support@bethereexperience.com>';
 
 // Parse "Name <email@example.com>" into { name, email }
 const parseFrom = (fromStr) => {
@@ -29,11 +29,14 @@ async function sendEmail(mailOptions) {
     console.log(`\n📨 Attempting to send email via Sender.net to: ${mailOptions.to}`);
     console.log(`   Subject: ${mailOptions.subject}`);
     
-    const response = await axios.post('https://api.sender.net/v2/message/send', {
-      to: {
-        email: mailOptions.to,
-        name: mailOptions.toName || ''
-      },
+    // Using dedicated transactional endpoint for better deliverability
+    const response = await axios.post('https://api.sender.net/v2/emails/transactional', {
+      to: [
+        {
+          email: mailOptions.to,
+          name: mailOptions.toName || ''
+        }
+      ],
       from: {
         email: mailFrom.email,
         name: mailFrom.name
@@ -50,7 +53,7 @@ async function sendEmail(mailOptions) {
     });
 
     if (response.status === 200 || response.status === 201 || response.status === 202) {
-      console.log(`✅ Email sent successfully via Sender.net!`);
+      console.log(`✅ Email sent successfully via Sender.net (Transactional)!`);
       return { delivered: true, data: response.data };
     } else {
       console.error(`❌ Email send failed via Sender.net!`);
@@ -61,7 +64,7 @@ async function sendEmail(mailOptions) {
   } catch (error) {
     console.error(`❌ Email send failed via Sender.net!`);
     const status = error?.response?.status;
-    const message = error?.response?.data?.message || error.message;
+    const message = error?.response?.data?.message || JSON.stringify(error?.response?.data) || error.message;
     console.error(`   Status: ${status}`);
     console.error(`   Error: ${message}`);
     
