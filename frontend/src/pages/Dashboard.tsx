@@ -1827,15 +1827,27 @@ const Dashboard: React.FC = () => {
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Processing Time</p>
-                          <p className="font-medium">Instant</p>
+                          <p className="font-medium text-sm">Instant</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Minimum Amount</p>
-                          <p className="font-medium">₦100</p>
+                          <p className="font-medium text-sm">₦100</p>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Transaction Fee</p>
-                          <p className="font-medium">Free</p>
+                        <div className="pt-2 border-t border-gray-100">
+                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Platform Fee</p>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-600">Asoebi Fee</span>
+                              <span className="font-medium text-gray-900">₦500 per order</span>
+                            </div>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-600">Cash Gift</span>
+                              <span className="font-medium text-gray-900">4% of gift amount</span>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-gray-400 mt-2 leading-tight italic">
+                            This helps the platform cover transaction fees
+                          </p>
                         </div>
                       </div>
                     </CardContent>
