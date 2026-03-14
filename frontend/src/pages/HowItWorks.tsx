@@ -8,7 +8,7 @@ const HowItWorks = () => {
   const { openLoginModal, openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "BeThere  - How It Works";
+    document.title = "BeThere Experience  - How It Works";
   }, []);
 
   const steps = [

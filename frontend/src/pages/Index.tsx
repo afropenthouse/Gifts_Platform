@@ -11,7 +11,7 @@ const Index = () => {
   const { openLoginModal, openSignupModal } = useAuth();
   
   useEffect(() => {
-    document.title = "BeThere  - Manage RSVPs, Cash Gifts, Asoebi, and Vendor Payments - in one place";
+    document.title = "BeThere Experience  - Manage RSVPs, Cash Gifts, Asoebi, and Vendor Payments - in one place";
   }, []);
 
   return (

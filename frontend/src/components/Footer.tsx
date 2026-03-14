@@ -100,7 +100,7 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="mt-8 pt-6 md:pt-8 border-t border-border/50 text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} BeThere. All rights reserved.
+            © {new Date().getFullYear()} BeThere Experience. All rights reserved.
           </p>
         </div>
       </div>
