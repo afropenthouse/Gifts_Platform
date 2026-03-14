@@ -54,6 +54,52 @@ module.exports = () => {
         dateFilter = { createdAt: { gte: filterDate } };
       }
 
+      let totalWalletBalance = 0;
+      if (time && time !== 'all') {
+        const [
+          contributionsStats,
+          referralStats,
+          withdrawalStats
+        ] = await Promise.all([
+          prisma.contribution.aggregate({
+            _sum: {
+              amount: true,
+              commission: true,
+            },
+            where: {
+              status: 'completed',
+              ...dateFilter
+            }
+          }),
+          prisma.referralTransaction.aggregate({
+            _sum: {
+              amount: true,
+            },
+            where: dateFilter
+          }),
+          prisma.withdrawal.aggregate({
+            _sum: {
+              amount: true,
+            },
+            where: {
+              status: { in: ['completed', 'pending'] },
+              ...dateFilter
+            }
+          })
+        ]);
+
+        const actualIn = (Number(contributionsStats._sum.amount) || 0) - (Number(contributionsStats._sum.commission) || 0) + (Number(referralStats._sum.amount) || 0);
+        const totalOut = Number(withdrawalStats._sum.amount) || 0;
+        totalWalletBalance = actualIn - totalOut;
+      } else {
+        const totalWallet = await prisma.user.aggregate({
+          _sum: {
+            wallet: true,
+          }
+        });
+        totalWalletBalance = Number(totalWallet._sum.wallet || 0);
+      }
+
       const [
         totalUsers,
         totalGifts,
@@ -61,7 +107,6 @@ module.exports = () => {
         totalAsoebi,
         totalContributions,
         totalAsoebiContributions,
-        totalWallet,
         openGuestEvents,
         restrictedGuestEvents,
         totalRevenue,
@@ -101,12 +146,6 @@ module.exports = () => {
             isAsoebi: true,
             ...dateFilter
           }
-        }),
-        prisma.user.aggregate({
-          _sum: {
-            wallet: true,
-          },
-          where: dateFilter
         }),
         prisma.gift.count({
           where: { guestListMode: 'open', ...dateFilter },
@@ -163,7 +202,7 @@ module.exports = () => {
           totalAsoebi,
           totalContributions: totalContributions._sum.amount || 0,
           totalAsoebiContributions: totalAsoebiContributions._sum.amount || 0,
-          totalWalletBalance: Number(totalWallet._sum.wallet || 0),
+          totalWalletBalance: totalWalletBalance,
           guestListOpenEvents: openGuestEvents,
           guestListRestrictedEvents: restrictedGuestEvents,
           totalRevenue: totalRevenue._sum.commission || 0,

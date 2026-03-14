@@ -112,6 +112,14 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [loadingContributions, setLoadingContributions] = useState(false);
   const [loadingGuests, setLoadingGuests] = useState(false);
+  
+  // Refs to prevent infinite loops and redundant fetches
+  const fetchingContributions = React.useRef(false);
+  const fetchingEvents = React.useRef(false);
+  const fetchingGuests = React.useRef(false);
+  const contributionsLength = React.useRef(0);
+  const eventsLength = React.useRef(0);
+
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [selectedEventId, setSelectedEventId] = useState<number | 'all'>('all');
   const [overviewTimeFilter, setOverviewTimeFilter] = useState<TimeFilter>('all');
@@ -171,7 +179,7 @@ const AdminDashboard = () => {
   }, [navigate, overviewTimeFilter]);
 
   const fetchContributions = useCallback(async (time: TimeFilter = 'all', force = false) => {
-    if (!force && (loadingContributions || (allContributions.length > 0 && !force))) {
+    if (!force && (fetchingContributions.current || (contributionsLength.current > 0 && !force))) {
       return;
     }
 
@@ -184,6 +192,7 @@ const AdminDashboard = () => {
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       setLoadingContributions(true);
+      fetchingContributions.current = true;
       const response = await fetch(`${baseUrl}/api/admin/contributions?time=${time}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -201,15 +210,17 @@ const AdminDashboard = () => {
 
       const data = await response.json();
       setAllContributions(data);
+      contributionsLength.current = data.length;
     } catch (error) {
       toast.error('Failed to fetch contributions');
     } finally {
       setLoadingContributions(false);
+      fetchingContributions.current = false;
     }
-  }, [allContributions.length, loadingContributions, navigate]);
+  }, [navigate]);
 
   const fetchGuests = useCallback(async () => {
-    if (loadingGuests) {
+    if (fetchingGuests.current) {
       return;
     }
     const token = localStorage.getItem('adminToken');
@@ -220,6 +231,7 @@ const AdminDashboard = () => {
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       setLoadingGuests(true);
+      fetchingGuests.current = true;
       setGuests([]);
       const params = new URLSearchParams();
       params.set('hasEmail', 'yes');
@@ -242,11 +254,12 @@ const AdminDashboard = () => {
       toast.error('Failed to fetch guests');
     } finally {
       setLoadingGuests(false);
+      fetchingGuests.current = false;
     }
-  }, [loadingGuests, navigate, selectedEventId]);
+  }, [navigate, selectedEventId]);
 
   const fetchEvents = useCallback(async () => {
-    if (loadingEvents || events.length > 0) {
+    if (fetchingEvents.current || eventsLength.current > 0) {
       return;
     }
 
@@ -259,6 +272,7 @@ const AdminDashboard = () => {
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       setLoadingEvents(true);
+      fetchingEvents.current = true;
       const response = await fetch(`${baseUrl}/api/admin/events`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -276,12 +290,14 @@ const AdminDashboard = () => {
 
       const data = await response.json();
       setEvents(data);
+      eventsLength.current = data.length;
     } catch (error) {
       toast.error('Failed to fetch events');
     } finally {
       setLoadingEvents(false);
+      fetchingEvents.current = false;
     }
-  }, [events.length, loadingEvents, navigate]);
+  }, [navigate]);
 
   useEffect(() => {
     fetchDashboardData();
