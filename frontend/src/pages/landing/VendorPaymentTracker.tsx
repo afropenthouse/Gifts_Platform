@@ -84,7 +84,7 @@ const VendorPaymentTracker = () => {
                   Managing event vendors often means juggling payments, balances, and due dates across different conversations and spreadsheets.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  BeThere gives couples and event planners a simple way to track vendor costs and payments in one organized dashboard.
+                  BeThere Experience gives couples and event planners a simple way to track vendor costs and payments in one organized dashboard.
                 </p>
               </div>
 

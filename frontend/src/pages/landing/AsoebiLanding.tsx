@@ -31,7 +31,7 @@ const AsoebiLanding = () => {
                 Organise Asoebi payments the easy way, all in one place.
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed">
-                Asoebi should bring excitement - not confusion. BeThere  helps you sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
+                Asoebi should bring excitement - not confusion. BeThere Experience  helps you sell, track, and manage Asoebi payments without chasing people on WhatsApp or juggling spreadsheets.
               </p>
               <div className="mt-8">
                 <Button
@@ -62,7 +62,7 @@ const AsoebiLanding = () => {
       <section className="py-20 px-4 md:px-6 bg-white">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-center mb-16" style={{ color: '#2E235C' }}>
-            How Asoebi Works on BeThere
+            How Asoebi Works on BeThere Experience
           </h2>
 
           <div className="mb-20 grid grid-cols-1 lg:grid-cols-2 gap-12">

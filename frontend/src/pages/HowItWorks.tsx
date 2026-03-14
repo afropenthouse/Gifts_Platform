@@ -35,7 +35,7 @@ const HowItWorks = () => {
     {
       step: 'Step 5',
       title: 'Enjoy your day, stress-free',
-      body: 'Use your event QR code to collect gifts and moments at the venue, while BeThere keeps everything organized behind the scenes.',
+      body: 'Use your event QR code to collect gifts and moments at the venue, while BeThere Experience keeps everything organized behind the scenes.',
     },
   ];
 
@@ -50,7 +50,7 @@ const HowItWorks = () => {
             How It <span style={{ color: '#2E235C' }}>Works</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-6">
-            Bethere helps you coordinate your entire event in one place. Manage guests, track RSVPs, collect cash gifts, coordinate asoebi sales, and monitor expenses seamlessly.
+            Bethere Experience helps you coordinate your entire event in one place. Manage guests, track RSVPs, collect cash gifts, coordinate asoebi sales, and monitor expenses seamlessly.
           </p>
 
           <br className="hidden md:block" />

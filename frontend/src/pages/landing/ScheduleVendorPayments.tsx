@@ -85,7 +85,7 @@ const ScheduleVendorPayments = () => {
             <div className="space-y-6">
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Managing event expenses can be overwhelming. With BeThere, you can add every vendor, set payment schedules, and see all your costs in one place.
+                  Managing event expenses can be overwhelming. With BeThere Experience, you can add every vendor, set payment schedules, and see all your costs in one place.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
                   No more spreadsheets or payment confusion-just clarity, control, and peace of mind for your big day.

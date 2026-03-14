@@ -615,7 +615,7 @@ const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
             <p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.6;">
               Thank you for signing up to BeThere! We're thrilled to help you celebrate your special moments.
             </p>
-            <p style="margin-bottom: 8px; color: #111827;">BeThere helps you to:</p>
+            <p style="margin-bottom: 8px; color: #111827;">BeThere Experience helps you to:</p>
   
   <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto; text-align: left;">
     <tr>

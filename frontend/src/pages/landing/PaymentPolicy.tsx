@@ -29,7 +29,7 @@ const PaymentPolicy = () => {
                 <h2 className="text-2xl font-semibold">Secure Transactions</h2>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                All financial transactions on BeThere  are processed through industry-leading payment gateways (like Paystack). We do not store your credit card or bank login details on our servers. Your data is encrypted and handled according to PCI-DSS standards.
+                All financial transactions on BeThere Experience are processed through industry-leading payment gateways (like Paystack). We do not store your credit card or bank login details on our servers. Your data is encrypted and handled according to PCI-DSS standards.
               </p>
             </section>
 
@@ -75,7 +75,7 @@ const PaymentPolicy = () => {
               <ul className="list-disc pl-6 space-y-3 text-muted-foreground">
                 <li><strong>Identity Verification:</strong> We may require couples to verify their identity before large payouts are processed.</li>
                 <li><strong>Reporting:</strong> If you suspect an event page is fraudulent, please report it immediately to <a href="mailto:mailto:support@bethereexperience.com" className="text-blue-600 underline">mailto:support@bethereexperience.com</a>.</li>
-                <li><strong>Legal Protection:</strong> We cooperate with law enforcement in cases of proven financial fraud. BeThere  is not liable for gifts sent to verified users, but we will assist in investigations where possible.</li>
+                <li><strong>Legal Protection:</strong> We cooperate with law enforcement in cases of proven financial fraud. BeThere Experience  is not liable for gifts sent to verified users, but we will assist in investigations where possible.</li>
               </ul>
             </section>
 
@@ -96,7 +96,7 @@ const PaymentPolicy = () => {
           <div className="text-center p-8 bg-[#2E235C]/5 rounded-2xl">
             <h3 className="text-lg font-semibold text-[#2E235C] mb-2">Legal Compliance</h3>
             <p className="text-sm text-muted-foreground">
-              BeThere  operates in compliance with Nigerian financial regulations. We are committed to ensuring a safe and transparent environment for event gifting.
+              BeThere Experience operates in compliance with Nigerian financial regulations. We are committed to ensuring a safe and transparent environment for event gifting.
             </p>
           </div>
         </div>

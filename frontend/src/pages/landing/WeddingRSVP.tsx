@@ -69,7 +69,7 @@ const WeddingRSVP = () => {
                   Planning an event is already a lot. Chasing guests for attendance confirmation shouldn’t be part of it.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  BeThere helps couples easily collect RSVPs online and see, in real time, who is attending their event. Guests simply click a link, respond in seconds, and you stay organized.
+                  BeThere Experience helps couples easily collect RSVPs online and see, in real time, who is attending their event. Guests simply click a link, respond in seconds, and you stay organized.
                 </p>
               </div>
 
@@ -137,7 +137,7 @@ const WeddingRSVP = () => {
             Ready to Simplify Your Event RSVPs?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join thousands of couples who trust Be There  for their special day
+            Join thousands of couples who trust BeThere Experience for their special day
           </p>
           <Button
             variant="hero"

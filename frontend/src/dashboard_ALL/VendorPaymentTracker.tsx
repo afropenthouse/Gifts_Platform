@@ -981,7 +981,7 @@ const VendorPaymentTracker: React.FC = () => {
                 <div>
                   <Label>Summary</Label>
                   <p className="text-sm text-gray-600">
-                    ₦{amountToSchedule || '0'} will be held by BeThere and released to this vendor on {schedulingVendor ? new Date(new Date(schedulingVendor.dueDate).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString() : ''}.
+                    ₦{amountToSchedule || '0'} will be held by BeThere Experience and released to this vendor on {schedulingVendor ? new Date(new Date(schedulingVendor.dueDate).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString() : ''}.
                   </p>
                 </div>
                 <div className="flex gap-3 pt-4">

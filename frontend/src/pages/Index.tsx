@@ -22,7 +22,7 @@ const Index = () => {
       <section className="py-8 px-4 md:py-12 md:px-6">
         <div className="container mx-auto max-w-4xl text-center">
           <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8 md:mb-12">
-            Bethere helps you coordinate your entire event in one place. Manage guests, track RSVPs, collect cash gifts, coordinate asoebi sales, and monitor expenses seamlessly.
+            Bethere Experience helps you coordinate your entire event in one place. Manage guests, track RSVPs, collect cash gifts, coordinate asoebi sales, and monitor expenses seamlessly.
           </p>
           
           <div className="relative -mx-4 md:mx-0 rounded-none md:rounded-xl overflow-hidden shadow-2xl border-y md:border border-border/50">
@@ -72,7 +72,7 @@ const Index = () => {
               {
                 step: 'Step 5',
                 title: 'Enjoy your day, stress-free',
-                body: 'Use your event QR code to collect gifts and moments at the venue, while BeThere keeps everything organized behind the scenes.',
+                body: 'Use your event QR code to collect gifts and moments at the venue, while BeThere Experience keeps everything organized behind the scenes.',
               },
             ].map((item) => (
               <div 
