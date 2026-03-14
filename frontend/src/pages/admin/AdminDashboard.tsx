@@ -114,7 +114,8 @@ const AdminDashboard = () => {
   const [loadingGuests, setLoadingGuests] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [selectedEventId, setSelectedEventId] = useState<number | 'all'>('all');
-  const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>('all');
+  const [overviewTimeFilter, setOverviewTimeFilter] = useState<TimeFilter>('all');
+  const [txnTimeFilter, setTxnTimeFilter] = useState<TimeFilter>('all');
   const [selectedTxnType, setSelectedTxnType] = useState<'all' | 'cash' | 'asoebi'>('all');
   const [guestEmailFilter, setGuestEmailFilter] = useState<'all' | 'yes' | 'no'>('all');
   const [userSearch, setUserSearch] = useState('');
@@ -143,7 +144,7 @@ const AdminDashboard = () => {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
       const [metricsRes, usersRes] = await Promise.all([
-        fetch(`${baseUrl}/api/admin/metrics?time=${selectedTimeFilter}`, {
+        fetch(`${baseUrl}/api/admin/metrics?time=${overviewTimeFilter}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${baseUrl}/api/admin/users`, {
@@ -167,10 +168,10 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [navigate, selectedTimeFilter]);
+  }, [navigate, overviewTimeFilter]);
 
-  const fetchContributions = useCallback(async () => {
-    if (loadingContributions || allContributions.length > 0) {
+  const fetchContributions = useCallback(async (time: TimeFilter = 'all', force = false) => {
+    if (!force && (loadingContributions || (allContributions.length > 0 && !force))) {
       return;
     }
 
@@ -183,7 +184,7 @@ const AdminDashboard = () => {
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       setLoadingContributions(true);
-      const response = await fetch(`${baseUrl}/api/admin/contributions`, {
+      const response = await fetch(`${baseUrl}/api/admin/contributions?time=${time}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -285,16 +286,17 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
     fetchEvents();
-  }, [fetchDashboardData, fetchEvents, selectedTimeFilter]);
+  }, [fetchDashboardData, fetchEvents, overviewTimeFilter]);
 
   useEffect(() => {
-    if (activeTab === 'transactions' || activeTab === 'events') {
-      fetchContributions();
+    if (activeTab === 'transactions') {
+      fetchContributions(txnTimeFilter, true);
     }
     if (activeTab === 'events') {
+      fetchContributions('all');
       fetchEvents();
     }
-  }, [activeTab, fetchContributions, fetchEvents]);
+  }, [activeTab, fetchContributions, fetchEvents, txnTimeFilter]);
 
   useEffect(() => {
     if (activeTab === 'guests' || activeTab === 'emails') {
@@ -431,15 +433,15 @@ const AdminDashboard = () => {
   );
 
   const filterByTime = useCallback(
-    (items: Contribution[]) => {
-      if (selectedTimeFilter === 'all') {
+    (items: Contribution[], timeFilter: TimeFilter) => {
+      if (timeFilter === 'all') {
         return items;
       }
 
       const now = new Date();
       let filterDate = new Date();
 
-      switch (selectedTimeFilter) {
+      switch (timeFilter) {
         case '7days':
           filterDate.setDate(now.getDate() - 7);
           break;
@@ -461,7 +463,7 @@ const AdminDashboard = () => {
 
       return items.filter((item) => new Date(item.createdAt) >= filterDate);
     },
-    [selectedTimeFilter]
+    []
   );
 
   const filteredContributions = (tab: AdminTab) => {
@@ -472,10 +474,16 @@ const AdminDashboard = () => {
       } else if (selectedTxnType === 'cash') {
         rows = rows.filter((c) => !c.isAsoebi);
       }
+      rows = filterByEvent(rows);
+      // Transactions are now filtered by time on the backend
+      return rows;
     }
     
     rows = filterByEvent(rows);
-    return filterByTime(rows);
+    // Other tabs might still need frontend time filtering if they use allContributions
+    // but currently only transactions and overview (via metrics) use time filters.
+    // For overview, we use the metrics from the backend.
+    return rows;
   };
 
   const renderEmails = () => {
@@ -1393,8 +1401,8 @@ const AdminDashboard = () => {
                   Filter:
                 </Label>
                 <Select
-                  value={selectedTimeFilter}
-                  onValueChange={(value) => setSelectedTimeFilter(value as TimeFilter)}
+                  value={overviewTimeFilter}
+                  onValueChange={(value) => setOverviewTimeFilter(value as TimeFilter)}
                 >
                   <SelectTrigger id="overview-time-filter" className="w-[180px]">
                     <SelectValue placeholder="All Time" />
@@ -1471,8 +1479,8 @@ const AdminDashboard = () => {
                   Time Period:
                 </Label>
                 <Select
-                  value={selectedTimeFilter}
-                  onValueChange={(value) => setSelectedTimeFilter(value as TimeFilter)}
+                  value={txnTimeFilter}
+                  onValueChange={(value) => setTxnTimeFilter(value as TimeFilter)}
                 >
                   <SelectTrigger id="admin-time-filter" className="w-[180px]">
                     <SelectValue placeholder="All Time" />

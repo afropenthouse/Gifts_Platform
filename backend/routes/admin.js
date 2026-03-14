@@ -275,7 +275,7 @@ module.exports = () => {
   });
 
   router.get('/contributions', adminAuth, async (req, res) => {
-    const { type } = req.query;
+    const { type, time } = req.query;
 
     try {
       const where = {
@@ -286,6 +286,30 @@ module.exports = () => {
         where.isAsoebi = true;
       } else if (type === 'cash') {
         where.isAsoebi = false;
+      }
+
+      if (time && time !== 'all') {
+        const now = new Date();
+        const filterDate = new Date();
+
+        switch (time) {
+          case '7days':
+            filterDate.setDate(now.getDate() - 7);
+            break;
+          case '14days':
+            filterDate.setDate(now.getDate() - 14);
+            break;
+          case '30days':
+            filterDate.setDate(now.getDate() - 30);
+            break;
+          case '3months':
+            filterDate.setMonth(now.getMonth() - 3);
+            break;
+          case 'year':
+            filterDate.setFullYear(now.getFullYear() - 1);
+            break;
+        }
+        where.createdAt = { gte: filterDate };
       }
 
       const contributions = await prisma.contribution.findMany({
