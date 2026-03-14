@@ -9,7 +9,7 @@ const AsoebiLanding = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Sell & Manage Asoebi - BeThere ";
+    document.title = "Sell & Manage Asoebi - BeThere Experience ";
   }, []);
 
   return (

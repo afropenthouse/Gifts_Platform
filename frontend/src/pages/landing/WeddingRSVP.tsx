@@ -10,7 +10,7 @@ const WeddingRSVP = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Event RSVP Made Simple - BeThere ";
+    document.title = "Event RSVP Made Simple - BeThere Experience";
   }, []);
 
   const features = [

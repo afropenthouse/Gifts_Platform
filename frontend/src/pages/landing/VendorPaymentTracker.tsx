@@ -10,7 +10,7 @@ const VendorPaymentTracker = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Event Expense Manager - BeThere ";
+    document.title = "Event Expense Manager - BeThere Experience";
   }, []);
 
   const features = [

@@ -10,7 +10,7 @@ const WeddingQRCode = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Event QR Code for Cash Gifts - BeThere";
+    document.title = "Event QR Code for Cash Gifts - BeThere Experience";
   }, []);
 
   const benefits = [

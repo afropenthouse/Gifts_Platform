@@ -84,7 +84,7 @@ module.exports = () => {
       const mailOptions = {
         from: mailFrom,
         to: email,
-        subject: 'Verify Your Email - BeThere',
+        subject: 'Verify Your Email - BeThere Experience',
         html: `
           <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
             <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
@@ -233,7 +233,7 @@ module.exports = () => {
       const mailOptions = {
         from: mailFrom,
         to: email,
-        subject: 'Reset Your Password - BeThere',
+        subject: 'Reset Your Password - BeThere Experience',
         html: `
           <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
             <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">

@@ -10,7 +10,7 @@ const CollectCashGifts = () => {
   const { openSignupModal } = useAuth();
 
   useEffect(() => {
-    document.title = "Collect Cash Gifts for Your Event - BeThere ";
+    document.title = "Collect Cash Gifts for Your Event - BeThere Experience ";
   }, []);
 
   const timingFeatures = [
