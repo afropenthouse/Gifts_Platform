@@ -51,6 +51,7 @@ interface Contribution {
   id: number;
   contributorName: string | null;
   amount: number;
+  commission: number;
   createdAt: string;
   isAsoebi: boolean;
   gift: {
@@ -1028,6 +1029,8 @@ const AdminDashboard = () => {
       });
     }
 
+    const filteredRevenue = rows.reduce((sum, c) => sum + (Number(c.commission) || 0), 0);
+
     return (
       <>
         {tab === 'transactions' && (
@@ -1039,7 +1042,7 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ₦{(metrics?.totalRevenue || 0).toLocaleString()}
+                  ₦{filteredRevenue.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   From commissions and fees
