@@ -56,24 +56,26 @@ const Wishes: React.FC = () => {
     fetchWishes();
     fetchGiftDetails();
 
-    // Trigger confetti
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+    // Trigger confetti - same as ShareGift.tsx
+    const duration = 15 * 1000; // 15 seconds
+    const end = Date.now() + duration;
 
-    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+    const interval = setInterval(() => {
+      confetti({
+        particleCount: 20,
+        angle: 90,
+        spread: 70,
+        origin: { x: Math.random(), y: 0 },
+        gravity: 2.5,
+        drift: 0,
+        decay: 0.96,
+        colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe', '#fd79a8', '#00b894', '#e17055', '#74b9ff', '#a29bfe', '#ffeaa7', '#fab1a0']
+      });
 
-    const interval: any = setInterval(function() {
-      const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
+      if (Date.now() > end) {
+        clearInterval(interval);
       }
-
-      const particleCount = 50 * (timeLeft / duration);
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-    }, 250);
+    }, 50); // More frequent bursts
 
     return () => clearInterval(interval);
   }, [linkParam]);
