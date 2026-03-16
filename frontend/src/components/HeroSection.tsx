@@ -141,7 +141,7 @@ const HeroSection = () => {
           <span className="text-gold" style={{ color: '#C9A14A' }}>Special moments</span>
           
           <br />
-          <span className="font-serif font-semibold block" style={{ color: '#2E235C' }}>with one simple link</span>
+          <span className="font-serif font-semibold block" style={{ color: '#2E235C' }}>With one simple link</span>
         </h1>
 
         {/* Subtitle */}
