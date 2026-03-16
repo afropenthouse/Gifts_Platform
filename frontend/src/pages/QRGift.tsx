@@ -29,6 +29,7 @@ interface Gift {
   _count?: { contributions: number };
   guestListMode?: string;
   enableCashGifts?: boolean;
+  enableGuestNotes?: boolean;
 }
 
 const QRGift: React.FC = () => {
@@ -52,6 +53,12 @@ const QRGift: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [eventType, setEventType] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [noteMessage, setNoteMessage] = useState('');
+  const [noteName, setNoteName] = useState('');
+  const [isSubmittingNote, setIsSubmittingNote] = useState(false);
+  const [noteSent, setNoteSent] = useState(false);
+  const [showNoteThanks, setShowNoteThanks] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -232,6 +239,51 @@ const QRGift: React.FC = () => {
       console.error(err);
       alert(err?.message || 'Payment initialization failed');
       setProcessingPayment(false);
+    }
+  };
+
+  const handleNoteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkParam || isSubmittingNote) return;
+
+    if (!noteMessage.trim()) {
+      alert('Please enter your wishes');
+      return;
+    }
+
+    setIsSubmittingNote(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contributions/note/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contributorName: noteName.trim() || 'Anonymous',
+          contributorEmail: '', // Optional for notes
+          message: noteMessage,
+          shareLink: linkParam,
+        }),
+      });
+
+      if (res.ok) {
+        setNoteSent(true);
+        setNoteMessage('');
+        setNoteName('');
+        
+        // Close note modal and show thanks/prompt modal
+        setTimeout(() => {
+          setShowNoteModal(false);
+          setNoteSent(false); 
+          setShowNoteThanks(true);
+        }, 1000);
+      } else {
+        const data = await res.json();
+        alert(data.msg || 'Failed to send note');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error sending note');
+    } finally {
+      setIsSubmittingNote(false);
     }
   };
 
@@ -443,6 +495,15 @@ const QRGift: React.FC = () => {
               </Button>
             </div>
           )}
+
+          {gift.enableGuestNotes !== false && (
+            <button 
+              onClick={() => setShowNoteModal(true)} 
+              className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+            >
+              Send Well Wishes
+            </button>
+          )}
         </div>
       </div>
 
@@ -644,6 +705,91 @@ const QRGift: React.FC = () => {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Note Modal */}
+      <Dialog open={showNoteModal} onOpenChange={setShowNoteModal}>
+        <DialogContent className="max-w-sm" onInteractOutside={(e) => { e.preventDefault(); }}>
+          <DialogHeader>
+            <DialogTitle className="text-xl font-playfair text-center text-[#2E235C]">Send Well Wishes</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleNoteSubmit} className="space-y-4 px-2 pb-4">
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="noteName" className="text-sm font-medium">Your Name (Optional)</Label>
+                <Input
+                  id="noteName"
+                  value={noteName}
+                  onChange={(e) => setNoteName(e.target.value)}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#2E235C]/20 focus:border-[#2E235C] outline-none text-sm"
+                  placeholder="Enter your name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="noteMessage" className="text-sm font-medium">Your Message/Wishes</Label>
+                <textarea
+                  id="noteMessage"
+                  value={noteMessage}
+                  onChange={(e) => setNoteMessage(e.target.value)}
+                  className="w-full min-h-[120px] p-3 border rounded-lg focus:ring-2 focus:ring-[#2E235C]/20 focus:border-[#2E235C] outline-none resize-none text-sm"
+                  placeholder="Type your wishes here..."
+                  required
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              size="lg"
+              className={`w-full text-white transition-all ${noteSent ? 'bg-green-600 hover:bg-green-700' : 'bg-[#2E235C] hover:bg-[#2E235C]/90'}`}
+              disabled={isSubmittingNote || noteSent}
+            >
+              {isSubmittingNote ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Sending...</span>
+                </div>
+              ) : noteSent ? (
+                'Sent Successfully!'
+              ) : (
+                'Send Wishes'
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Note Thanks / Cash Gift Prompt Modal */}
+      <Dialog open={showNoteThanks} onOpenChange={setShowNoteThanks}>
+        <DialogContent className="max-w-sm text-center py-8" onInteractOutside={(e) => { e.preventDefault(); }}>
+          <div className="flex flex-col items-center gap-4">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-playfair text-[#2E235C]">Wishes Received!</DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-600 px-4">
+              Thank you for your beautiful message. Would you also like to send a cash gift to the celebrant?
+            </p>
+            <div className="flex flex-col w-full gap-3 px-4 mt-2">
+              <Button 
+                onClick={() => {
+                  setShowNoteThanks(false);
+                  setShowAmountModal(true);
+                }}
+                className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90 h-10 text-base"
+              >
+                Yes, Send Cash Gift
+              </Button>
+              <Button 
+                variant="ghost"
+                onClick={() => setShowNoteThanks(false)}
+                className="w-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              >
+                No, maybe later
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

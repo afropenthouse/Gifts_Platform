@@ -1218,7 +1218,7 @@ const ShareGift: React.FC = () => {
                   setShowNoteThanks(false);
                   setShowAmountModal(true);
                 }}
-                className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90 h-12 text-lg"
+                className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90 h-10 text-base"
               >
                 Yes, Send Cash Gift
               </Button>
