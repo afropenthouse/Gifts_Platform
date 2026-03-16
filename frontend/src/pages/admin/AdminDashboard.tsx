@@ -486,6 +486,8 @@ const AdminDashboard = () => {
   const filteredContributions = (tab: AdminTab) => {
     let rows = allContributions;
     if (tab === 'transactions') {
+      // Exclude contributions with amount = 0 (wishes)
+      rows = rows.filter((c) => c.amount > 0);
       if (selectedTxnType === 'asoebi') {
         rows = rows.filter((c) => c.isAsoebi);
       } else if (selectedTxnType === 'cash') {
@@ -1244,7 +1246,7 @@ const AdminDashboard = () => {
                         {event._count.guests}
                       </TableCell>
                       <TableCell className="text-center">
-                        {event._count.contributions}
+                        {allContributions.filter(c => c.amount > 0 && c.gift?.id === event.id).length}
                       </TableCell>
                       <TableCell className="text-sm">
                         {event.deadline

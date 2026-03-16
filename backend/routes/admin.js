@@ -117,6 +117,7 @@ module.exports = () => {
           where: {
             status: 'completed',
             isAsoebi: false,
+            amount: { gt: 0 },
             ...dateFilter
           }
         }),
@@ -124,6 +125,7 @@ module.exports = () => {
           where: {
             status: 'completed',
             isAsoebi: true,
+            amount: { gt: 0 },
             ...dateFilter
           }
         }),
@@ -134,6 +136,7 @@ module.exports = () => {
           where: {
             status: 'completed',
             isAsoebi: false,
+            amount: { gt: 0 },
             ...dateFilter
           }
         }),
@@ -144,6 +147,7 @@ module.exports = () => {
           where: {
             status: 'completed',
             isAsoebi: true,
+            amount: { gt: 0 },
             ...dateFilter
           }
         }),
@@ -159,6 +163,7 @@ module.exports = () => {
           },
           where: {
             status: 'completed',
+            amount: { gt: 0 },
             ...dateFilter
           }
         }),
