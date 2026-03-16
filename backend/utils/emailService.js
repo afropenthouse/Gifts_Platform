@@ -650,7 +650,7 @@ const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
 
             <div style="margin-top: 32px;">
             <a href="${dashboardUrl}" style="display: inline-block; background-color: ${accent}; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(46,35,92,0.2);">
-              Create RSVP Link
+              Create Event Link
             </a>
           </div>
           </div>

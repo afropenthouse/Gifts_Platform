@@ -1425,7 +1425,7 @@ const Dashboard: React.FC = () => {
                 shadow-lg hover:shadow-xl transition-all duration-300 h-12"
               >
                 <Gift className="w-5 h-5 mr-2" />
-                Create RSVP Link
+                Create Event Link
               </Button>
             </div>
 
@@ -1677,7 +1677,7 @@ const Dashboard: React.FC = () => {
                         }}
                       >
                         <Gift className="w-4 h-4 mr-2" />
-                        Create RSVP Link
+                        Create Event Link
                       </Button>
                     </CardContent>
                   </Card>
@@ -2774,7 +2774,7 @@ const Dashboard: React.FC = () => {
                 <Gift className="w-5 h-5 text-[#2E235C]" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-semibold text-gray-900">Create RSVP Link</DialogTitle>
+                <DialogTitle className="text-xl font-semibold text-gray-900">Create Event Link</DialogTitle>
                 <p className="text-sm text-gray-600 mt-1">Share your special moment and receive gifts</p>
               </div>
             </div>

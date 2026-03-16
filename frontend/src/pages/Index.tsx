@@ -119,7 +119,7 @@ const Index = () => {
             style={{ backgroundColor: '#ffff' }}
             onClick={openSignupModal}
           >
-            Create RSVP Link
+            Create Event Link
           </Button>
         </div>
       </section>

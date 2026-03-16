@@ -157,7 +157,7 @@ const HeroSection = () => {
             className="w-full sm:w-auto px-8 py-6 text-base md:text-lg"
             style={{ backgroundColor: '#2E235C' }}
           >
-            Create RSVP Link
+            Create Event Link
           </Button>
         </div>
       </div>
@@ -205,7 +205,7 @@ const HeroSection = () => {
               <Gift className="w-5 h-5 text-[#2E235C]" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-semibold text-gray-900">Create RSVP Link</DialogTitle>
+              <DialogTitle className="text-xl font-semibold text-gray-900">Create Event Link</DialogTitle>
               <p className="text-sm text-gray-600 mt-1">Share your special moment and receive gifts</p>
             </div>
           </div>
