@@ -146,7 +146,7 @@ const HeroSection = () => {
 
         {/* Subtitle */}
         <p className="text-base md:text-lg lg:text-xl text-black max-w-xl mb-6 md:mb-8 mx-auto lg:mx-0 font-sans font-thin">
-          Manage RSVPs, collect cash gifts, sell Asoebi, recieve well wishes and track expenses for your event all in one place.
+          Manage RSVPs, collect cash gifts, sell Asoebi, receive well wishes and track expenses for your event all in one place.
         </p>
 
         {/* CTA Buttons */}
