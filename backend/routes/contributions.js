@@ -751,37 +751,13 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Guest notes are disabled for this event' });
       }
 
-      const contribution = await prisma.contribution.create({
-        data: {
-          giftId: gift.id,
-          contributorName: contributorName || 'Anonymous',
-          contributorEmail: contributorEmail || '',
-          amount: 0,
-          message: message,
-          status: 'completed',
-          commission: 0
-        },
-      });
+      // Wishes/notes should not be recorded as transactions.
+      // Optionally, save to a separate table/model if you want to keep wishes.
+      // Example: await prisma.wish.create({ data: { ... } });
 
-      // Check if this is the FIRST note/wish for this gift
-      const noteCount = await prisma.contribution.count({
-        where: { giftId: gift.id, amount: 0 }
-      });
+      // If you want to notify the owner for the first wish, implement wish counting in the new wish table/model.
 
-      if (noteCount === 1) {
-        // Send email notification to owner ONLY for the first note
-        sendGiftReceivedEmail({
-          recipientEmail: gift.user.email,
-          recipientName: gift.user.name,
-          contributorName: contributorName || 'Anonymous',
-          amount: 0,
-          gift: gift,
-          message: ``,
-          isAsoebi: false,
-        }).catch(err => console.error('Background note received email failed:', err));
-      }
-
-      res.json({ msg: 'Note sent successfully', contribution });
+      res.json({ msg: 'Note sent successfully' });
     } catch (err) {
       console.error('Submit note error:', err);
       res.status(500).json({ msg: 'Server error' });
