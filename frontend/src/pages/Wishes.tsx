@@ -100,29 +100,29 @@ const Wishes: React.FC = () => {
         </div>
 
         {wishes.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
+          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 px-6">
             <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No wishes sent yet. Be the first!</p>
-            <Button 
-              onClick={() => navigate(`/gift/${linkParam}`)}
-              className="mt-6 bg-[#2E235C] text-white"
-            >
-              Leave a Note
-            </Button>
+            <p className="text-gray-500 text-lg mb-4">No wishes sent yet.</p>
+            <p className="text-[#2E235C] font-medium max-w-sm mx-auto leading-relaxed">
+              Share your event link with friends and family so they can send you well wishes
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {wishes.map((wish) => (
               <Card key={wish.id} className="border-none shadow-sm hover:shadow-md transition-shadow bg-white overflow-hidden">
                 <CardContent className="p-6">
-                  <div className="flex flex-col gap-2">
-                    <p className="text-sm text-gray-500">
-                      {new Date(wish.createdAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </p>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-start">
+                      <p className="text-[#2E235C] font-bold text-lg">{wish.contributorName || 'Anonymous'}</p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(wish.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
                     <p className="text-gray-700 leading-relaxed italic text-lg">
                       "{wish.message}"
                     </p>

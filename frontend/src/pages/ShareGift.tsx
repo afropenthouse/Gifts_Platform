@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import Navbar from '../components/Navbar';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Users, Gift, Plus, Minus, ChevronLeft } from 'lucide-react';
+import { Users, Gift, Plus, Minus, ChevronLeft, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 declare global {
@@ -104,8 +104,10 @@ const ShareGift: React.FC = () => {
   const [showStoryModal, setShowStoryModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteMessage, setNoteMessage] = useState('');
+  const [noteName, setNoteName] = useState('');
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [noteSent, setNoteSent] = useState(false);
+  const [showNoteThanks, setShowNoteThanks] = useState(false);
 
   useEffect(() => {
     document.title = "BeThere Experience  - Collect RSVPs & Cash Gifts for your Event";
@@ -908,8 +910,8 @@ const ShareGift: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contributorName: isAnonymous ? 'Anonymous' : contributorName,
-          contributorEmail: contributorEmail,
+          contributorName: noteName.trim() || 'Anonymous',
+          contributorEmail: contributorEmail, // This might be empty, but that's okay for notes
           message: noteMessage,
           shareLink: fullLink,
         }),
@@ -918,12 +920,14 @@ const ShareGift: React.FC = () => {
       if (res.ok) {
         setNoteSent(true);
         setNoteMessage('');
+        setNoteName('');
         
-        // Brief delay to show "Sent" before closing
+        // Close note modal and show thanks/prompt modal
         setTimeout(() => {
           setShowNoteModal(false);
-          setNoteSent(false); // Reset for next time
-        }, 1500);
+          setNoteSent(false); 
+          setShowNoteThanks(true);
+        }, 1000);
       } else {
         const data = await res.json();
         alert(data.msg || 'Failed to send note');
@@ -1155,6 +1159,16 @@ const ShareGift: React.FC = () => {
           <form onSubmit={handleNoteSubmit} className="space-y-4 px-2 pb-4">
             <div className="space-y-3">
               <div>
+                <Label htmlFor="noteName" className="text-sm font-medium">Your Name (Optional)</Label>
+                <Input
+                  id="noteName"
+                  value={noteName}
+                  onChange={(e) => setNoteName(e.target.value)}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#2E235C]/20 focus:border-[#2E235C] outline-none text-sm"
+                  placeholder="Enter your name"
+                />
+              </div>
+              <div>
                 <Label htmlFor="noteMessage" className="text-sm font-medium">Your Message/Wishes</Label>
                 <textarea
                   id="noteMessage"
@@ -1185,6 +1199,38 @@ const ShareGift: React.FC = () => {
               )}
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Note Thanks / Cash Gift Prompt Modal */}
+      <Dialog open={showNoteThanks} onOpenChange={setShowNoteThanks}>
+        <DialogContent className="max-w-sm text-center py-8" onInteractOutside={(e) => { e.preventDefault(); }}>
+          <div className="flex flex-col items-center gap-4">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-playfair text-[#2E235C]">Wishes Received!</DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-600 px-4">
+              Thank you for your beautiful message. Would you also like to send a cash gift to the celebrant?
+            </p>
+            <div className="flex flex-col w-full gap-3 px-4 mt-2">
+              <Button 
+                onClick={() => {
+                  setShowNoteThanks(false);
+                  setShowAmountModal(true);
+                }}
+                className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90 h-12 text-lg"
+              >
+                Yes, Send Cash Gift
+              </Button>
+              <Button 
+                variant="ghost"
+                onClick={() => setShowNoteThanks(false)}
+                className="w-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              >
+                No, maybe later
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

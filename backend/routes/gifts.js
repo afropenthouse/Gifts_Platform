@@ -564,7 +564,13 @@ module.exports = () => {
         where: { shareLink: req.params.link },
         include: { 
           user: { select: { name: true, profilePicture: true } },
-          _count: { select: { contributions: true } },
+          _count: { 
+            select: { 
+              contributions: {
+                where: { amount: { gt: 0 } }
+              } 
+            } 
+          },
           asoebiItems: true,
           contributions: {
              where: { status: 'completed', isAsoebi: true },
