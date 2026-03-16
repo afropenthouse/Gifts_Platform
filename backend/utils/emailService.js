@@ -479,22 +479,27 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
   const senderDisplay = isAnonymous ? 'An anonymous guest' : contributorName.trim();
   
   const subject = amount === 0 
-    ? `New Note/Wish for ${heading}`
+    ? `You've received a new well wish message for  ${heading}`
     : isAsoebi 
       ? `New Asoebi Payment for ${heading}` 
       : `You received a gift for ${heading}!`;
     
   const title = amount === 0 
-    ? 'New Note/Wish Received'
+    ? 'New Message'
     : isAsoebi 
       ? 'New Asoebi Payment' 
       : 'You Received a Gift!';
   
   const messageBody = amount === 0
-    ? `${senderDisplay} has sent you a note/wish.`
+    ? `Someone has sent you a message to celebrate this special moment with you.<br><br>Tap the button below to read the message and see all the well wishes from your friends, family, and colleagues.`
     : isAsoebi
       ? `${senderDisplay} has paid for Asoebi (<strong>₦${amount.toLocaleString()}</strong>).`
       : `${senderDisplay} has sent you a cash gift of <strong>₦${amount.toLocaleString()}</strong>.`;
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const actionButton = amount === 0 
+    ? `<a href="${frontendUrl}/wishes/${gift.shareLink}" style="display: inline-block; background: ${accent}; color: #ffffff; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; margin-top: 16px;">View Well Wishes</a>`
+    : `<a href="${frontendUrl}/dashboard" style="color: ${accent}; text-decoration: none; font-weight: 600; font-size: 12px;">View your Payment in your dashboard</a>`;
 
   const html = `
     <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
@@ -511,12 +516,12 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
             <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
               ${messageBody}
             </p>
-            ${message && !isAnonymous ? `<p style="margin: 8px 0 0; font-size: 13px; color: #4b5563; font-style: italic; line-height: 20px;">"${message}"</p>` : ''}
+            ${amount === 0 ? '' : (message && !isAnonymous ? `<p style="margin: 8px 0 0; font-size: 13px; color: #4b5563; font-style: italic; line-height: 20px;">"${message}"</p>` : '')}
           </div>
 
-          <p style="margin: 12px 0 0; font-size: 12px; color: #6b7280;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="color: ${accent}; text-decoration: none; font-weight: 600;">View your Payment in your dashboard</a>
-          </p>
+          <div style="margin-top: 12px;">
+            ${actionButton}
+          </div>
         </div>
       </div>
     </div>

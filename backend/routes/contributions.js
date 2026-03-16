@@ -759,27 +759,33 @@ module.exports = () => {
           amount: 0,
           message: message,
           status: 'completed',
-          isAsoebi: false,
           commission: 0
         },
       });
 
-      // Send email notification to owner
-      sendGiftReceivedEmail({
-        recipientEmail: gift.user.email,
-        recipientName: gift.user.name,
-        contributorName: contributorName || 'Anonymous',
-        amount: 0,
-        gift: gift,
-        message: message || '',
-        isAsoebi: false,
-      }).catch(err => console.error('Background note received email failed:', err));
+      // Check if this is the FIRST note/wish for this gift
+      const noteCount = await prisma.contribution.count({
+        where: { giftId: gift.id, amount: 0 }
+      });
+
+      if (noteCount === 1) {
+        // Send email notification to owner ONLY for the first note
+        sendGiftReceivedEmail({
+          recipientEmail: gift.user.email,
+          recipientName: gift.user.name,
+          contributorName: contributorName || 'Anonymous',
+          amount: 0,
+          gift: gift,
+          message: ``,
+          isAsoebi: false,
+        }).catch(err => console.error('Background note received email failed:', err));
+      }
 
       res.json({ msg: 'Note sent successfully', contribution });
     } catch (err) {
       console.error('Submit note error:', err);
       res.status(500).json({ msg: 'Server error' });
-    }
+    }"Tap the button below to read the message and see all the well wishes from your friends, family, and colleagues."
   });
 
   // Contribute to gift (without payment - optional)
