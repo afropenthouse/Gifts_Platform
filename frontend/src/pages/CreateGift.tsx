@@ -30,6 +30,7 @@ const CreateGift: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [story, setStory] = useState('');
+  const [enableGuestNotes, setEnableGuestNotes] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -120,6 +121,7 @@ const CreateGift: React.FC = () => {
       formData.append('customType', customType);
     }
     formData.append('story', story);
+    formData.append('enableGuestNotes', String(enableGuestNotes));
 
     const token = localStorage.getItem('token');
     try {
@@ -291,6 +293,17 @@ const CreateGift: React.FC = () => {
           </div>
         )}
 
+        <div className="flex items-center space-x-2 border p-4 rounded-lg">
+          <Checkbox 
+            id="enableGuestNotes" 
+            checked={enableGuestNotes}
+            onCheckedChange={(checked) => setEnableGuestNotes(checked as boolean)}
+          />
+          <Label htmlFor="enableGuestNotes" className="text-sm font-medium text-gray-900">
+            Allow guests to send a note?
+          </Label>
+        </div>
+
         <div>
           <Label htmlFor="picture">Picture</Label>
           <Input
@@ -322,7 +335,7 @@ const CreateGift: React.FC = () => {
           </>
         )}
         <div>
-          <Label htmlFor="story">Share the story of your journey with your guest here</Label>
+          <Label htmlFor="story">Share the story of your journey with your guest here (Optional)</Label>
           <Textarea
             id="story"
             value={story}

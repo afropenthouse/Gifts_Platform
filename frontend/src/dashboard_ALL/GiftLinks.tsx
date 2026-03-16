@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import {
-  Gift, Copy, Eye, Edit, Download, Filter, Trash2, Users, ExternalLink, Mail
+  Gift, Copy, Eye, Edit, Download, Filter, Trash2, Users, ExternalLink, Mail, MessageSquare
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
@@ -21,6 +21,7 @@ interface Gift {
   contributions?: Contribution[];
   isSellingAsoebi?: boolean;
   asoebiPrice?: number | string;
+  enableGuestNotes?: boolean;
 }
 
 interface Contribution {
@@ -167,6 +168,21 @@ export const GiftLinks = ({
                             <Users className="w-3.5 h-3.5 mr-1" />
                             RSVP
                           </Button>
+                          {gift.enableGuestNotes !== false && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-9 border-[#2E235C] text-[#2E235C] hover:bg-[#2E235C] hover:text-white transition-all font-medium"
+                              onClick={() => {
+                                const wishesUrl = `${window.location.origin}/wishes/${gift.shareLink}`;
+                                window.open(wishesUrl, '_blank');
+                              }}
+                              title="View Wishes"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                              Wishes
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"

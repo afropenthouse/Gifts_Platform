@@ -64,6 +64,8 @@ interface Gift {
   createdAt: string;
   contributions?: Contribution[];
   guestListMode?: string;
+  enableRSVP?: boolean;
+  enableGuestNotes?: boolean;
   enableCashGifts?: boolean;
   isSellingAsoebi?: boolean;
   asoebiPrice?: number | string;
@@ -172,6 +174,8 @@ const Dashboard: React.FC = () => {
   const [editGuestListMode, setEditGuestListMode] = useState('restricted');
   const [isCreatingGift, setIsCreatingGift] = useState(false);
   const [isUpdatingGift, setIsUpdatingGift] = useState(false);
+  const [enableRSVP, setEnableRSVP] = useState(true);
+  const [enableGuestNotes, setEnableGuestNotes] = useState(true);
   const [enableCashGifts, setEnableCashGifts] = useState(true);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
@@ -608,6 +612,8 @@ const Dashboard: React.FC = () => {
     setAsoebiGroomMenQty(g.asoebiGroomMenQty !== undefined && g.asoebiGroomMenQty !== null ? Math.max(0, parseInt(g.asoebiGroomMenQty) - (g.soldAsoebiGroomMenQty || 0)).toString() : '');
     setAsoebiGroomWomenQty(g.asoebiGroomWomenQty !== undefined && g.asoebiGroomWomenQty !== null ? Math.max(0, parseInt(g.asoebiGroomWomenQty) - (g.soldAsoebiGroomWomenQty || 0)).toString() : '');
     setEditGuestListMode(gift.guestListMode || 'restricted');
+    setEnableRSVP(gift.enableRSVP !== undefined ? gift.enableRSVP : true);
+    setEnableGuestNotes(gift.enableGuestNotes !== undefined ? gift.enableGuestNotes : true);
     setEnableCashGifts(gift.enableCashGifts !== undefined ? gift.enableCashGifts : true);
     
     // Populate dynamic items
@@ -673,6 +679,14 @@ const Dashboard: React.FC = () => {
       alert('Please enter an Event Title.');
       return;
     }
+    if (!date) {
+      alert('Please select an Event Date.');
+      return;
+    }
+    if (!picture && !pictureFile) {
+      alert('Please upload an Event Invite image.');
+      return;
+    }
     
     if (fileError) {
       alert('Please fix the file upload error before submitting.');
@@ -724,6 +738,8 @@ const Dashboard: React.FC = () => {
     }
     formData.append('details', JSON.stringify(details));
     formData.append('guestListMode', createGuestListMode);
+    formData.append('enableRSVP', enableRSVP.toString());
+    formData.append('enableGuestNotes', enableGuestNotes.toString());
     formData.append('enableCashGifts', enableCashGifts.toString());
     formData.append('isSellingAsoebi', isSellingAsoebi.toString());
     if (isSellingAsoebi) {
@@ -794,6 +810,8 @@ const Dashboard: React.FC = () => {
         setBrideName('');
         setCustomType('');
         setCreateGuestListMode('restricted');
+        setEnableRSVP(true);
+        setEnableGuestNotes(true);
         setEnableCashGifts(true);
         setIsSellingAsoebi(false);
         setAsoebiPrice('');
@@ -847,6 +865,14 @@ const Dashboard: React.FC = () => {
       alert('Please enter an Event Title.');
       return;
     }
+    if (!date) {
+      alert('Please select an Event Date.');
+      return;
+    }
+    if (!picture && !pictureFile) {
+      alert('Please upload an Event Invite image.');
+      return;
+    }
 
     if (fileError) {
       alert('Please fix the file upload error before submitting.');
@@ -898,6 +924,8 @@ const Dashboard: React.FC = () => {
     }
     formData.append('details', JSON.stringify(details));
     formData.append('guestListMode', editGuestListMode);
+    formData.append('enableRSVP', enableRSVP.toString());
+    formData.append('enableGuestNotes', enableGuestNotes.toString());
     formData.append('enableCashGifts', enableCashGifts.toString());
     formData.append('isSellingAsoebi', isSellingAsoebi.toString());
     if (isSellingAsoebi) {
@@ -968,6 +996,8 @@ const Dashboard: React.FC = () => {
         setEditingGift(null);
         setIsEditModalOpen(false);
         setEditGuestListMode('restricted');
+        setEnableRSVP(true);
+        setEnableGuestNotes(true);
         setEnableCashGifts(true);
         setIsSellingAsoebi(false);
         setAsoebiPrice('');
@@ -2665,9 +2695,9 @@ const Dashboard: React.FC = () => {
             <div className="space-y-5 mt-4">
               <div>
                 <Label className="text-sm font-medium text-gray-900 mb-2 block">
-                  Event Type
+                  Event Type <span className="text-red-500">*</span>
                 </Label>
-                <Select onValueChange={setType} value={type}>
+                <Select onValueChange={setType} value={type} required>
                   <SelectTrigger className="w-full h-11 border-gray-300 bg-white hover:bg-gray-50 transition-colors">
                     <SelectValue placeholder="Select event type" />
                   </SelectTrigger>
@@ -2700,7 +2730,7 @@ const Dashboard: React.FC = () => {
 
               <div>
                 <Label htmlFor="title" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Event Title
+                  Event Title <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="title"
@@ -2716,7 +2746,7 @@ const Dashboard: React.FC = () => {
               <div>
                 <Label htmlFor="date" className="text-sm font-medium text-gray-900 mb-2 block">
                   <Calendar className="inline w-4 h-4 mr-2 text-gray-600" />
-                  Event Date
+                  Event Date <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="date"
@@ -2724,22 +2754,36 @@ const Dashboard: React.FC = () => {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  required
                 />
               </div>
 
-              <div>
-                <Label htmlFor="deadline" className="text-sm font-medium text-gray-900 mb-2 block">
-                  <Clock className="inline w-4 h-4 mr-2 text-gray-600" />
-                  RSVP Deadline
-                </Label>
-                <Input
-                  id="deadline"
-                  type="datetime-local"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="enableRSVP" 
+                  checked={enableRSVP}
+                  onCheckedChange={(checked) => setEnableRSVP(checked as boolean)}
                 />
+                <Label htmlFor="enableRSVP" className="text-sm font-medium text-gray-900">
+                  Collect RSVPs for this event?
+                </Label>
               </div>
+
+              {enableRSVP && (
+                <div>
+                  <Label htmlFor="deadline" className="text-sm font-medium text-gray-900 mb-2 block">
+                    <Clock className="inline w-4 h-4 mr-2 text-gray-600" />
+                    RSVP Deadline
+                  </Label>
+                  <Input
+                    id="deadline"
+                    type="datetime-local"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  />
+                </div>
+              )}
 
 
               <div>
@@ -2772,6 +2816,17 @@ const Dashboard: React.FC = () => {
                     <SelectItem value="1day">1 day before</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="enableGuestNotes" 
+                  checked={enableGuestNotes}
+                  onCheckedChange={(checked) => setEnableGuestNotes(checked as boolean)}
+                />
+                <Label htmlFor="enableGuestNotes" className="text-sm font-medium text-gray-900">
+                  Allow guests to send well wishes?
+                </Label>
               </div>
 
               <div className="flex items-center space-x-2 border p-4 rounded-lg">
@@ -3083,7 +3138,7 @@ const Dashboard: React.FC = () => {
               <div>
                 <Label htmlFor="picture" className="text-sm font-medium text-gray-900 mb-2 block">
                   <ImageIcon className="inline w-4 h-4 mr-2 text-gray-600" />
-                  Event Invite
+                  Event Invite <span className="text-red-500">*</span>
                 </Label>
                 <p className="text-xs text-gray-500 mb-2">
                   Upload a picture or event invite (Guest will see this when they RSVP or send cash gift)
@@ -3184,7 +3239,7 @@ const Dashboard: React.FC = () => {
 
               <div>
                 <Label htmlFor="story" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Share the story of your journey with your guest here
+                  Share the story of your journey with your guest here (Optional)
                 </Label>
                 <Textarea
                   id="story"
@@ -3275,9 +3330,9 @@ const Dashboard: React.FC = () => {
             <div className="space-y-5 mt-4">
               <div>
                 <Label className="text-sm font-medium text-gray-900 mb-2 block">
-                  Event Type
+                  Event Type <span className="text-red-500">*</span>
                 </Label>
-                <Select onValueChange={setType} value={type}>
+                <Select onValueChange={setType} value={type} required>
                   <SelectTrigger className="w-full h-11 border-gray-300 bg-white hover:bg-gray-50 transition-colors">
                     <SelectValue placeholder="Select event type" />
                   </SelectTrigger>
@@ -3310,7 +3365,7 @@ const Dashboard: React.FC = () => {
 
               <div>
                 <Label htmlFor="title" className="text-sm font-medium text-gray-900 mb-2 block">
-                  RSVP link Title
+                  Event Title <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="title"
@@ -3326,7 +3381,7 @@ const Dashboard: React.FC = () => {
               <div>
                 <Label htmlFor="date" className="text-sm font-medium text-gray-900 mb-2 block">
                   <Calendar className="inline w-4 h-4 mr-2 text-gray-600" />
-                  Event Date
+                  Event Date <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="date"
@@ -3334,22 +3389,36 @@ const Dashboard: React.FC = () => {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  required
                 />
               </div>
 
-              <div>
-                <Label htmlFor="edit-deadline" className="text-sm font-medium text-gray-900 mb-2 block">
-                  <Clock className="inline w-4 h-4 mr-2 text-gray-600" />
-                  RSVP Deadline
-                </Label>
-                <Input
-                  id="edit-deadline"
-                  type="datetime-local"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="editEnableRSVP" 
+                  checked={enableRSVP}
+                  onCheckedChange={(checked) => setEnableRSVP(checked as boolean)}
                 />
+                <Label htmlFor="editEnableRSVP" className="text-sm font-medium text-gray-900">
+                  Collect RSVPs for this event?
+                </Label>
               </div>
+
+              {enableRSVP && (
+                <div>
+                  <Label htmlFor="edit-deadline" className="text-sm font-medium text-gray-900 mb-2 block">
+                    <Clock className="inline w-4 h-4 mr-2 text-gray-600" />
+                    RSVP Deadline
+                  </Label>
+                  <Input
+                    id="edit-deadline"
+                    type="datetime-local"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                    className="h-11 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                  />
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="address" className="text-sm font-medium text-gray-900 mb-2 block">
@@ -3381,6 +3450,17 @@ const Dashboard: React.FC = () => {
                 {/* <p className="text-xs text-gray-500 mt-1">
                   You can change this later in the RSVP management section.
                 </p> */}
+              </div>
+
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="editEnableGuestNotes" 
+                  checked={enableGuestNotes}
+                  onCheckedChange={(checked) => setEnableGuestNotes(checked as boolean)}
+                />
+                <Label htmlFor="editEnableGuestNotes" className="text-sm font-medium text-gray-900">
+                  Allow guests to send well wishes?
+                </Label>
               </div>
 
               <div className="flex items-center space-x-2 border p-4 rounded-lg">
@@ -3673,7 +3753,7 @@ const Dashboard: React.FC = () => {
               <div>
                 <Label className="text-sm font-medium text-gray-900 mb-3 block">
                   <ImageIcon className="inline w-4 h-4 mr-2 text-gray-600" />
-                  Change Picture
+                  Event Invite <span className="text-red-500">*</span>
                 </Label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#2E235C]/50 transition-colors cursor-pointer bg-gray-50/50">
                   <Input
@@ -3737,11 +3817,11 @@ const Dashboard: React.FC = () => {
               )}
 
               <div>
-                <Label htmlFor="story" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Share the story of your journey with your guest here
+                <Label htmlFor="edit-story" className="text-sm font-medium text-gray-900 mb-2 block">
+                  Share the story of your journey with your guest here (Optional)
                 </Label>
                 <Textarea
-                  id="story"
+                  id="edit-story"
                   value={story}
                   onChange={(e) => setStory(e.target.value)}
                   className="min-h-[150px] border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"

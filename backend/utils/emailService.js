@@ -478,15 +478,23 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
   const isAnonymous = contributorName === 'Anonymous';
   const senderDisplay = isAnonymous ? 'An anonymous guest' : contributorName.trim();
   
-  const subject = isAsoebi 
-    ? `New Asoebi Payment for ${heading}` 
-    : `You received a gift for ${heading}!`;
+  const subject = amount === 0 
+    ? `New Note/Wish for ${heading}`
+    : isAsoebi 
+      ? `New Asoebi Payment for ${heading}` 
+      : `You received a gift for ${heading}!`;
     
-  const title = isAsoebi ? 'New Asoebi Payment' : 'You Received a Gift!';
+  const title = amount === 0 
+    ? 'New Note/Wish Received'
+    : isAsoebi 
+      ? 'New Asoebi Payment' 
+      : 'You Received a Gift!';
   
-  const messageBody = isAsoebi
-    ? `${senderDisplay} has paid for Asoebi (<strong>₦${amount.toLocaleString()}</strong>).`
-    : `${senderDisplay} has sent you a cash gift of <strong>₦${amount.toLocaleString()}</strong>.`;
+  const messageBody = amount === 0
+    ? `${senderDisplay} has sent you a note/wish.`
+    : isAsoebi
+      ? `${senderDisplay} has paid for Asoebi (<strong>₦${amount.toLocaleString()}</strong>).`
+      : `${senderDisplay} has sent you a cash gift of <strong>₦${amount.toLocaleString()}</strong>.`;
 
   const html = `
     <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">

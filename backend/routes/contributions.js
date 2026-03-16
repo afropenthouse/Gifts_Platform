@@ -736,6 +736,52 @@ module.exports = () => {
     }
   });
 
+  // Submit a note/wish (0 amount contribution)
+  router.post('/note/submit', async (req, res) => {
+    const { contributorName, contributorEmail, message, shareLink } = req.body;
+
+    try {
+      const gift = await prisma.gift.findUnique({ 
+        where: { shareLink: shareLink },
+        include: { user: true }
+      });
+      if (!gift) return res.status(404).json({ msg: 'Gift not found' });
+
+      if (!gift.enableGuestNotes) {
+        return res.status(400).json({ msg: 'Guest notes are disabled for this event' });
+      }
+
+      const contribution = await prisma.contribution.create({
+        data: {
+          giftId: gift.id,
+          contributorName: contributorName || 'Anonymous',
+          contributorEmail: contributorEmail || '',
+          amount: 0,
+          message: message,
+          status: 'completed',
+          isAsoebi: false,
+          commission: 0
+        },
+      });
+
+      // Send email notification to owner
+      sendGiftReceivedEmail({
+        recipientEmail: gift.user.email,
+        recipientName: gift.user.name,
+        contributorName: contributorName || 'Anonymous',
+        amount: 0,
+        gift: gift,
+        message: message || '',
+        isAsoebi: false,
+      }).catch(err => console.error('Background note received email failed:', err));
+
+      res.json({ msg: 'Note sent successfully', contribution });
+    } catch (err) {
+      console.error('Submit note error:', err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
   // Contribute to gift (without payment - optional)
   router.post('/:link(*)', async (req, res) => {
     const { contributorName, contributorEmail, amount, message } = req.body;

@@ -28,6 +28,7 @@ import PrivacyPolicy from "./pages/landing/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import Wishes from "./pages/Wishes";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,8 @@ const App = () => {
           <Route path="/gift/:slug/:id" element={<ShareGift />} />
           <Route path="/qr-gift/:link" element={<QRGift />} />
           <Route path="/qr-gift/:slug/:id" element={<QRGift />} />
+          <Route path="/wishes/:linkParam" element={<Wishes />} />
+          <Route path="/wishes/:slug/:id" element={<Wishes />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/admin" element={<AdminLogin />} />

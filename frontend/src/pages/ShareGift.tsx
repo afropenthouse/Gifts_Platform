@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -31,6 +31,8 @@ interface Gift {
   user: { name: string; profilePicture: string };
   _count?: { contributions: number };
   guestListMode?: string;
+  enableRSVP?: boolean;
+  enableGuestNotes?: boolean;
   enableCashGifts?: boolean;
   isSellingAsoebi?: boolean;
   asoebiPrice?: string | number;
@@ -75,6 +77,8 @@ interface AsoebiItem {
 const ShareGift: React.FC = () => {
   const { link, slug, id } = useParams<{ link?: string; slug?: string; id?: string }>();
   const linkParam = link ?? (slug && id ? `${slug}/${id}` : undefined);
+  const navigate = useNavigate();
+  const params = useParams();
   const [searchParams] = useSearchParams();
   const [gift, setGift] = useState<Gift | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,6 +102,10 @@ const ShareGift: React.FC = () => {
   const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
   const [verifyMessage, setVerifyMessage] = useState('');
   const [showStoryModal, setShowStoryModal] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [noteMessage, setNoteMessage] = useState('');
+  const [isSubmittingNote, setIsSubmittingNote] = useState(false);
+  const [noteSent, setNoteSent] = useState(false);
 
   useEffect(() => {
     document.title = "BeThere Experience  - Collect RSVPs & Cash Gifts for your Event";
@@ -884,6 +892,50 @@ const ShareGift: React.FC = () => {
     }
   };
 
+  const handleNoteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkParam || isSubmittingNote) return;
+
+    if (!noteMessage.trim()) {
+      alert('Please enter your wishes');
+      return;
+    }
+
+    setIsSubmittingNote(true);
+    try {
+      const fullLink = params.slug && params.id ? `${params.slug}/${params.id}` : linkParam;
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contributions/note/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contributorName: isAnonymous ? 'Anonymous' : contributorName,
+          contributorEmail: contributorEmail,
+          message: noteMessage,
+          shareLink: fullLink,
+        }),
+      });
+
+      if (res.ok) {
+        setNoteSent(true);
+        setNoteMessage('');
+        
+        // Brief delay to show "Sent" before closing
+        setTimeout(() => {
+          setShowNoteModal(false);
+          setNoteSent(false); // Reset for next time
+        }, 1500);
+      } else {
+        const data = await res.json();
+        alert(data.msg || 'Failed to send note');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error sending note');
+    } finally {
+      setIsSubmittingNote(false);
+    }
+  };
+
   if (loading)
     return (
       <div className="min-h-screen bg-background">
@@ -963,28 +1015,30 @@ const ShareGift: React.FC = () => {
               <div className="absolute inset-0 flex items-end">
                 <div className="w-full p-4 pb-6">
                   <div className="space-y-3">
-                    {isDeadlinePassed ? (
-                      <Button
-                        className="w-full bg-black text-white cursor-not-allowed border border-black disabled:opacity-100"
-                        size="lg"
-                        disabled
-                      >
-                        <span className='font-thin'>RSVP Closed</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        className="w-full bg-black text-white border border-black hover:bg-black transition-colors"
-                        size="lg"
-                        onClick={() => {
-                          setShowRsvpModal(true);
-                          setRsvpStep(1);
-                          setWillAttend(null);
-                          setRsvpFirstName('');
-                          setRsvpLastName('');
-                        }}
-                      >
-                        <span className='font-thin'>RSVP</span>
-                      </Button>
+                    {gift.enableRSVP !== false && (
+                      isDeadlinePassed ? (
+                        <Button
+                          className="w-full bg-black text-white cursor-not-allowed border border-black disabled:opacity-100"
+                          size="lg"
+                          disabled
+                        >
+                          <span className='font-thin'>RSVP Closed</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full bg-black text-white border border-black hover:bg-black transition-colors"
+                          size="lg"
+                          onClick={() => {
+                            setShowRsvpModal(true);
+                            setRsvpStep(1);
+                            setWillAttend(null);
+                            setRsvpFirstName('');
+                            setRsvpLastName('');
+                          }}
+                        >
+                          <span className='font-thin'>RSVP</span>
+                        </Button>
+                      )
                     )}
 
                     {gift?.isSellingAsoebi && (
@@ -1048,16 +1102,25 @@ const ShareGift: React.FC = () => {
           </div>
 
           {/* Story Section */}
-          {gift.story && (
-            <div className="-mt-5 w-full max-w-md px-4 text-center">
+          <div className="-mt-5 w-full max-w-md px-4 flex flex-col items-center gap-2">
+            {gift.story && (
               <button 
                 onClick={() => setShowStoryModal(true)}
                 className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
               >
                 Read our Story
               </button>
-            </div>
-          )}
+            )}
+            
+            {gift.enableGuestNotes !== false && (
+              <button 
+                onClick={() => setShowNoteModal(true)} 
+                className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+              >
+                Send Well Wishes
+              </button>
+            )}
+          </div>
 
           {/* Description - shown below card if available */}
           {/* {gift.description && (
@@ -1068,7 +1131,7 @@ const ShareGift: React.FC = () => {
         </div>
       </div>
 
-      {/* Amount Modal */}
+      {/* Story Modal */}
       <Dialog open={showStoryModal} onOpenChange={setShowStoryModal}>
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
@@ -1079,6 +1142,49 @@ const ShareGift: React.FC = () => {
               {gift.story}
             </p>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Note Modal */}
+      <Dialog open={showNoteModal} onOpenChange={setShowNoteModal}>
+        <DialogContent className="max-w-sm" onInteractOutside={(e) => { e.preventDefault(); }}>
+          <DialogHeader>
+            <DialogTitle className="text-xl font-playfair text-center text-[#2E235C]">Send Well Wishes</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleNoteSubmit} className="space-y-4 px-2 pb-4">
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="noteMessage" className="text-sm font-medium">Your Message/Wishes</Label>
+                <textarea
+                  id="noteMessage"
+                  value={noteMessage}
+                  onChange={(e) => setNoteMessage(e.target.value)}
+                  className="w-full min-h-[120px] p-3 border rounded-lg focus:ring-2 focus:ring-[#2E235C]/20 focus:border-[#2E235C] outline-none resize-none text-sm"
+                  placeholder="Type your wishes here..."
+                  required
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              size="lg"
+              className={`w-full text-white transition-all ${noteSent ? 'bg-green-600 hover:bg-green-700' : 'bg-[#2E235C] hover:bg-[#2E235C]/90'}`}
+              disabled={isSubmittingNote || noteSent}
+            >
+              {isSubmittingNote ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Sending...
+                </>
+              ) : noteSent ? (
+                'Sent!'
+              ) : (
+                'Submit'
+              )}
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
 

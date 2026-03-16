@@ -38,7 +38,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
+    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableRSVP, enableGuestNotes, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
 
     try {
       let pictureUrl = null;
@@ -102,6 +102,8 @@ module.exports = () => {
           customType,
           shareLink,
           guestListMode: guestListMode || 'restricted',
+          enableRSVP: enableRSVP === 'true' || enableRSVP === true,
+          enableGuestNotes: enableGuestNotes === 'true' || enableGuestNotes === true,
           enableCashGifts: enableCashGifts === 'true' || enableCashGifts === true,
           isSellingAsoebi: isSellingAsoebi === 'true' || isSellingAsoebi === true,
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
@@ -223,7 +225,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
+    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableRSVP, enableGuestNotes, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -281,6 +283,8 @@ module.exports = () => {
           details: detailsParsed,
           customType,
           guestListMode,
+          enableRSVP: enableRSVP === 'true' || enableRSVP === true,
+          enableGuestNotes: enableGuestNotes === 'true' || enableGuestNotes === true,
           enableCashGifts: enableCashGifts === 'true' || enableCashGifts === true,
           isSellingAsoebi: isSellingAsoebi === 'true' || isSellingAsoebi === true,
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
