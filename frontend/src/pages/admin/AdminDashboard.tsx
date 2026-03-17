@@ -499,9 +499,6 @@ const AdminDashboard = () => {
     }
     
     rows = filterByEvent(rows);
-    // Other tabs might still need frontend time filtering if they use allContributions
-    // but currently only transactions and overview (via metrics) use time filters.
-    // For overview, we use the metrics from the backend.
     return rows;
   };
 
@@ -1031,12 +1028,38 @@ const AdminDashboard = () => {
       });
     }
 
+    const filteredTransactionAmount = rows.reduce((sum, c) => sum + Number(c.amount || 0), 0);
     const filteredRevenue = rows.reduce((sum, c) => sum + (Number(c.commission) || 0), 0);
+    const revenueRatio = filteredTransactionAmount > 0
+      ? (filteredRevenue / filteredTransactionAmount) * 100
+      : 0;
+    const timeFilterLabelMap: Record<TimeFilter, string> = {
+      all: 'All Time',
+      '7days': 'Last 7 days',
+      '14days': 'Last 14 days',
+      '30days': 'Last 30 days',
+      '3months': 'Last 3 months',
+      year: 'Last year',
+    };
 
     return (
       <>
         {tab === 'transactions' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Transactions</CardTitle>
+                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  ₦{filteredTransactionAmount.toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Based on {timeFilterLabelMap[txnTimeFilter]} filters
+                </p>
+              </CardContent>
+            </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Platform Revenue</CardTitle>
@@ -1048,6 +1071,20 @@ const AdminDashboard = () => {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   From commissions and fees
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Profit Ratio</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {revenueRatio.toFixed(2)}%
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Revenue as a share of filtered transaction value
                 </p>
               </CardContent>
             </Card>
