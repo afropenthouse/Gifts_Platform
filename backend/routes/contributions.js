@@ -751,17 +751,49 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Guest notes are disabled for this event' });
       }
 
-      // Wishes/notes should not be recorded as transactions.
-      // Optionally, save to a separate table/model if you want to keep wishes.
-      // Example: await prisma.wish.create({ data: { ... } });
+      // Save the wish as a contribution with 0 amount
+      const contribution = await prisma.contribution.create({
+        data: {
+          giftId: gift.id,
+          contributorName: contributorName || 'Anonymous',
+          contributorEmail: contributorEmail || '',
+          amount: 0,
+          message: message,
+          status: 'completed',
+        },
+      });
 
-      // If you want to notify the owner for the first wish, implement wish counting in the new wish table/model.
+      console.log('💾 Wish/Note saved as contribution:', contribution.id);
 
-      res.json({ msg: 'Note sent successfully' });
+      // Only send notification email for the first wish (amount 0) per gift
+      const existingWishesCount = await prisma.contribution.count({
+        where: {
+          giftId: gift.id,
+          amount: 0,
+        },
+      });
+
+      if (existingWishesCount === 1) {
+        // Send gift received email to owner for the first wish (amount 0)
+        sendGiftReceivedEmail({
+          recipientEmail: gift.user.email,
+          recipientName: gift.user.name,
+          contributorName: contributorName || 'Anonymous',
+          amount: 0,
+          gift: gift,
+          message: message,
+          isAsoebi: false,
+        }).catch(err => console.error('Background wish notification email failed:', err));
+        console.log(`📧 First wish notification email sent to owner ${gift.user.email}`);
+      } else {
+        console.log(`ℹ️ Subsequent wish received, skipping email notification (Wishes count: ${existingWishesCount})`);
+      }
+
+      res.json({ msg: 'Note sent successfully', contribution });
     } catch (err) {
       console.error('Submit note error:', err);
       res.status(500).json({ msg: 'Server error' });
-    }"Tap the button below to read the message and see all the well wishes from your friends, family, and colleagues."
+    }
   });
 
   // Contribute to gift (without payment - optional)

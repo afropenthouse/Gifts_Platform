@@ -222,6 +222,7 @@ const Dashboard: React.FC = () => {
   const totalAllowedGuests = guests.reduce((sum, g) => sum + g.allowed, 0);
   const asoebiOrdersCount = contributions.filter(c => c.isAsoebi && Number(c.amount) > 0).length;
   const giftersCount = contributions.filter(c => !c.isAsoebi && Number(c.amount) > 0).length;
+  const wishesCount = contributions.filter(c => Number(c.amount) === 0 && c.message && c.message.trim() !== '').length;
   const isMobile = useIsMobile();
 
   const sidebarItems = [
@@ -1306,7 +1307,7 @@ const Dashboard: React.FC = () => {
     .reduce((sum, c) => sum + Number(c.amount), 0);
 
   const recentTransactions = [
-    ...contributions.map(c => ({ ...c, type: 'contribution' })),
+    ...contributions.filter(c => Number(c.amount) > 0).map(c => ({ ...c, type: 'contribution' })),
     ...withdrawHistory.map(w => ({ ...w, type: 'withdrawal' }))
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   .slice(0, 10);
@@ -1817,8 +1818,8 @@ const Dashboard: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {contributions.length > 0 ? (
-                          contributions.map((contribution) => {
+                        {contributions.filter(c => Number(c.amount) > 0).length > 0 ? (
+                          contributions.filter(c => Number(c.amount) > 0).map((contribution) => {
                             const gift = gifts.find(g => Number(g.id) === Number(contribution.giftId));
                             return (
                               <TableRow key={contribution.id} className="hover:bg-gray-50/50">

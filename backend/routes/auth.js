@@ -129,14 +129,6 @@ module.exports = () => {
         console.error(`⚠️  Verification email failed to send for user ${user.id}:`, emailError?.response?.data || emailError?.message || emailError);
       }
 
-      // Send welcome email
-      try {
-        await sendWelcomeEmail({ recipientEmail: email, recipientName: name });
-        console.log(`✅ Welcome email sent to ${email}`);
-      } catch (welcomeError) {
-        console.error(`⚠️  Failed to send welcome email to ${email}:`, welcomeError);
-      }
-
       res.json({
         msg: 'User registered successfully. Verify your email now.',
       });
@@ -158,6 +150,14 @@ module.exports = () => {
         where: { id: user.id },
         data: { isVerified: true, verificationToken: null, verificationTokenExpires: null },
       });
+
+      // Send welcome email after verification
+      try {
+        await sendWelcomeEmail({ recipientEmail: user.email, recipientName: user.name });
+        console.log(`✅ Welcome email sent to ${user.email} after verification`);
+      } catch (welcomeError) {
+        console.error(`⚠️  Failed to send welcome email to ${user.email} after verification:`, welcomeError);
+      }
 
       res.json({ msg: 'Email verified successfully. You can now log in.' });
     } catch (err) {

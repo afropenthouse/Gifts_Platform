@@ -30,8 +30,8 @@ const Wishes: React.FC = () => {
         const data = await res.json();
         
         if (res.ok) {
-          // Filter only notes (amount 0)
-          const notes = data.filter((c: Contribution) => c.amount === 0);
+          // Filter contributions that have a non-empty message
+          const notes = data.filter((c: Contribution) => c.message && c.message.trim() !== '');
           setWishes(notes);
         }
       } catch (err) {
