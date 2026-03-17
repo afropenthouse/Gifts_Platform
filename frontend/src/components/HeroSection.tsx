@@ -134,12 +134,22 @@ const HeroSection = () => {
       {/* Content */}
       <div className="flex-1 w-full text-center lg:text-left px-0 lg:px-6 py-0 md:py-2 lg:py-4 max-w-4xl mx-auto lg:mx-0">
         {/* Main heading */}
+        {/* Mobile Heading (capitalize, Special Moments on its own line) */}
         <h1 
-          className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold text-foreground mb-4 md:mb-6 leading-snug md:leading-tight"
+          className="font-serif text-2xl sm:hidden font-semibold text-foreground mb-4 md:mb-6 leading-snug md:leading-tight"
+        >
+          <span style={{ color: '#2E235C' }}>Celebrate Life’s</span>
+          <br />
+          <span className="text-gold" style={{ color: '#C9A14A' }}>Special Moments</span>
+          <br />
+          <span className="font-serif font-semibold block" style={{ color: '#2E235C' }}>With One Simple Link</span>
+        </h1>
+        {/* Tablet/Desktop Heading (original) */}
+        <h1 
+          className="font-serif hidden sm:block sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold text-foreground mb-4 md:mb-6 leading-snug md:leading-tight"
         >
           <span style={{ color: '#2E235C' }}>Celebrate Life’s </span>
           <span className="text-gold" style={{ color: '#C9A14A' }}>Special moments</span>
-          
           <br />
           <span className="font-serif font-semibold block" style={{ color: '#2E235C' }}>With one simple link</span>
         </h1>
