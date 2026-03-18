@@ -5538,7 +5538,7 @@ const Dashboard: React.FC = () => {
         if (!user?.phoneNumber) return;
         setIsPhonePromptOpen(open);
       }}>
-        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-md [&>button:last-child]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Complete Your Profile</DialogTitle>
           </DialogHeader>
@@ -5557,7 +5557,7 @@ const Dashboard: React.FC = () => {
                           variant="outline"
                           role="combobox"
                           aria-expanded={isCountryPopoverOpen}
-                          className="w-full justify-between px-2"
+                          className="w-full justify-between px-2 h-9 focus:ring-0 focus:ring-offset-0"
                         >
                           {promptCountryCode ? (
                             <span className="truncate flex items-center gap-2">
@@ -5608,7 +5608,7 @@ const Dashboard: React.FC = () => {
                     value={promptPhoneNumber}
                     onChange={(e) => setPromptPhoneNumber(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="flex-1"
+                    className="flex-1 h-9 focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>

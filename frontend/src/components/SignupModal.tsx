@@ -159,7 +159,7 @@ const SignupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
                           variant="outline"
                           role="combobox"
                           aria-expanded={isCountryPopoverOpen}
-                          className="w-full justify-between px-2 h-9"
+                          className="w-full justify-between px-2 h-9 focus:ring-0 focus:ring-offset-0"
                         >
                           {countryCode ? (
                             <span className="truncate flex items-center gap-2">
@@ -212,7 +212,7 @@ const SignupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="flex-1 h-9"
+                    className="flex-1 h-9 focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
