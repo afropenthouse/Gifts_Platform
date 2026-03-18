@@ -197,22 +197,9 @@ module.exports = () => {
       const referralRevenue = Number(totalReferralRevenue._sum.amount || 0);
       
       // Correct Paystack Fee Calculation (Nigeria)
-      // 1. Transaction Fees (Collection): 1.5% + ₦100 (waived for transactions < ₦2500)
-      // 2. Transfer Fees (Payout): ₦10 (<=5k), ₦25 (5k-50k), ₦50 (>50k)
-      // 3. Stamp Duty: ₦50 for transfers >= ₦10,000
+      // 1. Transfer Fees (Payout): ₦10 (<=5k), ₦25 (5k-50k), ₦50 (>50k)
+      // 2. Stamp Duty: ₦50 for transfers >= ₦10,000
       
-      let collectionFees = 0;
-      for (const c of allContributions) {
-        const amount = Number(c.amount);
-        if (amount < 2500) {
-          collectionFees += amount * 0.015;
-        } else {
-          // 1.5% + 100, capped at 2000 (standard Paystack rule for local)
-          const fee = (amount * 0.015) + 100;
-          collectionFees += Math.min(fee, 2000);
-        }
-      }
-
       let payoutFees = 0;
       for (const w of allWithdrawals) {
         const amount = Number(w.amount);
@@ -230,7 +217,7 @@ module.exports = () => {
         }
       }
 
-      const totalPaystackFees = collectionFees + payoutFees;
+      const totalPaystackFees = payoutFees;
       const netProfit = platformRevenue - totalPaystackFees - referralRevenue;
 
       const [recentUsers, recentContributions] = await Promise.all([
@@ -277,6 +264,7 @@ module.exports = () => {
           totalRevenue: platformRevenue,
           referralRevenue,
           estimatedPaystackFees: totalPaystackFees,
+          payoutFees,
           netProfit
         },
         recentUsers,

@@ -34,6 +34,7 @@ interface Metrics {
   totalRevenue: number;
   referralRevenue: number;
   estimatedPaystackFees: number;
+  payoutFees?: number;
   netProfit: number;
 }
 
@@ -1107,9 +1108,9 @@ const AdminDashboard = () => {
                   <div className="text-2xl font-bold text-black">
                     ₦{(metrics?.estimatedPaystackFees || 0).toLocaleString()}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Transaction charges + Transfer fees + Stamp duty
-                  </p>
+                  <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+                    <p>Transfer Fees + Stamp Duty</p>
+                  </div>
                 </CardContent>
               </Card>
               <Card>
