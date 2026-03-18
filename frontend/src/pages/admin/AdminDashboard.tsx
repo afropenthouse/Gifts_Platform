@@ -156,9 +156,10 @@ const AdminDashboard = () => {
 
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const metricsTimeFilter = activeTab === 'transactions' ? txnTimeFilter : overviewTimeFilter;
 
       const [metricsRes, usersRes] = await Promise.all([
-        fetch(`${baseUrl}/api/admin/metrics?time=${overviewTimeFilter}`, {
+        fetch(`${baseUrl}/api/admin/metrics?time=${metricsTimeFilter}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${baseUrl}/api/admin/users`, {
@@ -182,7 +183,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [navigate, overviewTimeFilter]);
+  }, [activeTab, navigate, overviewTimeFilter, txnTimeFilter]);
 
   const fetchContributions = useCallback(async (time: TimeFilter = 'all', force = false) => {
     if (!force && (fetchingContributions.current || (contributionsLength.current > 0 && !force))) {
@@ -308,7 +309,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
     fetchEvents();
-  }, [fetchDashboardData, fetchEvents, overviewTimeFilter]);
+  }, [fetchDashboardData, fetchEvents]);
 
   useEffect(() => {
     if (activeTab === 'transactions') {
@@ -324,7 +325,7 @@ const AdminDashboard = () => {
     if (activeTab === 'guests' || activeTab === 'emails') {
       fetchGuests();
     }
-  }, [activeTab, selectedEventId]);
+  }, [activeTab, fetchGuests]);
 
   const handleToggleUser = async (userId: number) => {
     const token = localStorage.getItem('adminToken');
@@ -461,7 +462,7 @@ const AdminDashboard = () => {
       }
 
       const now = new Date();
-      let filterDate = new Date();
+      const filterDate = new Date();
 
       switch (timeFilter) {
         case '7days':
