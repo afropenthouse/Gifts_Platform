@@ -232,6 +232,7 @@ module.exports = () => {
           id: true,
           name: true,
           email: true,
+          phoneNumber: true,
           createdAt: true,
           isActive: true,
           wallet: true,

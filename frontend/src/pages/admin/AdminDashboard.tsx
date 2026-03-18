@@ -38,6 +38,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  phoneNumber?: string;
   createdAt: string;
   isActive: boolean;
   wallet: string;
@@ -771,6 +772,7 @@ const AdminDashboard = () => {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead>Wallet</TableHead>
                   <TableHead className="text-center">Status</TableHead>
@@ -782,6 +784,7 @@ const AdminDashboard = () => {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell className="text-sm">{user.email}</TableCell>
+                    <TableCell className="text-sm">{user.phoneNumber || 'N/A'}</TableCell>
                     <TableCell className="text-sm">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </TableCell>

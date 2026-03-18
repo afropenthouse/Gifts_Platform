@@ -110,6 +110,7 @@ app.use('/api/vendors', require('./routes/vendors')());
 app.use('/api/moments', require('./routes/moments')());
 app.use('/api/referrals', require('./routes/referrals')());
 app.use('/api/admin', require('./routes/admin')());
+app.use('/api/utils', require('./routes/utils')());
 
 app.get('/', (req, res) => res.send('API running'));
 

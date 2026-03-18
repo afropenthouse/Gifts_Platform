@@ -49,6 +49,12 @@ import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Toaster } from '../components/ui/toaster';
 
+interface CountryData {
+  code: string;
+  country: string;
+  flag: string;
+}
+
 interface Gift {
   id: number;
   type: string;
@@ -197,6 +203,84 @@ const Dashboard: React.FC = () => {
   const [asoebiFilter, setAsoebiFilter] = useState('all');
   const [tableFilter, setTableFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState<'first-asc' | 'last-asc'>('first-asc');
+
+  // Phone number prompt state
+  const [isPhonePromptOpen, setIsPhonePromptOpen] = useState(false);
+  const [promptCountryCode, setPromptCountryCode] = useState('+234');
+  const [promptPhoneNumber, setPromptPhoneNumber] = useState('');
+  const [isSubmittingPhone, setIsSubmittingPhone] = useState(false);
+
+  const [countries, setCountries] = useState<CountryData[]>([]);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [isCountryPopoverOpen, setIsCountryPopoverOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/utils/country-codes`);
+        const data = await res.json();
+        setCountries(data);
+      } catch (err) {
+        console.error("Failed to fetch country codes", err);
+        setCountries([
+          { code: '+234', country: 'Nigeria', flag: '' },
+          { code: '+1', country: 'USA/Canada', flag: '' },
+        ]);
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  useEffect(() => {
+    if (!loading && user && !user.phoneNumber) {
+      setIsPhonePromptOpen(true);
+    }
+  }, [user, loading]);
+
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promptPhoneNumber) return;
+
+    setIsSubmittingPhone(true);
+    const fullPhoneNumber = `${promptCountryCode}${promptPhoneNumber}`;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ phoneNumber: fullPhoneNumber }),
+      });
+
+      if (res.ok) {
+        const updatedUser = await res.json();
+        // Update local storage and context
+        updateUser({ ...user!, phoneNumber: fullPhoneNumber });
+        setIsPhonePromptOpen(false);
+        toast({
+          title: "Profile Updated",
+          description: "Your phone number has been saved successfully.",
+        });
+      } else {
+        toast({
+          title: "Update Failed",
+          description: "Failed to update phone number. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmittingPhone(false);
+    }
+  };
   const [isCustomTableModalOpen, setIsCustomTableModalOpen] = useState(false);
   const [customTableName, setCustomTableName] = useState('');
   const [currentEditingGuestId, setCurrentEditingGuestId] = useState<number | null>(null);
@@ -5444,6 +5528,94 @@ const Dashboard: React.FC = () => {
                 'Set Reminder'
               )}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Phone Number Prompt Modal */}
+      <Dialog open={isPhonePromptOpen} onOpenChange={(open) => {
+        // Prevent closing the modal if phone number is missing
+        if (!user?.phoneNumber) return;
+        setIsPhonePromptOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Complete Your Profile</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-gray-600">
+              Please provide your phone number to continue. This helps us secure your account and send important notifications.
+            </p>
+            <form onSubmit={handlePhoneSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="promptPhoneNumber">Phone Number</Label>
+                <div className="flex gap-2">
+                  <div className="w-[140px]">
+                    <Popover open={isCountryPopoverOpen} onOpenChange={setIsCountryPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={isCountryPopoverOpen}
+                          className="w-full justify-between px-2"
+                        >
+                          {promptCountryCode ? (
+                            <span className="truncate flex items-center gap-2">
+                              {(() => {
+                                const flagUrl = countries.find((c) => c.code === promptCountryCode)?.flag;
+                                return flagUrl ? <img src={flagUrl} alt="" className="w-5 h-auto rounded-sm" /> : null;
+                              })()}
+                              <span>{promptCountryCode}</span>
+                            </span>
+                          ) : (
+                            "Code"
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[250px] p-0">
+                        <Command>
+                          <CommandInput 
+                            placeholder="Search country..." 
+                            value={countrySearch}
+                            onValueChange={setCountrySearch}
+                          />
+                          <CommandList>
+                            <CommandEmpty>No country found.</CommandEmpty>
+                            <CommandGroup>
+                              {countries.map((country) => (
+                                <CommandItem
+                                  key={`${country.country}-${country.code}`}
+                                  value={`${country.country} ${country.code}`}
+                                  onSelect={() => {
+                                    setPromptCountryCode(country.code);
+                                    setIsCountryPopoverOpen(false);
+                                  }}
+                                >
+                                  <span className="mr-2">{country.flag && <img src={country.flag} alt={country.country} className="w-4 h-3 inline-block" />}</span>
+                                  <span>{country.country} ({country.code})</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <Input
+                    id="promptPhoneNumber"
+                    type="tel"
+                    placeholder="8012345678"
+                    value={promptPhoneNumber}
+                    onChange={(e) => setPromptPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                    required
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full bg-[#2E235C]" disabled={isSubmittingPhone}>
+                {isSubmittingPhone ? "Saving..." : "Save and Continue"}
+              </Button>
+            </form>
           </div>
         </DialogContent>
       </Dialog>

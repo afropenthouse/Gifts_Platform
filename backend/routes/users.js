@@ -45,7 +45,7 @@ module.exports = () => {
 
   // Update profile
   router.put('/profile', auth(), async (req, res) => {
-    const { name, profilePicture } = req.body;
+    const { name, profilePicture, phoneNumber } = req.body;
 
     try {
       const updated = await prisma.user.update({
@@ -53,6 +53,7 @@ module.exports = () => {
         data: {
           name: name ?? undefined,
           profilePicture: profilePicture ?? undefined,
+          phoneNumber: phoneNumber ?? undefined,
         },
       });
 

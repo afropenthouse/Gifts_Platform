@@ -16,6 +16,7 @@ module.exports = () => {
     body('name').notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('phoneNumber').optional().notEmpty().withMessage('Phone number is required'),
     body('agreedToTerms').custom(value => value === true || value === 'true').withMessage('You must agree to the Terms and Conditions'),
   ], async (req, res) => {
     const errors = validationResult(req);
@@ -24,7 +25,7 @@ module.exports = () => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password, referralCode, agreedToTerms } = req.body;
+    const { name, email, password, phoneNumber, referralCode, agreedToTerms } = req.body;
 
     try {
       console.log(`\n🔐 [SIGNUP] New signup request for: ${email}`);
@@ -67,6 +68,7 @@ module.exports = () => {
           name, 
           email, 
           password: hashedPassword, 
+          phoneNumber,
           verificationToken, 
           verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
           referralCode: newReferralCode,
@@ -187,7 +189,7 @@ module.exports = () => {
 
       const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-      res.json({ token, user: { id: user.id, name: user.name, email: user.email, profilePicture: user.profilePicture, wallet: user.wallet } });
+      res.json({ token, user: { id: user.id, name: user.name, email: user.email, phoneNumber: user.phoneNumber, profilePicture: user.profilePicture, wallet: user.wallet } });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
@@ -201,6 +203,7 @@ module.exports = () => {
         id: req.user.id,
         name: req.user.name,
         email: req.user.email,
+        phoneNumber: req.user.phoneNumber,
         profilePicture: req.user.profilePicture,
         wallet: parseFloat(req.user.wallet) || 0
       });

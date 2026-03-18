@@ -96,6 +96,7 @@ model User {
   isActive                 Boolean        @default(true)
   agreedToTerms            Boolean        @default(false)
   agreedToTermsAt          DateTime?
+  phoneNumber              String?
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
   contributions            Contribution[]
