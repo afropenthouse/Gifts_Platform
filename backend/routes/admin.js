@@ -111,6 +111,8 @@ module.exports = () => {
         restrictedGuestEvents,
         totalRevenue,
         totalReferralRevenue,
+        allContributions,
+        allWithdrawals,
       ] = await Promise.all([
         prisma.user.count({ where: dateFilter }),
         prisma.gift.count({ where: dateFilter }),
@@ -174,18 +176,62 @@ module.exports = () => {
           },
           where: dateFilter,
         }),
+        prisma.contribution.findMany({
+          where: {
+            status: 'completed',
+            amount: { gt: 0 },
+            ...dateFilter
+          },
+          select: { amount: true }
+        }),
+        prisma.withdrawal.findMany({
+          where: {
+            status: 'completed',
+            ...dateFilter
+          },
+          select: { amount: true }
+        }),
       ]);
 
       const platformRevenue = Number(totalRevenue._sum.commission || 0);
       const referralRevenue = Number(totalReferralRevenue._sum.amount || 0);
       
-      // Paystack fee: 1.5% + ₦100 for transactions over ₦2500, capped at ₦2000
-      // Since we don't store individual fee per transaction, we'll estimate it 
-      // based on the total successful transaction volume for the period.
-      const totalVolume = (Number(totalContributions._sum.amount) || 0) + (Number(totalAsoebiContributions._sum.amount) || 0);
-      const estimatedPaystackFees = totalVolume * 0.015; // Rough estimate of 1.5%
+      // Correct Paystack Fee Calculation (Nigeria)
+      // 1. Transaction Fees (Collection): 1.5% + ₦100 (waived for transactions < ₦2500)
+      // 2. Transfer Fees (Payout): ₦10 (<=5k), ₦25 (5k-50k), ₦50 (>50k)
+      // 3. Stamp Duty: ₦50 for transfers >= ₦10,000
       
-      const netProfit = platformRevenue - estimatedPaystackFees;
+      let collectionFees = 0;
+      for (const c of allContributions) {
+        const amount = Number(c.amount);
+        if (amount < 2500) {
+          collectionFees += amount * 0.015;
+        } else {
+          // 1.5% + 100, capped at 2000 (standard Paystack rule for local)
+          const fee = (amount * 0.015) + 100;
+          collectionFees += Math.min(fee, 2000);
+        }
+      }
+
+      let payoutFees = 0;
+      for (const w of allWithdrawals) {
+        const amount = Number(w.amount);
+        // Transfer fees
+        if (amount <= 5000) {
+          payoutFees += 10;
+        } else if (amount <= 50000) {
+          payoutFees += 25;
+        } else {
+          payoutFees += 50;
+        }
+        // Stamp duty
+        if (amount >= 10000) {
+          payoutFees += 50;
+        }
+      }
+
+      const totalPaystackFees = collectionFees + payoutFees;
+      const netProfit = platformRevenue - totalPaystackFees - referralRevenue;
 
       const [recentUsers, recentContributions] = await Promise.all([
         prisma.user.findMany({
@@ -230,7 +276,7 @@ module.exports = () => {
           guestListRestrictedEvents: restrictedGuestEvents,
           totalRevenue: platformRevenue,
           referralRevenue,
-          estimatedPaystackFees,
+          estimatedPaystackFees: totalPaystackFees,
           netProfit
         },
         recentUsers,

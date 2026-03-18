@@ -1100,15 +1100,15 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Paystack Fees (Est.)</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Paystack Fees</CardTitle>
                   <Banknote className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-black">
-                    -₦{(metrics?.estimatedPaystackFees || 0).toLocaleString()}
+                    ₦{(metrics?.estimatedPaystackFees || 0).toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Estimated 1.5% processing fee
+                    Transaction charges + Transfer fees + Stamp duty
                   </p>
                 </CardContent>
               </Card>
