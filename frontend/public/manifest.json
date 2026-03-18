@@ -3,14 +3,14 @@
   "name": "BeThere - Collect RSVPs & Cash Gifts",
   "icons": [
     {
-      "src": "/be.jpeg",
+      "src": "/be-new.png",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/png"
     },
     {
-      "src": "/be.jpeg",
+      "src": "/be-new.png",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/png"
     }
   ],
   "start_url": ".",

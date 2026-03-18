@@ -1,4 +1,5 @@
 const { sendEmail, mailFrom } = require('./email');
+const { generateCalendarLinks } = require('./calendarLinks');
 
 const emailEnabled = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
 
@@ -188,6 +189,7 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   const calendarUrl = eventUrl ? `${eventUrl}/calendar` : '#';
   const directionsUrl = eventAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` : '#';
   const websiteUrl = eventUrl || '#';
+  const cal = generateCalendarLinks(gift);
 
   let subject = `${heading} – Save the Date`;
   
@@ -239,6 +241,12 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
             <a href="${websiteUrl}" style="display: block; background: ${accent}; color: #fff; text-decoration: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; text-align: center;">
               Send Cash Gift
             </a>
+            ${cal ? `
+            <div style="height: 10px;"></div>
+            <a href="${cal.google}" style="display: block; background: #fff; border: 1px solid #e5e7eb; color: #374151; text-decoration: none; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13px; text-align: center;">
+              Add to Calendar
+            </a>
+            ` : ''}
             <div style="height: 10px;"></div>
             <a href="${directionsUrl}" style="display: block; background: #fff; border: 1px solid #e5e7eb; color: #374151; text-decoration: none; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13px; text-align: center;">
               Get Directions

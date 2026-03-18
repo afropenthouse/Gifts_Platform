@@ -110,6 +110,7 @@ module.exports = () => {
         openGuestEvents,
         restrictedGuestEvents,
         totalRevenue,
+        totalReferralRevenue,
       ] = await Promise.all([
         prisma.user.count({ where: dateFilter }),
         prisma.gift.count({ where: dateFilter }),
@@ -167,7 +168,24 @@ module.exports = () => {
             ...dateFilter
           }
         }),
+        prisma.referralTransaction.aggregate({
+          _sum: {
+            amount: true,
+          },
+          where: dateFilter,
+        }),
       ]);
+
+      const platformRevenue = Number(totalRevenue._sum.commission || 0);
+      const referralRevenue = Number(totalReferralRevenue._sum.amount || 0);
+      
+      // Paystack fee: 1.5% + ₦100 for transactions over ₦2500, capped at ₦2000
+      // Since we don't store individual fee per transaction, we'll estimate it 
+      // based on the total successful transaction volume for the period.
+      const totalVolume = (Number(totalContributions._sum.amount) || 0) + (Number(totalAsoebiContributions._sum.amount) || 0);
+      const estimatedPaystackFees = totalVolume * 0.015; // Rough estimate of 1.5%
+      
+      const netProfit = platformRevenue - estimatedPaystackFees;
 
       const [recentUsers, recentContributions] = await Promise.all([
         prisma.user.findMany({
@@ -210,7 +228,10 @@ module.exports = () => {
           totalWalletBalance: totalWalletBalance,
           guestListOpenEvents: openGuestEvents,
           guestListRestrictedEvents: restrictedGuestEvents,
-          totalRevenue: totalRevenue._sum.commission || 0,
+          totalRevenue: platformRevenue,
+          referralRevenue,
+          estimatedPaystackFees,
+          netProfit
         },
         recentUsers,
         recentContributions

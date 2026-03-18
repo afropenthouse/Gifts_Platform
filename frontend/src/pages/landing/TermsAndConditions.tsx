@@ -27,7 +27,7 @@ const TermsAndConditions = () => {
                 <UserCheck className="w-6 h-6" /> 1. Acceptance of Terms
               </h2>
               <p className="text-muted-foreground">
-                By accessing or using the BeThere platform, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you may not use our services.
+                By accessing or using the BeThere Experience platform, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you may not use our services.
               </p>
             </section>
 

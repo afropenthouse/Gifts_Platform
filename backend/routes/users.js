@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
-const { initiateTransfer, resolveAccount, getBanks, createTransferRecipient } = require('../utils/paystack');
+const { initiateTransfer, resolveAccount, getBanks, createTransferRecipient, verifyBVNMatch } = require('../utils/paystack');
 const { sendWithdrawalOtpEmail } = require('../utils/emailService');
 
 module.exports = () => {
@@ -11,9 +11,44 @@ module.exports = () => {
   // Send withdrawal OTP
   router.post('/send-otp', auth(), async (req, res) => {
     try {
+      const { amount, bvn, bank_code, account_number } = req.body;
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       if (!user) {
         return res.status(404).json({ msg: 'User not found' });
+      }
+
+      // 1M Naira security check before sending OTP
+      const withdrawAmount = parseFloat(amount);
+      if (!isNaN(withdrawAmount) && withdrawAmount >= 1000000) {
+        if (!bvn) {
+          return res.status(400).json({ msg: 'BVN is required for withdrawals of ₦1,000,000 and above' });
+        }
+        if (bvn.length !== 11 || !/^\d+$/.test(bvn)) {
+          return res.status(400).json({ msg: 'Invalid BVN. Must be 11 digits.' });
+        }
+
+        // Verify BVN matches account number before sending OTP
+        try {
+          console.log(`🛡️ [SECURITY-OTP] Verifying BVN match for ${user.email} (Amount: ₦${withdrawAmount})`);
+          const matchRes = await verifyBVNMatch({
+            bvn,
+            account_number,
+            bank_code
+          });
+
+          if (matchRes.status && matchRes.data) {
+             console.log(`✅ [SECURITY-OTP] BVN match API called successfully for ${user.email}`);
+          } else {
+             console.log(`❌ [SECURITY-OTP] BVN match failed for ${user.email}`);
+             return res.status(400).json({ msg: 'Identity verification failed. BVN does not match the provided bank account.' });
+          }
+        } catch (error) {
+          console.error('❌ [SECURITY-OTP] BVN verification error:', error?.data?.message || error.message);
+          const errorMessage = error?.data?.message || 'BVN verification failed';
+          return res.status(400).json({ 
+            msg: `Security Check Failed: ${errorMessage}. Please ensure your BVN matches your bank account.` 
+          });
+        }
       }
 
       // Generate 6-digit OTP
@@ -139,12 +174,62 @@ module.exports = () => {
 
   // Withdraw funds
   router.post('/withdraw', auth(), async (req, res) => {
-    const { amount, bank_code, account_number, sourceType, otp } = req.body;
+    const { amount, bank_code, account_number, sourceType, otp, bvn } = req.body;
 
     try {
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       if (!user) {
         return res.status(404).json({ msg: 'User not found' });
+      }
+
+      const withdrawAmount = parseFloat(amount);
+      if (isNaN(withdrawAmount) || withdrawAmount < 100) {
+        return res.status(400).json({ msg: 'Minimum withdrawal amount is ₦100' });
+      }
+
+      // 1M Naira security check
+      if (withdrawAmount >= 1000000) {
+        if (!bvn) {
+          return res.status(400).json({ msg: 'BVN is required for withdrawals of ₦1,000,000 and above' });
+        }
+        if (bvn.length !== 11 || !/^\d+$/.test(bvn)) {
+          return res.status(400).json({ msg: 'Invalid BVN. Must be 11 digits.' });
+        }
+
+        // Verify BVN matches account number (Fraud Prevention)
+        try {
+          console.log(`🛡️ [SECURITY] Verifying BVN match for ${user.email} (Amount: ₦${withdrawAmount})`);
+          const matchRes = await verifyBVNMatch({
+            bvn,
+            account_number,
+            bank_code
+          });
+
+          // Paystack BVN Match API returns data.is_blacklisted and data.account_number etc.
+          // We must check if matchRes.data.is_blacklisted is false and it's a successful response
+          if (matchRes.status && matchRes.data) {
+             console.log(`✅ [SECURITY] BVN match API called for ${user.email}`);
+          } else {
+             console.log(`❌ [SECURITY] BVN match failed for ${user.email}`);
+             return res.status(400).json({ msg: 'Identity verification failed. BVN does not match the provided bank account.' });
+          }
+        } catch (error) {
+          // If Paystack returns an error (e.g. invalid BVN, or feature not enabled), we MUST block the transaction
+          console.error('❌ [SECURITY] BVN verification error:', error?.data?.message || error.message);
+          
+          const errorMessage = error?.data?.message || 'BVN verification failed';
+          return res.status(400).json({ 
+            msg: `Security Check Failed: ${errorMessage}. Please ensure your BVN matches your bank account.` 
+          });
+        }
+
+        // Store BVN for the user if not already stored
+        if (!user.bvn) {
+          await prisma.user.update({
+            where: { id: req.user.id },
+            data: { bvn }
+          });
+        }
       }
 
       // Verify OTP
@@ -164,11 +249,6 @@ module.exports = () => {
           verificationTokenExpires: null
         }
       });
-
-      const withdrawAmount = parseFloat(amount);
-      if (isNaN(withdrawAmount) || withdrawAmount < 100) {
-        return res.status(400).json({ msg: 'Minimum withdrawal amount is ₦100' });
-      }
 
       // No fee on withdrawal
       const fee = 0;

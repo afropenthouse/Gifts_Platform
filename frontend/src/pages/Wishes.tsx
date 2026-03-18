@@ -30,8 +30,18 @@ const Wishes: React.FC = () => {
         const data = await res.json();
         
         if (res.ok) {
-          // Filter contributions that have a non-empty message
-          const notes = data.filter((c: Contribution) => c.message && c.message.trim() !== '');
+          // Filter contributions that have a non-empty message and are NOT system-generated payment notes
+          const notes = data.filter((c: Contribution) => {
+            if (!c.message || c.message.trim() === '') return false;
+            
+            const msg = c.message.toLowerCase();
+            // Filter out Asoebi payments and generic gift messages
+            if (msg.startsWith('asoebi payment:')) return false;
+            if (msg.startsWith('gifts from ')) return false;
+            if (msg === 'anonymous contribution') return false;
+            
+            return true;
+          });
           setWishes(notes);
         }
       } catch (err) {

@@ -141,6 +141,7 @@ const Dashboard: React.FC = () => {
   const [otp, setOtp] = useState('');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [successWithdrawAmount, setSuccessWithdrawAmount] = useState('');
+  const [withdrawBvn, setWithdrawBvn] = useState('');
 
   const [banks, setBanks] = useState([]);
   const [bankSearch, setBankSearch] = useState('');
@@ -1211,6 +1212,26 @@ const Dashboard: React.FC = () => {
     const token = localStorage.getItem('token');
 
     if (!showOtpStep) {
+      // Validate BVN before sending OTP if amount >= 1M
+      if (parseFloat(withdrawAmount) >= 1000000) {
+        if (!withdrawBvn) {
+          toast({
+            title: "BVN Required",
+            description: "Please enter your 11-digit BVN for security verification.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (withdrawBvn.length !== 11) {
+          toast({
+            title: "Invalid BVN",
+            description: "BVN must be exactly 11 digits.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       setIsSendingOtp(true);
       try {
         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/send-otp`, {
@@ -1219,6 +1240,12 @@ const Dashboard: React.FC = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify({
+            amount: withdrawAmount,
+            bank_code: withdrawBank,
+            account_number: withdrawAccount,
+            bvn: withdrawBvn
+          }),
         });
         const data = await res.json();
         if (res.ok) {
@@ -1228,11 +1255,19 @@ const Dashboard: React.FC = () => {
             description: "Please check your email for the verification code.",
           });
         } else {
-          alert(data.msg || 'Failed to send OTP');
+          toast({
+            title: "Error",
+            description: data.msg || 'Failed to send OTP',
+            variant: "destructive",
+          });
         }
       } catch (err) {
         console.error(err);
-        alert('Error sending OTP');
+        toast({
+          title: "Error",
+          description: 'Error sending OTP',
+          variant: "destructive",
+        });
       } finally {
         setIsSendingOtp(false);
       }
@@ -1256,7 +1291,8 @@ const Dashboard: React.FC = () => {
           amount: withdrawAmount,
           bank_code: withdrawBank,
           account_number: withdrawAccount,
-          otp: otp
+          otp: otp,
+          bvn: withdrawBvn
         }),
       });
       const data = await res.json();
@@ -4040,7 +4076,7 @@ const Dashboard: React.FC = () => {
           setWithdrawBank('');
           setWithdrawAccount('');
           setWithdrawAccountName('');
-
+          setWithdrawBvn('');
         }
       }}>
         <DialogContent className="max-w-[90vw] sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-auto max-h-[80vh]">
@@ -4151,6 +4187,25 @@ const Dashboard: React.FC = () => {
                     placeholder="Account name will appear here"
                   />
                 </div>
+
+                {parseFloat(withdrawAmount) >= 1000000 && (
+                  <div>
+                    <Label htmlFor="bvn" className="text-sm font-medium text-gray-900 mb-2 block flex items-center">
+                      <Shield className="w-4 h-4 mr-2 text-purple-600" />
+                      BVN Verification (Required for ₦1M+)
+                    </Label>
+                    <Input
+                      id="bvn"
+                      value={withdrawBvn}
+                      onChange={(e) => setWithdrawBvn(e.target.value.replace(/\D/g, ''))}
+                      className="h-12 border-gray-300 focus:border-[#2E235C] focus:ring-[#2E235C]/20"
+                      placeholder="Enter 11-digit BVN"
+                      required
+                      maxLength={11}
+                    />
+                    <p className="text-xs text-gray-500 mt-2">Required for security on large withdrawals.</p>
+                  </div>
+                )}
                 
                 {/* Fee Info */}
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">

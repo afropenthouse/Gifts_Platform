@@ -32,6 +32,9 @@ interface Metrics {
   guestListOpenEvents: number;
   guestListRestrictedEvents: number;
   totalRevenue: number;
+  referralRevenue: number;
+  estimatedPaystackFees: number;
+  netProfit: number;
 }
 
 interface User {
@@ -1048,50 +1051,97 @@ const AdminDashboard = () => {
     return (
       <>
         {tab === 'transactions' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Transactions</CardTitle>
-                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ₦{filteredTransactionAmount.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Based on {timeFilterLabelMap[txnTimeFilter]} filters
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Platform Revenue</CardTitle>
-                <Banknote className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ₦{filteredRevenue.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  From commissions and fees
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Profit Ratio</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {revenueRatio.toFixed(2)}%
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Revenue as a share of filtered transaction value
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Transactions</CardTitle>
+                  <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    ₦{filteredTransactionAmount.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Based on {timeFilterLabelMap[txnTimeFilter]} filters
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Platform Revenue</CardTitle>
+                  <Banknote className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    ₦{filteredRevenue.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    From commissions and fees
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Profit Ratio</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {revenueRatio.toFixed(2)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Revenue as a share of filtered transaction value
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Paystack Fees (Est.)</CardTitle>
+                  <Banknote className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-black">
+                    -₦{(metrics?.estimatedPaystackFees || 0).toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Estimated 1.5% processing fee
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Referral Revenue</CardTitle>
+                  <Banknote className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-black">
+                    ₦{(metrics?.referralRevenue || 0).toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Earnings from referral transactions
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Platform Profit</CardTitle>
+                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-black">
+                    ₦{(metrics?.netProfit || 0).toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Net revenue after fees
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </>
         )}
 
         <Card>
@@ -1139,8 +1189,8 @@ const AdminDashboard = () => {
                       <span
                         className={`text-[10px] w-fit px-2 py-1 rounded-full ${
                           contribution.isAsoebi
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'bg-purple-50 text-purple-700'
+                            ? 'bg-black/5 text-black border border-black/10'
+                            : 'bg-black/5 text-black border border-black/10'
                         }`}
                       >
                         {contribution.isAsoebi ? 'Asoebi' : 'Cash Gift'}

@@ -142,6 +142,28 @@ async function resolveAccount(payload) {
   }
 }
 
+async function verifyBVNMatch({ bvn, account_number, bank_code }) {
+  try {
+    console.log('Verifying BVN match for account:', { account_number, bank_code });
+    
+    // Paystack BVN Match API
+    // Note: This requires specific permissions on your Paystack account
+    const response = await psRequest('POST', '/bvn/match', {
+      bvn,
+      account_number,
+      bank_code
+    });
+
+    console.log('Paystack BVN match response:', response?.status);
+    return response;
+  } catch (error) {
+    console.error('Paystack verifyBVNMatch error:', error?.message || error);
+    // If the error is that the feature is not enabled, we'll log it but maybe let it pass in dev
+    // or return a specific error structure.
+    throw error;
+  }
+}
+
 async function getBanks() {
   try {
       // console.log('Fetching Paystack banks list');
@@ -162,4 +184,4 @@ function verifyWebhookSignature(rawBody, signature, secret) {
   return signature === expectedSignature;
 }
 
-module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount, getBanks, verifyWebhookSignature, createTransferRecipient };
+module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount, getBanks, verifyWebhookSignature, createTransferRecipient, verifyBVNMatch };
