@@ -456,7 +456,7 @@ const Asoebi: React.FC<AsoebiProps> = ({ guests, contributions, gifts }) => {
       return { ...s, show: hasAny };
     }
     // Aggregate across all gifts when "All Events"
-    let total = {
+    const total = {
       inStock: { brideMen: 0, brideWomen: 0, groomMen: 0, groomWomen: 0, men: 0, women: 0, generic: 0 },
       soldOut: { brideMen: 0, brideWomen: 0, groomMen: 0, groomWomen: 0, men: 0, women: 0, generic: 0 },
       dynamicStock: {} as Record<string, { inStock: number; sold: number; category?: string }>

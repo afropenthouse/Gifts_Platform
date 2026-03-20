@@ -27,7 +27,7 @@ module.exports = () => {
 
   router.get('/metrics', adminAuth, async (req, res) => {
     try {
-      const { time } = req.query;
+      const { time, type, eventId } = req.query;
       let dateFilter = {};
 
       if (time && time !== 'all') {
@@ -53,6 +53,15 @@ module.exports = () => {
         }
         dateFilter = { createdAt: { gte: filterDate } };
       }
+
+      const parsedEventId = eventId && !Number.isNaN(parseInt(eventId, 10)) ? parseInt(eventId, 10) : null;
+      const eventGift = parsedEventId
+        ? await prisma.gift.findUnique({
+            where: { id: parsedEventId },
+            select: { userId: true },
+          })
+        : null;
+      const eventOwnerId = eventGift?.userId || null;
 
       let totalWalletBalance = 0;
       if (time && time !== 'all') {
@@ -99,6 +108,28 @@ module.exports = () => {
         });
         totalWalletBalance = Number(totalWallet._sum.wallet || 0);
       }
+
+      const contributionScopeWhere = {
+        status: 'completed',
+        amount: { gt: 0 },
+        ...(type === 'asoebi' ? { isAsoebi: true } : {}),
+        ...(type === 'cash' ? { isAsoebi: false } : {}),
+        ...(parsedEventId ? { giftId: parsedEventId } : {}),
+        ...dateFilter,
+      };
+
+      const referralScopeWhere = {
+        ...(type === 'asoebi' ? { type: 'asoebi_commission' } : {}),
+        ...(type === 'cash' ? { type: 'cash_gift_commission' } : {}),
+        ...(eventOwnerId ? { referredUserId: eventOwnerId } : {}),
+        ...dateFilter,
+      };
+
+      const withdrawalScopeWhere = {
+        status: 'completed',
+        ...(eventOwnerId ? { userId: eventOwnerId } : {}),
+        ...dateFilter,
+      };
 
       const [
         totalUsers,
@@ -164,17 +195,13 @@ module.exports = () => {
           _sum: {
             commission: true,
           },
-          where: {
-            status: 'completed',
-            amount: { gt: 0 },
-            ...dateFilter
-          }
+          where: contributionScopeWhere
         }),
         prisma.referralTransaction.aggregate({
           _sum: {
             amount: true,
           },
-          where: dateFilter,
+          where: referralScopeWhere,
         }),
         prisma.contribution.findMany({
           where: {
@@ -185,10 +212,7 @@ module.exports = () => {
           select: { amount: true }
         }),
         prisma.withdrawal.findMany({
-          where: {
-            status: 'completed',
-            ...dateFilter
-          },
+          where: withdrawalScopeWhere,
           select: { amount: true }
         }),
       ]);
@@ -375,7 +399,7 @@ module.exports = () => {
   });
 
   router.get('/contributions', adminAuth, async (req, res) => {
-    const { type, time } = req.query;
+    const { type, time, eventId } = req.query;
 
     try {
       const where = {
@@ -410,6 +434,10 @@ module.exports = () => {
             break;
         }
         where.createdAt = { gte: filterDate };
+      }
+
+      if (eventId && !Number.isNaN(parseInt(eventId, 10))) {
+        where.giftId = parseInt(eventId, 10);
       }
 
       const contributions = await prisma.contribution.findMany({
@@ -474,7 +502,27 @@ module.exports = () => {
         }
       });
 
-      res.json(gifts);
+      const asoebiCounts = await prisma.contribution.groupBy({
+        by: ['giftId'],
+        where: {
+          status: 'completed',
+          isAsoebi: true,
+          amount: { gt: 0 }
+        },
+        _count: { _all: true }
+      });
+
+      const asoebiCountByGiftId = asoebiCounts.reduce((acc, row) => {
+        acc[row.giftId] = row._count._all;
+        return acc;
+      }, {});
+
+      res.json(
+        gifts.map((g) => ({
+          ...g,
+          asoebiSalesCount: asoebiCountByGiftId[g.id] || 0
+        }))
+      );
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error fetching events' });

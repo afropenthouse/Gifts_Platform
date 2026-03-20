@@ -81,6 +81,7 @@ interface EventItem {
   shareLink: string | null;
   enableCashGifts: boolean | null;
   isSellingAsoebi: boolean | null;
+  asoebiSalesCount?: number;
   user: EventOwner;
   _count: {
     contributions: number;
@@ -157,9 +158,15 @@ const AdminDashboard = () => {
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       const metricsTimeFilter = activeTab === 'transactions' ? txnTimeFilter : overviewTimeFilter;
+      const metricsParams = new URLSearchParams();
+      metricsParams.set('time', metricsTimeFilter);
+      if (activeTab === 'transactions') {
+        if (selectedTxnType !== 'all') metricsParams.set('type', selectedTxnType);
+        if (selectedEventId !== 'all') metricsParams.set('eventId', String(selectedEventId));
+      }
 
       const [metricsRes, usersRes] = await Promise.all([
-        fetch(`${baseUrl}/api/admin/metrics?time=${metricsTimeFilter}`, {
+        fetch(`${baseUrl}/api/admin/metrics?${metricsParams.toString()}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${baseUrl}/api/admin/users`, {
@@ -183,7 +190,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, navigate, overviewTimeFilter, txnTimeFilter]);
+  }, [activeTab, navigate, overviewTimeFilter, selectedEventId, selectedTxnType, txnTimeFilter]);
 
   const fetchContributions = useCallback(async (time: TimeFilter = 'all', force = false) => {
     if (!force && (fetchingContributions.current || (contributionsLength.current > 0 && !force))) {
@@ -200,7 +207,13 @@ const AdminDashboard = () => {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       setLoadingContributions(true);
       fetchingContributions.current = true;
-      const response = await fetch(`${baseUrl}/api/admin/contributions?time=${time}`, {
+      const params = new URLSearchParams();
+      params.set('time', time);
+      if (activeTab === 'transactions') {
+        if (selectedTxnType !== 'all') params.set('type', selectedTxnType);
+        if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
+      }
+      const response = await fetch(`${baseUrl}/api/admin/contributions?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -224,7 +237,7 @@ const AdminDashboard = () => {
       setLoadingContributions(false);
       fetchingContributions.current = false;
     }
-  }, [navigate]);
+  }, [activeTab, navigate, selectedEventId, selectedTxnType]);
 
   const fetchGuests = useCallback(async () => {
     if (fetchingGuests.current) {
@@ -1307,52 +1320,56 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="text-xs md:text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Event</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Host (Name & Email)</TableHead>
-                    <TableHead className="text-center">Guests</TableHead>
-                    <TableHead className="text-center">Contributions</TableHead>
-                    <TableHead>Deadline</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead className="px-2">Event</TableHead>
+                    <TableHead className="px-2 hidden md:table-cell">Type</TableHead>
+                    <TableHead className="px-2">Host</TableHead>
+                    <TableHead className="text-center whitespace-nowrap px-2">Guests</TableHead>
+                    <TableHead className="text-center whitespace-nowrap px-2 hidden sm:table-cell">Contribs</TableHead>
+                    <TableHead className="text-center whitespace-nowrap px-2">Asoebi</TableHead>
+                    <TableHead className="px-2 whitespace-nowrap hidden lg:table-cell">Deadline</TableHead>
+                    <TableHead className="px-2 whitespace-nowrap hidden lg:table-cell">Created</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((event) => (
                     <TableRow key={event.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium px-2">
                         {event.title || 'Untitled'}
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="text-sm px-2 hidden md:table-cell">
                         <span className="capitalize">{event.type}</span>
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="text-sm px-2">
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900">{event.user?.name || 'No Name'}</span>
-                          <span className="text-xs text-muted-foreground">{event.user?.email}</span>
+                          <span className="text-xs text-muted-foreground hidden md:inline">{event.user?.email}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center px-2">
                         {event._count.guests}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center px-2 hidden sm:table-cell">
                         {allContributions.filter(c => c.amount > 0 && c.gift?.id === event.id).length}
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="text-center px-2">
+                        {(event.asoebiSalesCount || 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-sm px-2 whitespace-nowrap hidden lg:table-cell">
                         {event.deadline
                           ? new Date(event.deadline).toLocaleDateString()
                           : '-'}
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="text-sm px-2 whitespace-nowrap hidden lg:table-cell">
                         {new Date(event.createdAt).toLocaleDateString()}
                       </TableCell>
                     </TableRow>
                   ))}
                   {rows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
                         No events found
                       </TableCell>
                     </TableRow>

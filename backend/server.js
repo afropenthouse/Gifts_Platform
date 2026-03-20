@@ -70,11 +70,18 @@ prisma.$connect()
     // Start the reminder and vendor payment check services
     // Both run every 24 hours (86400000 ms) to conserve DB resources
     const CHECK_INTERVAL_24H = 86400000; // 24 hours
-    
+
+    const scheduledServicesEnabled =
+      process.env.ENABLE_SCHEDULED_SERVICES === 'true' || process.env.NODE_ENV === 'production';
+
+    if (!scheduledServicesEnabled) {
+      console.log('Scheduled services disabled (set ENABLE_SCHEDULED_SERVICES=true to enable)');
+      return;
+    }
+
     console.log(`Starting scheduled services...`);
     console.log(`- Scheduled services running every 24 hours`);
 
-    // Run once on startup
     checkAndSendReminders().catch(err => console.error('Initial reminder check failed:', err));
     checkAndSendPostEventEmails().catch(err => console.error('Initial post-event email check failed:', err));
     checkAndReleaseVendorPayments().catch(err => console.error('Initial vendor payment check failed:', err));
