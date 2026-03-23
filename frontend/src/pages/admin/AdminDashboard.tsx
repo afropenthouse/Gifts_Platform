@@ -679,12 +679,17 @@ const AdminDashboard = () => {
       .replace(/'/g, '&#39;');
   };
 
+  const normalizePreviewPunctuationSpacing = (value: string) => {
+    return String(value ?? '').replace(/\s+([,.;:!?])/g, '$1');
+  };
+
   const applyPreviewVars = (input: string, vars: Record<string, string>) => {
-    return String(input ?? '').replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
+    const replaced = String(input ?? '').replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
       const v = Object.prototype.hasOwnProperty.call(vars, key) ? vars[key] : undefined;
       if (v === undefined || v === null) return match;
       return String(v);
     });
+    return normalizePreviewPunctuationSpacing(replaced);
   };
 
   const isValidPreviewLink = (url: string) => {
@@ -761,7 +766,7 @@ const AdminDashboard = () => {
       : '';
     const footerLines = [
       footer ? `<p style="margin: 0 0 6px 0; font-size: 12px; color: #9ca3af;">${footer}</p>` : '',
-      `<p style="margin: 0; font-size: 12px; color: #9ca3af;">&copy; ${year} BeThere. All rights reserved.</p>`,
+      `<p style="margin: 0; font-size: 12px; color: #9ca3af;">&copy; ${year} BeThere Experience. All rights reserved.</p>`,
     ].filter(Boolean).join('');
 
     const html = `

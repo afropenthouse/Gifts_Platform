@@ -636,6 +636,10 @@ const applyVariables = (input, vars) => {
   });
 };
 
+const normalizePunctuationSpacing = (value) => {
+  return String(value ?? '').replace(/\s+([,.;:!?])/g, '$1');
+};
+
 const isValidLink = (url) => {
   if (!url) return false;
   try {
@@ -698,16 +702,16 @@ const formatBodyToHtml = (raw) => {
 
 const renderSleekTemplateEmail = ({ template, vars, accent = '#2E235C' }) => {
   const muted = '#f6f4ff';
-  const heading = escapeHtml(applyVariables(template?.heading, vars) || '');
-  const preheader = escapeHtml(applyVariables(template?.preheader, vars) || '');
-  const greetingText = escapeHtml(applyVariables(template?.greeting, vars) || '');
-  const bodyHtml = formatBodyToHtml(applyVariables(template?.body, vars) || '');
+  const heading = escapeHtml(normalizePunctuationSpacing(applyVariables(template?.heading, vars) || ''));
+  const preheader = escapeHtml(normalizePunctuationSpacing(applyVariables(template?.preheader, vars) || ''));
+  const greetingText = escapeHtml(normalizePunctuationSpacing(applyVariables(template?.greeting, vars) || ''));
+  const bodyHtml = formatBodyToHtml(normalizePunctuationSpacing(applyVariables(template?.body, vars) || ''));
 
-  const ctaLabel = escapeHtml(applyVariables(template?.ctaLabel, vars) || '');
+  const ctaLabel = escapeHtml(normalizePunctuationSpacing(applyVariables(template?.ctaLabel, vars) || ''));
   const ctaUrlRaw = applyVariables(template?.ctaUrl, vars) || '';
   const ctaUrl = isValidLink(ctaUrlRaw) ? ctaUrlRaw : '';
 
-  const footerText = escapeHtml(applyVariables(template?.footer, vars) || '');
+  const footerText = escapeHtml(normalizePunctuationSpacing(applyVariables(template?.footer, vars) || ''));
   const year = new Date().getFullYear();
 
   const preheaderSpan = preheader
@@ -767,7 +771,7 @@ const sendTemplatedEmail = async ({ recipientEmail, template, vars = {} }) => {
     return { delivered: false, reason: 'No recipient email provided' };
   }
 
-  const subjectText = applyVariables(template?.subject, vars) || '';
+  const subjectText = normalizePunctuationSpacing(applyVariables(template?.subject, vars) || '');
   const subject = subjectText.trim() ? subjectText.trim() : 'BeThere';
 
   const html = renderSleekTemplateEmail({
