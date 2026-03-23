@@ -618,6 +618,177 @@ const sendWithdrawalOtpEmail = async ({ recipientEmail, recipientName, otp }) =>
   }
 };
 
+const escapeHtml = (value) => {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+const applyVariables = (input, vars) => {
+  const source = String(input ?? '');
+  return source.replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
+    const v = vars && Object.prototype.hasOwnProperty.call(vars, key) ? vars[key] : undefined;
+    if (v === undefined || v === null) return match;
+    return String(v);
+  });
+};
+
+const isValidLink = (url) => {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+};
+
+const formatBodyToHtml = (raw) => {
+  const text = String(raw ?? '').replace(/\r\n/g, '\n').trim();
+  if (!text) return '';
+
+  const lines = text.split('\n');
+  const blocks = [];
+  let buffer = [];
+
+  const flushParagraph = () => {
+    const paragraphText = buffer.join('\n').trim();
+    buffer = [];
+    if (!paragraphText) return;
+    blocks.push({ type: 'p', text: paragraphText });
+  };
+
+  for (const line of lines) {
+    if (!line.trim()) {
+      flushParagraph();
+      continue;
+    }
+    buffer.push(line);
+  }
+  flushParagraph();
+
+  const htmlBlocks = [];
+
+  for (const block of blocks) {
+    const t = block.text;
+    const bulletLines = t
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const allBullets = bulletLines.length > 0 && bulletLines.every((l) => l.startsWith('- ') || l.startsWith('• '));
+    if (allBullets) {
+      const items = bulletLines
+        .map((l) => l.replace(/^(-\s+|•\s+)/, '').trim())
+        .filter(Boolean)
+        .map((item) => `<li style="margin: 0 0 8px 0; font-size: 14px; color: #4b5563; line-height: 1.6;">${escapeHtml(item)}</li>`)
+        .join('');
+      htmlBlocks.push(`<ul style="margin: 12px auto 0; padding-left: 18px; max-width: 420px; text-align: left;">${items}</ul>`);
+    } else {
+      const safe = escapeHtml(t).replace(/\n/g, '<br/>');
+      htmlBlocks.push(`<p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.6;">${safe}</p>`);
+    }
+  }
+
+  return htmlBlocks.join('');
+};
+
+const renderSleekTemplateEmail = ({ template, vars, accent = '#2E235C' }) => {
+  const muted = '#f6f4ff';
+  const heading = escapeHtml(applyVariables(template?.heading, vars) || '');
+  const preheader = escapeHtml(applyVariables(template?.preheader, vars) || '');
+  const greetingText = escapeHtml(applyVariables(template?.greeting, vars) || '');
+  const bodyHtml = formatBodyToHtml(applyVariables(template?.body, vars) || '');
+
+  const ctaLabel = escapeHtml(applyVariables(template?.ctaLabel, vars) || '');
+  const ctaUrlRaw = applyVariables(template?.ctaUrl, vars) || '';
+  const ctaUrl = isValidLink(ctaUrlRaw) ? ctaUrlRaw : '';
+
+  const footerText = escapeHtml(applyVariables(template?.footer, vars) || '');
+  const year = new Date().getFullYear();
+
+  const preheaderSpan = preheader
+    ? `<span style="display:none;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">${preheader}</span>`
+    : '';
+
+  const greetingHtml = greetingText
+    ? `<p style="margin: 0; font-size: 16px; color: #111827; font-weight: 600;">${greetingText}</p>`
+    : '';
+
+  const ctaHtml = ctaLabel && ctaUrl
+    ? `
+      <div style="margin-top: 28px;">
+        <a href="${ctaUrl}" style="display: inline-block; background-color: ${accent}; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(46,35,92,0.2);">
+          ${ctaLabel}
+        </a>
+      </div>
+    `
+    : '';
+
+  const footerLines = [
+    footerText ? `<p style="margin: 0 0 6px 0; font-size: 12px; color: #9ca3af;">${footerText}</p>` : '',
+    `<p style="margin: 0; font-size: 12px; color: #9ca3af;">&copy; ${year} BeThere. All rights reserved.</p>`,
+  ].filter(Boolean).join('');
+
+  return `
+    ${preheaderSpan}
+    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+        <div style="padding: 28px 28px 18px; text-align: center;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading}</h2>
+        </div>
+
+        <div style="padding: 0 24px 24px; text-align: center;">
+          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 20px;">
+            ${greetingHtml}
+            ${bodyHtml}
+            ${ctaHtml}
+          </div>
+        </div>
+
+        <div style="background: #fafafa; padding: 16px; text-align: center; border-top: 1px solid #f3f4f6;">
+          ${footerLines}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const sendTemplatedEmail = async ({ recipientEmail, template, vars = {} }) => {
+  if (!emailEnabled) {
+    console.warn('Templated email skipped: email configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipientEmail) {
+    return { delivered: false, reason: 'No recipient email provided' };
+  }
+
+  const subjectText = applyVariables(template?.subject, vars) || '';
+  const subject = subjectText.trim() ? subjectText.trim() : 'BeThere';
+
+  const html = renderSleekTemplateEmail({
+    template,
+    vars,
+  });
+
+  try {
+    await sendRequired({
+      from: mailFrom,
+      to: recipientEmail,
+      subject,
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send templated email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
 const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
   if (!emailEnabled) {
     console.warn('Welcome email skipped: email configuration is missing');
@@ -871,5 +1042,6 @@ module.exports = {
   sendWithdrawalOtpEmail,
   sendWalletOtpEmail,
   sendVendorPaymentReminderEmail,
+  sendTemplatedEmail,
   sendWelcomeEmail
 };

@@ -262,6 +262,25 @@ model VendorPaymentFunding {
   @@index([userId, vendorId])
 }
 
+model EmailTemplate {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  name      String
+  subject   String
+  preheader String?
+  heading   String
+  greeting  String?
+  body      String
+  ctaLabel  String?
+  ctaUrl    String?
+  footer    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([updatedAt])
+}
+
 enum GiftType {
   wedding
   birthday

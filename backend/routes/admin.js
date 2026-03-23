@@ -634,15 +634,250 @@ module.exports = () => {
     }
   });
 
+  const isEmailTemplateTableMissing = (error) => {
+    const message = String(error?.message || '');
+    const code = String(error?.code || '');
+    const cause = String(error?.meta?.cause || '');
+    return (
+      code === 'P2021' ||
+      message.toLowerCase().includes('emailtemplate') && message.toLowerCase().includes('does not exist') ||
+      message.toLowerCase().includes('relation') && message.toLowerCase().includes('"emailtemplate"') && message.toLowerCase().includes('does not exist') ||
+      code === '42P01' ||
+      cause === '42P01'
+    );
+  };
+
+  const ensureEmailTemplatesTable = async () => {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "EmailTemplate" (
+        "id" SERIAL NOT NULL,
+        "key" TEXT NOT NULL,
+        "name" TEXT NOT NULL,
+        "subject" TEXT NOT NULL,
+        "preheader" TEXT,
+        "heading" TEXT NOT NULL,
+        "greeting" TEXT,
+        "body" TEXT NOT NULL,
+        "ctaLabel" TEXT,
+        "ctaUrl" TEXT,
+        "footer" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "EmailTemplate_pkey" PRIMARY KEY ("id")
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "EmailTemplate_key_key" ON "EmailTemplate"("key");`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "EmailTemplate_key_idx" ON "EmailTemplate"("key");`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "EmailTemplate_updatedAt_idx" ON "EmailTemplate"("updatedAt");`);
+  };
+
+  const defaultWelcomeTemplate = {
+    key: 'welcome_default',
+    name: 'Welcome Email (Default)',
+    subject: 'Thank you for joining BeThere 🎉',
+    preheader: "Welcome to BeThere — create your first event link",
+    heading: 'Welcome to BeThere',
+    greeting: 'Hi {name},',
+    body: [
+      "Thank you for signing up to BeThere! We're thrilled to help you celebrate your special moments.",
+      'BeThere Experience helps you to:',
+      '- Manage RSVPs',
+      '- Sell Asoebi',
+      '- Collect cash gifts all in one place.',
+      'Ready to get started?',
+    ].join('\n'),
+    ctaLabel: 'Create Event Link',
+    ctaUrl: 'https://bethereexperience.com/dashboard',
+    footer: "If you have any questions, simply reply to this email. We're here to help!",
+  };
+
+  const toTemplateKey = (input) => {
+    const base = String(input || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    return base || `template_${Date.now()}`;
+  };
+
+  router.get('/email-templates/default-welcome', adminAuth, async (req, res) => {
+    try {
+      await ensureEmailTemplatesTable();
+      const template = await prisma.emailTemplate.upsert({
+        where: { key: defaultWelcomeTemplate.key },
+        update: {},
+        create: { ...defaultWelcomeTemplate, updatedAt: new Date() },
+      });
+      res.json(template);
+    } catch (error) {
+      if (isEmailTemplateTableMissing(error)) {
+        try {
+          await ensureEmailTemplatesTable();
+          const template = await prisma.emailTemplate.upsert({
+            where: { key: defaultWelcomeTemplate.key },
+            update: {},
+            create: { ...defaultWelcomeTemplate, updatedAt: new Date() },
+          });
+          return res.json(template);
+        } catch (inner) {
+          console.error('EmailTemplate table creation failed:', inner);
+          return res.status(500).json({ msg: 'Email templates are not available yet (database setup needed).' });
+        }
+      }
+      console.error('Error fetching default welcome template:', error);
+      res.status(500).json({ msg: 'Server error fetching template' });
+    }
+  });
+
+  router.get('/email-templates', adminAuth, async (req, res) => {
+    try {
+      await ensureEmailTemplatesTable();
+      const templates = await prisma.emailTemplate.findMany({
+        orderBy: { updatedAt: 'desc' },
+      });
+      res.json(templates);
+    } catch (error) {
+      if (isEmailTemplateTableMissing(error)) {
+        try {
+          await ensureEmailTemplatesTable();
+          const templates = await prisma.emailTemplate.findMany({
+            orderBy: { updatedAt: 'desc' },
+          });
+          return res.json(templates);
+        } catch (inner) {
+          console.error('EmailTemplate table creation failed:', inner);
+          return res.status(500).json({ msg: 'Email templates are not available yet (database setup needed).' });
+        }
+      }
+      console.error('Error listing templates:', error);
+      res.status(500).json({ msg: 'Server error fetching templates' });
+    }
+  });
+
+  router.get('/email-templates/:id', adminAuth, async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (!id || Number.isNaN(id)) {
+      return res.status(400).json({ msg: 'Invalid template id' });
+    }
+
+    try {
+      await ensureEmailTemplatesTable();
+      const template = await prisma.emailTemplate.findUnique({ where: { id } });
+      if (!template) return res.status(404).json({ msg: 'Template not found' });
+      res.json(template);
+    } catch (error) {
+      if (isEmailTemplateTableMissing(error)) {
+        return res.status(404).json({ msg: 'Templates are not available yet.' });
+      }
+      console.error('Error fetching template:', error);
+      res.status(500).json({ msg: 'Server error fetching template' });
+    }
+  });
+
+  router.post('/email-templates', adminAuth, async (req, res) => {
+    const { key, name, subject, preheader, heading, greeting, body, ctaLabel, ctaUrl, footer } = req.body || {};
+
+    const safeName = String(name || '').trim();
+    const safeSubject = String(subject || '').trim();
+    const safeHeading = String(heading || '').trim();
+    const safeBody = String(body || '').trim();
+
+    if (!safeName || !safeSubject || !safeHeading || !safeBody) {
+      return res.status(400).json({ msg: 'name, subject, heading, and body are required' });
+    }
+
+    const safeKey = String(key || '').trim() || toTemplateKey(safeName);
+
+    try {
+      await ensureEmailTemplatesTable();
+      const created = await prisma.emailTemplate.create({
+        data: {
+          key: safeKey,
+          name: safeName,
+          subject: safeSubject,
+          preheader: preheader ? String(preheader) : null,
+          heading: safeHeading,
+          greeting: greeting ? String(greeting) : null,
+          body: safeBody,
+          ctaLabel: ctaLabel ? String(ctaLabel) : null,
+          ctaUrl: ctaUrl ? String(ctaUrl) : null,
+          footer: footer ? String(footer) : null,
+          updatedAt: new Date(),
+        },
+      });
+      res.status(201).json(created);
+    } catch (error) {
+      const code = error?.code || error?.meta?.cause;
+      if (code === 'P2002') {
+        return res.status(409).json({ msg: 'Template key already exists. Choose a different name or key.' });
+      }
+      console.error('Error creating template:', error);
+      res.status(500).json({ msg: 'Server error creating template' });
+    }
+  });
+
+  router.put('/email-templates/:id', adminAuth, async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (!id || Number.isNaN(id)) {
+      return res.status(400).json({ msg: 'Invalid template id' });
+    }
+
+    const { name, subject, preheader, heading, greeting, body, ctaLabel, ctaUrl, footer } = req.body || {};
+
+    const safeName = String(name || '').trim();
+    const safeSubject = String(subject || '').trim();
+    const safeHeading = String(heading || '').trim();
+    const safeBody = String(body || '').trim();
+
+    if (!safeName || !safeSubject || !safeHeading || !safeBody) {
+      return res.status(400).json({ msg: 'name, subject, heading, and body are required' });
+    }
+
+    try {
+      await ensureEmailTemplatesTable();
+      const updated = await prisma.emailTemplate.update({
+        where: { id },
+        data: {
+          name: safeName,
+          subject: safeSubject,
+          preheader: preheader ? String(preheader) : null,
+          heading: safeHeading,
+          greeting: greeting ? String(greeting) : null,
+          body: safeBody,
+          ctaLabel: ctaLabel ? String(ctaLabel) : null,
+          ctaUrl: ctaUrl ? String(ctaUrl) : null,
+          footer: footer ? String(footer) : null,
+        },
+      });
+      res.json(updated);
+    } catch (error) {
+      if (isEmailTemplateTableMissing(error)) {
+        return res.status(500).json({ msg: 'Email templates are not available yet (database setup needed).' });
+      }
+      console.error('Error updating template:', error);
+      res.status(500).json({ msg: 'Server error updating template' });
+    }
+  });
+
   router.post('/send-bulk-welcome', adminAuth, async (req, res) => {
-    const { emails } = req.body;
-    const { sendWelcomeEmail } = require('../utils/emailService');
+    const { emails, templateId } = req.body;
+    const { sendWelcomeEmail, sendTemplatedEmail } = require('../utils/emailService');
 
     if (!emails || !Array.isArray(emails) || emails.length === 0) {
       return res.status(400).json({ msg: 'No emails provided' });
     }
 
     try {
+      try {
+        await ensureEmailTemplatesTable();
+      } catch (ensureError) {
+        console.error('EmailTemplate ensure failed (fallback to default welcome):', ensureError);
+      }
+      const chosenTemplate = templateId
+        ? await prisma.emailTemplate.findUnique({ where: { id: Number(templateId) } })
+        : await prisma.emailTemplate.findUnique({ where: { key: defaultWelcomeTemplate.key } });
+
       const results = await Promise.all(
         emails.map(async (email) => {
           try {
@@ -650,6 +885,14 @@ module.exports = () => {
             const user = await prisma.user.findUnique({ where: { email } });
             const guest = !user ? await prisma.guest.findFirst({ where: { email } }) : null;
             const name = user?.name || guest?.firstName || 'there';
+
+            if (chosenTemplate) {
+              return await sendTemplatedEmail({
+                recipientEmail: email,
+                template: chosenTemplate,
+                vars: { name },
+              });
+            }
 
             return await sendWelcomeEmail({ recipientEmail: email, recipientName: name });
           } catch (err) {

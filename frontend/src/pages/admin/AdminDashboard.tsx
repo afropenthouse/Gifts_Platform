@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail } from "lucide-react";
@@ -98,6 +99,21 @@ interface GuestRow {
   gift?: { id: number; title: string | null } | null;
 }
 
+interface EmailTemplate {
+  id: number;
+  key: string;
+  name: string;
+  subject: string;
+  heading: string;
+  greeting: string | null;
+  body: string;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  footer: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 type AdminTab = 'overview' | 'transactions' | 'events' | 'guests' | 'emails';
 type TimeFilter = 'all' | '7days' | '14days' | '30days' | '3months' | 'year';
 
@@ -141,6 +157,32 @@ const AdminDashboard = () => {
   const [emailSourceFilter, setEmailSourceFilter] = useState<'all' | 'user' | 'guest'>('all');
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [sendingBulk, setSendingBulk] = useState(false);
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [loadingEmailTemplates, setLoadingEmailTemplates] = useState(false);
+  const [selectedEmailTemplateId, setSelectedEmailTemplateId] = useState<number | null>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [templateDraft, setTemplateDraft] = useState<{
+    id?: number;
+    key?: string;
+    name: string;
+    subject: string;
+    heading: string;
+    greeting: string;
+    body: string;
+    ctaLabel: string;
+    ctaUrl: string;
+    footer: string;
+  }>({
+    name: '',
+    subject: '',
+    heading: '',
+    greeting: '',
+    body: '',
+    ctaLabel: '',
+    ctaUrl: '',
+    footer: '',
+  });
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [deleteUserName, setDeleteUserName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -319,6 +361,82 @@ const AdminDashboard = () => {
     }
   }, [navigate]);
 
+  const fetchEmailTemplates = useCallback(async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      setLoadingEmailTemplates(true);
+
+      const ensureDefaultRes = await fetch(`${baseUrl}/api/admin/email-templates/default-welcome`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (ensureDefaultRes.status === 401) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+        return;
+      }
+      if (!ensureDefaultRes.ok) {
+        setEmailTemplates([]);
+        setSelectedEmailTemplateId(null);
+        toast.error('Email templates are not available yet');
+        return;
+      }
+
+      const listRes = await fetch(`${baseUrl}/api/admin/email-templates`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (listRes.status === 401) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+        return;
+      }
+
+      if (!listRes.ok) {
+        toast.error('Failed to fetch email templates');
+        return;
+      }
+
+      const templates: EmailTemplate[] = await listRes.json();
+      setEmailTemplates(templates);
+
+      if (templates.length === 0) {
+        setSelectedEmailTemplateId(null);
+        localStorage.removeItem('adminEmailTemplateId');
+        return;
+      }
+
+      const remembered = localStorage.getItem('adminEmailTemplateId');
+      const rememberedId = remembered ? parseInt(remembered, 10) : null;
+      const isRememberedValid = rememberedId ? templates.some((t) => t.id === rememberedId) : false;
+      const defaultTemplate = templates.find((t) => t.key === 'welcome_default') || templates[0] || null;
+
+      if (!selectedEmailTemplateId) {
+        const nextId = (isRememberedValid && rememberedId) ? rememberedId : (defaultTemplate ? defaultTemplate.id : null);
+        if (nextId) {
+          setSelectedEmailTemplateId(nextId);
+          localStorage.setItem('adminEmailTemplateId', String(nextId));
+        }
+      } else {
+        const stillValid = templates.some((t) => t.id === selectedEmailTemplateId);
+        if (!stillValid && defaultTemplate) {
+          setSelectedEmailTemplateId(defaultTemplate.id);
+          localStorage.setItem('adminEmailTemplateId', String(defaultTemplate.id));
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to fetch email templates');
+    } finally {
+      setLoadingEmailTemplates(false);
+    }
+  }, [navigate, selectedEmailTemplateId]);
+
   useEffect(() => {
     fetchDashboardData();
     fetchEvents();
@@ -339,6 +457,12 @@ const AdminDashboard = () => {
       fetchGuests();
     }
   }, [activeTab, fetchGuests]);
+
+  useEffect(() => {
+    if (activeTab === 'emails') {
+      fetchEmailTemplates();
+    }
+  }, [activeTab, fetchEmailTemplates]);
 
   const handleToggleUser = async (userId: number) => {
     const token = localStorage.getItem('adminToken');
@@ -425,7 +549,7 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ emails: selectedEmails }),
+        body: JSON.stringify({ emails: selectedEmails, templateId: selectedEmailTemplateId }),
       });
 
       const data = await response.json();
@@ -440,6 +564,236 @@ const AdminDashboard = () => {
     } finally {
       setSendingBulk(false);
     }
+  };
+
+  const selectedEmailTemplate = selectedEmailTemplateId
+    ? emailTemplates.find((t) => t.id === selectedEmailTemplateId) || null
+    : null;
+
+  const openEditEmailTemplate = () => {
+    if (!selectedEmailTemplate) {
+      toast.error('Select a template first');
+      return;
+    }
+    setTemplateDraft({
+      id: selectedEmailTemplate.id,
+      key: selectedEmailTemplate.key,
+      name: selectedEmailTemplate.name || '',
+      subject: selectedEmailTemplate.subject || '',
+      heading: selectedEmailTemplate.heading || '',
+      greeting: selectedEmailTemplate.greeting || '',
+      body: selectedEmailTemplate.body || '',
+      ctaLabel: selectedEmailTemplate.ctaLabel || '',
+      ctaUrl: selectedEmailTemplate.ctaUrl || '',
+      footer: selectedEmailTemplate.footer || '',
+    });
+    setTemplateDialogOpen(true);
+  };
+
+  const openNewEmailTemplate = () => {
+    const base = selectedEmailTemplate;
+    setTemplateDraft({
+      name: base ? `${base.name} (Copy)` : 'New Email Template',
+      subject: base?.subject || 'BeThere',
+      heading: base?.heading || 'Hello from BeThere',
+      greeting: base?.greeting || 'Hi {name},',
+      body: base?.body || "Write your message here.\n\nTip: use {name} to personalize.",
+      ctaLabel: base?.ctaLabel || '',
+      ctaUrl: base?.ctaUrl || '',
+      footer: base?.footer || '',
+    });
+    setTemplateDialogOpen(true);
+  };
+
+  const closeTemplateDialog = () => {
+    if (savingTemplate) return;
+    setTemplateDialogOpen(false);
+  };
+
+  const saveEmailTemplate = async ({ asNew }: { asNew: boolean }) => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    const payload = {
+      key: templateDraft.key?.trim() || undefined,
+      name: templateDraft.name.trim(),
+      subject: templateDraft.subject.trim(),
+      heading: templateDraft.heading.trim(),
+      greeting: templateDraft.greeting.trim() || undefined,
+      body: templateDraft.body.trim(),
+      ctaLabel: templateDraft.ctaLabel.trim() || undefined,
+      ctaUrl: templateDraft.ctaUrl.trim() || undefined,
+      footer: templateDraft.footer.trim() || undefined,
+    };
+
+    if (!payload.name || !payload.subject || !payload.heading || !payload.body) {
+      toast.error('Name, Subject, Heading, and Body are required');
+      return;
+    }
+
+    try {
+      setSavingTemplate(true);
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const isUpdate = Boolean(templateDraft.id) && !asNew;
+      const url = isUpdate
+        ? `${baseUrl}/api/admin/email-templates/${templateDraft.id}`
+        : `${baseUrl}/api/admin/email-templates`;
+
+      const response = await fetch(url, {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        toast.error(data?.msg || 'Failed to save template');
+        return;
+      }
+
+      toast.success(isUpdate ? 'Template updated' : 'Template created');
+      setTemplateDialogOpen(false);
+      await fetchEmailTemplates();
+
+      const nextId = data?.id;
+      if (typeof nextId === 'number') {
+        setSelectedEmailTemplateId(nextId);
+        localStorage.setItem('adminEmailTemplateId', String(nextId));
+      }
+    } catch (error) {
+      toast.error('Failed to save template');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const escapePreviewHtml = (value: string) => {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
+  const applyPreviewVars = (input: string, vars: Record<string, string>) => {
+    return String(input ?? '').replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
+      const v = Object.prototype.hasOwnProperty.call(vars, key) ? vars[key] : undefined;
+      if (v === undefined || v === null) return match;
+      return String(v);
+    });
+  };
+
+  const isValidPreviewLink = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+    } catch {
+      return false;
+    }
+  };
+
+  const formatPreviewBodyToHtml = (raw: string) => {
+    const text = String(raw ?? '').replace(/\r\n/g, '\n').trim();
+    if (!text) return '';
+
+    const lines = text.split('\n');
+    const blocks: string[] = [];
+    let buffer: string[] = [];
+
+    const flush = () => {
+      const t = buffer.join('\n').trim();
+      buffer = [];
+      if (t) blocks.push(t);
+    };
+
+    for (const line of lines) {
+      if (!line.trim()) {
+        flush();
+        continue;
+      }
+      buffer.push(line);
+    }
+    flush();
+
+    const htmlBlocks: string[] = [];
+    for (const block of blocks) {
+      const bulletLines = block
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+
+      const allBullets = bulletLines.length > 0 && bulletLines.every((l) => l.startsWith('- ') || l.startsWith('• '));
+      if (allBullets) {
+        const items = bulletLines
+          .map((l) => l.replace(/^(-\s+|•\s+)/, '').trim())
+          .filter(Boolean)
+          .map((item) => `<li style="margin: 0 0 8px 0; font-size: 14px; color: #4b5563; line-height: 1.6;">${escapePreviewHtml(item)}</li>`)
+          .join('');
+        htmlBlocks.push(`<ul style="margin: 12px auto 0; padding-left: 18px; max-width: 420px; text-align: left;">${items}</ul>`);
+      } else {
+        htmlBlocks.push(`<p style="margin: 12px 0 0; font-size: 14px; color: #4b5563; line-height: 1.6;">${escapePreviewHtml(block).replace(/\n/g, '<br/>')}</p>`);
+      }
+    }
+    return htmlBlocks.join('');
+  };
+
+  const buildTemplatePreviewHtml = () => {
+    const accent = '#2E235C';
+    const muted = '#f6f4ff';
+    const vars = { name: 'Alex' };
+
+    const heading = escapePreviewHtml(applyPreviewVars(templateDraft.heading, vars));
+    const greeting = escapePreviewHtml(applyPreviewVars(templateDraft.greeting, vars));
+    const body = formatPreviewBodyToHtml(applyPreviewVars(templateDraft.body, vars));
+    const footer = escapePreviewHtml(applyPreviewVars(templateDraft.footer, vars));
+    const ctaLabel = escapePreviewHtml(applyPreviewVars(templateDraft.ctaLabel, vars));
+    const ctaUrlRaw = applyPreviewVars(templateDraft.ctaUrl, vars);
+    const ctaUrl = isValidPreviewLink(ctaUrlRaw) ? ctaUrlRaw : '';
+
+    const year = new Date().getFullYear();
+    const greetingHtml = greeting ? `<p style="margin: 0; font-size: 16px; color: #111827; font-weight: 600;">${greeting}</p>` : '';
+    const ctaHtml = ctaLabel && ctaUrl
+      ? `<div style="margin-top: 28px;"><a href="${ctaUrl}" style="display: inline-block; background-color: ${accent}; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(46,35,92,0.2);">${ctaLabel}</a></div>`
+      : '';
+    const footerLines = [
+      footer ? `<p style="margin: 0 0 6px 0; font-size: 12px; color: #9ca3af;">${footer}</p>` : '',
+      `<p style="margin: 0; font-size: 12px; color: #9ca3af;">&copy; ${year} BeThere. All rights reserved.</p>`,
+    ].filter(Boolean).join('');
+
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Email Preview</title>
+        </head>
+        <body style="margin: 0; padding: 0; background: #f3f2fb; min-height: 100vh;">
+          <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937; min-height: 100vh; box-sizing: border-box;">
+            <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+              <div style="padding: 28px 28px 18px; text-align: center;">
+                <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">${heading || 'Your heading'}</h2>
+              </div>
+              <div style="padding: 0 24px 24px; text-align: center;">
+                <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 20px;">
+                  ${greetingHtml}
+                  ${body}
+                  ${ctaHtml}
+                </div>
+              </div>
+              <div style="background: #fafafa; padding: 16px; text-align: center; border-top: 1px solid #f3f4f6;">
+                ${footerLines}
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    return html;
   };
 
   const toggleEmailSelection = (email: string) => {
@@ -541,41 +895,102 @@ const AdminDashboard = () => {
 
     return (
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0">
             <CardTitle>Bulk Welcome Emails</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
               Send the welcome email template to selected users and guests.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <Button 
               variant="outline" 
               onClick={() => selectAllEmails(filteredEmails)}
+              className="w-full sm:w-auto"
             >
               {selectedEmails.length === filteredEmails.length && filteredEmails.length > 0 ? 'Deselect All' : 'Select All Filtered'}
             </Button>
             <Button 
               disabled={selectedEmails.length === 0 || sendingBulk}
               onClick={handleSendBulkEmail}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
             >
               {sendingBulk ? 'Sending...' : `Send to ${selectedEmails.length} selected`}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
-            <div className="relative flex-1">
+          <div className="mb-6 rounded-xl border bg-gradient-to-r from-purple-50 to-white p-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="space-y-1 w-full sm:w-auto">
+                  <Label className="text-sm font-medium">Email Template</Label>
+                  <Select
+                    disabled={loadingEmailTemplates || emailTemplates.length === 0}
+                    value={selectedEmailTemplateId ? String(selectedEmailTemplateId) : ''}
+                    onValueChange={(value) => {
+                      const id = parseInt(value, 10);
+                      setSelectedEmailTemplateId(id);
+                      localStorage.setItem('adminEmailTemplateId', String(id));
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-[260px] bg-white">
+                      <SelectValue placeholder={loadingEmailTemplates ? 'Loading templates...' : 'Select a template'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {emailTemplates.length === 0 ? (
+                        <SelectItem value="__none__" disabled>
+                          No templates yet
+                        </SelectItem>
+                      ) : null}
+                      {emailTemplates.map((t) => (
+                        <SelectItem key={t.id} value={String(t.id)}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Use {`{name}`} to personalize.</p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button type="button" variant="outline" onClick={openNewEmailTemplate}>
+                    New Template
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={openEditEmailTemplate}
+                    disabled={!selectedEmailTemplateId || loadingEmailTemplates || emailTemplates.length === 0}
+                  >
+                    Edit Template
+                  </Button>
+                </div>
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                {selectedEmailTemplate ? (
+                  <span>
+                    Subject: <span className="font-medium text-foreground">{selectedEmailTemplate.subject}</span>
+                  </span>
+                ) : (
+                  <span>Select a template to see the subject.</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
+            <div className="relative w-full md:flex-1">
               <Input
                 placeholder="Search emails..."
                 value={emailSearch}
                 onChange={(e) => setEmailSearch(e.target.value)}
-                className="max-w-sm"
+                className="w-full md:max-w-sm"
               />
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full md:w-auto">
               <Label htmlFor="email-source-filter" className="text-sm font-medium whitespace-nowrap">Filter By Source:</Label>
               <Select
                 value={emailSourceFilter}
@@ -584,7 +999,7 @@ const AdminDashboard = () => {
                   setSelectedEmails([]); // Clear selection when switching filters to avoid hidden selections
                 }}
               >
-                <SelectTrigger id="email-source-filter" className="w-[140px]">
+                <SelectTrigger id="email-source-filter" className="w-full md:w-[160px]">
                   <SelectValue placeholder="All Sources" />
                 </SelectTrigger>
                 <SelectContent>
@@ -595,16 +1010,16 @@ const AdminDashboard = () => {
               </Select>
             </div>
 
-            <div className="text-sm text-muted-foreground bg-gray-100 px-3 py-1 rounded-full">
+            <div className="text-sm text-muted-foreground bg-gray-100 px-3 py-1 rounded-full w-fit">
               Total Filtered: <span className="font-semibold text-gray-900">{filteredEmails.length}</span>
             </div>
-            <div className="text-sm text-muted-foreground bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+            <div className="text-sm text-muted-foreground bg-purple-50 px-3 py-1 rounded-full border border-purple-100 w-fit">
               Selected: <span className="font-semibold text-purple-700">{selectedEmails.length}</span>
             </div>
           </div>
           
-          <div className="rounded-md border overflow-hidden">
-            <Table>
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[720px]">
               <TableHeader className="bg-gray-50">
                 <TableRow>
                   <TableHead className="w-[50px]">
@@ -1679,6 +2094,139 @@ const AdminDashboard = () => {
           {activeTab === 'emails' && renderEmails()}
         </div>
       </main>
+
+      <Dialog
+        open={templateDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) closeTemplateDialog();
+        }}
+      >
+        <DialogContent className="sm:max-w-[1100px] max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Email Template</DialogTitle>
+            <DialogDescription>
+              Edit the template and preview it before sending. Tip: use {`{name}`} to personalize.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-y-auto pr-2">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Template name</Label>
+                  <Input
+                    value={templateDraft.name}
+                    onChange={(e) => setTemplateDraft((d) => ({ ...d, name: e.target.value }))}
+                    placeholder="Welcome Email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Input
+                    value={templateDraft.subject}
+                    onChange={(e) => setTemplateDraft((d) => ({ ...d, subject: e.target.value }))}
+                    placeholder="Subject line"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Heading</Label>
+                  <Input
+                    value={templateDraft.heading}
+                    onChange={(e) => setTemplateDraft((d) => ({ ...d, heading: e.target.value }))}
+                    placeholder="Welcome to BeThere"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Greeting (optional)</Label>
+                  <Input
+                    value={templateDraft.greeting}
+                    onChange={(e) => setTemplateDraft((d) => ({ ...d, greeting: e.target.value }))}
+                    placeholder="Hi {name},"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Body</Label>
+                <Textarea
+                  value={templateDraft.body}
+                  onChange={(e) => setTemplateDraft((d) => ({ ...d, body: e.target.value }))}
+                  placeholder={"Write your message here.\n\nUse '- ' for bullet points."}
+                  className="min-h-[220px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Lines starting with "- " become bullet points in the email.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Button text (optional)</Label>
+                  <Input
+                    value={templateDraft.ctaLabel}
+                    onChange={(e) => setTemplateDraft((d) => ({ ...d, ctaLabel: e.target.value }))}
+                    placeholder="View Dashboard"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Button link (optional)</Label>
+                  <Input
+                    value={templateDraft.ctaUrl}
+                    onChange={(e) => setTemplateDraft((d) => ({ ...d, ctaUrl: e.target.value }))}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Footer note (optional)</Label>
+                <Input
+                  value={templateDraft.footer}
+                  onChange={(e) => setTemplateDraft((d) => ({ ...d, footer: e.target.value }))}
+                  placeholder="Reply to this email if you need help."
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Preview</Label>
+                <span className="text-xs text-muted-foreground">Sample: {`{name}`} = Alex</span>
+              </div>
+              <div className="rounded-xl border bg-white overflow-hidden">
+                <iframe
+                  title="Email preview"
+                  className="w-full h-[560px]"
+                  srcDoc={buildTemplatePreviewHtml()}
+                  sandbox=""
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={closeTemplateDialog} disabled={savingTemplate}>
+              Cancel
+            </Button>
+            {templateDraft.id ? (
+              <Button type="button" variant="outline" onClick={() => saveEmailTemplate({ asNew: true })} disabled={savingTemplate}>
+                Save as New
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              onClick={() => saveEmailTemplate({ asNew: false })}
+              disabled={savingTemplate}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {savingTemplate ? 'Saving...' : templateDraft.id ? 'Save Changes' : 'Create Template'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={deleteUserId !== null}
