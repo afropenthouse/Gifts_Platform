@@ -1,22 +1,8 @@
-const nodemailer = require('nodemailer');
+const axios = require('axios');
 
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = process.env.SMTP_PORT || 587;
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
+const POSTMARK_SERVER_TOKEN = process.env.POSTMARK_SERVER_TOKEN;
+const POSTMARK_MESSAGE_STREAM = process.env.POSTMARK_MESSAGE_STREAM || 'outbound';
 const mailFromRaw = process.env.MAIL_FROM || 'BeThere <support@bethereexperience.com>';
-
-// Create Nodemailer Transporter
-const transporter = nodemailer.createTransport({
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_SECURE, // true for 465, false for other ports
-  auth: {
-    user: SMTP_USER,
-    pass: SMTP_PASS,
-  },
-});
 
 // Parse "Name <email@example.com>" into { name, email }
 const parseFrom = (fromStr) => {
@@ -29,62 +15,60 @@ const parseFrom = (fromStr) => {
 
 const mailFrom = parseFrom(mailFromRaw);
 
-console.log('📧 Email Configuration (Nodemailer):');
-console.log(`   Host: ${SMTP_HOST}`);
-console.log(`   Port: ${SMTP_PORT}`);
-console.log(`   User: ${SMTP_USER ? '✓ Set' : '✗ NOT SET'}`);
-console.log(`   Pass: ${SMTP_PASS ? '✓ Set' : '✗ NOT SET'}`);
+console.log(`📧 Email Provider: Postmark`);
 console.log(`   From: ${mailFrom.name} <${mailFrom.email}>`);
 
-// Verify transporter on startup
-if (SMTP_USER && SMTP_PASS) {
-  transporter.verify((error, success) => {
-    if (error) {
-      console.error('❌ Nodemailer Transporter Error:', error.message);
-    } else {
-      console.log('✅ Nodemailer Transporter is ready');
-    }
-  });
+function extractEmail(fromValue) {
+  if (!fromValue) return null;
+  const parsed = parseFrom(fromValue);
+  return parsed?.email || null;
 }
 
-/**
- * Sends an email using Nodemailer
- * @param {Object} mailOptions - { to, subject, html, text, from }
- */
-async function sendEmail(mailOptions) {
-  if (!SMTP_USER || !SMTP_PASS) {
-    console.error('❌ Nodemailer configuration missing in .env');
-    return { delivered: false, error: 'SMTP configuration missing' };
+async function sendEmailPostmark(mailOptions) {
+  if (!POSTMARK_SERVER_TOKEN) {
+    return { delivered: false, error: 'POSTMARK_SERVER_TOKEN missing' };
   }
+
+  const parsedFrom = parseFrom(mailOptions.from || mailFromRaw);
+  const fromEmail = parsedFrom?.email;
+  const fromName = parsedFrom?.name || 'BeThere';
+  if (!fromEmail) return { delivered: false, error: 'Invalid from address' };
+  if (!mailOptions?.to) return { delivered: false, error: 'Missing recipient' };
 
   try {
-    console.log(`\n📨 Attempting to send email via Nodemailer to: ${mailOptions.to}`);
+    console.log(`\n📨 Attempting to send email via Postmark to: ${mailOptions.to}`);
     console.log(`   Subject: ${mailOptions.subject}`);
-    
-    const info = await transporter.sendMail({
-      from: mailOptions.from || mailFromRaw,
-      to: mailOptions.to,
-      subject: mailOptions.subject,
-      text: mailOptions.text || '',
-      html: mailOptions.html,
-    });
 
-    console.log(`✅ Email sent successfully! Message ID: ${info.messageId}`);
-    return { delivered: true, data: info };
+    const response = await axios.post(
+      'https://api.postmarkapp.com/email',
+      {
+        From: `${fromName} <${fromEmail}>`,
+        To: mailOptions.to,
+        Subject: mailOptions.subject,
+        HtmlBody: mailOptions.html,
+        TextBody: mailOptions.text || '',
+        MessageStream: POSTMARK_MESSAGE_STREAM,
+      },
+      {
+        headers: {
+          'X-Postmark-Server-Token': POSTMARK_SERVER_TOKEN,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        timeout: 15000,
+      }
+    );
+
+    return { delivered: true, data: response.data };
   } catch (error) {
-    console.error(`❌ Email send failed via Nodemailer!`);
-    console.error(`   Error: ${error.message}`);
-    return { delivered: false, error: error.message };
+    const message = error?.response?.data || error?.message || 'Postmark error';
+    console.error('❌ Email send failed via Postmark:', message);
+    return { delivered: false, error: message };
   }
 }
 
-/* 
-// Legacy Sender.net Logic (Commented out)
-const axios = require('axios');
-const SENDER_API_KEY = process.env.SENDER_API_KEY;
-async function sendEmailSenderNet(mailOptions) {
-  // ... (Sender.net implementation)
+async function sendEmail(mailOptions) {
+  return sendEmailPostmark(mailOptions);
 }
-*/
 
 module.exports = { sendEmail, mailFrom: mailFromRaw };

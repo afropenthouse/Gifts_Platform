@@ -1,11 +1,22 @@
 const { sendEmail, mailFrom } = require('./email');
 const { generateCalendarLinks } = require('./calendarLinks');
 
-const emailEnabled = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+const emailEnabled = Boolean(process.env.POSTMARK_SERVER_TOKEN);
 
 if (!emailEnabled) {
-  console.warn('📧 Email Service disabled: SMTP_USER or SMTP_PASS not set in .env');
+  console.warn('📧 Email Service disabled: POSTMARK_SERVER_TOKEN not set in .env');
 }
+
+const sendRequired = async (mailOptions) => {
+  const result = await sendEmail(mailOptions);
+  if (result?.delivered) return result;
+  const err = result?.error;
+  const msg =
+    typeof err === 'string'
+      ? err
+      : err?.Message || err?.message || (err ? JSON.stringify(err) : 'Email delivery failed');
+  throw new Error(msg);
+};
 
 const formatEventHeading = (gift) => {
   if (!gift) return 'Event Celebration';
@@ -99,7 +110,7 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
   `;
 
   try {
-    await sendEmail({
+    await sendRequired({
       from: mailFrom,
       to: recipient,
       subject: `${heading} – RSVP Confirmation`,
@@ -157,7 +168,7 @@ const sendOwnerNotificationEmail = async ({ ownerEmail, ownerName, guestName, gu
   `;
 
   try {
-    await sendEmail({
+    await sendRequired({
       from: mailFrom,
       to: ownerEmail,
       subject: `New RSVP: ${guestName} ${status}`,
@@ -264,7 +275,7 @@ const sendReminderEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   `;
 
   try {
-    await sendEmail({
+    await sendRequired({
       from: mailFrom,
       to: recipient,
       subject,
@@ -329,7 +340,7 @@ const sendRsvpCancellationEmail = async ({ recipient, guestName, gift }) => {
   `;
   
   try {
-    await sendEmail({
+    await sendRequired({
       from: mailFrom,
       to: recipient,
       subject: `${heading} – Event Cancelled`,
@@ -392,7 +403,7 @@ const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   `;
 
   try {
-    await sendEmail({
+    await sendRequired({
       from: mailFrom,
       to: recipient,
       subject: `Thanks for Coming! - ${heading}`,
@@ -455,7 +466,7 @@ const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, a
   `;
 
   try {
-    await sendEmail({
+    await sendRequired({
       from: mailFrom,
       to: recipientEmail,
       subject,
@@ -536,7 +547,7 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
   `;
 
   try {
-    await sendEmail({
+    await sendRequired({
       from: mailFrom,
       to: recipientEmail,
       subject,
@@ -594,7 +605,7 @@ const sendWithdrawalOtpEmail = async ({ recipientEmail, recipientName, otp }) =>
   `;
 
   try {
-    await sendEmail({
+    await sendRequired({
       from: mailFrom,
       to: recipientEmail,
       subject: 'Withdrawal Verification Code',
@@ -680,7 +691,7 @@ const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
   `;
 
   try {
-     await sendEmail({
+     await sendRequired({
        from: mailFrom,
        to: recipientEmail,
        subject: 'Thank you for joining BeThere 🎉',
@@ -689,6 +700,162 @@ const sendWelcomeEmail = async ({ recipientEmail, recipientName }) => {
      return { delivered: true };
   } catch (error) {
     console.error('Failed to send welcome email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
+const sendWalletOtpEmail = async ({ recipientEmail, recipientName, otp }) => {
+  if (!emailEnabled) {
+    console.warn('Wallet OTP email skipped: email configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipientEmail) {
+    return { delivered: false, reason: 'No recipient email provided' };
+  }
+
+  const accent = '#2E235C';
+  const muted = '#f6f4ff';
+  const cleanRecipientName = (recipientName || 'there').trim();
+
+  const html = `
+    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+        <div style="padding: 28px 28px 18px; text-align: center;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${accent}; letter-spacing: 0.4px;">Security Verification</h2>
+          <p style="margin: 12px 0 4px; font-size: 15px; color: #374151;">Wallet Payment OTP</p>
+        </div>
+
+        <div style="padding: 0 24px 24px; text-align: center;">
+          <div style="margin: 0 auto 8px; max-width: 420px; background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+            <p style="margin: 0; font-size: 14px; color: #111827;">Hi ${cleanRecipientName},</p>
+            <p style="margin: 8px 0 0; font-size: 14px; color: #4b5563; line-height: 20px;">
+              You are authorizing a wallet-funded scheduled payment. Please use the following One-Time Password (OTP) to confirm:
+            </p>
+            <div style="margin: 24px 0; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: ${accent}; background: #ffffff; padding: 16px; border-radius: 8px; border: 1px dashed ${accent};">
+              ${otp}
+            </div>
+            <p style="margin: 0; font-size: 13px; color: #6b7280;">
+              This code will expire in 10 minutes. If you did not request this, please secure your account immediately.
+            </p>
+          </div>
+
+          <p style="margin: 12px 0 0; font-size: 12px; color: #9ca3af;">
+            Sent via BeThere Security
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendRequired({
+      from: mailFrom,
+      to: recipientEmail,
+      subject: 'Wallet Payment Verification Code',
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send wallet OTP email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
+const sendVendorPaymentReminderEmail = async ({ recipientEmail, recipientName, title, subtitle, vendors }) => {
+  if (!emailEnabled) {
+    console.warn('Vendor payment reminder email skipped: email configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipientEmail) {
+    return { delivered: false, reason: 'No recipient email provided' };
+  }
+
+  const accent = '#2E235C';
+  const muted = '#f6f4ff';
+  const cleanRecipientName = (recipientName || 'there').trim();
+  const dashboardUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`;
+
+  const rows = (vendors || []).map((v) => {
+    const due = v?.dueDate ? new Date(v.dueDate) : null;
+    const dueText = due ? due.toLocaleDateString() : '-';
+    const amountAgreed = Number(v.amountAgreed || 0);
+    const amountPaid = Number(v.amountPaid || 0);
+    const scheduledAmount = Number(v.scheduledAmount || 0);
+    const balance = Number(v.balance ?? (amountAgreed - amountPaid - scheduledAmount));
+
+    return `
+      <tr>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #ebe9f7;">
+          <div style="font-weight: 700; color: #111827; font-size: 13px;">${v.category || 'Vendor'}</div>
+          <div style="font-size: 12px; color: #6b7280;">${v.eventTitle || 'Event'}</div>
+        </td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #ebe9f7; text-align: right; font-size: 13px; color: #111827;">
+          ₦${balance.toLocaleString()}
+        </td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #ebe9f7; text-align: right; font-size: 13px; color: #111827;">
+          ${dueText}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const html = `
+    <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
+      <div style="max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #ebe9f7; box-shadow: 0 12px 30px rgba(46, 35, 92, 0.08); overflow: hidden;">
+        <div style="padding: 26px 26px 16px;">
+          <div style="font-size: 20px; font-weight: 800; color: ${accent};">${title || 'Upcoming Vendor Payments'}</div>
+          ${subtitle ? `<div style="margin-top: 6px; font-size: 13px; color: #4b5563;">${subtitle}</div>` : ''}
+        </div>
+
+        <div style="padding: 0 26px 18px;">
+          <div style="background: ${muted}; border: 1px solid #e7e4f5; border-radius: 14px; padding: 14px 16px;">
+            <div style="font-size: 13px; color: #111827;">Hi ${cleanRecipientName},</div>
+            <div style="margin-top: 6px; font-size: 13px; color: #4b5563; line-height: 20px;">
+              Here are your vendor payments to take action on:
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 0 26px 10px;">
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #ebe9f7; border-radius: 12px; overflow: hidden;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 10px 12px; background: #fafafa; font-size: 12px; color: #6b7280; border-bottom: 1px solid #ebe9f7;">Vendor</th>
+                <th style="text-align: right; padding: 10px 12px; background: #fafafa; font-size: 12px; color: #6b7280; border-bottom: 1px solid #ebe9f7;">Balance</th>
+                <th style="text-align: right; padding: 10px 12px; background: #fafafa; font-size: 12px; color: #6b7280; border-bottom: 1px solid #ebe9f7;">Due</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows || ''}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="padding: 0 26px 24px;">
+          <a href="${dashboardUrl}" style="display: inline-block; background-color: ${accent}; color: #ffffff; padding: 12px 18px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 13px;">
+            View in Dashboard
+          </a>
+        </div>
+
+        <div style="padding: 14px 26px; border-top: 1px solid #f3f4f6; font-size: 12px; color: #9ca3af;">
+          Sent via BeThere
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendRequired({
+      from: mailFrom,
+      to: recipientEmail,
+      subject: title || 'Vendor Payment Reminder',
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send vendor payment reminder email:', error?.message || error);
     return { delivered: false, error: error?.message || 'Unknown error' };
   }
 };
@@ -702,5 +869,7 @@ module.exports = {
   sendContributorThankYouEmail,
   sendGiftReceivedEmail,
   sendWithdrawalOtpEmail,
+  sendWalletOtpEmail,
+  sendVendorPaymentReminderEmail,
   sendWelcomeEmail
 };

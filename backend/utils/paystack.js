@@ -1,4 +1,3 @@
-// Create a transfer recipient
 async function createTransferRecipient({ account_number, account_bank, name }) {
   const payload = {
     type: 'nuban',

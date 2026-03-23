@@ -1,8 +1,10 @@
 const express = require('express');
+const crypto = require('crypto');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
 const { resolveAccount, getBanks, initializePayment } = require('../utils/paystack');
 const { sendEmail, mailFrom } = require('../utils/email');
+const { sendWalletOtpEmail } = require('../utils/emailService');
 
 function calculateStatus(amountAgreed, amountPaid, scheduledAmount, dueDate, status) {
   // Use stored status if it's the new ones
@@ -195,6 +197,11 @@ module.exports = () => {
     const { amount, vendorEmail, accountName, accountNumber, bankCode, bankName } = req.body;
 
     try {
+      const scheduleAmount = parseFloat(amount);
+      if (Number.isNaN(scheduleAmount) || scheduleAmount <= 0) {
+        return res.status(400).json({ msg: 'Invalid amount' });
+      }
+
       // Check ownership
       const vendor = await prisma.vendor.findUnique({
         where: { id: vendorId },
@@ -208,16 +215,21 @@ module.exports = () => {
         return res.status(403).json({ msg: 'Not authorized' });
       }
 
+      const remainingBalance = Number(vendor.amountAgreed) - Number(vendor.amountPaid) - Number(vendor.scheduledAmount);
+      if (scheduleAmount > remainingBalance) {
+        return res.status(400).json({ msg: 'Amount exceeds outstanding balance' });
+      }
+
       // Initialize payment
       const reference = `vendor-schedule-${vendorId}-${Date.now()}`;
       const payment = await initializePayment({
         email: req.user.email,
-        amount: parseFloat(amount) * 100, // in kobo
+        amount: scheduleAmount * 100, // in kobo
         reference,
         callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`,
         metadata: {
           vendorId,
-          amount: parseFloat(amount),
+          amount: scheduleAmount,
           vendorEmail,
           accountName,
           accountNumber,
@@ -239,7 +251,7 @@ module.exports = () => {
         where: { id: vendorId },
         data: {
           vendorEmail,
-          scheduledAmount: vendor.scheduledAmount + parseFloat(amount),
+          scheduledAmount: { increment: scheduleAmount },
           status: 'Scheduled',
           releaseDate,
           accountNumber,
@@ -268,6 +280,193 @@ module.exports = () => {
     }
   });
 
+  // Schedule payment for a vendor using wallet balance
+  router.post('/:id/send-wallet-otp', auth(), async (req, res) => {
+    const vendorId = parseInt(req.params.id);
+    const { amount } = req.body;
+
+    try {
+      const scheduleAmount = parseFloat(amount);
+      if (Number.isNaN(scheduleAmount) || scheduleAmount <= 0) {
+        return res.status(400).json({ msg: 'Invalid amount' });
+      }
+
+      const vendor = await prisma.vendor.findUnique({
+        where: { id: vendorId },
+        include: {
+          Gift: { select: { userId: true } }
+        }
+      });
+
+      if (!vendor || vendor.Gift.userId !== req.user.id) {
+        return res.status(403).json({ msg: 'Not authorized' });
+      }
+
+      const remainingBalance = Number(vendor.amountAgreed) - Number(vendor.amountPaid) - Number(vendor.scheduledAmount);
+      if (scheduleAmount > remainingBalance) {
+        return res.status(400).json({ msg: 'Amount exceeds outstanding balance' });
+      }
+
+      const latestUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+      if (!latestUser) return res.status(404).json({ msg: 'User not found' });
+
+      if (Number(latestUser.wallet) < scheduleAmount) {
+        return res.status(400).json({ msg: 'Insufficient wallet balance' });
+      }
+
+      const otp = crypto.randomInt(100000, 999999).toString();
+      const expires = new Date(Date.now() + 10 * 60 * 1000);
+
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          verificationToken: otp,
+          verificationTokenExpires: expires,
+        }
+      });
+
+      await sendWalletOtpEmail({
+        recipientEmail: latestUser.email,
+        recipientName: latestUser.name,
+        otp,
+      });
+
+      res.json({ msg: 'OTP sent to your email' });
+    } catch (err) {
+      console.error('Error sending wallet OTP:', err);
+      res.status(500).json({ msg: 'Failed to send OTP' });
+    }
+  });
+
+  router.post('/:id/schedule-payment-wallet', auth(), async (req, res) => {
+    const vendorId = parseInt(req.params.id);
+    const { amount, vendorEmail, accountName, accountNumber, bankCode, bankName, otp } = req.body;
+
+    try {
+      const scheduleAmount = parseFloat(amount);
+      if (Number.isNaN(scheduleAmount) || scheduleAmount <= 0) {
+        return res.status(400).json({ msg: 'Invalid amount' });
+      }
+
+      if (!otp) {
+        return res.status(400).json({ msg: 'OTP is required' });
+      }
+
+      const latestUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+      if (!latestUser) return res.status(404).json({ msg: 'User not found' });
+
+      if (
+        latestUser.verificationToken !== otp ||
+        !latestUser.verificationTokenExpires ||
+        latestUser.verificationTokenExpires < new Date()
+      ) {
+        return res.status(400).json({ msg: 'Invalid or expired OTP' });
+      }
+
+      await prisma.user.update({
+        where: { id: latestUser.id },
+        data: {
+          verificationToken: null,
+          verificationTokenExpires: null,
+        }
+      });
+
+      const vendor = await prisma.vendor.findUnique({
+        where: { id: vendorId },
+        include: {
+          Gift: {
+            select: { userId: true }
+          }
+        }
+      });
+
+      if (!vendor || vendor.Gift.userId !== req.user.id) {
+        return res.status(403).json({ msg: 'Not authorized' });
+      }
+
+      const remainingBalance = Number(vendor.amountAgreed) - Number(vendor.amountPaid) - Number(vendor.scheduledAmount);
+      if (scheduleAmount > remainingBalance) {
+        return res.status(400).json({ msg: 'Amount exceeds outstanding balance' });
+      }
+
+      const releaseDate = new Date(new Date(vendor.dueDate).getTime() + 24 * 60 * 60 * 1000);
+
+      const { updatedVendor, updatedUser } = await prisma.$transaction(async (tx) => {
+        const walletUpdate = await tx.user.updateMany({
+          where: { id: req.user.id, wallet: { gte: scheduleAmount } },
+          data: { wallet: { decrement: scheduleAmount } },
+        });
+
+        if (walletUpdate.count !== 1) {
+          throw new Error('INSUFFICIENT_WALLET');
+        }
+
+        const funding = await tx.vendorPaymentFunding.create({
+          data: {
+            userId: req.user.id,
+            vendorId,
+            amount: scheduleAmount,
+            method: 'wallet',
+            status: 'funded',
+          },
+        });
+
+        const updatedVendor = await tx.vendor.update({
+          where: { id: vendorId },
+          data: {
+            vendorEmail,
+            scheduledAmount: { increment: scheduleAmount },
+            status: 'Scheduled',
+            releaseDate,
+            accountNumber,
+            bankCode,
+            bankName,
+            accountName,
+            updatedAt: new Date(),
+          },
+          include: {
+            Gift: {
+              select: { id: true, title: true, type: true }
+            }
+          }
+        });
+
+        const updatedUser = await tx.user.findUnique({
+          where: { id: req.user.id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            profilePicture: true,
+            wallet: true,
+          }
+        });
+
+        return { updatedVendor, updatedUser, funding };
+      });
+
+      const vendorWithCalculated = {
+        ...updatedVendor,
+        balance: updatedVendor.amountAgreed - updatedVendor.amountPaid - updatedVendor.scheduledAmount,
+      };
+
+      res.json({
+        vendor: vendorWithCalculated,
+        user: {
+          ...updatedUser,
+          wallet: parseFloat(updatedUser.wallet) || 0
+        }
+      });
+    } catch (err) {
+      if (err?.message === 'INSUFFICIENT_WALLET') {
+        return res.status(400).json({ msg: 'Insufficient wallet balance' });
+      }
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
   // Cancel scheduled payment
   router.post('/:id/cancel-scheduled', auth(), async (req, res) => {
     const vendorId = parseInt(req.params.id);
@@ -290,25 +489,53 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Cannot cancel this payment' });
       }
 
-      // Mock refund success
+      const result = await prisma.$transaction(async (tx) => {
+        const walletFundings = await tx.vendorPaymentFunding.findMany({
+          where: {
+            vendorId,
+            userId: req.user.id,
+            method: 'wallet',
+            status: 'funded',
+          },
+          select: { id: true, amount: true },
+        });
 
-      const updatedVendor = await prisma.vendor.update({
-        where: { id: vendorId },
-        data: {
-          scheduledAmount: 0,
-          status: 'Cancelled',
-          releaseDate: null
-        },
-        include: {
-          Gift: {
-            select: { id: true, title: true, type: true }
-          }
+        const refundAmount = walletFundings.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+
+        if (refundAmount > 0) {
+          await tx.user.update({
+            where: { id: req.user.id },
+            data: { wallet: { increment: refundAmount } },
+          });
+
+          await tx.vendorPaymentFunding.updateMany({
+            where: {
+              id: { in: walletFundings.map(f => f.id) },
+            },
+            data: { status: 'refunded' },
+          });
         }
+
+        const updatedVendor = await tx.vendor.update({
+          where: { id: vendorId },
+          data: {
+            scheduledAmount: 0,
+            status: 'Cancelled',
+            releaseDate: null
+          },
+          include: {
+            Gift: {
+              select: { id: true, title: true, type: true }
+            }
+          }
+        });
+
+        return { updatedVendor, refundAmount };
       });
 
       const vendorWithCalculated = {
-        ...updatedVendor,
-        balance: updatedVendor.amountAgreed - updatedVendor.amountPaid - updatedVendor.scheduledAmount
+        ...result.updatedVendor,
+        balance: result.updatedVendor.amountAgreed - result.updatedVendor.amountPaid - result.updatedVendor.scheduledAmount
       };
 
       res.json(vendorWithCalculated);

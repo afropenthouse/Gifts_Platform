@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
 import { useToast } from '../hooks/use-toast';
-import { Plus, Edit, Trash2, Filter, Download, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Filter, Download, Search, Wallet as WalletIcon, CreditCard, ArrowRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "../components/ui/input-otp";
 
 interface Vendor {
   id: number;
@@ -49,6 +51,19 @@ const VendorPaymentTracker: React.FC = () => {
   const [deletingVendor, setDeletingVendor] = useState<Vendor | null>(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [schedulingVendor, setSchedulingVendor] = useState<Vendor | null>(null);
+  const [isPaymentMethodModalOpen, setIsPaymentMethodModalOpen] = useState(false);
+  const [pendingSchedulePayload, setPendingSchedulePayload] = useState<null | {
+    vendorId: number;
+    amount: number;
+    vendorEmail: string;
+    accountName: string;
+    accountNumber: string;
+    bankCode: string;
+    bankName: string;
+  }>(null);
+  const [walletOtp, setWalletOtp] = useState('');
+  const [walletOtpStep, setWalletOtpStep] = useState(false);
+  const [isSendingWalletOtp, setIsSendingWalletOtp] = useState(false);
   const [isVendorDetailsModalOpen, setIsVendorDetailsModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
@@ -73,6 +88,7 @@ const VendorPaymentTracker: React.FC = () => {
   const [banks, setBanks] = useState<any[]>([]);
 
   const { toast } = useToast();
+  const { updateUser: updateAuthUser } = useAuth();
 
   useEffect(() => {
     fetchEvents();
@@ -105,6 +121,14 @@ const VendorPaymentTracker: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setUser(data);
+        updateAuthUser({
+          id: String(data.id),
+          name: data.name,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          profilePicture: data.profilePicture,
+          wallet: Number(data.wallet) || 0,
+        });
       }
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -345,7 +369,7 @@ const VendorPaymentTracker: React.FC = () => {
     setSchedulingVendor(vendor);
     setVendorEmail(vendor.vendorEmail || '');
     setAmountToSchedule('');
-    setAccountName(user?.name || '');
+    setAccountName('');
     setIsScheduleModalOpen(true);
   };
 
@@ -362,46 +386,166 @@ const VendorPaymentTracker: React.FC = () => {
       return;
     }
 
+    const parsedAmount = parseFloat(amountToSchedule);
+    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid amount.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setPendingSchedulePayload({
+      vendorId: schedulingVendor.id,
+      amount: parsedAmount,
+      vendorEmail,
+      accountName,
+      accountNumber,
+      bankCode,
+      bankName,
+    });
+    setIsPaymentMethodModalOpen(true);
+  };
+
+  const requestWalletOtp = async () => {
+    if (!pendingSchedulePayload || isSubmitting || isSendingWalletOtp) return;
+
+    setIsSendingWalletOtp(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/vendors/${pendingSchedulePayload.vendorId}/send-wallet-otp`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ amount: pendingSchedulePayload.amount }),
+        }
+      );
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        toast({
+          title: 'Error',
+          description: errBody?.msg || 'Failed to send OTP.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setWalletOtp('');
+      setWalletOtpStep(true);
+      toast({
+        title: 'OTP sent',
+        description: 'Check your email for the verification code.',
+      });
+    } catch (error) {
+      console.error('Error sending wallet OTP:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send OTP.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingWalletOtp(false);
+    }
+  };
+
+  const submitSchedulePayment = async (method: 'paystack' | 'wallet', otp?: string) => {
+    if (!pendingSchedulePayload || isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendors/${schedulingVendor.id}/schedule-payment`, {
+      const endpoint =
+        method === 'wallet'
+          ? `${import.meta.env.VITE_BACKEND_URL}/api/vendors/${pendingSchedulePayload.vendorId}/schedule-payment-wallet`
+          : `${import.meta.env.VITE_BACKEND_URL}/api/vendors/${pendingSchedulePayload.vendorId}/schedule-payment`;
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          amount: parseFloat(amountToSchedule),
-          vendorEmail,
-          accountName,
-          accountNumber,
-          bankCode,
-          bankName,
+          amount: pendingSchedulePayload.amount,
+          vendorEmail: pendingSchedulePayload.vendorEmail,
+          accountName: pendingSchedulePayload.accountName,
+          accountNumber: pendingSchedulePayload.accountNumber,
+          bankCode: pendingSchedulePayload.bankCode,
+          bankName: pendingSchedulePayload.bankName,
+          ...(method === 'wallet' ? { otp: otp || walletOtp } : {}),
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl;
-        } else {
-          setVendors(vendors.map(v => v.id === schedulingVendor.id ? data : v));
-          setIsScheduleModalOpen(false);
-          setSchedulingVendor(null);
-          resetForm();
-          toast({
-            title: 'Payment scheduled',
-            description: 'Payment has been scheduled successfully.',
-          });
-        }
-      } else {
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
         toast({
           title: 'Error',
-          description: 'Failed to schedule payment.',
+          description: errBody?.msg || 'Failed to schedule payment.',
           variant: 'destructive',
         });
+        return;
       }
+
+      if (method === 'wallet') {
+        const data = await res.json();
+        const updatedVendor = data?.vendor;
+        const updatedUser = data?.user;
+
+        if (updatedVendor) {
+          setVendors(vendors.map(v => v.id === pendingSchedulePayload.vendorId ? updatedVendor : v));
+        }
+
+        if (updatedUser) {
+          setUser(updatedUser);
+          updateAuthUser({
+            id: String(updatedUser.id),
+            name: updatedUser.name,
+            email: updatedUser.email,
+            phoneNumber: updatedUser.phoneNumber,
+            profilePicture: updatedUser.profilePicture,
+            wallet: Number(updatedUser.wallet) || 0,
+          });
+        }
+
+        setIsPaymentMethodModalOpen(false);
+        setIsScheduleModalOpen(false);
+        setSchedulingVendor(null);
+        setPendingSchedulePayload(null);
+        setWalletOtp('');
+        setWalletOtpStep(false);
+        resetForm();
+        toast({
+          title: 'Payment scheduled',
+          description: 'Payment has been scheduled successfully.',
+        });
+        return;
+      }
+
+      const data = await res.json();
+      if (data.paymentUrl) {
+        setIsPaymentMethodModalOpen(false);
+        window.location.href = data.paymentUrl;
+        return;
+      }
+
+      setVendors(vendors.map(v => v.id === pendingSchedulePayload.vendorId ? data : v));
+      setIsPaymentMethodModalOpen(false);
+      setIsScheduleModalOpen(false);
+      setSchedulingVendor(null);
+      setPendingSchedulePayload(null);
+      setWalletOtp('');
+      setWalletOtpStep(false);
+      resetForm();
+      toast({
+        title: 'Payment scheduled',
+        description: 'Payment has been scheduled successfully.',
+      });
     } catch (error) {
       console.error('Error scheduling payment:', error);
       toast({
@@ -429,6 +573,7 @@ const VendorPaymentTracker: React.FC = () => {
       if (res.ok) {
         const updatedVendor = await res.json();
         setVendors(vendors.map(v => v.id === vendor.id ? updatedVendor : v));
+        await fetchUser();
         toast({
           title: 'Scheduled payment cancelled',
           description: 'The scheduled payment has been cancelled.',
@@ -515,6 +660,10 @@ const VendorPaymentTracker: React.FC = () => {
   const totalPaid = filteredVendors.reduce((sum, v) => sum + Number(v.amountPaid), 0);
   const totalScheduled = filteredVendors.reduce((sum, v) => sum + Number(v.scheduledAmount || 0), 0);
   const totalOutstanding = totalBudget - totalPaid - totalScheduled;
+  const walletBalance = Number(user?.wallet) || 0;
+  const pendingAmount = pendingSchedulePayload?.amount || 0;
+  const canPayWithWallet = pendingAmount > 0 && walletBalance >= pendingAmount;
+  const walletShortfall = Math.max(pendingAmount - walletBalance, 0);
 
   const handleDownload = () => {
     const headers = ['Category', 'Event', 'Total Cost', 'Paid', 'Scheduled', 'Balance', 'Due Date', 'Status'];
@@ -993,6 +1142,132 @@ const VendorPaymentTracker: React.FC = () => {
                   </Button>
                 </div>
               </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isPaymentMethodModalOpen} onOpenChange={(open) => {
+            setIsPaymentMethodModalOpen(open);
+            if (!open) {
+              setPendingSchedulePayload(null);
+              setWalletOtp('');
+              setWalletOtpStep(false);
+            }
+          }}>
+            <DialogContent className="max-w-md max-h-[85vh] p-0 overflow-y-auto">
+              <div className="p-5 space-y-4">
+                <DialogHeader className="space-y-1">
+                  <DialogTitle className="text-xl">Choose payment method</DialogTitle>
+                  <p className="text-sm text-muted-foreground">Select how you want to fund this scheduled payment.</p>
+                </DialogHeader>
+
+                <div className="mt-2 rounded-xl border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground">Amount</div>
+                  <div className="mt-1 text-xl font-semibold text-foreground">
+                    ₦{(pendingSchedulePayload?.amount || 0).toLocaleString()}
+                  </div>
+                </div>
+
+                <div className="mt-3 space-y-3">
+                  <Button
+                    type="button"
+                    className="w-full justify-between h-auto px-4 py-3 bg-[#2E235C] hover:bg-[#1a1435] text-white"
+                    onClick={() => {
+                      requestWalletOtp();
+                    }}
+                    disabled={isSubmitting || !canPayWithWallet || walletOtpStep}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-white/15 flex items-center justify-center">
+                        <WalletIcon className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-semibold leading-tight">Pay with Wallet</div>
+                        <div className="text-xs text-white/80 leading-tight">Wallet balance: ₦{walletBalance.toLocaleString()}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-white/15 text-white border-white/20">
+                        ₦{walletBalance.toLocaleString()}
+                      </Badge>
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                  </Button>
+
+                  {walletOtpStep && (
+                    <div className="rounded-xl border bg-muted/20 px-3 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-sm font-medium text-foreground">Enter OTP</div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-8 px-2 text-xs"
+                          onClick={requestWalletOtp}
+                          disabled={isSubmitting || isSendingWalletOtp}
+                        >
+                          {isSendingWalletOtp ? 'Sending...' : 'Resend OTP'}
+                        </Button>
+                      </div>
+                      <div className="mt-2 flex justify-center">
+                        <InputOTP maxLength={6} value={walletOtp} onChange={setWalletOtp}>
+                          <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                          </InputOTPGroup>
+                        </InputOTP>
+                      </div>
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          type="button"
+                          className="bg-[#2E235C] hover:bg-[#1a1435]"
+                          onClick={() => submitSchedulePayment('wallet')}
+                          disabled={isSubmitting || walletOtp.length !== 6}
+                        >
+                          Confirm Wallet Payment
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    className="w-full justify-between h-auto px-4 py-3 bg-[#2E235C] hover:bg-[#1a1435] text-white"
+                    onClick={() => submitSchedulePayment('paystack')}
+                    disabled={isSubmitting}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-white/15 flex items-center justify-center">
+                        <CreditCard className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-semibold leading-tight">Pay Direct</div>
+                        <div className="text-xs text-white/80 leading-tight">Card / Transfer via Paystack</div>
+                      </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-white/90" />
+                  </Button>
+                </div>
+
+                {!canPayWithWallet && pendingAmount > 0 && (
+                  <div className="mt-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                    Need ₦{walletShortfall.toLocaleString()} more to pay with wallet.
+                  </div>
+                )}
+
+                <div className="mt-3 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setIsPaymentMethodModalOpen(false)}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
 

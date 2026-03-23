@@ -134,6 +134,15 @@ module.exports = () => {
         _sum: { amount: true }
       });
 
+      const vendorFundingSum = await prisma.vendorPaymentFunding.aggregate({
+        where: {
+          userId: req.user.id,
+          method: 'wallet',
+          status: 'funded',
+        },
+        _sum: { amount: true }
+      });
+
       // Sum referral rewards
       const referralSum = await prisma.referralTransaction.aggregate({
         where: { referrerId: req.user.id },
@@ -141,7 +150,7 @@ module.exports = () => {
       });
 
       const totalIn = (parseFloat(contributionsSum._sum.amount) || 0) - (parseFloat(contributionsSum._sum.commission) || 0) + (parseFloat(referralSum._sum.amount) || 0);
-      const totalOut = parseFloat(withdrawalsSum._sum.amount) || 0;
+      const totalOut = (parseFloat(withdrawalsSum._sum.amount) || 0) + (parseFloat(vendorFundingSum._sum.amount) || 0);
       const correctWalletBalance = totalIn - totalOut;
       
       const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
@@ -162,7 +171,8 @@ module.exports = () => {
           contributions: contributionsSum._sum.amount,
           commissions: contributionsSum._sum.commission,
           referrals: referralSum._sum.amount,
-          withdrawals: withdrawalsSum._sum.amount
+          withdrawals: withdrawalsSum._sum.amount,
+          vendorFundings: vendorFundingSum._sum.amount
         },
         user: updatedUser
       });
