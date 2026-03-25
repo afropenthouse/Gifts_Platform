@@ -5588,12 +5588,8 @@ const Dashboard: React.FC = () => {
       </Dialog>
 
       {/* Phone Number Prompt Modal */}
-      <Dialog open={isPhonePromptOpen} onOpenChange={(open) => {
-        // Prevent closing the modal if phone number is missing
-        if (!user?.phoneNumber) return;
-        setIsPhonePromptOpen(open);
-      }}>
-        <DialogContent className="sm:max-w-md [&>button:last-child]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+      <Dialog open={isPhonePromptOpen} onOpenChange={setIsPhonePromptOpen}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Complete Your Profile</DialogTitle>
           </DialogHeader>
@@ -5667,9 +5663,20 @@ const Dashboard: React.FC = () => {
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full bg-[#2E235C]" disabled={isSubmittingPhone}>
-                {isSubmittingPhone ? "Saving..." : "Save and Continue"}
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setIsPhonePromptOpen(false)}
+                  disabled={isSubmittingPhone}
+                >
+                  Close
+                </Button>
+                <Button type="submit" className="flex-1 bg-[#2E235C]" disabled={isSubmittingPhone}>
+                  {isSubmittingPhone ? "Saving..." : "Save"}
+                </Button>
+              </div>
             </form>
           </div>
         </DialogContent>
