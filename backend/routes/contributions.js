@@ -58,6 +58,10 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Minimum amount is ₦1000' });
       }
 
+      if (currency === 'USD' && parsedAmount < 0.5) {
+        return res.status(400).json({ msg: 'Minimum amount is $0.50' });
+      }
+
       if (currency === 'NGN') {
         const reference = `gift-${gift.id}-${Date.now()}`;
         const payload = {
