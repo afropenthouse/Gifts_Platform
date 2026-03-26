@@ -930,7 +930,11 @@ const ShareGift: React.FC = () => {
 
       const initData = await initRes.json();
       if (!initRes.ok) {
-        const msg = initData?.msg || initData?.error?.message || (typeof initData?.error === 'string' ? initData.error : JSON.stringify(initData?.error)) || 'Failed to initialize payment';
+        const errorDetail =
+          initData?.error?.message ||
+          (typeof initData?.error === 'string' ? initData.error : JSON.stringify(initData?.error));
+        const msg =
+          (initData?.msg && initData.msg !== 'Failed to initialize payment') ? initData.msg : (errorDetail || initData?.msg || 'Failed to initialize payment');
         throw new Error(msg);
       }
 

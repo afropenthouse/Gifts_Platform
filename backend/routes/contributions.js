@@ -63,6 +63,22 @@ module.exports = () => {
       }
 
       if (currency === 'NGN') {
+        if (!process.env.PAYSTACK_SECRET_KEY) {
+          return res.status(400).json({
+            msg: 'Paystack is not configured',
+            error: 'Missing PAYSTACK_SECRET_KEY in backend environment',
+          });
+        }
+      } else {
+        if (!process.env.FLW_PUBLIC_KEY || !process.env.FLW_SECRET_KEY) {
+          return res.status(400).json({
+            msg: 'Flutterwave is not configured',
+            error: 'Missing FLW_PUBLIC_KEY / FLW_SECRET_KEY in backend environment',
+          });
+        }
+      }
+
+      if (currency === 'NGN') {
         const reference = `gift-${gift.id}-${Date.now()}`;
         const payload = {
           reference,
@@ -139,10 +155,16 @@ module.exports = () => {
       });
       
       const errorPayload = {
-        msg: 'Failed to initialize payment',
+        msg: typeof fwError === 'string' ? fwError : (fwError?.message || 'Failed to initialize payment'),
         error: typeof fwError === 'object' ? JSON.stringify(fwError) : String(fwError),
       };
-      res.status(500).json(errorPayload);
+      const status =
+        err?.code === 'FLW_KEYS_MISSING' ||
+        err?.code === 'FLW_SECRET_MISSING' ||
+        err?.code === 'PS_SECRET_MISSING'
+          ? 400
+          : 500;
+      res.status(status).json(errorPayload);
     }
   });
 
