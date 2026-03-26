@@ -99,6 +99,17 @@ const WeddingGiftCard = ({
       ? `${groomName} & ${brideName}`
       : groomName || brideName || "Special Celebration");
 
+  const getMinAmount = (code: string) => {
+    if (code === 'NGN') return 100;
+    if (code === 'USD') return 0.5;
+    return 1;
+  };
+
+  const formatMinAmount = (code: string, value: number) => {
+    if (code === 'USD') return value.toFixed(2);
+    return String(value);
+  };
+
   // Load Paystack script
   useEffect(() => {
     if (!window.PaystackPop) {
@@ -119,9 +130,10 @@ const WeddingGiftCard = ({
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = currency === 'NGN' ? 100 : 1;
+    const minAmount = getMinAmount(currency);
+    const formattedMinAmount = formatMinAmount(currency, minAmount);
     if (!amount || parseFloat(amount) < minAmount) {
-      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
+      alert(`Please enter an amount of at least ${currency} ${formattedMinAmount}`);
       return;
     }
 
@@ -388,19 +400,16 @@ const WeddingGiftCard = ({
                   id="amount"
                   type="number"
                   step="0.01"
-                  min={currency === 'NGN' ? '100' : '1'}
+                  min={String(getMinAmount(currency))}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={currency === 'NGN' ? '100' : '1'}
+                  placeholder={formatMinAmount(currency, getMinAmount(currency))}
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {(() => {
-                  const minAmount = currency === 'NGN' ? 100 : 1;
-                  return `Minimum ${currency} ${minAmount}`;
-                })()}
+                {`Minimum ${currency} ${formatMinAmount(currency, getMinAmount(currency))}`}
               </p>
             </div>
 
