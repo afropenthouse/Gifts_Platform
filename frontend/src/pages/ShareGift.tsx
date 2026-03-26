@@ -861,10 +861,9 @@ const ShareGift: React.FC = () => {
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = currency === 'NGN' ? 1000 : currency === 'USD' ? 0.5 : 1;
+    const minAmount = currency === 'NGN' ? 1000 : 1;
     if (!amount || parseFloat(amount) < minAmount) {
-      const formattedMinAmount = currency === 'USD' ? minAmount.toFixed(2) : String(minAmount);
-      alert(`Please enter an amount of at least ${currency} ${formattedMinAmount}`);
+      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
       return;
     }
 
@@ -1336,19 +1335,18 @@ const ShareGift: React.FC = () => {
                   id="amount"
                   type="number"
                   step="0.01"
-                  min={currency === 'NGN' ? '1000' : currency === 'USD' ? '0.5' : '1'}
+                  min={currency === 'NGN' ? '1000' : '1'}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={currency === 'NGN' ? '1000' : currency === 'USD' ? '0.50' : '1'}
+                  placeholder={currency === 'NGN' ? '1000' : '1'}
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {(() => {
-                  const minAmount = currency === 'NGN' ? 1000 : currency === 'USD' ? 0.5 : 1;
-                  const formattedMinAmount = currency === 'USD' ? minAmount.toFixed(2) : String(minAmount);
-                  return `Minimum ${currency} ${formattedMinAmount}`;
+                  const minAmount = currency === 'NGN' ? 1000 : 1;
+                  return `Minimum ${currency} ${minAmount}`;
                 })()}
               </p>
             </div>
