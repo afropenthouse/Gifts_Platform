@@ -5,7 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { openFlutterwaveCheckout, loadFlutterwaveScript } from "@/lib/flutterwave";
 
 // Utility function to check if image is portrait
 const isPortrait = (src: string): Promise<boolean> => {
@@ -35,6 +37,42 @@ declare global {
   }
 }
 
+type CurrencyOption = {
+  code: string;
+  country: string;
+};
+
+const currencyOptions: CurrencyOption[] = [
+  { code: "NGN", country: "Nigeria" },
+  { code: "USD", country: "United States" },
+  { code: "GBP", country: "United Kingdom" },
+  { code: "EUR", country: "Eurozone" },
+  { code: "CAD", country: "Canada" },
+  { code: "AUD", country: "Australia" },
+  { code: "ZAR", country: "South Africa" },
+  { code: "KES", country: "Kenya" },
+  { code: "GHS", country: "Ghana" },
+  { code: "UGX", country: "Uganda" },
+  { code: "TZS", country: "Tanzania" },
+  { code: "RWF", country: "Rwanda" },
+  { code: "XOF", country: "West African CFA" },
+  { code: "XAF", country: "Central African CFA" },
+  { code: "ZMW", country: "Zambia" },
+  { code: "MWK", country: "Malawi" },
+  { code: "BWP", country: "Botswana" },
+  { code: "AED", country: "United Arab Emirates" },
+  { code: "SAR", country: "Saudi Arabia" },
+  { code: "QAR", country: "Qatar" },
+  { code: "INR", country: "India" },
+  { code: "SGD", country: "Singapore" },
+  { code: "NZD", country: "New Zealand" },
+  { code: "CHF", country: "Switzerland" },
+  { code: "JPY", country: "Japan" },
+  { code: "CNY", country: "China" },
+];
+
+const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
+
 const WeddingGiftCard = ({
   groomName,
   brideName,
@@ -47,10 +85,13 @@ const WeddingGiftCard = ({
   const [isAmountModalOpen, setIsAmountModalOpen] = useState(false);
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
   const [contributorName, setContributorName] = useState('');
+  const [contributorEmail, setContributorEmail] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('NGN');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [currencySearch, setCurrencySearch] = useState('');
+  const [isCurrencyPopoverOpen, setIsCurrencyPopoverOpen] = useState(false);
 
   const heading =
     title ||
@@ -65,6 +106,7 @@ const WeddingGiftCard = ({
       script.src = 'https://js.paystack.co/v1/inline.js';
       document.head.appendChild(script);
     }
+    loadFlutterwaveScript().catch(() => null);
   }, []);
 
   const handleSendGiftClick = (e?: React.MouseEvent) => {
@@ -79,8 +121,7 @@ const WeddingGiftCard = ({
 
     const minAmount = currency === 'NGN' ? 100 : 1;
     if (!amount || parseFloat(amount) < minAmount) {
-      const currencySymbol = currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£';
-      alert(`Please enter an amount of at least ${currencySymbol}${minAmount}`);
+      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
       return;
     }
 
@@ -96,52 +137,99 @@ const WeddingGiftCard = ({
       return;
     }
 
+    if (!contributorEmail.trim() || !contributorEmail.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
     setProcessingPayment(true);
 
     try {
       const name = isAnonymous ? 'Anonymous' : contributorName;
 
-      const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
-      if (!publicKey) {
-        alert('Payment is unavailable: missing Paystack public key.');
-        setProcessingPayment(false);
-        return;
-      }
-
-      const config = {
-        key: publicKey,
-        email: 'traclaapp@gmail.com',
-        amount: parseFloat(amount) * 100, // Paystack amount in kobo
-        currency: currency,
-        ref: `demo-gift-${Date.now()}`,
-        channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
-        defaultChannel: 'bank_transfer',
-        callback: function (data: any) {
-          console.log('Payment callback:', data);
-          if (data.status === 'success') {
-            const currencySymbol = currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£';
-            alert(`Thank you! Your gift of ${currencySymbol}${amount} to ${heading} was successful.`);
-            setIsNameModalOpen(false);
-            setAmount('');
-            setContributorName('');
-            setIsAnonymous(false);
-          } else {
-            alert('Payment was not completed. Please try again.');
-          }
+      if (currency === 'NGN') {
+        const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+        if (!publicKey) {
+          alert('Payment is unavailable: missing Paystack public key.');
           setProcessingPayment(false);
-        },
-        onClose: function () {
-          console.log('Payment modal closed');
-          setProcessingPayment(false);
-        },
-      };
+          return;
+        }
 
-      // Initialize Paystack payment
-      if (window.PaystackPop) {
-        window.PaystackPop.setup(config).openIframe();
+        const config = {
+          key: publicKey,
+          email: contributorEmail,
+          amount: parseFloat(amount) * 100,
+          currency: 'NGN',
+          ref: `demo-gift-${Date.now()}`,
+          channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
+          defaultChannel: 'bank_transfer',
+          callback: function (data: any) {
+            console.log('Payment callback:', data);
+            if (data.status === 'success') {
+              alert(`Thank you! Your gift of ${currency} ${amount} to ${heading} was successful.`);
+              setIsNameModalOpen(false);
+              setAmount('');
+              setContributorName('');
+              setContributorEmail('');
+              setIsAnonymous(false);
+            } else {
+              alert('Payment was not completed. Please try again.');
+            }
+            setProcessingPayment(false);
+          },
+          onClose: function () {
+            console.log('Payment modal closed');
+            setProcessingPayment(false);
+          },
+        };
+
+        if (window.PaystackPop) {
+          window.PaystackPop.setup(config).openIframe();
+        } else {
+          alert('Paystack is not loaded. Please refresh the page and try again.');
+          setProcessingPayment(false);
+        }
       } else {
-        alert('Paystack is not loaded. Please refresh the page and try again.');
-        setProcessingPayment(false);
+        const publicKey = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY;
+        if (!publicKey) {
+          alert('Payment is unavailable: missing Flutterwave public key.');
+          setProcessingPayment(false);
+          return;
+        }
+
+        await openFlutterwaveCheckout({
+          public_key: publicKey,
+          tx_ref: `demo-gift-${Date.now()}`,
+          amount: Number(amount),
+          currency,
+          redirect_url: window.location.href,
+          customer: {
+            email: contributorEmail,
+            name,
+          },
+          customizations: {
+            title: heading,
+            description: "Cash gift",
+          },
+          callback: (data: any) => {
+            console.log('Payment callback:', data);
+            const status = String(data?.status || '').toLowerCase();
+            if (status === 'successful' || status === 'success') {
+              alert(`Thank you! Your gift of ${currency} ${amount} to ${heading} was successful.`);
+              setIsNameModalOpen(false);
+              setAmount('');
+              setContributorName('');
+              setContributorEmail('');
+              setIsAnonymous(false);
+            } else {
+              alert('Payment was not completed. Please try again.');
+            }
+            setProcessingPayment(false);
+          },
+          onclose: () => {
+            setProcessingPayment(false);
+          },
+        });
       }
     } catch (err: any) {
       console.error(err);
@@ -253,17 +341,49 @@ const WeddingGiftCard = ({
             <div>
               <Label className="text-sm font-medium">Gift Amount</Label>
               <div className="flex gap-2 mt-2">
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NGN">₦ NGN</SelectItem>
-                    <SelectItem value="USD">$ USD</SelectItem>
-                    <SelectItem value="EUR">€ EUR</SelectItem>
-                    <SelectItem value="GBP">£ GBP</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Popover open={isCurrencyPopoverOpen} onOpenChange={setIsCurrencyPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={isCurrencyPopoverOpen}
+                      className="w-28 justify-between px-2"
+                    >
+                      {(() => {
+                        const meta = getCurrencyMeta(currency);
+                        return meta ? meta.code : "Currency";
+                      })()}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-0" side="bottom" align="start" sideOffset={4}>
+                    <Command>
+                      <CommandInput
+                        placeholder="Search currency or country..."
+                        value={currencySearch}
+                        onValueChange={setCurrencySearch}
+                        className="h-9"
+                      />
+                      <CommandList className="max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                        <CommandEmpty>No currency found.</CommandEmpty>
+                        <CommandGroup>
+                          {currencyOptions.map((c) => (
+                            <CommandItem
+                              key={c.code}
+                              value={`${c.code} ${c.country}`}
+                              onSelect={() => {
+                                setCurrency(c.code);
+                                setIsCurrencyPopoverOpen(false);
+                              }}
+                              className="text-xs cursor-pointer hover:bg-gray-100"
+                            >
+                              <span>{c.code} - {c.country}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   id="amount"
                   type="number"
@@ -277,7 +397,10 @@ const WeddingGiftCard = ({
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Minimum {currency === 'NGN' ? '₦100' : currency === 'USD' ? '$1' : currency === 'EUR' ? '€1' : '£1'}
+                {(() => {
+                  const minAmount = currency === 'NGN' ? 100 : 1;
+                  return `Minimum ${currency} ${minAmount}`;
+                })()}
               </p>
             </div>
 
@@ -286,7 +409,9 @@ const WeddingGiftCard = ({
               size="lg"
               className="w-full"
             >
-              Send Gift {currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£'}{amount || '0'}
+              {(() => {
+                return `Send Gift ${currency} ${amount || '0'}`;
+              })()}
             </Button>
           </form>
         </DialogContent>
@@ -312,6 +437,17 @@ const WeddingGiftCard = ({
                 />
               </div>
 
+              <div>
+                <Label htmlFor="email" className="text-sm font-medium">Your Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={contributorEmail}
+                  onChange={(e) => setContributorEmail(e.target.value)}
+                  placeholder="Enter your email"
+                />
+              </div>
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -326,7 +462,9 @@ const WeddingGiftCard = ({
 
             <div className="text-center p-3 bg-muted rounded-lg">
               <p className="text-sm font-medium">
-                Gift Amount: {currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£'}{amount}
+                {(() => {
+                  return `Gift Amount: ${currency} ${amount}`;
+                })()}
               </p>
             </div>
 
@@ -340,7 +478,7 @@ const WeddingGiftCard = ({
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              💳 Powered by Paystack - Secure payment processing
+              💳 Powered by Paystack (NGN) and Flutterwave (other currencies)
             </p>
           </form>
         </DialogContent>

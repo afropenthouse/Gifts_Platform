@@ -107,6 +107,7 @@ interface Contribution {
   commission?: number;
   isAsoebi?: boolean;
   asoebiQuantity?: number;
+  asoebiItemsDetails?: any;
 }
 
 const Dashboard: React.FC = () => {
@@ -2108,6 +2109,13 @@ const Dashboard: React.FC = () => {
                           const isContribution = transaction.type === 'contribution';
                           const amount = typeof transaction.amount === 'number' ? transaction.amount : parseFloat(String(transaction.amount));
                           const gift = isContribution ? gifts.find(g => Number(g.id) === Number(transaction.giftId)) : null;
+                          const paymentMeta =
+                            isContribution &&
+                            !transaction.isAsoebi &&
+                            transaction.asoebiItemsDetails &&
+                            !Array.isArray(transaction.asoebiItemsDetails)
+                              ? (transaction.asoebiItemsDetails as any).paymentMeta
+                              : null;
                           
                           // Calculate commission and received amount
                           let commission = 0;
@@ -2143,7 +2151,13 @@ const Dashboard: React.FC = () => {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className={`font-bold ${isContribution ? 'text-gray-900' : 'text-red-600'}`}>{isContribution ? '₦' : '-₦'}{amount.toFixed(2)}</p>
+                                <p className={`font-bold ${isContribution ? 'text-gray-900' : 'text-red-600'}`}>
+                                  {isContribution
+                                    ? paymentMeta?.currency && paymentMeta?.amount && String(paymentMeta.currency).toUpperCase() !== 'NGN'
+                                      ? `${String(paymentMeta.currency).toUpperCase()} ${Number(paymentMeta.amount).toFixed(2)} (₦${amount.toFixed(2)})`
+                                      : `₦${amount.toFixed(2)}`
+                                    : `-₦${amount.toFixed(2)}`}
+                                </p>
                                 {isContribution && (
                                   <>
                                     <p className="text-xs text-gray-500">

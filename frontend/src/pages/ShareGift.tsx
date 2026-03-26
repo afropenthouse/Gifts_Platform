@@ -5,6 +5,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import Navbar from '../components/Navbar';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -74,6 +76,42 @@ interface AsoebiItem {
   category?: string;
 }
 
+type CurrencyOption = {
+  code: string;
+  country: string;
+};
+
+const currencyOptions: CurrencyOption[] = [
+  { code: "NGN", country: "Nigeria" },
+  { code: "USD", country: "United States" },
+  { code: "GBP", country: "United Kingdom" },
+  { code: "EUR", country: "Eurozone" },
+  { code: "CAD", country: "Canada" },
+  { code: "AUD", country: "Australia" },
+  { code: "ZAR", country: "South Africa" },
+  { code: "KES", country: "Kenya" },
+  { code: "GHS", country: "Ghana" },
+  { code: "UGX", country: "Uganda" },
+  { code: "TZS", country: "Tanzania" },
+  { code: "RWF", country: "Rwanda" },
+  { code: "XOF", country: "West African CFA" },
+  { code: "XAF", country: "Central African CFA" },
+  { code: "ZMW", country: "Zambia" },
+  { code: "MWK", country: "Malawi" },
+  { code: "BWP", country: "Botswana" },
+  { code: "AED", country: "United Arab Emirates" },
+  { code: "SAR", country: "Saudi Arabia" },
+  { code: "QAR", country: "Qatar" },
+  { code: "INR", country: "India" },
+  { code: "SGD", country: "Singapore" },
+  { code: "NZD", country: "New Zealand" },
+  { code: "CHF", country: "Switzerland" },
+  { code: "JPY", country: "Japan" },
+  { code: "CNY", country: "China" },
+];
+
+const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
+
 const ShareGift: React.FC = () => {
   const { link, slug, id } = useParams<{ link?: string; slug?: string; id?: string }>();
   const linkParam = link ?? (slug && id ? `${slug}/${id}` : undefined);
@@ -84,6 +122,8 @@ const ShareGift: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('NGN');
+  const [currencySearch, setCurrencySearch] = useState('');
+  const [isCurrencyPopoverOpen, setIsCurrencyPopoverOpen] = useState(false);
   const [contributorName, setContributorName] = useState('');
   const [contributorEmail, setContributorEmail] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -821,10 +861,9 @@ const ShareGift: React.FC = () => {
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = 1000;
+    const minAmount = currency === 'NGN' ? 1000 : 1;
     if (!amount || parseFloat(amount) < minAmount) {
-      const currencySymbol = '₦';
-      alert(`Please enter an amount of at least ${currencySymbol}${minAmount}`);
+      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
       return;
     }
 
@@ -883,9 +922,10 @@ const ShareGift: React.FC = () => {
         throw new Error(msg);
       }
 
-      // Redirect to Paystack payment
-      if (initData.data && initData.data.authorization_url) {
-        window.location.href = initData.data.authorization_url;
+      const authorizationUrl =
+        initData?.data?.authorization_url || initData?.data?.link || initData?.data?.checkout_url;
+      if (authorizationUrl) {
+        window.location.href = authorizationUrl;
       }
     } catch (err: any) {
       console.error(err);
@@ -1248,28 +1288,66 @@ const ShareGift: React.FC = () => {
             <div>
               <Label className="text-sm font-medium">Gift Amount</Label>
               <div className="flex gap-2 mt-2">
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NGN">₦ NGN</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Popover open={isCurrencyPopoverOpen} onOpenChange={setIsCurrencyPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={isCurrencyPopoverOpen}
+                      className="w-28 justify-between px-2"
+                    >
+                      {(() => {
+                        const meta = getCurrencyMeta(currency);
+                        return meta ? meta.code : "Currency";
+                      })()}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-0" side="bottom" align="start" sideOffset={4}>
+                    <Command>
+                      <CommandInput
+                        placeholder="Search currency or country..."
+                        value={currencySearch}
+                        onValueChange={setCurrencySearch}
+                        className="h-9"
+                      />
+                      <CommandList className="max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                        <CommandEmpty>No currency found.</CommandEmpty>
+                        <CommandGroup>
+                          {currencyOptions.map((c) => (
+                            <CommandItem
+                              key={c.code}
+                              value={`${c.code} ${c.country}`}
+                              onSelect={() => {
+                                setCurrency(c.code);
+                                setIsCurrencyPopoverOpen(false);
+                              }}
+                              className="text-xs cursor-pointer hover:bg-gray-100"
+                            >
+                              <span>{c.code} - {c.country}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   id="amount"
                   type="number"
                   step="0.01"
-                  min="1000"
+                  min={currency === 'NGN' ? '1000' : '1'}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="1000"
+                  placeholder={currency === 'NGN' ? '1000' : '1'}
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Minimum {currency === 'NGN' ? '₦1000' : currency === 'USD' ? '$1' : currency === 'CAD' ? 'C$1' : currency === 'EUR' ? '€1' : currency === 'GBP' ? '£1' : currency === 'AUD' ? 'A$1' : currency === 'ZAR' ? 'R1' : currency === 'KES' ? 'KSh1' : currency === 'GHS' ? '₵1' : currency === 'UGX' ? 'USh1' : 'TSh1'}
+                {(() => {
+                  const minAmount = currency === 'NGN' ? 1000 : 1;
+                  return `Minimum ${currency} ${minAmount}`;
+                })()}
               </p>
             </div>
 
@@ -1343,7 +1421,7 @@ const ShareGift: React.FC = () => {
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              💳 Powered by Paystack - Secure payment processing
+              💳 Powered by Paystack (NGN) and Flutterwave (other currencies)
             </p>
           </form>
         </DialogContent>
@@ -2298,7 +2376,7 @@ const ShareGift: React.FC = () => {
               </div>
               
               <p className="text-xs text-center text-muted-foreground mt-4">
-                💳 Powered by Paystack - Secure payment processing
+                💳 Powered by Paystack (NGN) and Flutterwave (other currencies)
               </p>
             </form>
           )}
