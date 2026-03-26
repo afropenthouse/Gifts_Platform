@@ -58,26 +58,6 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Minimum amount is ₦1000' });
       }
 
-      if (currency === 'USD' && parsedAmount < 0.5) {
-        return res.status(400).json({ msg: 'Minimum amount is USD 0.50' });
-      }
-
-      if (currency === 'NGN') {
-        if (!process.env.PAYSTACK_SECRET_KEY) {
-          return res.status(400).json({
-            msg: 'Paystack is not configured',
-            error: 'Missing PAYSTACK_SECRET_KEY in backend environment',
-          });
-        }
-      } else {
-        if (!process.env.FLW_PUBLIC_KEY || !process.env.FLW_SECRET_KEY) {
-          return res.status(400).json({
-            msg: 'Flutterwave is not configured',
-            error: 'Missing FLW_PUBLIC_KEY / FLW_SECRET_KEY in backend environment',
-          });
-        }
-      }
-
       if (currency === 'NGN') {
         const reference = `gift-${gift.id}-${Date.now()}`;
         const payload = {
@@ -155,16 +135,10 @@ module.exports = () => {
       });
       
       const errorPayload = {
-        msg: typeof fwError === 'string' ? fwError : (fwError?.message || 'Failed to initialize payment'),
+        msg: 'Failed to initialize payment',
         error: typeof fwError === 'object' ? JSON.stringify(fwError) : String(fwError),
       };
-      const status =
-        err?.code === 'FLW_KEYS_MISSING' ||
-        err?.code === 'FLW_SECRET_MISSING' ||
-        err?.code === 'PS_SECRET_MISSING'
-          ? 400
-          : 500;
-      res.status(status).json(errorPayload);
+      res.status(500).json(errorPayload);
     }
   });
 

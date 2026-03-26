@@ -112,18 +112,6 @@ const currencyOptions: CurrencyOption[] = [
 
 const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
 
-const getMinGiftAmount = (code: string) => {
-  const upper = String(code || '').toUpperCase();
-  if (upper === 'NGN') return 1000;
-  if (upper === 'USD') return 0.5;
-  return 1;
-};
-
-const formatMinGiftAmount = (code: string) => {
-  const min = getMinGiftAmount(code);
-  return String(code || '').toUpperCase() === 'USD' ? min.toFixed(2) : String(min);
-};
-
 const ShareGift: React.FC = () => {
   const { link, slug, id } = useParams<{ link?: string; slug?: string; id?: string }>();
   const linkParam = link ?? (slug && id ? `${slug}/${id}` : undefined);
@@ -873,9 +861,9 @@ const ShareGift: React.FC = () => {
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = getMinGiftAmount(currency);
+    const minAmount = currency === 'NGN' ? 1000 : 1;
     if (!amount || parseFloat(amount) < minAmount) {
-      alert(`Please enter an amount of at least ${currency} ${formatMinGiftAmount(currency)}`);
+      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
       return;
     }
 
@@ -930,11 +918,7 @@ const ShareGift: React.FC = () => {
 
       const initData = await initRes.json();
       if (!initRes.ok) {
-        const errorDetail =
-          initData?.error?.message ||
-          (typeof initData?.error === 'string' ? initData.error : JSON.stringify(initData?.error));
-        const msg =
-          (initData?.msg && initData.msg !== 'Failed to initialize payment') ? initData.msg : (errorDetail || initData?.msg || 'Failed to initialize payment');
+        const msg = initData?.msg || initData?.error?.message || (typeof initData?.error === 'string' ? initData.error : JSON.stringify(initData?.error)) || 'Failed to initialize payment';
         throw new Error(msg);
       }
 
@@ -1351,17 +1335,18 @@ const ShareGift: React.FC = () => {
                   id="amount"
                   type="number"
                   step="0.01"
-                  min={formatMinGiftAmount(currency)}
+                  min={currency === 'NGN' ? '1000' : '1'}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={formatMinGiftAmount(currency)}
+                  placeholder={currency === 'NGN' ? '1000' : '1'}
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {(() => {
-                  return `Minimum ${currency} ${formatMinGiftAmount(currency)}`;
+                  const minAmount = currency === 'NGN' ? 1000 : 1;
+                  return `Minimum ${currency} ${minAmount}`;
                 })()}
               </p>
             </div>
