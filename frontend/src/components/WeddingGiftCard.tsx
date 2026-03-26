@@ -73,6 +73,18 @@ const currencyOptions: CurrencyOption[] = [
 
 const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
 
+const getMinGiftAmount = (code: string) => {
+  const upper = String(code || '').toUpperCase();
+  if (upper === 'NGN') return 100;
+  if (upper === 'USD') return 0.5;
+  return 1;
+};
+
+const formatMinGiftAmount = (code: string) => {
+  const min = getMinGiftAmount(code);
+  return String(code || '').toUpperCase() === 'USD' ? min.toFixed(2) : String(min);
+};
+
 const WeddingGiftCard = ({
   groomName,
   brideName,
@@ -99,17 +111,6 @@ const WeddingGiftCard = ({
       ? `${groomName} & ${brideName}`
       : groomName || brideName || "Special Celebration");
 
-  const getMinAmount = (code: string) => {
-    if (code === 'NGN') return 100;
-    if (code === 'USD') return 0.5;
-    return 1;
-  };
-
-  const formatMinAmount = (code: string, value: number) => {
-    if (code === 'USD') return value.toFixed(2);
-    return String(value);
-  };
-
   // Load Paystack script
   useEffect(() => {
     if (!window.PaystackPop) {
@@ -130,10 +131,9 @@ const WeddingGiftCard = ({
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = getMinAmount(currency);
-    const formattedMinAmount = formatMinAmount(currency, minAmount);
+    const minAmount = getMinGiftAmount(currency);
     if (!amount || parseFloat(amount) < minAmount) {
-      alert(`Please enter an amount of at least ${currency} ${formattedMinAmount}`);
+      alert(`Please enter an amount of at least ${currency} ${formatMinGiftAmount(currency)}`);
       return;
     }
 
@@ -400,16 +400,18 @@ const WeddingGiftCard = ({
                   id="amount"
                   type="number"
                   step="0.01"
-                  min={String(getMinAmount(currency))}
+                  min={formatMinGiftAmount(currency)}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={formatMinAmount(currency, getMinAmount(currency))}
+                  placeholder={formatMinGiftAmount(currency)}
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {`Minimum ${currency} ${formatMinAmount(currency, getMinAmount(currency))}`}
+                {(() => {
+                  return `Minimum ${currency} ${formatMinGiftAmount(currency)}`;
+                })()}
               </p>
             </div>
 

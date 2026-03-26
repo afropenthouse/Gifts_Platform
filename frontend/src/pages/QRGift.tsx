@@ -70,6 +70,18 @@ const currencyOptions: CurrencyOption[] = [
 
 const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
 
+const getMinGiftAmount = (code: string) => {
+  const upper = String(code || '').toUpperCase();
+  if (upper === 'NGN') return 1000;
+  if (upper === 'USD') return 0.5;
+  return 1;
+};
+
+const formatMinGiftAmount = (code: string) => {
+  const min = getMinGiftAmount(code);
+  return String(code || '').toUpperCase() === 'USD' ? min.toFixed(2) : String(min);
+};
+
 const QRGift: React.FC = () => {
   const { link, slug, id } = useParams<{ link?: string; slug?: string; id?: string }>();
   const [searchParams] = useSearchParams();
@@ -209,9 +221,9 @@ const QRGift: React.FC = () => {
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = currency === 'NGN' ? 1000 : 1;
+    const minAmount = getMinGiftAmount(currency);
     if (!amount || parseFloat(amount) < minAmount) {
-      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
+      alert(`Please enter an amount of at least ${currency} ${formatMinGiftAmount(currency)}`);
       return;
     }
 
@@ -608,18 +620,17 @@ const QRGift: React.FC = () => {
                   id="amount"
                   type="number"
                   step="0.01"
-                  min={currency === 'NGN' ? '1000' : '1'}
+                  min={formatMinGiftAmount(currency)}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={currency === 'NGN' ? '1000' : '1'}
+                  placeholder={formatMinGiftAmount(currency)}
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {(() => {
-                  const minAmount = currency === 'NGN' ? 1000 : 1;
-                  return `Minimum ${currency} ${minAmount}`;
+                  return `Minimum ${currency} ${formatMinGiftAmount(currency)}`;
                 })()}
               </p>
             </div>
