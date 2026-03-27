@@ -549,7 +549,11 @@ const QRGift: React.FC = () => {
 
       {/* Amount Modal */}
       <Dialog open={showAmountModal} onOpenChange={setShowAmountModal}>
-        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
+        <DialogContent className="max-w-md" onInteractOutside={(e) => {
+          const target = e.target as HTMLElement;
+          if (target && target.closest('[data-currency-popover="true"]')) return;
+          e.preventDefault();
+        }}>
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{gift.title}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
@@ -575,7 +579,7 @@ const QRGift: React.FC = () => {
                       })()}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-56 p-0" side="bottom" align="start" sideOffset={4}>
+                  <PopoverContent data-currency-popover="true" className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain" side="bottom" align="start" sideOffset={4}>
                     <Command>
                       <CommandInput
                         placeholder="Search currency or country..."
@@ -583,7 +587,7 @@ const QRGift: React.FC = () => {
                         onValueChange={setCurrencySearch}
                         className="h-9"
                       />
-                      <CommandList className="max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                      <CommandList className="max-h-none flex-1 overflow-y-auto touch-pan-y overscroll-contain scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" style={{ WebkitOverflowScrolling: 'touch' }}>
                         <CommandEmpty>No currency found.</CommandEmpty>
                         <CommandGroup>
                           {currencyOptions.map((c) => (

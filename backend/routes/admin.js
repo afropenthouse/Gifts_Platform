@@ -481,6 +481,7 @@ module.exports = () => {
           id: true,
           title: true,
           type: true,
+          date: true,
           createdAt: true,
           deadline: true,
           shareLink: true,

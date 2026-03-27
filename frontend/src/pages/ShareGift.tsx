@@ -1276,7 +1276,11 @@ const ShareGift: React.FC = () => {
       </Dialog>
 
       <Dialog open={showAmountModal} onOpenChange={setShowAmountModal}>
-        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
+        <DialogContent className="max-w-md" onInteractOutside={(e) => {
+          const target = e.target as HTMLElement;
+          if (target && target.closest('[data-currency-popover="true"]')) return;
+          e.preventDefault();
+        }}>
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
@@ -1302,9 +1306,9 @@ const ShareGift: React.FC = () => {
                       })()}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-56 p-0 max-h-[40vh] overflow-hidden touch-pan-y overscroll-contain z-50" side="bottom" align="start" sideOffset={4}>
+                  <PopoverContent data-currency-popover="true" className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain z-50" side="bottom" align="start" sideOffset={4}>
                     <Command>
-                      <div className="sticky top-0 z-10 bg-white p-1 border-b">
+                      <div className="shrink-0 bg-white p-1 border-b">
                         <CommandInput
                           placeholder="Search currency or country..."
                           value={currencySearch}
@@ -1312,7 +1316,7 @@ const ShareGift: React.FC = () => {
                           className="h-9"
                         />
                       </div>
-                      <CommandList className="max-h-[34vh] overflow-y-auto touch-pan-y overscroll-contain scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                      <CommandList className="max-h-none flex-1 overflow-y-auto touch-pan-y overscroll-contain scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" style={{ WebkitOverflowScrolling: 'touch' }}>
                         <CommandEmpty>No currency found.</CommandEmpty>
                         <CommandGroup>
                           {currencyOptions.map((c) => (

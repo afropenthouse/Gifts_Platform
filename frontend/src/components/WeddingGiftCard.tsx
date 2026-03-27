@@ -355,7 +355,7 @@ const WeddingGiftCard = ({
                       })()}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-56 p-0" side="bottom" align="start" sideOffset={4}>
+                  <PopoverContent className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain" side="bottom" align="start" sideOffset={4}>
                     <Command>
                       <CommandInput
                         placeholder="Search currency or country..."
@@ -363,7 +363,7 @@ const WeddingGiftCard = ({
                         onValueChange={setCurrencySearch}
                         className="h-9"
                       />
-                      <CommandList className="max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                      <CommandList className="max-h-none flex-1 overflow-y-auto touch-pan-y overscroll-contain scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" style={{ WebkitOverflowScrolling: 'touch' }}>
                         <CommandEmpty>No currency found.</CommandEmpty>
                         <CommandGroup>
                           {currencyOptions.map((c) => (

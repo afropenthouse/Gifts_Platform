@@ -78,6 +78,7 @@ interface EventItem {
   title: string | null;
   type: string;
   createdAt: string;
+  date: string | null;
   deadline: string | null;
   shareLink: string | null;
   enableCashGifts: boolean | null;
@@ -1749,7 +1750,7 @@ const AdminDashboard = () => {
                     <TableHead className="text-center whitespace-nowrap px-2">Guests</TableHead>
                     <TableHead className="text-center whitespace-nowrap px-2 hidden sm:table-cell">Contribs</TableHead>
                     <TableHead className="text-center whitespace-nowrap px-2">Asoebi</TableHead>
-                    <TableHead className="px-2 whitespace-nowrap hidden lg:table-cell">Deadline</TableHead>
+                    <TableHead className="px-2 whitespace-nowrap hidden lg:table-cell">Event Date</TableHead>
                     <TableHead className="px-2 whitespace-nowrap hidden lg:table-cell">Created</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1778,8 +1779,8 @@ const AdminDashboard = () => {
                         {(event.asoebiSalesCount || 0).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-sm px-2 whitespace-nowrap hidden lg:table-cell">
-                        {event.deadline
-                          ? new Date(event.deadline).toLocaleDateString()
+                        {event.date
+                          ? new Date(event.date).toLocaleDateString()
                           : '-'}
                       </TableCell>
                       <TableCell className="text-sm px-2 whitespace-nowrap hidden lg:table-cell">
