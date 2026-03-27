@@ -1286,7 +1286,7 @@ const ShareGift: React.FC = () => {
 
           <form onSubmit={handleAmountSubmit} className="space-y-4">
             <div>
-              <Label className="text-sm font-medium">Gift Amount</Label>
+              <Label className="text-sm font-medium">Currency</Label>
               <div className="flex gap-2 mt-2">
                 <Popover open={isCurrencyPopoverOpen} onOpenChange={setIsCurrencyPopoverOpen}>
                   <PopoverTrigger asChild>
@@ -1302,15 +1302,17 @@ const ShareGift: React.FC = () => {
                       })()}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-56 p-0" side="bottom" align="start" sideOffset={4}>
+                  <PopoverContent className="w-56 p-0 max-h-[40vh] overflow-hidden touch-pan-y overscroll-contain z-50" side="bottom" align="start" sideOffset={4}>
                     <Command>
-                      <CommandInput
-                        placeholder="Search currency or country..."
-                        value={currencySearch}
-                        onValueChange={setCurrencySearch}
-                        className="h-9"
-                      />
-                      <CommandList className="max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                      <div className="sticky top-0 z-10 bg-white p-1 border-b">
+                        <CommandInput
+                          placeholder="Search currency or country..."
+                          value={currencySearch}
+                          onValueChange={setCurrencySearch}
+                          className="h-9"
+                        />
+                      </div>
+                      <CommandList className="max-h-[34vh] overflow-y-auto touch-pan-y overscroll-contain scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
                         <CommandEmpty>No currency found.</CommandEmpty>
                         <CommandGroup>
                           {currencyOptions.map((c) => (
