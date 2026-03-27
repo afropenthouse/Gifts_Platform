@@ -355,7 +355,7 @@ const WeddingGiftCard = ({
                       })()}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain" side="bottom" align="start" sideOffset={4}>
+                  <PopoverContent portalled={false} className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain" side="bottom" align="start" sideOffset={4}>
                     <Command>
                       <CommandInput
                         placeholder="Search currency or country..."

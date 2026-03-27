@@ -579,7 +579,7 @@ const QRGift: React.FC = () => {
                       })()}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent data-currency-popover="true" className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain" side="bottom" align="start" sideOffset={4}>
+                  <PopoverContent portalled={false} data-currency-popover="true" className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain" side="bottom" align="start" sideOffset={4}>
                     <Command>
                       <CommandInput
                         placeholder="Search currency or country..."

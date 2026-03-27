@@ -1306,7 +1306,7 @@ const ShareGift: React.FC = () => {
                       })()}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent data-currency-popover="true" className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain z-50" side="bottom" align="start" sideOffset={4}>
+                  <PopoverContent portalled={false} data-currency-popover="true" className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain z-50" side="bottom" align="start" sideOffset={4}>
                     <Command>
                       <div className="shrink-0 bg-white p-1 border-b">
                         <CommandInput
