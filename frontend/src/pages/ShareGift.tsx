@@ -1290,7 +1290,7 @@ const ShareGift: React.FC = () => {
 
           <form onSubmit={handleAmountSubmit} className="space-y-4">
             <div>
-              <Label className="text-sm font-medium">Currency</Label>
+              <Label className="text-sm font-medium">Select currency</Label>
               <div className="flex gap-2 mt-2">
                 <Popover open={isCurrencyPopoverOpen} onOpenChange={setIsCurrencyPopoverOpen}>
                   <PopoverTrigger asChild>
@@ -1302,7 +1302,7 @@ const ShareGift: React.FC = () => {
                     >
                       {(() => {
                         const meta = getCurrencyMeta(currency);
-                        return meta ? meta.code : "Currency";
+                        return meta ? meta.code : "Select currency";
                       })()}
                     </Button>
                   </PopoverTrigger>
