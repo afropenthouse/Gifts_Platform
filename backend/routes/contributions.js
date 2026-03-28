@@ -57,6 +57,9 @@ module.exports = () => {
       if (currency === 'NGN' && parsedAmount < 1000) {
         return res.status(400).json({ msg: 'Minimum amount is ₦1000' });
       }
+      if (currency !== 'NGN' && parsedAmount < 10) {
+        return res.status(400).json({ msg: `Minimum amount is ${currency} 10` });
+      }
 
       if (currency === 'NGN') {
         const reference = `gift-${gift.id}-${Date.now()}`;
