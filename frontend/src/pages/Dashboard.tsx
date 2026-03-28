@@ -178,7 +178,7 @@ const Dashboard: React.FC = () => {
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [errorTitle, setErrorTitle] = useState('');
-  const [createGuestListMode, setCreateGuestListMode] = useState('restricted');
+  const [createGuestListMode, setCreateGuestListMode] = useState('open');
   const [editGuestListMode, setEditGuestListMode] = useState('restricted');
   const [isCreatingGift, setIsCreatingGift] = useState(false);
   const [isUpdatingGift, setIsUpdatingGift] = useState(false);
@@ -984,7 +984,7 @@ const Dashboard: React.FC = () => {
         setGroomName('');
         setBrideName('');
         setCustomType('');
-        setCreateGuestListMode('restricted');
+        setCreateGuestListMode('open');
         setEnableRSVP(true);
         setEnableGuestNotes(true);
         setEnableCashGifts(true);
@@ -1434,6 +1434,28 @@ const Dashboard: React.FC = () => {
   .slice(0, 10);
 
   const totalGoalProgress = (totalContributions / goalAmount) * 100;
+
+  const safeJsonParse = (value: unknown) => {
+    if (typeof value !== 'string') return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  };
+
+  const getPaymentMeta = (tx: any) => {
+    if (!tx || tx.type !== 'contribution' || tx.isAsoebi) return null;
+    const raw = tx.asoebiItemsDetails;
+    if (!raw) return null;
+
+    const parsed = typeof raw === 'string' ? safeJsonParse(raw) : raw;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+
+    const pm = (parsed as any).paymentMeta ?? null;
+    if (!pm) return null;
+    return typeof pm === 'string' ? safeJsonParse(pm) : pm;
+  };
   
   // Filter guests by selected event for RSVP tab
   const eventFilteredGuests = selectedEventForRSVP
@@ -2109,13 +2131,20 @@ const Dashboard: React.FC = () => {
                           const isContribution = transaction.type === 'contribution';
                           const amount = typeof transaction.amount === 'number' ? transaction.amount : parseFloat(String(transaction.amount));
                           const gift = isContribution ? gifts.find(g => Number(g.id) === Number(transaction.giftId)) : null;
-                          const paymentMeta =
-                            isContribution &&
-                            !transaction.isAsoebi &&
-                            transaction.asoebiItemsDetails &&
-                            !Array.isArray(transaction.asoebiItemsDetails)
-                              ? (transaction.asoebiItemsDetails as any).paymentMeta
-                              : null;
+                          const paymentMeta = getPaymentMeta(transaction);
+                          const foreignCurrency = paymentMeta
+                            ? String((paymentMeta as any).currency || (paymentMeta as any).originalCurrency || '').toUpperCase()
+                            : '';
+                          const foreignAmount = paymentMeta
+                            ? Number((paymentMeta as any).amount ?? (paymentMeta as any).originalAmount)
+                            : NaN;
+                          const ngnAmountFromMeta = paymentMeta ? Number((paymentMeta as any).ngnAmount) : NaN;
+                          const displayNgnAmount = Number.isFinite(ngnAmountFromMeta) ? ngnAmountFromMeta : amount;
+                          const hasForeign =
+                            Boolean(foreignCurrency) &&
+                            foreignCurrency !== 'NGN' &&
+                            Number.isFinite(foreignAmount) &&
+                            foreignAmount > 0;
                           
                           // Calculate commission and received amount
                           let commission = 0;
@@ -2153,8 +2182,8 @@ const Dashboard: React.FC = () => {
                               <div className="text-right">
                                 <p className={`font-bold ${isContribution ? 'text-gray-900' : 'text-red-600'}`}>
                                   {isContribution
-                                    ? paymentMeta?.currency && paymentMeta?.amount && String(paymentMeta.currency).toUpperCase() !== 'NGN'
-                                      ? `${String(paymentMeta.currency).toUpperCase()} ${Number(paymentMeta.amount).toFixed(2)} (₦${amount.toFixed(2)})`
+                                    ? hasForeign
+                                      ? `${foreignCurrency} ${foreignAmount.toFixed(2)} (₦${displayNgnAmount.toFixed(2)})`
                                       : `₦${amount.toFixed(2)}`
                                     : `-₦${amount.toFixed(2)}`}
                                 </p>
