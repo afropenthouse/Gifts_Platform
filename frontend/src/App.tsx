@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,9 +32,61 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import Wishes from "./pages/Wishes";
 
 const queryClient = new QueryClient();
+const GOOGLE_TAG_ID = "AW-18055751654";
 
 const App = () => {
   const { loginModalOpen, signupModalOpen, closeModals } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname.toLowerCase();
+    const isDashboardRoute = path.startsWith("/dashboard");
+    const isAuthRoute =
+      path === "/signup" ||
+      path === "/forgot-password" ||
+      path.startsWith("/reset-password") ||
+      path.startsWith("/verify");
+    const isLandingRoute =
+      path === "/" ||
+      path === "/how-it-works" ||
+      path === "/wedding-rsvp" ||
+      path === "/collect-cash-gifts" ||
+      path === "/wedding-qr-code" ||
+      path === "/vendor-payment-tracker" ||
+      path === "/schedule-vendor-payments" ||
+      path === "/asoebi" ||
+      path === "/faq" ||
+      path === "/terms" ||
+      path === "/payment-policy" ||
+      path === "/privacy-policy";
+
+    if (!isDashboardRoute && !isAuthRoute && !isLandingRoute) {
+      return;
+    }
+
+    if (!document.querySelector(`script[src*="gtag/js?id=${GOOGLE_TAG_ID}"]`)) {
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID}`;
+      document.head.appendChild(script);
+    }
+
+    const win = window as typeof window & {
+      dataLayer?: unknown[];
+      gtag?: (...args: unknown[]) => void;
+    };
+
+    win.dataLayer = win.dataLayer || [];
+    if (!win.gtag) {
+      win.gtag = function gtag(...args: unknown[]) {
+        (win.dataLayer as unknown[]).push(args);
+      };
+      win.gtag("js", new Date());
+    }
+
+    win.gtag("config", GOOGLE_TAG_ID);
+  }, [location.pathname]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
