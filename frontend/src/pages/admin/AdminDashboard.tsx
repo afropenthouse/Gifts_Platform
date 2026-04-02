@@ -1741,17 +1741,17 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table className="text-xs md:text-sm">
+              <Table className="min-w-[860px] text-xs md:text-sm">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="px-2">Event</TableHead>
-                    <TableHead className="px-2 hidden md:table-cell">Type</TableHead>
+                    <TableHead className="px-2">Type</TableHead>
                     <TableHead className="px-2">Host</TableHead>
                     <TableHead className="text-center whitespace-nowrap px-2">Guests</TableHead>
-                    <TableHead className="text-center whitespace-nowrap px-2 hidden sm:table-cell">Contribs</TableHead>
+                    <TableHead className="text-center whitespace-nowrap px-2">Contribs</TableHead>
                     <TableHead className="text-center whitespace-nowrap px-2">Asoebi</TableHead>
-                    <TableHead className="px-2 whitespace-nowrap hidden lg:table-cell">Event Date</TableHead>
-                    <TableHead className="px-2 whitespace-nowrap hidden lg:table-cell">Created</TableHead>
+                    <TableHead className="px-2 whitespace-nowrap">Event Date</TableHead>
+                    <TableHead className="px-2 whitespace-nowrap">Created</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1760,30 +1760,30 @@ const AdminDashboard = () => {
                       <TableCell className="font-medium px-2">
                         {event.title || 'Untitled'}
                       </TableCell>
-                      <TableCell className="text-sm px-2 hidden md:table-cell">
+                      <TableCell className="text-sm px-2">
                         <span className="capitalize">{event.type}</span>
                       </TableCell>
                       <TableCell className="text-sm px-2">
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900">{event.user?.name || 'No Name'}</span>
-                          <span className="text-xs text-muted-foreground hidden md:inline">{event.user?.email}</span>
+                          <span className="text-xs text-muted-foreground">{event.user?.email}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center px-2">
                         {event._count.guests}
                       </TableCell>
-                      <TableCell className="text-center px-2 hidden sm:table-cell">
+                      <TableCell className="text-center px-2">
                         {allContributions.filter(c => c.amount > 0 && c.gift?.id === event.id).length}
                       </TableCell>
                       <TableCell className="text-center px-2">
                         {(event.asoebiSalesCount || 0).toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-sm px-2 whitespace-nowrap hidden lg:table-cell">
+                      <TableCell className="text-sm px-2 whitespace-nowrap">
                         {event.date
                           ? new Date(event.date).toLocaleDateString()
                           : '-'}
                       </TableCell>
-                      <TableCell className="text-sm px-2 whitespace-nowrap hidden lg:table-cell">
+                      <TableCell className="text-sm px-2 whitespace-nowrap">
                         {new Date(event.createdAt).toLocaleDateString()}
                       </TableCell>
                     </TableRow>
