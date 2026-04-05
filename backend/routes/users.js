@@ -284,20 +284,6 @@ module.exports = () => {
       });
       const accountName = resolveRes.status && resolveRes.data ? resolveRes.data.account_name : null;
 
-      // Create withdrawal record
-      const withdrawal = await prisma.withdrawal.create({
-        data: {
-          userId: req.user.id,
-          amount: withdrawAmount,
-          bankCode: bank_code,
-          bankName: bankName,
-          accountNumber: account_number,
-          accountName: accountName,
-          status: 'pending',
-          sourceType: sourceType || 'wallet',
-        },
-      });
-
       // Deduct from wallet with an extra safety check
       try {
         await prisma.user.update({
@@ -324,11 +310,6 @@ module.exports = () => {
           where: { id: req.user.id },
           data: { wallet: { increment: withdrawAmount } }
         });
-        // Update withdrawal status to failed
-        await prisma.withdrawal.update({
-          where: { id: withdrawal.id },
-          data: { status: 'failed' },
-        });
         return res.status(500).json({ msg: 'Failed to create transfer recipient', error: recipientRes.message || 'Unknown error' });
       }
       // 2. Initiate transfer using recipient_code
@@ -349,12 +330,6 @@ module.exports = () => {
           where: { id: req.user.id },
           data: { wallet: { increment: withdrawAmount } }
         });
-        
-        // Update withdrawal status to failed
-        await prisma.withdrawal.update({
-          where: { id: withdrawal.id },
-          data: { status: 'failed' },
-        });
 
         const errorMsg = transferError.data?.message || transferError.message || 'Transfer failed';
         if (errorMsg.toLowerCase().includes('balance')) {
@@ -367,13 +342,30 @@ module.exports = () => {
         return res.status(500).json({ msg: 'Withdrawal failed', error: errorMsg });
       }
 
-      // Update withdrawal with transfer details
-      await prisma.withdrawal.update({
-        where: { id: withdrawal.id },
+      if (!response?.status) {
+        // Refund wallet when transfer API did not confirm initiation.
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: { wallet: { increment: withdrawAmount } }
+        });
+        return res.status(500).json({
+          msg: 'Withdrawal failed',
+          error: response?.message || 'Transfer was not initiated'
+        });
+      }
+
+      await prisma.withdrawal.create({
         data: {
+          userId: req.user.id,
+          amount: withdrawAmount,
+          bankCode: bank_code,
+          bankName: bankName,
+          accountNumber: account_number,
+          accountName: accountName,
           reference: response.data ? response.data.reference : null,
           transferId: response.data ? String(response.data.id) : null,
-          status: response.status ? 'completed' : 'failed',
+          status: 'completed',
+          sourceType: sourceType || 'wallet',
         },
       });
 
@@ -393,7 +385,10 @@ module.exports = () => {
   router.get('/withdrawals', auth(), async (req, res) => {
     try {
       const withdrawals = await prisma.withdrawal.findMany({
-        where: { userId: req.user.id },
+        where: {
+          userId: req.user.id,
+          status: { not: 'failed' }
+        },
         orderBy: { createdAt: 'desc' },
       });
       res.json(withdrawals);
