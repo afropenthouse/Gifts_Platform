@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
-const { resolveAccount, getBanks, initializePayment } = require('../utils/paystack');
+const { resolveAccount, getBanks, initializePayment } = require('../utils/flutterwave');
 const { sendEmail, mailFrom } = require('../utils/email');
 const { sendWalletOtpEmail } = require('../utils/emailService');
 
@@ -221,13 +221,17 @@ module.exports = () => {
       }
 
       // Initialize payment
-      const reference = `vendor-schedule-${vendorId}-${Date.now()}`;
+      const tx_ref = `vendor-schedule-${vendorId}-${Date.now()}`;
       const payment = await initializePayment({
-        email: req.user.email,
-        amount: scheduleAmount * 100, // in kobo
-        reference,
-        callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`,
-        metadata: {
+        tx_ref,
+        amount: scheduleAmount,
+        currency: 'NGN',
+        redirect_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`,
+        customer: {
+          email: req.user.email,
+          name: req.user.name || req.user.email || 'User',
+        },
+        meta: {
           vendorId,
           amount: scheduleAmount,
           vendorEmail,
@@ -269,7 +273,7 @@ module.exports = () => {
       const vendorWithCalculated = {
         ...updatedVendor,
         balance: updatedVendor.amountAgreed - updatedVendor.amountPaid - updatedVendor.scheduledAmount,
-        paymentUrl: payment.data.authorization_url
+        paymentUrl: payment?.data?.link || payment?.data?.authorization_url || null
       };
 
 

@@ -61,29 +61,6 @@ module.exports = () => {
         return res.status(400).json({ msg: `Minimum amount is ${currency} 10` });
       }
 
-      if (currency === 'NGN') {
-        const reference = `gift-${gift.id}-${Date.now()}`;
-        const payload = {
-          reference,
-          amount: parsedAmount * 100,
-          currency: 'NGN',
-          callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`,
-          email: contributorEmail,
-          metadata: { ...metadata, provider: 'paystack' },
-        };
-
-        const response = await paystack.initializePayment(payload);
-
-        if (!response?.status) {
-          return res.status(400).json({
-            msg: 'Paystack initialization failed',
-            error: response?.message || 'Unknown error',
-          });
-        }
-
-        return res.json({ status: response.status, data: response.data });
-      }
-
       const tx_ref = `gift-${gift.id}-${Date.now()}`;
       const fwPayload = {
         tx_ref,
@@ -154,47 +131,55 @@ module.exports = () => {
       console.log('Link:', req.params.link);
       console.log('Request body:', { transactionId, txRef, status });
       
-      let provider = 'paystack';
+      let provider = 'flutterwave';
       let response;
 
       try {
-        console.log('Attempting Paystack verification with transactionId:', transactionId);
-        response = await paystack.verifyTransaction(transactionId);
-        if (!response?.status || response?.data?.status !== 'success') {
-          throw new Error('Paystack verification did not return success');
-        }
-      } catch (paystackErr) {
+        console.log('Attempting Flutterwave verification with transactionId:', transactionId);
+        response = await flutterwave.verifyTransaction(transactionId);
+      } catch (flutterwaveErr) {
         try {
-          console.log('Paystack verification failed, attempting Flutterwave verification with transactionId:', transactionId);
-          provider = 'flutterwave';
-          response = await flutterwave.verifyTransaction(transactionId);
-        } catch (flutterwaveErr) {
+          console.log('Flutterwave verification failed, attempting Paystack verification with transactionId:', transactionId);
+          provider = 'paystack';
+          response = await paystack.verifyTransaction(transactionId);
+          if (!response?.status || response?.data?.status !== 'success') {
+            throw new Error('Paystack verification did not return success');
+          }
+        } catch (paystackErr) {
           if (txRef && txRef !== transactionId) {
             try {
-              console.log('Retrying Paystack verification with txRef:', txRef);
-              provider = 'paystack';
-              response = await paystack.verifyTransaction(txRef);
-              if (!response?.status || response?.data?.status !== 'success') {
-                throw new Error('Paystack verification did not return success');
-              }
-            } catch (paystackErr2) {
               console.log('Retrying Flutterwave verification with txRef:', txRef);
               provider = 'flutterwave';
               try {
                 response = await flutterwave.verifyTransaction(txRef);
               } catch (flutterwaveErr2) {
-                console.error('❌ Flutterwave verification failed:', flutterwaveErr2?.message || flutterwaveErr2);
-                return res.status(400).json({
-                  msg: 'Payment verification failed',
-                  error: flutterwaveErr2?.message || 'Could not verify Flutterwave transaction',
-                });
+                console.log('Retrying Paystack verification with txRef:', txRef);
+                provider = 'paystack';
+                try {
+                  response = await paystack.verifyTransaction(txRef);
+                  if (!response?.status || response?.data?.status !== 'success') {
+                    throw new Error('Paystack verification did not return success');
+                  }
+                } catch (paystackErr2) {
+                  console.error('❌ Payment verification failed:', paystackErr2?.message || paystackErr2);
+                  return res.status(400).json({
+                    msg: 'Payment verification failed',
+                    error: paystackErr2?.message || 'Could not verify transaction',
+                  });
+                }
               }
+            } catch (retryErr) {
+              console.error('❌ Payment verification failed:', retryErr?.message || retryErr);
+              return res.status(400).json({
+                msg: 'Payment verification failed',
+                error: retryErr?.message || 'Could not verify transaction',
+              });
             }
           } else {
-            console.error('❌ Flutterwave verification failed:', flutterwaveErr?.message || flutterwaveErr);
+            console.error('❌ Payment verification failed:', paystackErr?.message || paystackErr);
             return res.status(400).json({
               msg: 'Payment verification failed',
-              error: flutterwaveErr?.message || 'Could not verify Flutterwave transaction',
+              error: paystackErr?.message || 'Could not verify transaction',
             });
           }
         }

@@ -11,12 +11,6 @@ import Navbar from '../components/Navbar';
 import confetti from 'canvas-confetti';
 import { useToast } from '../hooks/use-toast';
 import { Gift as GiftIcon, Camera } from 'lucide-react';
-//Testing
-declare global {
-  interface Window {
-    PaystackPop: any;
-  }
-}
 
 interface Gift {
   id: string;
@@ -105,23 +99,14 @@ const QRGift: React.FC = () => {
     document.title = "Send a Cash Gift";
   }, []);
 
-  useEffect(() => {
-    // Load Paystack script
-    if (!window.PaystackPop) {
-      const script = document.createElement('script');
-      script.src = 'https://js.paystack.co/v1/inline.js';
-      document.head.appendChild(script);
-    }
-  }, []);
-
-  // Handle redirect back from Paystack: verify payment
+  // Handle redirect back from payment providers: verify payment
   useEffect(() => {
     const txId = searchParams.get('transaction_id');
     const txRef = searchParams.get('tx_ref');
-    const reference = searchParams.get('reference'); // Paystack returns 'reference'
+    const reference = searchParams.get('reference');
     const status = searchParams.get('status');
 
-    // Paystack returns 'reference', but also support tx_ref and transaction_id for other payment providers
+    // Support reference, tx_ref and transaction_id from redirect responses
     const transactionIdentifier = reference || txRef || txId;
 
     if (!linkParam || !transactionIdentifier) return;
@@ -692,7 +677,7 @@ const QRGift: React.FC = () => {
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              💳 Powered by Paystack (NGN) and Flutterwave (other currencies)
+              💳 Powered by Flutterwave
             </p>
           </form>
         </DialogContent>

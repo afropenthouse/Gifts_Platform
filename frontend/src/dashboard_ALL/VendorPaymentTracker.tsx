@@ -454,7 +454,7 @@ const VendorPaymentTracker: React.FC = () => {
     }
   };
 
-  const submitSchedulePayment = async (method: 'paystack' | 'wallet', otp?: string) => {
+  const submitSchedulePayment = async (method: 'flutterwave' | 'wallet', otp?: string) => {
     if (!pendingSchedulePayload || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -1235,7 +1235,7 @@ const VendorPaymentTracker: React.FC = () => {
                   <Button
                     type="button"
                     className="w-full justify-between h-auto px-4 py-3 bg-[#2E235C] hover:bg-[#1a1435] text-white"
-                    onClick={() => submitSchedulePayment('paystack')}
+                    onClick={() => submitSchedulePayment('flutterwave')}
                     disabled={isSubmitting}
                   >
                     <div className="flex items-center gap-3">
@@ -1244,7 +1244,7 @@ const VendorPaymentTracker: React.FC = () => {
                       </div>
                       <div className="text-left">
                         <div className="font-semibold leading-tight">Pay Direct</div>
-                        <div className="text-xs text-white/80 leading-tight">Card / Transfer via Paystack</div>
+                        <div className="text-xs text-white/80 leading-tight">Card / Transfer via Flutterwave</div>
                       </div>
                     </div>
                     <ArrowRight className="h-4 w-4 text-white/90" />
