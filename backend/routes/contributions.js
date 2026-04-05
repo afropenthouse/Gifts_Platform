@@ -62,18 +62,55 @@ module.exports = () => {
       }
 
       const tx_ref = `gift-${gift.id}-${Date.now()}`;
+      const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`;
+
+      // Route all NGN contributions through Paystack; keep other currencies on Flutterwave.
+      if (currency === 'NGN') {
+        const psPayload = {
+          reference: tx_ref,
+          amount: parsedAmount,
+          currency,
+          callback_url: redirectUrl,
+          email: contributorEmail,
+          metadata: {
+            ...metadata,
+            provider: 'paystack',
+            reference: tx_ref,
+            originalCurrency: currency,
+            originalAmount: parsedAmount,
+          },
+        };
+
+        const psResponse = await paystack.initializePayment(psPayload);
+        if (!psResponse?.status) {
+          return res.status(400).json({
+            msg: 'Paystack initialization failed',
+            error: psResponse?.message || 'Unknown error',
+          });
+        }
+
+        return res.json({
+          status: psResponse.status,
+          data: {
+            ...psResponse.data,
+            authorization_url: psResponse?.data?.authorization_url,
+            provider: 'paystack',
+          },
+        });
+      }
+
       const fwPayload = {
         tx_ref,
         amount: parsedAmount,
         currency,
-        redirect_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`,
+        redirect_url: redirectUrl,
         customer: {
           email: contributorEmail,
           name: contributorName || 'Anonymous',
         },
-        meta: { 
-          ...metadata, 
-          provider: 'flutterwave', 
+        meta: {
+          ...metadata,
+          provider: 'flutterwave',
           tx_ref,
           originalCurrency: currency,
           originalAmount: parsedAmount
@@ -99,6 +136,7 @@ module.exports = () => {
         data: {
           ...fwResponse.data,
           authorization_url,
+          provider: 'flutterwave',
         },
       });
     } catch (err) {
