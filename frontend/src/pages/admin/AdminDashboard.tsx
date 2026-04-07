@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail } from "lucide-react";
+import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail, TrendingUp, TrendingDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -155,6 +155,8 @@ const AdminDashboard = () => {
   const [guestSearch, setGuestSearch] = useState('');
   const [emailSearch, setEmailSearch] = useState('');
   const [eventSearch, setEventSearch] = useState('');
+  const [eventDateRange, setEventDateRange] = useState<number>(12); // Default to 12 months
+  const [eventStatusFilter, setEventStatusFilter] = useState<'all' | 'active' | 'past'>('all');
   const [emailSourceFilter, setEmailSourceFilter] = useState<'all' | 'user' | 'guest'>('all');
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [sendingBulk, setSendingBulk] = useState(false);
@@ -322,10 +324,6 @@ const AdminDashboard = () => {
   }, [navigate, selectedEventId]);
 
   const fetchEvents = useCallback(async () => {
-    if (fetchingEvents.current || eventsLength.current > 0) {
-      return;
-    }
-
     const token = localStorage.getItem('adminToken');
     if (!token) {
       navigate('/admin/login');
@@ -336,7 +334,20 @@ const AdminDashboard = () => {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       setLoadingEvents(true);
       fetchingEvents.current = true;
-      const response = await fetch(`${baseUrl}/api/admin/events`, {
+      
+      const params = new URLSearchParams();
+      
+      // Only apply date range if it's not the default 12 months
+      if (eventDateRange !== 12) {
+        params.set('dateRange', String(eventDateRange));
+      }
+      
+      // Only apply status filter if it's not 'all'
+      if (eventStatusFilter !== 'all') {
+        params.set('status', eventStatusFilter);
+      }
+      
+      const response = await fetch(`${baseUrl}/api/admin/events?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -360,7 +371,7 @@ const AdminDashboard = () => {
       setLoadingEvents(false);
       fetchingEvents.current = false;
     }
-  }, [navigate]);
+  }, [navigate, eventDateRange, eventStatusFilter]);
 
   const fetchEmailTemplates = useCallback(async () => {
     const token = localStorage.getItem('adminToken');
@@ -447,11 +458,21 @@ const AdminDashboard = () => {
     if (activeTab === 'transactions') {
       fetchContributions(txnTimeFilter, true);
     }
+  }, [activeTab, fetchContributions, txnTimeFilter]);
+
+  useEffect(() => {
     if (activeTab === 'events') {
+      fetchEvents();
       fetchContributions('all');
+    }
+  }, [activeTab, fetchEvents, fetchContributions]);
+
+  // Refetch events when filters change
+  useEffect(() => {
+    if (activeTab === 'events') {
       fetchEvents();
     }
-  }, [activeTab, fetchContributions, fetchEvents, txnTimeFilter]);
+  }, [eventDateRange, eventStatusFilter, fetchEvents, activeTab]);
 
   useEffect(() => {
     if (activeTab === 'guests' || activeTab === 'emails') {
@@ -1608,6 +1629,7 @@ const AdminDashboard = () => {
                   <TableHead>Amount</TableHead>
                   <TableHead>Gift</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Flow</TableHead>
                   <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1632,6 +1654,21 @@ const AdminDashboard = () => {
                         {contribution.isAsoebi ? 'Asoebi' : 'Cash Gift'}
                       </span>
                     </TableCell>
+                    <TableCell>
+                      {contribution.amount > 0 ? (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <TrendingUp className="h-3 w-3" />
+                          <span className="text-xs">Inflow</span>
+                        </div>
+                      ) : contribution.amount < 0 ? (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <TrendingDown className="h-3 w-3" />
+                          <span className="text-xs">Outflow</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-500">Neutral</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm">
                       {new Date(contribution.createdAt).toLocaleDateString()}
                     </TableCell>
@@ -1639,7 +1676,7 @@ const AdminDashboard = () => {
                 ))}
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                       No records found
                     </TableCell>
                   </TableRow>
@@ -1653,10 +1690,26 @@ const AdminDashboard = () => {
     );
   };
 
+  const getEventStatus = (eventDate: string | null) => {
+    if (!eventDate) return { status: 'unknown', label: 'No Date', color: 'gray' };
+    
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    const eventDt = new Date(eventDate);
+    eventDt.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    
+    if (eventDt < now) {
+      return { status: 'past', label: 'Past', color: 'red' };
+    } else if (eventDt.getTime() === now.getTime()) {
+      return { status: 'today', label: 'Today', color: 'orange' };
+    } else {
+      return { status: 'active', label: 'Active', color: 'green' };
+    }
+  };
+
   const renderEvents = () => {
-    let rows = selectedEventId === 'all'
-      ? events
-      : events.filter((event) => event.id === selectedEventId);
+    // Use events directly - backend handles all filtering
+    let rows = events;
 
     if (eventSearch) {
       const search = eventSearch.toLowerCase();
@@ -1669,18 +1722,12 @@ const AdminDashboard = () => {
       });
     }
 
-    // Calculate stats
-    const eventContributions = selectedEventId === 'all'
-      ? allContributions
-      : allContributions.filter(c => c.gift?.id === selectedEventId);
-    
+    // Calculate stats using all events
+    const eventContributions = allContributions;
     const totalAmount = eventContributions.reduce((sum, c) => sum + Number(c.amount), 0);
     const asoebiAmount = eventContributions.filter(c => c.isAsoebi).reduce((sum, c) => sum + Number(c.amount), 0);
     const cashAmount = totalAmount - asoebiAmount;
-    
-    const totalGuests = selectedEventId === 'all'
-      ? events.reduce((sum, e) => sum + e._count.guests, 0)
-      : events.find(e => e.id === selectedEventId)?._count.guests || 0;
+    const totalGuests = events.reduce((sum, e) => sum + e._count.guests, 0);
 
     return (
     <div className="space-y-6">
@@ -1724,14 +1771,63 @@ const AdminDashboard = () => {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Events</CardTitle>
-          <div className="relative w-64">
-            <Input
-              placeholder="Search events or host email..."
-              value={eventSearch}
-              onChange={(e) => setEventSearch(e.target.value)}
-            />
+        <CardHeader className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between">
+            <CardTitle>Events</CardTitle>
+            <div className="relative w-64">
+              <Input
+                placeholder="Search events or host email..."
+                value={eventSearch}
+                onChange={(e) => setEventSearch(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              <div className="flex flex-col gap-1">
+                <Label className="text-sm font-medium">Date Range</Label>
+                <Select
+                  value={String(eventDateRange)}
+                  onValueChange={(value) => {
+                    setEventDateRange(parseInt(value, 10));
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 Month</SelectItem>
+                    <SelectItem value="3">3 Months</SelectItem>
+                    <SelectItem value="6">6 Months</SelectItem>
+                    <SelectItem value="12">12 Months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <Label className="text-sm font-medium">Event Status</Label>
+                <Select
+                  value={eventStatusFilter}
+                  onValueChange={(value) => {
+                    setEventStatusFilter(value as 'all' | 'active' | 'past');
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Events</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="past">Past</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="text-sm text-muted-foreground">
+              Showing <span className="font-semibold text-foreground">{events.length}</span> events
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -1741,12 +1837,13 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table className="min-w-[860px] text-xs md:text-sm">
+              <Table className="min-w-[960px] text-xs md:text-sm">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="px-2">Event</TableHead>
                     <TableHead className="px-2">Type</TableHead>
                     <TableHead className="px-2">Host</TableHead>
+                    <TableHead className="text-center whitespace-nowrap px-2">Status</TableHead>
                     <TableHead className="text-center whitespace-nowrap px-2">Guests</TableHead>
                     <TableHead className="text-center whitespace-nowrap px-2">Contribs</TableHead>
                     <TableHead className="text-center whitespace-nowrap px-2">Asoebi</TableHead>
@@ -1770,6 +1867,21 @@ const AdminDashboard = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-center px-2">
+                        {(() => {
+                          const status = getEventStatus(event.date);
+                          return (
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase ${
+                              status.color === 'green' ? 'bg-green-100 text-green-700' :
+                              status.color === 'orange' ? 'bg-orange-100 text-orange-700' :
+                              status.color === 'red' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {status.label}
+                            </span>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-center px-2">
                         {event._count.guests}
                       </TableCell>
                       <TableCell className="text-center px-2">
@@ -1790,7 +1902,7 @@ const AdminDashboard = () => {
                   ))}
                   {rows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
                         No events found
                       </TableCell>
                     </TableRow>
