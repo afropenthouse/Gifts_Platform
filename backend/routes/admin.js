@@ -434,10 +434,49 @@ module.exports = () => {
   // Get all events (gifts)
   router.get('/events', adminAuth, async (req, res) => {
     try {
+      const { dateRange, status, type } = req.query;
+      let where = {};
+
+      // Status filter (active/past)
+      if (status === 'active') {
+        where.date = {
+          gte: new Date() // Events today or in the future
+        };
+      } else if (status === 'past') {
+        where.date = {
+          lt: new Date() // Events before today
+        };
+      }
+
+      // Event type filter
+      if (type && type !== 'all') {
+        where.type = type;
+      }
+
+      // Date range filter (1-12 months from current date) - only apply if no status filter
+      if (dateRange && !Number.isNaN(parseInt(dateRange, 10)) && !status) {
+        const months = parseInt(dateRange, 10);
+        const now = new Date();
+        const startDate = new Date();
+        const endDate = new Date();
+        
+        startDate.setMonth(now.getMonth() - months); // Start X months ago from today
+        endDate.setTime(now.getTime()); // End at current time
+        
+        where.date = {
+          gte: startDate,
+          lte: endDate
+        };
+      }
+
+      // Sort by creation date when showing all events or past events, otherwise sort by event date
+      const orderBy = (status === 'past' || (!status && !dateRange))
+        ? { createdAt: 'desc' } // Sort by creation date for all events and past events
+        : [{ date: 'asc' }, { createdAt: 'desc' }]; // Sort by event date for active events and date range
+
       const gifts = await prisma.gift.findMany({
-        orderBy: {
-          createdAt: 'desc'
-        },
+        where,
+        orderBy,
         select: {
           id: true,
           title: true,
@@ -452,7 +491,8 @@ module.exports = () => {
             select: {
               id: true,
               name: true,
-              email: true
+              email: true,
+              phoneNumber: true
             }
           },
           _count: {

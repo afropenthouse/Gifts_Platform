@@ -71,6 +71,7 @@ interface EventOwner {
   id: number;
   name: string | null;
   email: string;
+  phoneNumber?: string;
 }
 
 interface EventItem {
@@ -157,6 +158,7 @@ const AdminDashboard = () => {
   const [eventSearch, setEventSearch] = useState('');
   const [eventDateRange, setEventDateRange] = useState<number>(12); // Default to 12 months
   const [eventStatusFilter, setEventStatusFilter] = useState<'all' | 'active' | 'past'>('all');
+  const [eventTypeFilter, setEventTypeFilter] = useState<string>('all'); // Event type filter
   const [emailSourceFilter, setEmailSourceFilter] = useState<'all' | 'user' | 'guest'>('all');
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [sendingBulk, setSendingBulk] = useState(false);
@@ -164,6 +166,8 @@ const AdminDashboard = () => {
   const [loadingEmailTemplates, setLoadingEmailTemplates] = useState(false);
   const [selectedEmailTemplateId, setSelectedEmailTemplateId] = useState<number | null>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [selectedEventForDetails, setSelectedEventForDetails] = useState<any>(null);
+  const [eventDetailsModalOpen, setEventDetailsModalOpen] = useState(false);
   const [templateDraft, setTemplateDraft] = useState<{
     id?: number;
     key?: string;
@@ -347,6 +351,11 @@ const AdminDashboard = () => {
         params.set('status', eventStatusFilter);
       }
       
+      // Only apply event type filter if it's not 'all'
+      if (eventTypeFilter !== 'all') {
+        params.set('type', eventTypeFilter);
+      }
+      
       const response = await fetch(`${baseUrl}/api/admin/events?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -371,7 +380,7 @@ const AdminDashboard = () => {
       setLoadingEvents(false);
       fetchingEvents.current = false;
     }
-  }, [navigate, eventDateRange, eventStatusFilter]);
+  }, [navigate, eventDateRange, eventStatusFilter, eventTypeFilter]);
 
   const fetchEmailTemplates = useCallback(async () => {
     const token = localStorage.getItem('adminToken');
@@ -472,7 +481,7 @@ const AdminDashboard = () => {
     if (activeTab === 'events') {
       fetchEvents();
     }
-  }, [eventDateRange, eventStatusFilter, fetchEvents, activeTab]);
+  }, [eventDateRange, eventStatusFilter, eventTypeFilter, activeTab, fetchEvents]);
 
   useEffect(() => {
     if (activeTab === 'guests' || activeTab === 'emails') {
@@ -1823,10 +1832,38 @@ const AdminDashboard = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="flex flex-col gap-1">
+                <Label className="text-sm font-medium">Event Type</Label>
+                <Select
+                  value={eventTypeFilter}
+                  onValueChange={(value) => setEventTypeFilter(value)}
+                >
+                  <SelectTrigger className="w-full sm:w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="wedding">Wedding</SelectItem>
+                    <SelectItem value="birthday">Birthday</SelectItem>
+                    <SelectItem value="anniversary">Anniversary</SelectItem>
+                    <SelectItem value="graduation">Graduation</SelectItem>
+                    <SelectItem value="house warming">House Warming</SelectItem>
+                    <SelectItem value="baby shower">Baby Shower</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="text-sm text-muted-foreground">
-              Showing <span className="font-semibold text-foreground">{events.length}</span> events
+              {rows.length === 0 ? (
+                <span className="text-red-600">No results found</span>
+              ) : (
+                <>
+                  Showing <span className="font-semibold text-foreground">{rows.length}</span> of <span className="font-semibold text-foreground">{events.length}</span> events
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -1843,17 +1880,22 @@ const AdminDashboard = () => {
                     <TableHead className="px-2">Event</TableHead>
                     <TableHead className="px-2">Type</TableHead>
                     <TableHead className="px-2">Host</TableHead>
-                    <TableHead className="text-center whitespace-nowrap px-2">Status</TableHead>
-                    <TableHead className="text-center whitespace-nowrap px-2">Guests</TableHead>
-                    <TableHead className="text-center whitespace-nowrap px-2">Contribs</TableHead>
-                    <TableHead className="text-center whitespace-nowrap px-2">Asoebi</TableHead>
+                    <TableHead className="px-2">Phone Number</TableHead>
+                    <TableHead className="text-center whitespace-nowrap px-2">Total Guests</TableHead>
                     <TableHead className="px-2 whitespace-nowrap">Event Date</TableHead>
                     <TableHead className="px-2 whitespace-nowrap">Created</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((event) => (
-                    <TableRow key={event.id}>
+                    <TableRow 
+                      key={event.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => {
+                        setSelectedEventForDetails(event);
+                        setEventDetailsModalOpen(true);
+                      }}
+                    >
                       <TableCell className="font-medium px-2">
                         {event.title || 'Untitled'}
                       </TableCell>
@@ -1866,29 +1908,11 @@ const AdminDashboard = () => {
                           <span className="text-xs text-muted-foreground">{event.user?.email}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center px-2">
-                        {(() => {
-                          const status = getEventStatus(event.date);
-                          return (
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase ${
-                              status.color === 'green' ? 'bg-green-100 text-green-700' :
-                              status.color === 'orange' ? 'bg-orange-100 text-orange-700' :
-                              status.color === 'red' ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {status.label}
-                            </span>
-                          );
-                        })()}
+                      <TableCell className="text-sm px-2">
+                        {event.user?.phoneNumber || 'N/A'}
                       </TableCell>
                       <TableCell className="text-center px-2">
                         {event._count.guests}
-                      </TableCell>
-                      <TableCell className="text-center px-2">
-                        {allContributions.filter(c => c.amount > 0 && c.gift?.id === event.id).length}
-                      </TableCell>
-                      <TableCell className="text-center px-2">
-                        {(event.asoebiSalesCount || 0).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-sm px-2 whitespace-nowrap">
                         {event.date
@@ -1902,7 +1926,7 @@ const AdminDashboard = () => {
                   ))}
                   {rows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
                         No events found
                       </TableCell>
                     </TableRow>
@@ -1913,6 +1937,91 @@ const AdminDashboard = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Event Details Modal */}
+      <Dialog open={eventDetailsModalOpen} onOpenChange={setEventDetailsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              {selectedEventForDetails?.title || 'Event Details'}
+            </DialogTitle>
+            <DialogDescription>
+              View detailed information about this event including guests, contributions, and asoebi sales.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEventForDetails && (
+            <div className="space-y-6">
+              {/* Event Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Event Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div><strong>Type:</strong> <span className="capitalize">{selectedEventForDetails.type}</span></div>
+                    <div><strong>Event Date:</strong> {selectedEventForDetails.date ? new Date(selectedEventForDetails.date).toLocaleDateString() : 'N/A'}</div>
+                    <div><strong>Created:</strong> {new Date(selectedEventForDetails.createdAt).toLocaleDateString()}</div>
+                    <div><strong>Status:</strong> {getEventStatus(selectedEventForDetails.date).label}</div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Host Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div><strong>Name:</strong> {selectedEventForDetails.user?.name || 'N/A'}</div>
+                    <div><strong>Email:</strong> {selectedEventForDetails.user?.email || 'N/A'}</div>
+                    <div><strong>Phone:</strong> {selectedEventForDetails.user?.phoneNumber || 'N/A'}</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Total Guests</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{selectedEventForDetails._count.guests}</div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Contributions</CardTitle>
+                    <Gift className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {allContributions.filter(c => c.amount > 0 && c.gift?.id === selectedEventForDetails.id).length}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Asoebi Sales</CardTitle>
+                    <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{(selectedEventForDetails.asoebiSalesCount || 0).toLocaleString()}</div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setEventDetailsModalOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
   };
