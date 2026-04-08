@@ -58,7 +58,7 @@ const GuidedTour: React.FC<GuidedTourProps> = ({
         // Calculate tour box position based on step position
         let top = 0;
         let left = 0;
-        const tourBoxWidth = Math.min(400, window.innerWidth - 40);
+        const tourBoxWidth = Math.min(420, window.innerWidth - 40);
         const tourBoxHeight = 220;
         const sidebarWidth = window.innerWidth >= 1024 ? 256 : 0; // Sidebar width on desktop
 
@@ -160,9 +160,9 @@ const GuidedTour: React.FC<GuidedTourProps> = ({
         ref={tourRef}
         className={`fixed z-50 pointer-events-auto transition-all duration-300 ${className}`}
         style={{
-          top: `${tourPosition.top}px`,
-          left: `${tourPosition.left}px`,
-          width: `${Math.min(400, window.innerWidth - 40)}px`,
+          top: `${Math.max(20, tourPosition.top)}px`,
+          left: `${Math.max(10, tourPosition.left)}px`,
+          width: `${Math.min(420, window.innerWidth - 20)}px`,
           maxWidth: '90vw',
         }}
       >
@@ -196,7 +196,7 @@ const GuidedTour: React.FC<GuidedTourProps> = ({
               <h3 className="text-lg font-semibold mb-2 text-gray-900">
                 {step.title}
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-600 leading-relaxed text-sm">
                 {step.content}
               </p>
             </div>

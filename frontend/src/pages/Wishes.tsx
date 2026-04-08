@@ -105,7 +105,7 @@ const Wishes: React.FC = () => {
           <div className="inline-flex items-center justify-center mb-4">
             <img src="/logo1.png" alt="Logo" className="h-12 w-auto" />
           </div>
-          <h1 className="text-4xl font-playfair font-bold text-[#2E235C] mb-2">Wishes & Notes</h1>
+          <h1 className="text-4xl font-playfair font-bold text-[#2E235C] mb-2">Well wishes & Notes</h1>
           <p className="text-gray-600">Heartfelt messages for {eventTitle}</p>
         </div>
 

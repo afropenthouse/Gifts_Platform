@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail, TrendingUp, TrendingDown } from "lucide-react";
+import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail, TrendingUp, TrendingDown, Globe } from "lucide-react";
+import CountryFlag from "@/components/CountryFlag";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,7 @@ interface Metrics {
   estimatedPaystackFees: number;
   payoutFees?: number;
   netProfit: number;
+  activeUsers: number;
 }
 
 interface User {
@@ -116,11 +118,12 @@ interface EmailTemplate {
   updatedAt: string;
 }
 
-type AdminTab = 'overview' | 'transactions' | 'events' | 'guests' | 'emails';
+type AdminTab = 'overview' | 'transactions' | 'events' | 'guests' | 'emails' | 'users';
 type TimeFilter = 'all' | '7days' | '14days' | '30days' | '3months' | 'year';
 
 const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'users', label: 'Users', icon: Users },
   { id: 'transactions', label: 'Transactions', icon: Gift },
   { id: 'guests', label: 'Guest Users', icon: Users },
   { id: 'events', label: 'Events', icon: CalendarDays },
@@ -137,6 +140,10 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [loadingContributions, setLoadingContributions] = useState(false);
   const [loadingGuests, setLoadingGuests] = useState(false);
+  const [countryStats, setCountryStats] = useState<{ code: string; name: string; count: number }[]>([]);
+  const [totalUsersWithPhone, setTotalUsersWithPhone] = useState(0);
+  const [loadingCountryStats, setLoadingCountryStats] = useState(false);
+  const [countryModalOpen, setCountryModalOpen] = useState(false);
   
   // Refs to prevent infinite loops and redundant fetches
   const fetchingContributions = React.useRef(false);
@@ -382,6 +389,42 @@ const AdminDashboard = () => {
     }
   }, [navigate, eventDateRange, eventStatusFilter, eventTypeFilter]);
 
+  const fetchCountryStats = useCallback(async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      setLoadingCountryStats(true);
+      
+      const response = await fetch(`${baseUrl}/api/admin/country-stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+        return;
+      }
+
+      if (!response.ok) {
+        toast.error('Failed to fetch country statistics');
+        return;
+      }
+
+      const data = await response.json();
+      setCountryStats(data.countryStats);
+      setTotalUsersWithPhone(data.totalUsersWithPhone);
+    } catch (error) {
+      toast.error('Failed to fetch country statistics');
+    } finally {
+      setLoadingCountryStats(false);
+    }
+  }, [navigate]);
+
   const fetchEmailTemplates = useCallback(async () => {
     const token = localStorage.getItem('adminToken');
     if (!token) {
@@ -495,6 +538,13 @@ const AdminDashboard = () => {
     }
   }, [activeTab, fetchEmailTemplates]);
 
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      fetchCountryStats();
+    }
+  }, [activeTab, fetchCountryStats]);
+
+  
   const handleToggleUser = async (userId: number) => {
     const token = localStorage.getItem('adminToken');
     try {
@@ -911,6 +961,79 @@ const AdminDashboard = () => {
     return rows;
   };
 
+  const renderCountries = () => {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>User Distribution by Country</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Showing users who have provided phone numbers with country codes.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loadingCountryStats ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            </div>
+          ) : countryStats.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No country data available yet.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground mb-4">
+                Total users with phone numbers: <span className="font-semibold">{totalUsersWithPhone}</span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {countryStats.map((country) => (
+                  <div
+                    key={country.code}
+                    className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <CountryFlag countryName={country.name} className="w-8 h-8" />
+                      <div>
+                        <div className="font-medium">{country.name}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-black">{country.count}</div>
+                      <div className="text-xs text-muted-foreground">Users</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Summary Statistics */}
+              <div className="mt-8 p-4 bg-purple-50 rounded-lg">
+                <h3 className="font-semibold text-purple-900 mb-3">Summary</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-2xl font-bold text-black">{countryStats.length}</div>
+                    <div className="text-sm text-purple-700">Countries Represented</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-black">{totalUsersWithPhone}</div>
+                    <div className="text-sm text-purple-700">Total Users with Phone</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-black">
+                      {countryStats.length > 0 ? Math.round((countryStats[0].count / totalUsersWithPhone) * 100) : 0}%
+                    </div>
+                    <div className="text-sm text-purple-700">
+                      {countryStats.length > 0 ? `${countryStats[0].name} Share` : 'Top Country Share'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
   const renderEmails = () => {
     const userEmails = users.map((u) => u.email.toLowerCase().trim()).filter(Boolean);
     const guestEmails = guests.map((g) => g.email?.toLowerCase().trim()).filter(Boolean) as string[];
@@ -1123,7 +1246,7 @@ const AdminDashboard = () => {
     );
   };
 
-  const renderOverview = () => {
+  const renderUsers = () => {
     const filteredUsers = users.filter((u) => {
       const search = userSearch.toLowerCase();
       return (
@@ -1134,6 +1257,156 @@ const AdminDashboard = () => {
 
     return (
       <>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics?.totalUsers || 0}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Events</CardTitle>
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {(metrics?.guestListOpenEvents || 0) + (metrics?.guestListRestrictedEvents || 0)}
+              </div>
+              <div className="flex gap-2 mt-1">
+                <span className="text-[10px] text-muted-foreground bg-gray-50 px-1.5 py-0.5 rounded">
+                  {metrics?.guestListOpenEvents || 0} Open
+                </span>
+                <span className="text-[10px] text-muted-foreground bg-gray-50 px-1.5 py-0.5 rounded">
+                  {metrics?.guestListRestrictedEvents || 0} Closed
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Countries</CardTitle>
+              <Globe className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div 
+                className="text-2xl font-bold text-black cursor-pointer hover:text-purple-700 transition-colors"
+                onClick={() => setCountryModalOpen(true)}
+              >
+                {countryStats.length}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Click to view details
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>User Management</CardTitle>
+          <div className="relative w-64">
+            <Input
+              placeholder="Search users..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Wallet</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell className="text-sm">{user.email}</TableCell>
+                  <TableCell className="text-sm">{user.phoneNumber || 'N/A'}</TableCell>
+                  <TableCell className="text-sm">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-sm">₦{Number(user.wallet).toLocaleString()}</TableCell>
+                  <TableCell className="text-center">
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        user.isActive
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {user.isActive ? "Active" : "Suspended"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem
+                          onClick={() => handleToggleUser(user.id)}
+                        >
+                          {user.isActive ? (
+                            <>
+                              <UserMinus className="mr-2 h-4 w-4" />
+                              Suspend
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck className="mr-2 h-4 w-4" />
+                              Activate
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => openDeleteDialog(user)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredUsers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                    No users found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </>
+    );
+  };
+
+  const renderOverview = () => {
+    return (
+      <>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -1175,6 +1448,7 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -1222,102 +1496,38 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Countries</CardTitle>
+              <Globe className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div 
+                className="text-2xl font-bold text-black cursor-pointer hover:text-purple-700 transition-colors"
+                onClick={() => setCountryModalOpen(true)}
+              >
+                {countryStats.length}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Click to view details
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-black">
+                {metrics?.activeUsers || 0}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Users with events
+              </div>
+            </CardContent>
+          </Card>
         </div>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>User Management</CardTitle>
-            <div className="relative w-64">
-              <Input
-                placeholder="Search users..."
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>Wallet</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell className="text-sm">{user.email}</TableCell>
-                    <TableCell className="text-sm">{user.phoneNumber || 'N/A'}</TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-sm">₦{Number(user.wallet).toLocaleString()}</TableCell>
-                    <TableCell className="text-center">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          user.isActive
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {user.isActive ? "Active" : "Suspended"}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => handleToggleUser(user.id)}
-                          >
-                            {user.isActive ? (
-                              <>
-                                <UserMinus className="mr-2 h-4 w-4" />
-                                Suspend
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="mr-2 h-4 w-4" />
-                                Activate
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => openDeleteDialog(user)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredUsers.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                      No users found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </>
     );
   };
@@ -1636,6 +1846,7 @@ const AdminDashboard = () => {
                 <TableRow>
                   <TableHead>Contributor</TableHead>
                   <TableHead>Amount</TableHead>
+                  <TableHead>Flow</TableHead>
                   <TableHead>Gift</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Date</TableHead>
@@ -1648,6 +1859,13 @@ const AdminDashboard = () => {
                       {contribution.contributorName || 'Anonymous'}
                     </TableCell>
                     <TableCell>₦{contribution.amount.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`text-[10px] w-fit px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200`}
+                      >
+                        Inflow
+                      </span>
+                    </TableCell>
                     <TableCell className="text-sm">
                       {contribution.gift?.title || 'N/A'}
                     </TableCell>
@@ -1669,7 +1887,7 @@ const AdminDashboard = () => {
                 ))}
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                       No records found
                     </TableCell>
                   </TableRow>
@@ -2300,6 +2518,7 @@ const AdminDashboard = () => {
         <div className="space-y-6">
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'transactions' && renderContributions('transactions')}
+          {activeTab === 'users' && renderUsers()}
           {activeTab === 'guests' && renderGuests()}
           {activeTab === 'events' && renderEvents()}
           {activeTab === 'emails' && renderEmails()}
@@ -2484,6 +2703,78 @@ const AdminDashboard = () => {
               {deletingUser ? 'Deleting...' : 'Delete user'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Country Statistics Modal */}
+      <Dialog open={countryModalOpen} onOpenChange={setCountryModalOpen}>
+        <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>User Distribution by Country</DialogTitle>
+            <DialogDescription>
+              Showing users who have provided phone numbers with country codes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            {loadingCountryStats ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              </div>
+            ) : countryStats.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                No country data available yet.
+              </div>
+            ) : (
+              <>
+                <div className="text-sm text-muted-foreground mb-6">
+                  Total users with phone numbers: <span className="font-semibold">{totalUsersWithPhone}</span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {countryStats.map((country) => (
+                    <div
+                      key={country.code}
+                      className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <CountryFlag countryName={country.name} className="w-8 h-8" />
+                        <div>
+                          <div className="font-medium">{country.name}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-black">{country.count}</div>
+                        <div className="text-xs text-muted-foreground">Users</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Summary Statistics */}
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <h3 className="font-semibold text-purple-900 mb-3">Summary</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-2xl font-bold text-black">{countryStats.length}</div>
+                      <div className="text-sm text-purple-700">Countries Represented</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-black">{totalUsersWithPhone}</div>
+                      <div className="text-sm text-purple-700">Total Users with Phone</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-black">
+                        {countryStats.length > 0 ? Math.round((countryStats[0].count / totalUsersWithPhone) * 100) : 0}%
+                      </div>
+                      <div className="text-sm text-purple-700">
+                        {countryStats.length > 0 ? `${countryStats[0].name} Share` : 'Top Country Share'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

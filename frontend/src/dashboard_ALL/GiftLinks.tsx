@@ -79,32 +79,32 @@ export const GiftLinks = ({
         const brideName = gift.details?.brideName || '';
         const groomName = gift.details?.groomName || '';
         const weddingNames = brideName && groomName ? `${brideName} & ${groomName}` : eventName;
-        return `🎉 *You're Invited!* 🎉\n\n${weddingNames} are getting married! 🤵‍♂️👰‍♀️\n\nHey! I'm inviting you for my wedding, please use BeThere to RSVP and send your blessings.\n\n📅 ${gift.date || 'Save the date!'}\n\n👉 RSVP here: ${baseUrl}\n\nCan't wait to celebrate with you! 💐`;
+        return `Hello, I would love to invite you to my wedding 💍\nPlease kindly click the and RSVP to confirm your attendance. This event is STRICTLY BY INVITATION.\n\nThank you, and I hope to celebrate with you 🙏🏽\n\nKindly RSVP: ${baseUrl}`;
       
       case 'birthday':
-        return `🎂 *Birthday Celebration!* 🎂\n\nHey! I'm inviting you for my birthday party, please use BeThere to RSVP and join the celebration!\n\n🎉 Let's make it memorable!\n\n📅 ${gift.date || 'Join the fun!'}\n\n👉 RSVP here: ${baseUrl}\n\nYour presence is the best gift! 🎁`;
+        return `🎂 *Birthday Celebration!* 🎂\n\nHey! I'm inviting you for my birthday party, please use BeThere to RSVP and join the celebration!\n\n🎉 Let's make it memorable!\n\n RSVP here: ${baseUrl}\n\nYour presence is the best gift! 🎁`;
       
       case 'anniversary':
-        return `💕 *Anniversary Celebration!* 💕\n\nHey! We're celebrating our anniversary and would love for you to join us. Please use BeThere to RSVP.\n\n🥂 Celebrating love and memories!\n\n📅 ${gift.date || 'Celebrate with us!'}\n\n👉 RSVP here: ${baseUrl}\n\nYour presence means the world to us! ✨`;
+        return `💕 *Anniversary Celebration!* 💕\n\nHey! We're celebrating our anniversary and would love for you to join us. Please use BeThere to RSVP.\n\n🥂 Celebrating love and memories!\n\n👉 RSVP here: ${baseUrl}\n\nYour presence means the world to us! ✨`;
       
       case 'graduation':
-        return `🎓 *Graduation Celebration!* 🎓\n\nHey! I'm graduating and would love for you to celebrate this milestone with me. Please use BeThere to RSVP.\n\n🌟 Dreams do come true!\n\n📅 ${gift.date || 'Celebrate success!'}\n\n👉 RSVP here: ${baseUrl}\n\nLet's celebrate this achievement together! 🎉`;
+        return `🎓 *Graduation Celebration!* 🎓\n\nHey! I'm graduating and would love for you to celebrate this milestone with me. Please use BeThere to RSVP.\n\n🌟 Dreams do come true!\n\n RSVP here: ${baseUrl}\n\nLet's celebrate this achievement together! 🎉`;
       
       case 'baby shower':
-        return `👶 *Baby Shower Celebration!* 👶\n\nHey! We're expecting a little one and would love for you to join our baby shower. Please use BeThere to RSVP.\n\n🍼 Tiny feet, big adventures ahead!\n\n📅 ${gift.date || 'Join the celebration!'}\n\n👉 RSVP here: ${baseUrl}\n\nLet's shower the baby with love! 💕`;
+        return `👶 *Baby Shower Celebration!* 👶\n\nHey! We're expecting a little one and would love for you to join our baby shower. Please use BeThere to RSVP.\n\n🍼 Tiny feet, big adventures ahead!\n\n👉 RSVP here: ${baseUrl}\n\nLet's shower the baby with love! 💕`;
       
       case 'house warming':
-        return `🏠 *House Warming Party!* 🏠\n\nHey! We've moved into our new home and would love for you to celebrate with us. Please use BeThere to RSVP.\n\n🔑 New beginnings, new memories!\n\n📅 ${gift.date || 'Welcome to our new home!'}\n\n👉 RSVP here: ${baseUrl}\n\nCan't wait to host you! 🎉`;
+        return `🏠 *House Warming Party!* 🏠\n\nHey! We've moved into our new home and would love for you to celebrate with us. Please use BeThere to RSVP.\n\n🔑 New beginnings, new memories!\n\n👉 RSVP here: ${baseUrl}\n\nCan't wait to host you! 🎉`;
       
       default:
-        return `🎉 *Special Event Invitation!* 🎉\n\nHey! I'm inviting you for ${eventName}, please use BeThere to RSVP.\n\n🌟 Let's make it unforgettable!\n\n📅 ${gift.date || 'Save the date!'}\n\n👉 RSVP here: ${baseUrl}\n\nYour presence would mean a lot! ✨`;
+        return `🎉 *Special Event Invitation!* 🎉\n\nHey! I'm inviting you for ${eventName}, please use BeThere to RSVP.\n\n🌟 Let's make it unforgettable!\n\n👉 RSVP here: ${baseUrl}\n\nYour presence would mean a lot! ✨`;
     }
   };
 
   const handleWhatsAppShare = (gift: Gift) => {
     const message = generateWhatsAppMessage(gift);
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    const cleanMessage = message.replace(/[*]/g, '').replace(/\n/g, '%0A').replace(/ /g, '+');
+    const whatsappUrl = `https://wa.me/?text=${cleanMessage}`;
     window.open(whatsappUrl, '_blank');
   };
   return (
@@ -163,6 +163,64 @@ export const GiftLinks = ({
                       <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-gray-100 items-center">
                         <div className="flex flex-wrap gap-2">
                           <Button
+                            variant="default"
+                            size="sm"
+                            className="text-xs h-9 bg-green-600 text-white hover:bg-green-700 transition-all font-medium sm:hidden"
+                            onClick={() => {
+                              const defaultMessage = generateWhatsAppMessage(gift);
+                              // Create a temporary modal for customization since this component doesn't have access to Dashboard state
+                              const modal = document.createElement('div');
+                              modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                              modal.innerHTML = `
+                                <div class="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                                  <div class="mb-4">
+                                    <h3 class="text-xl font-bold text-gray-900 mb-2">Customize Your Message</h3>
+                                    <p class="text-sm text-gray-600">Personalize your invitation message before sharing</p>
+                                  </div>
+                                  <div class="space-y-2 mb-4">
+                                    <label class="text-sm font-medium text-gray-700">Your Invitation Message</label>
+                                    <textarea id="custom-message" class="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Enter your custom invitation message...">${defaultMessage}</textarea>
+                                    <p class="text-xs text-gray-500">You can edit this message to make it more personal. The event link will be included automatically.</p>
+                                  </div>
+                                  <div class="flex gap-3">
+                                    <button id="cancel-btn" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                                    <button id="send-btn" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                      <img src="/whatsapp.png" alt="WhatsApp" class="w-4 h-4 inline mr-2 filter drop-shadow-lg brightness-110 contrast-125" />
+                                      Send via WhatsApp
+                                    </button>
+                                  </div>
+                                </div>
+                              `;
+                              
+                              document.body.appendChild(modal);
+                              
+                              const cancelBtn = modal.querySelector('#cancel-btn');
+                              const sendBtn = modal.querySelector('#send-btn');
+                              const messageTextarea = modal.querySelector('#custom-message') as HTMLTextAreaElement;
+                              
+                              cancelBtn.addEventListener('click', () => {
+                                document.body.removeChild(modal);
+                              });
+                              
+                              sendBtn.addEventListener('click', () => {
+                                const customMessage = messageTextarea.value;
+                                const cleanMessage = customMessage.replace(/[*]/g, '').replace(/\n/g, '%0A').replace(/ /g, '+');
+                                const whatsappUrl = `https://wa.me/?text=${cleanMessage}`;
+                                window.open(whatsappUrl, '_blank');
+                                document.body.removeChild(modal);
+                              });
+                              
+                              modal.addEventListener('click', (e) => {
+                                if (e.target === modal) {
+                                  document.body.removeChild(modal);
+                                }
+                              });
+                            }}
+                          >
+                            <img src="/whatsapp.png" alt="WhatsApp" className="w-4 h-4 filter drop-shadow-md brightness-110 contrast-125 mr-1" />
+                            Share Invitation
+                          </Button>
+                          <Button
                             variant="outline"
                             size="sm"
                             className="text-xs h-9 border-black text-black hover:bg-black hover:text-white hover:border-[#E10032] transition-all font-medium"
@@ -188,7 +246,7 @@ export const GiftLinks = ({
                             data-testid="share-button"
                             variant="default"
                             size="sm"
-                            className="text-xs h-9 bg-black text-white hover:shadow-lg transition-all font-medium"
+                            className="text-xs h-9 bg-black text-white hover:shadow-lg transition-all font-medium hidden sm:flex"
                             onClick={() => {
                               const link = `${window.location.origin}/gift/${gift.shareLink}`;
                               navigator.clipboard.writeText(link);
@@ -196,16 +254,7 @@ export const GiftLinks = ({
                             }}
                           >
                             <Copy className="w-3.5 h-3.5 mr-1" />
-                            Share Link
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs h-10 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all font-medium"
-                            onClick={() => handleWhatsAppShare(gift)}
-                            title="Share on WhatsApp"
-                          >
-                            <img src="/whatsapp.png" alt="WhatsApp" className="w-6 h-6 filter drop-shadow-md brightness-110 contrast-125" />
+                            Copy Link
                           </Button>
                           <Button
                             variant="outline"
@@ -229,7 +278,7 @@ export const GiftLinks = ({
                               title="View Wishes"
                             >
                               <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                              Wishes
+                              Well wishes
                             </Button>
                           )}
                           <Button

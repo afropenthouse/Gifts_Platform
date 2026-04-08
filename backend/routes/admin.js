@@ -105,6 +105,7 @@ module.exports = () => {
         totalReferralRevenue,
         allContributions,
         allWithdrawals,
+        activeUsers,
       ] = await Promise.all([
         prisma.user.count({ where: dateFilter }),
         prisma.gift.count({ where: dateFilter }),
@@ -175,6 +176,14 @@ module.exports = () => {
         prisma.withdrawal.findMany({
           where: withdrawalScopeWhere,
           select: { amount: true }
+        }),
+        prisma.user.count({
+          where: {
+            gifts: {
+              some: {}
+            },
+            ...dateFilter
+          }
         }),
       ]);
 
@@ -250,7 +259,8 @@ module.exports = () => {
           referralRevenue,
           estimatedPaystackFees: totalPaystackFees,
           payoutFees,
-          netProfit
+          netProfit,
+          activeUsers
         },
         recentUsers,
         recentContributions
@@ -914,6 +924,333 @@ module.exports = () => {
     } catch (error) {
       console.error('Bulk email error:', error);
       res.status(500).json({ msg: 'Failed to send bulk emails' });
+    }
+  });
+
+  // Get Country Statistics
+  router.get('/country-stats', adminAuth, async (req, res) => {
+    try {
+      const users = await prisma.user.findMany({
+        where: {
+          phoneNumber: {
+            not: null
+          }
+        },
+        select: {
+          phoneNumber: true
+        }
+      });
+
+      // Country code to name mapping
+      const countryNames = {
+        '+234': 'Nigeria',
+        '+1-USA': 'USA',
+        '+1-CA': 'Canada',
+        '+1242': 'Bahamas',
+        '+1246': 'Barbados',
+        '+1264': 'Anguilla',
+        '+1268': 'Antigua & Barbuda',
+        '+1284': 'British Virgin Islands',
+        '+1340': 'US Virgin Islands',
+        '+1345': 'Cayman Islands',
+        '+1441': 'Bermuda',
+        '+1473': 'Grenada',
+        '+1649': 'Turks & Caicos Islands',
+        '+1664': 'Montserrat',
+        '+1670': 'Northern Mariana Islands',
+        '+1671': 'Guam',
+        '+1684': 'American Samoa',
+        '+1721': 'Sint Maarten',
+        '+1758': 'St. Lucia',
+        '+1767': 'Dominica',
+        '+1784': 'St. Vincent & Grenadines',
+        '+1787': 'Puerto Rico',
+        '+1809': 'Dominican Republic',
+        '+1829': 'Dominican Republic',
+        '+1849': 'Dominican Republic',
+        '+1868': 'Trinidad & Tobago',
+        '+1869': 'St. Kitts & Nevis',
+        '+1876': 'Jamaica',
+        '+1939': 'Puerto Rico',
+        '+44': 'United Kingdom',
+        '+33': 'France',
+        '+49': 'Germany',
+        '+39': 'Italy',
+        '+34': 'Spain',
+        '+31': 'Netherlands',
+        '+41': 'Switzerland',
+        '+46': 'Sweden',
+        '+47': 'Norway',
+        '+45': 'Denmark',
+        '+358': 'Finland',
+        '+351': 'Portugal',
+        '+30': 'Greece',
+        '+90': 'Turkey',
+        '+20': 'Egypt',
+        '+27': 'South Africa',
+        '+254': 'Kenya',
+        '+256': 'Uganda',
+        '+233': 'Ghana',
+        '+225': 'Ivory Coast',
+        '+229': 'Benin',
+        '+228': 'Togo',
+        '+227': 'Niger',
+        '+213': 'Algeria',
+        '+212': 'Morocco',
+        '+216': 'Tunisia',
+        '+218': 'Libya',
+        '+251': 'Ethiopia',
+        '+258': 'Mozambique',
+        '+260': 'Zambia',
+        '+263': 'Zimbabwe',
+        '+265': 'Malawi',
+        '+266': 'Lesotho',
+        '+267': 'Botswana',
+        '+268': 'Eswatini',
+        '+269': 'Comoros',
+        '+250': 'Rwanda',
+        '+257': 'Burundi',
+        '+240': 'Equatorial Guinea',
+        '+241': 'Gabon',
+        '+242': 'Congo (Brazzaville)',
+        '+243': 'Congo (Kinshasa)',
+        '+244': 'Angola',
+        '+245': 'Guinea-Bissau',
+        '+246': 'Diego Garcia',
+        '+247': 'Ascension Island',
+        '+248': 'Seychelles',
+        '+249': 'Tanzania',
+        '+220': 'Gambia',
+        '+221': 'Senegal',
+        '+222': 'Mauritania',
+        '+223': 'Mali',
+        '+224': 'Guinea',
+        '+226': 'Burkina Faso',
+        '+232': 'Sierra Leone',
+        '+231': 'Liberia',
+        '+237': 'Cameroon',
+        '+238': 'Cape Verde',
+        '+239': 'Sao Tome & Principe',
+        '+230': 'Mauritius',
+        '+261': 'Madagascar',
+        '+262': 'Reunion',
+        '+269': 'Mayotte',
+        '+290': 'Saint Helena',
+        '+291': 'Eritrea',
+        '+297': 'Aruba',
+        '+298': 'Bonaire, Sint Eustatius & Saba',
+        '+299': 'Greenland',
+        '+351': 'Portugal',
+        '+352': 'Luxembourg',
+        '+353': 'Ireland',
+        '+354': 'Iceland',
+        '+355': 'Albania',
+        '+356': 'Malta',
+        '+357': 'Cyprus',
+        '+358': 'Finland',
+        '+359': 'Bulgaria',
+        '+36': 'Hungary',
+        '+370': 'Lithuania',
+        '+371': 'Latvia',
+        '+372': 'Estonia',
+        '+373': 'Moldova',
+        '+374': 'Armenia',
+        '+375': 'Belarus',
+        '+376': 'Andorra',
+        '+377': 'Monaco',
+        '+378': 'San Marino',
+        '+380': 'Ukraine',
+        '+381': 'Serbia',
+        '+382': 'Montenegro',
+        '+383': 'Kosovo',
+        '+385': 'Croatia',
+        '+386': 'Slovenia',
+        '+387': 'Bosnia & Herzegovina',
+        '+389': 'North Macedonia',
+        '+40': 'Romania',
+        '+41': 'Switzerland',
+        '+420': 'Czech Republic',
+        '+421': 'Slovakia',
+        '+423': 'Liechtenstein',
+        '+43': 'Austria',
+        '+992': 'Tajikistan',
+        '+993': 'Turkmenistan',
+        '+994': 'Azerbaijan',
+        '+995': 'Georgia',
+        '+996': 'Kyrgyzstan',
+        '+998': 'Uzbekistan',
+        '+7': 'Russia/Kazakhstan',
+        '+81': 'Japan',
+        '+82': 'South Korea',
+        '+84': 'Vietnam',
+        '+86': 'China',
+        '+852': 'Hong Kong',
+        '+853': 'Macau',
+        '+855': 'Cambodia',
+        '+856': 'Laos',
+        '+60': 'Malaysia',
+        '+61': 'Australia',
+        '+62': 'Indonesia',
+        '+63': 'Philippines',
+        '+64': 'New Zealand',
+        '+65': 'Singapore',
+        '+66': 'Thailand',
+        '+670': 'East Timor',
+        '+672': 'Australian External Territories',
+        '+673': 'Brunei',
+        '+674': 'Nauru',
+        '+675': 'Papua New Guinea',
+        '+676': 'Tonga',
+        '+677': 'Solomon Islands',
+        '+678': 'Vanuatu',
+        '+679': 'Fiji',
+        '+680': 'Palau',
+        '+681': 'Wallis & Futuna',
+        '+682': 'Cook Islands',
+        '+683': 'Niue',
+        '+684': 'American Samoa',
+        '+685': 'Samoa',
+        '+686': 'Kiribati',
+        '+687': 'New Caledonia',
+        '+688': 'Tuvalu',
+        '+689': 'French Polynesia',
+        '+690': 'Tokelau',
+        '+691': 'Micronesia',
+        '+692': 'Marshall Islands',
+        '+850': 'North Korea',
+        '+853': 'Macau',
+        '+855': 'Cambodia',
+        '+856': 'Laos',
+        '+880': 'Bangladesh',
+        '+881': 'Global Mobile Satellite System',
+        '+882': 'International Networks',
+        '+886': 'Taiwan',
+        '+960': 'Maldives',
+        '+961': 'Lebanon',
+        '+962': 'Jordan',
+        '+963': 'Syria',
+        '+964': 'Iraq',
+        '+965': 'Kuwait',
+        '+966': 'Saudi Arabia',
+        '+967': 'Yemen',
+        '+968': 'Oman',
+        '+970': 'Palestine',
+        '+971': 'United Arab Emirates',
+        '+972': 'Israel',
+        '+973': 'Bahrain',
+        '+974': 'Qatar',
+        '+975': 'Bhutan',
+        '+976': 'Mongolia',
+        '+977': 'Nepal',
+        '+92': 'Pakistan',
+        '+93': 'Afghanistan',
+        '+94': 'Sri Lanka',
+        '+95': 'Myanmar',
+        '+98': 'Iran',
+        '+994': 'Azerbaijan',
+        '+995': 'Georgia',
+        '+996': 'Kyrgyzstan',
+        '+998': 'Uzbekistan'
+      };
+
+      // Extract country codes from phone numbers
+      const countryCounts = {};
+      users.forEach(user => {
+        const phone = user.phoneNumber;
+        if (phone && phone.startsWith('+')) {
+          let countryCode = '';
+          
+          // Handle common country codes properly
+          if (phone.startsWith('+234')) {
+            countryCode = '+234'; // Nigeria
+          } else if (phone.startsWith('+1')) {
+            // Differentiate between USA and Canada by area code
+            const afterCountryCode = phone.substring(2);
+            const areaCode = afterCountryCode.substring(0, 3);
+            
+            // Canadian area codes (common ones)
+            const canadianAreaCodes = [
+              '204', '226', '236', '249', '250', '289', '306', '343', '365', '403', '416', '418', '431',
+              '437', '438', '450', '506', '514', '519', '548', '579', '581', '587', '604', '613', '639',
+              '647', '672', '705', '709', '778', '780', '782', '807', '819', '825', '867', '873', '902', '905'
+            ];
+            
+            if (canadianAreaCodes.includes(areaCode)) {
+              countryCode = '+1-CA'; // Canada
+            } else {
+              countryCode = '+1-USA'; // USA (default)
+            }
+          } else if (phone.startsWith('+44')) {
+            countryCode = '+44'; // UK
+          } else if (phone.startsWith('+33')) {
+            countryCode = '+33'; // France
+          } else if (phone.startsWith('+49')) {
+            countryCode = '+49'; // Germany
+          } else if (phone.startsWith('+39')) {
+            countryCode = '+39'; // Italy
+          } else if (phone.startsWith('+34')) {
+            countryCode = '+34'; // Spain
+          } else if (phone.startsWith('+31')) {
+            countryCode = '+31'; // Netherlands
+          } else if (phone.startsWith('+41')) {
+            countryCode = '+41'; // Switzerland
+          } else if (phone.startsWith('+46')) {
+            countryCode = '+46'; // Sweden
+          } else if (phone.startsWith('+47')) {
+            countryCode = '+47'; // Norway
+          } else if (phone.startsWith('+45')) {
+            countryCode = '+45'; // Denmark
+          } else if (phone.startsWith('+358')) {
+            countryCode = '+358'; // Finland
+          } else if (phone.startsWith('+351')) {
+            countryCode = '+351'; // Portugal
+          } else if (phone.startsWith('+30')) {
+            countryCode = '+30'; // Greece
+          } else if (phone.startsWith('+90')) {
+            countryCode = '+90'; // Turkey
+          } else if (phone.startsWith('+20')) {
+            countryCode = '+20'; // Egypt
+          } else if (phone.startsWith('+27')) {
+            countryCode = '+27'; // South Africa
+          } else if (phone.startsWith('+254')) {
+            countryCode = '+254'; // Kenya
+          } else if (phone.startsWith('+256')) {
+            countryCode = '+256'; // Uganda
+          } else if (phone.startsWith('+233')) {
+            countryCode = '+233'; // Ghana
+          } else if (phone.startsWith('+225')) {
+            countryCode = '+225'; // Ivory Coast
+          } else {
+            // Fallback: extract first 3 digits for other countries
+            const match = phone.match(/^\+(\d{3})/);
+            if (match) {
+              countryCode = '+' + match[1];
+            }
+          }
+          
+          if (countryCode) {
+            countryCounts[countryCode] = (countryCounts[countryCode] || 0) + 1;
+          }
+        }
+      });
+
+      // Convert to array with country names and sort by count (descending)
+      const countryStats = Object.entries(countryCounts)
+        .map(([code, count]) => ({ 
+          code, 
+          name: countryNames[code] || code, // Use country name or fallback to code
+          count 
+        }))
+        .filter(item => item.count > 0)
+        .sort((a, b) => b.count - a.count);
+
+      res.json({
+        totalUsersWithPhone: users.length,
+        countryStats
+      });
+    } catch (err) {
+      console.error('Error fetching country stats:', err);
+      res.status(500).json({ msg: 'Server error fetching country statistics' });
     }
   });
 

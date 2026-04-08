@@ -19,13 +19,13 @@ export const useGuidedTour = (tourKey: string) => {
     
     setHasCompletedTour(!!tourStatus);
     
-    // Auto-start tour on every login
-    setTimeout(() => {
-      setIsTourOpen(true);
-      if (!localStorage.getItem(`tour_${tourKey}_started`)) {
+    // Only auto-start tour on first login, not on every login
+    if (isFirstTimeUser) {
+      setTimeout(() => {
+        setIsTourOpen(true);
         localStorage.setItem(`tour_${tourKey}_started`, 'true');
-      }
-    }, 1000); // Wait 1 second after component mount
+      }, 1000); // Wait 1 second after component mount
+    }
   }, [tourKey]);
 
   const startTour = () => {
