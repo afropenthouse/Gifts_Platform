@@ -59,13 +59,19 @@ async function initializePayment(payload) {
     const reference = payload?.tx_ref || payload?.reference || payload?.ref;
     const email = payload?.email || payload?.customer?.email || payload?.metadata?.contributorEmail;
 
-    // Amount: prefer integer kobo if provided, otherwise convert NGN to kobo
+    // Amount: convert NGN to kobo for Paystack
     let amount = payload?.amount;
     if (amount == null) throw new Error('Missing amount in payment payload');
 
-    // If amount is not an integer (e.g., 50.5), assume it's NGN and convert to kobo
-    if (!Number.isInteger(amount)) {
+    // Always convert to kobo since Paystack expects amounts in kobo
+    // Check if amount is already in kobo (large numbers) or in NGN (smaller numbers)
+    if (amount > 1000000) {
+      // Amount is likely already in kobo, use as-is
+      console.log('Amount appears to be in kobo:', amount);
+    } else {
+      // Amount is in NGN, convert to kobo
       amount = Math.round(Number(amount) * 100);
+      console.log('Converted NGN to kobo:', amount);
     }
 
     const callback_url = payload?.callback_url || payload?.redirect_url || payload?.callbackUrl;

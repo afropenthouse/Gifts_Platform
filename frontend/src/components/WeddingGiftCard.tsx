@@ -119,6 +119,11 @@ const WeddingGiftCard = ({
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log('=== handleAmountSubmit Debug ===');
+    console.log('Raw amount string:', amount);
+    console.log('Type of amount:', typeof amount);
+    console.log('Parsed amount:', parseFloat(amount));
+
     const minAmount = currency === 'NGN' ? 1000 : 10;
     if (!amount || parseFloat(amount) < minAmount) {
       alert(`Please enter an amount of at least ${currency} ${minAmount}`);
@@ -155,10 +160,19 @@ const WeddingGiftCard = ({
           return;
         }
 
+        console.log('=== Payment Configuration Debug ===');
+        console.log('Original amount string:', amount);
+        console.log('Type of amount:', typeof amount);
+        console.log('Parsed amount:', parseFloat(amount));
+        console.log('Amount in kobo:', parseFloat(amount) * 100);
+
+        const finalAmount = parseFloat(amount) * 100;
+        console.log('Final amount being sent to Paystack:', finalAmount);
+
         const config = {
           key: publicKey,
           email: contributorEmail,
-          amount: parseFloat(amount) * 100,
+          amount: finalAmount,
           currency: 'NGN',
           ref: `demo-gift-${Date.now()}`,
           channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
@@ -386,11 +400,14 @@ const WeddingGiftCard = ({
                 </Popover>
                 <Input
                   id="amount"
-                  type="number"
-                  step="0.01"
+                  type="text"
                   min={currency === 'NGN' ? '1000' : '10'}
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    // Only allow numbers and decimal point
+                    const value = e.target.value.replace(/[^0-9.]/g, '');
+                    setAmount(value);
+                  }}
                   placeholder={currency === 'NGN' ? '1000' : '10'}
                   className="flex-1 text-lg"
                   required
