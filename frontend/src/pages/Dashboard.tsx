@@ -48,6 +48,8 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Toaster } from '../components/ui/toaster';
+import GuidedTour from '../components/ui/guided-tour';
+import { useGuidedTour } from '../hooks/use-guided-tour';
 
 interface CountryData {
   code: string;
@@ -155,6 +157,16 @@ const Dashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [withdrawHistory, setWithdrawHistory] = useState<any[]>([]);
   const [goalAmount, setGoalAmount] = useState(500000);
+
+  // Guided Tour Hook
+  const {
+    isTourOpen,
+    hasCompletedTour,
+    startTour,
+    completeTour,
+    skipTour,
+    resetTour,
+  } = useGuidedTour('dashboard');
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string, asoebi?: boolean, asoebiPaid?: boolean, asoebiSelection?: string}>>([]);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<number | null>(null);
@@ -1027,6 +1039,45 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const generateWhatsAppMessage = (gift: Gift) => {
+    const baseUrl = `${window.location.origin}/gift/${gift.shareLink}`;
+    const eventName = gift.title || gift.type;
+    const userName = gift.user?.name || 'Someone';
+    
+    switch (gift.type) {
+      case 'wedding':
+        const brideName = gift.details?.brideName || '';
+        const groomName = gift.details?.groomName || '';
+        const weddingNames = brideName && groomName ? `${brideName} & ${groomName}` : eventName;
+        return `🎉 *You're Invited!* 🎉\n\n${weddingNames} are getting married! 🤵‍♂️👰‍♀️\n\nHey! I'm inviting you for my wedding, please use BeThere to RSVP and send your blessings.\n\n📅 ${gift.date || 'Save the date!'}\n\n👉 RSVP here: ${baseUrl}\n\nCan't wait to celebrate with you! 💐`;
+      
+      case 'birthday':
+        return `🎂 *Birthday Celebration!* 🎂\n\nHey! I'm inviting you for my birthday party, please use BeThere to RSVP and join the celebration!\n\n🎉 Let's make it memorable!\n\n📅 ${gift.date || 'Join the fun!'}\n\n👉 RSVP here: ${baseUrl}\n\nYour presence is the best gift! 🎁`;
+      
+      case 'anniversary':
+        return `💕 *Anniversary Celebration!* 💕\n\nHey! We're celebrating our anniversary and would love for you to join us. Please use BeThere to RSVP.\n\n🥂 Celebrating love and memories!\n\n📅 ${gift.date || 'Celebrate with us!'}\n\n👉 RSVP here: ${baseUrl}\n\nYour presence means the world to us! ✨`;
+      
+      case 'graduation':
+        return `🎓 *Graduation Celebration!* 🎓\n\nHey! I'm graduating and would love for you to celebrate this milestone with me. Please use BeThere to RSVP.\n\n🌟 Dreams do come true!\n\n📅 ${gift.date || 'Celebrate success!'}\n\n👉 RSVP here: ${baseUrl}\n\nLet's celebrate this achievement together! 🎉`;
+      
+      case 'baby shower':
+        return `👶 *Baby Shower Celebration!* 👶\n\nHey! We're expecting a little one and would love for you to join our baby shower. Please use BeThere to RSVP.\n\n🍼 Tiny feet, big adventures ahead!\n\n📅 ${gift.date || 'Join the celebration!'}\n\n👉 RSVP here: ${baseUrl}\n\nLet's shower the baby with love! 💕`;
+      
+      case 'house warming':
+        return `🏠 *House Warming Party!* 🏠\n\nHey! We've moved into our new home and would love for you to celebrate with us. Please use BeThere to RSVP.\n\n🔑 New beginnings, new memories!\n\n📅 ${gift.date || 'Welcome to our new home!'}\n\n👉 RSVP here: ${baseUrl}\n\nCan't wait to host you! 🎉`;
+      
+      default:
+        return `🎉 *Special Event Invitation!* 🎉\n\nHey! I'm inviting you for ${eventName}, please use BeThere to RSVP.\n\n🌟 Let's make it unforgettable!\n\n📅 ${gift.date || 'Save the date!'}\n\n👉 RSVP here: ${baseUrl}\n\nYour presence would mean a lot! ✨`;
+    }
+  };
+
+  const handleWhatsAppShare = (gift: Gift) => {
+    const message = generateWhatsAppMessage(gift);
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleUpdateGift = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingGift || isUpdatingGift) return; // Prevent duplicate submissions
@@ -1544,7 +1595,9 @@ const Dashboard: React.FC = () => {
 
       <div className="flex">
         {/* Sidebar */}
-        <div className={`
+        <div 
+          data-testid="sidebar"
+          className={`
           fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
@@ -1564,6 +1617,7 @@ const Dashboard: React.FC = () => {
             {/* User Profile Section */}
             <div className="p-6 border-b border-gray-100">
               <Button 
+                data-testid="create-event-button"
                 onClick={() => setIsCreateModalOpen(true)}
                 className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90
                 shadow-lg hover:shadow-xl transition-all duration-300 h-12"
@@ -1580,7 +1634,11 @@ const Dashboard: React.FC = () => {
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveTab(item.id);
+                      if (item.action) {
+                        item.action();
+                      } else {
+                        setActiveTab(item.id);
+                      }
                       if (window.innerWidth < 1024) {
                         setSidebarOpen(false);
                       }
@@ -1712,7 +1770,7 @@ const Dashboard: React.FC = () => {
                             <HelpCircle className="w-4 h-4 mr-2" />
                             Help
                           </Button>
-                        </>
+                                                  </>
                       )}
                     </>
                   )}
@@ -1796,7 +1854,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Quick Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div data-testid="events-container" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Create Gift Card */}
                   <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer" onClick={() => setIsCreateModalOpen(true)}>
                     <CardContent className="p-6">
@@ -1936,7 +1994,7 @@ const Dashboard: React.FC = () => {
 
             {/* Gifts Received Section */}
             {activeTab === 'received' && (
-              <div>
+              <div data-testid="contributions-section">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Gifts Received</h2>
@@ -4384,7 +4442,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Button
                 onClick={() => {
                   navigator.clipboard.writeText(createdGiftLink);
@@ -4395,6 +4453,25 @@ const Dashboard: React.FC = () => {
               >
                 <Copy className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                 Copy Link
+              </Button>
+
+              <Button
+                onClick={() => {
+                  const currentGift = gifts.find(g => `${window.location.origin}/gift/${g.shareLink}` === createdGiftLink);
+                  if (currentGift) {
+                    handleWhatsAppShare(currentGift);
+                  } else {
+                    // Fallback for when gift object is not found
+                    const message = `🎉 *You're Invited!* 🎉\n\nHey! I'm inviting you for my special event, please use BeThere to RSVP.\n\n👉 RSVP here: ${createdGiftLink}\n\nCan't wait to celebrate with you! ✨`;
+                    const encodedMessage = encodeURIComponent(message);
+                    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+                    window.open(whatsappUrl, '_blank');
+                  }
+                }}
+                size="lg"
+                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 whitespace-nowrap text-sm sm:text-base"
+              >
+                <img src="/whatsapp.png" alt="WhatsApp" className="w-4 h-4 sm:w-5 sm:h-5 filter drop-shadow-lg brightness-110 contrast-125" />
               </Button>
 
               <Button
@@ -5749,6 +5826,78 @@ const Dashboard: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Guided Tour */}
+      <GuidedTour
+        steps={[
+          {
+            id: 'welcome',
+            title: 'Welcome to BeThere Experience! ',
+            content: 'Let us show you around your BeThere Experience dashboard. We\'ll help you create amazing events, manage guest lists, and celebrate with ease using our comprehensive event management platform.',
+            target: 'body',
+            position: 'center',
+          },
+          {
+            id: 'sidebar',
+            title: 'Navigation Sidebar',
+            content: 'This is your main navigation menu. Access all BeThere Experience features: My Events, RSVP Manager, Event QR Code, Moments, Manage Expenses, Invite & Earn, and Withdraw funds from your dashboard.',
+            target: '[data-testid="sidebar"]',
+            position: 'right',
+          },
+          {
+            id: 'create-event',
+            title: 'Create Your Event',
+            content: 'Click here to start a new event in BeThere Experience. Enter your event details, upload pictures, set date/location, add descriptions, configure Asoebi options, and choose guest mode:\n\n- Open Mode: Anyone can add rsvp and join your event\n- Close Mode: Only invited guests can add rsvp (requires approval)',
+            target: '[data-testid="create-event-button"]',
+            position: 'bottom',
+          },
+          {
+            id: 'events-list',
+            title: 'Your Events Dashboard',
+            content: 'Here you\'ll see all your created BeThere Experience events. Each event has its own unique event link for sharing with guests for RSVPs, Asoebi purchases, and cash gifts.',
+            target: '[data-testid="events-container"]',
+            position: 'top',
+          },
+          {
+            id: 'rsvp-manager',
+            title: 'Build and Manage Your Guest List',
+            content: 'Upload your guest list via spreadsheet or manual entry. Track RSVPs, manage Asoebi orders, and keep all guest information organized in one place with our RSVP Manager.',
+            target: '[data-testid="sidebar"]',
+            position: 'right',
+          },
+          {
+            id: 'share-link',
+            title: 'Share Your Event Link',
+            content: 'Generate a unique event link from your dashboard and share it with guests. They can RSVP for your event, purchase Asoebi, and send cash gifts securely through BeThere Experience.',
+            target: '[data-testid="sidebar"]',
+            position: 'right',
+          },
+          {
+            id: 'contributions',
+            title: 'Monitor Everything in Real-Time',
+            content: 'Watch your dashboard update automatically with every guest interaction. Track RSVPs, Asoebi payments, and cash gifts as they come in, giving you a live overview of your event\'s progress and finances.',
+            target: '[data-testid="contributions-section"]',
+            position: 'top',
+          },
+          {
+            id: 'vendor-payments',
+            title: 'Manage Vendors and Payments',
+            content: 'Schedule and track vendor payments through BeThere Experience. Keep a clear record of all expenses, ensuring vendors are paid on time and your budget stays on track.',
+            target: '[data-testid="sidebar"]',
+            position: 'right',
+          },
+          {
+            id: 'qr-code',
+            title: 'Celebrate with Ease',
+            content: 'On your event day, use your personalized event QR code for seamless guest check-ins and gift giving. Focus on enjoying your celebration - BeThere Experience handles the logistics!',
+            target: '[data-testid="sidebar"]',
+            position: 'right',
+          },
+        ]}
+        isOpen={isTourOpen}
+        onComplete={completeTour}
+        onSkip={skipTour}
+      />
     </div>
   );
 };

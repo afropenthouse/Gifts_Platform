@@ -69,6 +69,44 @@ export const GiftLinks = ({
       setDeleteConfirmText('');
     }
   };
+
+  const generateWhatsAppMessage = (gift: Gift) => {
+    const baseUrl = `${window.location.origin}/gift/${gift.shareLink}`;
+    const eventName = gift.title || gift.type;
+    
+    switch (gift.type) {
+      case 'wedding':
+        const brideName = gift.details?.brideName || '';
+        const groomName = gift.details?.groomName || '';
+        const weddingNames = brideName && groomName ? `${brideName} & ${groomName}` : eventName;
+        return `🎉 *You're Invited!* 🎉\n\n${weddingNames} are getting married! 🤵‍♂️👰‍♀️\n\nHey! I'm inviting you for my wedding, please use BeThere to RSVP and send your blessings.\n\n📅 ${gift.date || 'Save the date!'}\n\n👉 RSVP here: ${baseUrl}\n\nCan't wait to celebrate with you! 💐`;
+      
+      case 'birthday':
+        return `🎂 *Birthday Celebration!* 🎂\n\nHey! I'm inviting you for my birthday party, please use BeThere to RSVP and join the celebration!\n\n🎉 Let's make it memorable!\n\n📅 ${gift.date || 'Join the fun!'}\n\n👉 RSVP here: ${baseUrl}\n\nYour presence is the best gift! 🎁`;
+      
+      case 'anniversary':
+        return `💕 *Anniversary Celebration!* 💕\n\nHey! We're celebrating our anniversary and would love for you to join us. Please use BeThere to RSVP.\n\n🥂 Celebrating love and memories!\n\n📅 ${gift.date || 'Celebrate with us!'}\n\n👉 RSVP here: ${baseUrl}\n\nYour presence means the world to us! ✨`;
+      
+      case 'graduation':
+        return `🎓 *Graduation Celebration!* 🎓\n\nHey! I'm graduating and would love for you to celebrate this milestone with me. Please use BeThere to RSVP.\n\n🌟 Dreams do come true!\n\n📅 ${gift.date || 'Celebrate success!'}\n\n👉 RSVP here: ${baseUrl}\n\nLet's celebrate this achievement together! 🎉`;
+      
+      case 'baby shower':
+        return `👶 *Baby Shower Celebration!* 👶\n\nHey! We're expecting a little one and would love for you to join our baby shower. Please use BeThere to RSVP.\n\n🍼 Tiny feet, big adventures ahead!\n\n📅 ${gift.date || 'Join the celebration!'}\n\n👉 RSVP here: ${baseUrl}\n\nLet's shower the baby with love! 💕`;
+      
+      case 'house warming':
+        return `🏠 *House Warming Party!* 🏠\n\nHey! We've moved into our new home and would love for you to celebrate with us. Please use BeThere to RSVP.\n\n🔑 New beginnings, new memories!\n\n📅 ${gift.date || 'Welcome to our new home!'}\n\n👉 RSVP here: ${baseUrl}\n\nCan't wait to host you! 🎉`;
+      
+      default:
+        return `🎉 *Special Event Invitation!* 🎉\n\nHey! I'm inviting you for ${eventName}, please use BeThere to RSVP.\n\n🌟 Let's make it unforgettable!\n\n📅 ${gift.date || 'Save the date!'}\n\n👉 RSVP here: ${baseUrl}\n\nYour presence would mean a lot! ✨`;
+    }
+  };
+
+  const handleWhatsAppShare = (gift: Gift) => {
+    const message = generateWhatsAppMessage(gift);
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
   return (
     <div>
       {gifts.length > 0 ? (
@@ -147,6 +185,8 @@ export const GiftLinks = ({
                             Preview
                           </Button>
                           <Button
+                            data-testid="share-button"
+                            variant="default"
                             size="sm"
                             className="text-xs h-9 bg-black text-white hover:shadow-lg transition-all font-medium"
                             onClick={() => {
@@ -157,6 +197,15 @@ export const GiftLinks = ({
                           >
                             <Copy className="w-3.5 h-3.5 mr-1" />
                             Share Link
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-10 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all font-medium"
+                            onClick={() => handleWhatsAppShare(gift)}
+                            title="Share on WhatsApp"
+                          >
+                            <img src="/whatsapp.png" alt="WhatsApp" className="w-6 h-6 filter drop-shadow-md brightness-110 contrast-125" />
                           </Button>
                           <Button
                             variant="outline"

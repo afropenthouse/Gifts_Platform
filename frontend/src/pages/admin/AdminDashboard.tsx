@@ -1638,7 +1638,6 @@ const AdminDashboard = () => {
                   <TableHead>Amount</TableHead>
                   <TableHead>Gift</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Flow</TableHead>
                   <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1663,21 +1662,6 @@ const AdminDashboard = () => {
                         {contribution.isAsoebi ? 'Asoebi' : 'Cash Gift'}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      {contribution.amount > 0 ? (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <TrendingUp className="h-3 w-3" />
-                          <span className="text-xs">Inflow</span>
-                        </div>
-                      ) : contribution.amount < 0 ? (
-                        <div className="flex items-center gap-1 text-red-600">
-                          <TrendingDown className="h-3 w-3" />
-                          <span className="text-xs">Outflow</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-500">Neutral</span>
-                      )}
-                    </TableCell>
                     <TableCell className="text-sm">
                       {new Date(contribution.createdAt).toLocaleDateString()}
                     </TableCell>
@@ -1685,7 +1669,7 @@ const AdminDashboard = () => {
                 ))}
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                       No records found
                     </TableCell>
                   </TableRow>
