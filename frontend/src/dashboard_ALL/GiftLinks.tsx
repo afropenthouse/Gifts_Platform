@@ -221,6 +221,64 @@ export const GiftLinks = ({
                             Share Invitation
                           </Button>
                           <Button
+                            variant="default"
+                            size="sm"
+                            className="text-xs h-9 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 transition-all font-medium hidden sm:flex"
+                            onClick={() => {
+                              const defaultMessage = generateWhatsAppMessage(gift);
+                              // Create a temporary modal for customization since this component doesn't have access to Dashboard state
+                              const modal = document.createElement('div');
+                              modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                              modal.innerHTML = `
+                                <div class="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                                  <div class="mb-4">
+                                    <h3 class="text-xl font-bold text-gray-900 mb-2">Customize Your Message</h3>
+                                    <p class="text-sm text-gray-600">Personalize your invitation message before sharing</p>
+                                  </div>
+                                  <div class="space-y-2 mb-4">
+                                    <label class="text-sm font-medium text-gray-700">Your Invitation Message</label>
+                                    <textarea id="custom-message" class="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Enter your custom invitation message...">${defaultMessage}</textarea>
+                                    <p class="text-xs text-gray-500">You can edit this message to make it more personal. The event link will be included automatically.</p>
+                                  </div>
+                                  <div class="flex gap-3">
+                                    <button id="cancel-btn" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                                    <button id="send-btn" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                      <img src="/whatsapp.png" alt="WhatsApp" class="w-4 h-4 inline mr-2 filter drop-shadow-lg brightness-110 contrast-125" />
+                                      Send via WhatsApp
+                                    </button>
+                                  </div>
+                                </div>
+                              `;
+                              
+                              document.body.appendChild(modal);
+                              
+                              const cancelBtn = modal.querySelector('#cancel-btn');
+                              const sendBtn = modal.querySelector('#send-btn');
+                              const messageTextarea = modal.querySelector('#custom-message') as HTMLTextAreaElement;
+                              
+                              cancelBtn.addEventListener('click', () => {
+                                document.body.removeChild(modal);
+                              });
+                              
+                              sendBtn.addEventListener('click', () => {
+                                const customMessage = messageTextarea.value;
+                                const cleanMessage = customMessage.replace(/[*]/g, '').replace(/\n/g, '%0A').replace(/ /g, '+');
+                                const whatsappUrl = `https://wa.me/?text=${cleanMessage}`;
+                                window.open(whatsappUrl, '_blank');
+                                document.body.removeChild(modal);
+                              });
+                              
+                              modal.addEventListener('click', (e) => {
+                                if (e.target === modal) {
+                                  document.body.removeChild(modal);
+                                }
+                              });
+                            }}
+                          >
+                            <img src="/whatsapp.png" alt="WhatsApp" className="w-4 h-4 filter drop-shadow-md brightness-110 contrast-125 mr-1" />
+                            Share Invitation
+                          </Button>
+                          <Button
                             variant="outline"
                             size="sm"
                             className="text-xs h-9 border-black text-black hover:bg-black hover:text-white hover:border-[#E10032] transition-all font-medium"
@@ -261,10 +319,10 @@ export const GiftLinks = ({
                             size="sm"
                             className="text-xs h-9 border-black text-black hover:bg-black hover:text-white transition-all font-medium"
                             onClick={() => onRSVP(gift)}
-                            title="RSVP"
+                            title="Manage RSVP"
                           >
                             <Users className="w-3.5 h-3.5 mr-1" />
-                            RSVP
+                            Manage RSVP
                           </Button>
                           {gift.enableGuestNotes !== false && (
                             <Button
