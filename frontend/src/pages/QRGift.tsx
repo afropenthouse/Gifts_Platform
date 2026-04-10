@@ -529,7 +529,7 @@ const QRGift: React.FC = () => {
                 onClick={() => setShowStoryModal(true)}
                 className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
               >
-                Read Story
+                Read Our Story
               </button>
             )}
 
