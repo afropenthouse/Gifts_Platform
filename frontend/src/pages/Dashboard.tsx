@@ -1967,7 +1967,7 @@ const Dashboard: React.FC = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">My Events</h2>
-                    <p className="text-gray-600 mt-1">Create your Guest lists, manage Asoebi sales and more</p>
+                    <p className="text-gray-600 mt-1">Create your Event link and manage your Guest lists, RSVPs,  Asoebi sales and more</p>
 
                     
                   </div>
