@@ -1132,24 +1132,25 @@ const ShareGift: React.FC = () => {
 
           {/* Story Section */}
           <div className="-mt-5 w-full max-w-md px-4 flex flex-col items-center gap-2">
-            {/* {gift.story && (
-              <button
-                onClick={() => setShowStoryModal(true)}
-                className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
-              >
-                Read our Story
-              </button>
-            )} */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
+              {gift.story && (
+                <button
+                  onClick={() => setShowStoryModal(true)}
+                  className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+                >
+                  Read Story
+                </button>
+              )}
 
-            {gift.enableGuestNotes !== false && (
-              <Button
-                type="button"
-                onClick={() => setShowNoteModal(true)}
-                className="mt-1 h-10 bg-[#2E235C] text-white border border-[#2E235C]/70 hover:bg-white/90 hover:text-[#2E235C] hover:border-[#2E235C]/50 px-5 rounded-full transition-colors"
-              >
-                Send Well Wishes
-              </Button>
-            )}
+              {gift.enableGuestNotes !== false && (
+                <button 
+                  onClick={() => setShowNoteModal(true)} 
+                  className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+                >
+                  Send Well Wishes
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Description - shown below card if available */}
@@ -1163,12 +1164,12 @@ const ShareGift: React.FC = () => {
 
       {/* Story Modal */}
       <Dialog open={showStoryModal} onOpenChange={setShowStoryModal}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" onInteractOutside={(e) => { e.preventDefault(); }}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto overflow-x-hidden" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-2xl font-playfair text-center text-[#2E235C] mb-4">Our Story</DialogTitle>
           </DialogHeader>
-          <div className="px-4 pb-6">
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light text-lg">
+          <div className="px-4 pb-6 w-full overflow-hidden">
+            <p className="text-gray-700 leading-relaxed break-words overflow-wrap-anywhere font-light text-lg">
               {gift.story}
             </p>
           </div>

@@ -26,6 +26,7 @@ interface Gift {
   guestListMode?: string;
   enableCashGifts?: boolean;
   enableGuestNotes?: boolean;
+  story?: string;
 }
 
 type CurrencyOption = {
@@ -93,6 +94,7 @@ const QRGift: React.FC = () => {
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [noteSent, setNoteSent] = useState(false);
   const [showNoteThanks, setShowNoteThanks] = useState(false);
+  const [showStoryModal, setShowStoryModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -521,14 +523,25 @@ const QRGift: React.FC = () => {
             </div>
           )}
 
-          {gift.enableGuestNotes !== false && (
-            <button 
-              onClick={() => setShowNoteModal(true)} 
-              className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
-            >
-              Send Well Wishes
-            </button>
-          )}
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
+            {gift.story && (
+              <button
+                onClick={() => setShowStoryModal(true)}
+                className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+              >
+                Read Story
+              </button>
+            )}
+
+            {gift.enableGuestNotes !== false && (
+              <button 
+                onClick={() => setShowNoteModal(true)} 
+                className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+              >
+                Send Well Wishes
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -856,6 +869,20 @@ const QRGift: React.FC = () => {
                 No, maybe later
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Story Modal */}
+      <Dialog open={showStoryModal} onOpenChange={setShowStoryModal}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto overflow-x-hidden" onInteractOutside={(e) => { e.preventDefault(); }}>
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-playfair text-center text-[#2E235C] mb-4">Our Story</DialogTitle>
+          </DialogHeader>
+          <div className="px-2 pb-4 w-full overflow-hidden">
+            <p className="text-gray-700 leading-relaxed break-words overflow-wrap-anywhere">
+              {gift?.story}
+            </p>
           </div>
         </DialogContent>
       </Dialog>
