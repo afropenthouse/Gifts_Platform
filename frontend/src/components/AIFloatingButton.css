@@ -1,0 +1,94 @@
+.ai-floating-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.4);
+  transition: all 0.3s ease;
+  z-index: 999;
+  overflow: hidden;
+}
+
+.ai-floating-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px hsl(var(--primary) / 0.5);
+}
+
+.ai-floating-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.4);
+}
+
+.ai-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+.ai-text {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  color: hsl(var(--primary));
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ai-floating-button:hover .ai-text {
+  opacity: 1;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Ripple effect */
+.ai-floating-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ai-floating-button:active::before {
+  width: 100px;
+  height: 100px;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .ai-floating-button {
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+  }
+}

@@ -12,6 +12,7 @@
     "studio": "cross-env STUDIO_EMBED_BUILD=0 prisma studio --port 5555"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/adapter-pg": "^6.19.1",
     "@prisma/client": "^6.19.1",
     "axios": "^1.13.6",

@@ -79,7 +79,7 @@ export const GiftLinks = ({
         const brideName = gift.details?.brideName || '';
         const groomName = gift.details?.groomName || '';
         const weddingNames = brideName && groomName ? `${brideName} & ${groomName}` : eventName;
-        return `Hello, I would love to invite you to my wedding 💍\nPlease kindly click the and RSVP to confirm your attendance. This event is STRICTLY BY INVITATION.\n\nThank you, and I hope to celebrate with you 🙏🏽\n\nKindly RSVP: ${baseUrl}`;
+        return `Hello, I would love to invite you to my wedding 💍\nPlease kindly click the link and RSVP to confirm your attendance. This event is STRICTLY BY INVITATION.\n\nThank you, and I hope to celebrate with you 🙏🏽\n\nKindly RSVP: ${baseUrl}`;
       
       case 'birthday':
         return `🎂 *Birthday Celebration!* 🎂\n\nHey! I'm inviting you for my birthday party, please use BeThere to RSVP and join the celebration!\n\n🎉 Let's make it memorable!\n\n RSVP here: ${baseUrl}\n\nYour presence is the best gift! 🎁`;
@@ -218,7 +218,7 @@ export const GiftLinks = ({
                             }}
                           >
                             <img src="/whatsapp.png" alt="WhatsApp" className="w-4 h-4 filter drop-shadow-md brightness-110 contrast-125 mr-1" />
-                            Share Invitation
+                            Send Invite
                           </Button>
                           <Button
                             variant="default"
@@ -276,7 +276,7 @@ export const GiftLinks = ({
                             }}
                           >
                             <img src="/whatsapp.png" alt="WhatsApp" className="w-4 h-4 filter drop-shadow-md brightness-110 contrast-125 mr-1" />
-                            Share Invitation
+                            Send Invite
                           </Button>
                           <Button
                             variant="outline"

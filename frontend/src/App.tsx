@@ -1,5 +1,5 @@
 import { Routes, Route, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from './context/AuthContext';
 import LoginModal from './components/LoginModal';
 import SignupModal from './components/SignupModal';
+// import AIAssistant from './components/AIAssistant';
+// import AIFloatingButton from './components/AIFloatingButton';
 import SignupRef from "./pages/SignupRef";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -37,6 +39,7 @@ const GOOGLE_TAG_ID = "AW-18055751654";
 const App = () => {
   const { loginModalOpen, signupModalOpen, closeModals } = useAuth();
   const location = useLocation();
+  // const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
 
   useEffect(() => {
     const path = location.pathname.toLowerCase();
@@ -123,6 +126,11 @@ const App = () => {
         </Routes>
         <LoginModal open={loginModalOpen} onClose={closeModals} />
         <SignupModal open={signupModalOpen} onClose={closeModals} />
+        {/* <AIAssistant 
+          isOpen={aiAssistantOpen} 
+          onClose={() => setAiAssistantOpen(false)} 
+        />
+        <AIFloatingButton onClick={() => setAiAssistantOpen(true)} /> */}
       </TooltipProvider>
     </QueryClientProvider>
   );

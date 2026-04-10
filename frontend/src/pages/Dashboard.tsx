@@ -9,6 +9,7 @@ import VendorPaymentTracker from '../dashboard_ALL/VendorPaymentTracker';
 import Moments from '../dashboard_ALL/Moments';
 import Asoebi from '../dashboard_ALL/Asoebi';
 import InviteFriends from '../dashboard_ALL/InviteFriends';
+import { ExclusiveDeals } from '../dashboard_ALL/ExclusiveDeals';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
@@ -330,11 +331,12 @@ const Dashboard: React.FC = () => {
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length, action: undefined },
     { id: 'rsvp', label: 'RSVP Manager', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests, action: undefined },
     { id: 'asoebi', label: 'Asoebi Orders', icon: Package, color: 'text-purple-600', badge: null, action: undefined },
-    { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null, action: undefined },
     { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null, action: undefined },
+    { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null, action: undefined },
     { id: 'vendors', label: 'Manage Expenses', icon: Wallet, color: 'text-orange-500', badge: null, action: undefined },
     { id: 'invite', label: 'Invite & Earn', icon: Share2, color: 'text-blue-500', badge: null, action: undefined },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null, action: undefined },
+    // { id: 'exclusive-deals', label: 'Exclusive Deals', icon: Sparkles, color: 'text-yellow-500', badge: null, action: undefined },
     { id: 'how-it-works', label: 'How it works', icon: HelpCircle, color: 'text-gray-500', badge: null, action: () => startTour() },
   ];
 
@@ -1648,18 +1650,22 @@ const Dashboard: React.FC = () => {
                     className={`
                       w-full flex items-center justify-between px-3 py-2 rounded-lg mb-0.5
                       transition-all duration-200 group relative
-                      ${activeTab === item.id 
-                        ? 'bg-gradient-to-r from-[#2E235C]/10 to-[#2E235C]/5 text-[#2E235C]' 
-                        : 'hover:bg-gray-50 text-gray-700'
+                      ${item.id === 'how-it-works'
+                        ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800'
+                        : activeTab === item.id 
+                          ? 'bg-gradient-to-r from-[#2E235C]/10 to-[#2E235C]/5 text-[#2E235C]' 
+                          : 'hover:bg-gray-50 text-gray-700'
                       }
                     `}
                   >
                     <div className="flex items-center space-x-2 flex-1 min-w-0">
                       <div className={`
                         p-1.5 rounded-lg transition-colors
-                        ${activeTab === item.id 
-                          ? 'bg-[#2E235C] text-white' 
-                          : 'bg-gray-100 group-hover:bg-gray-200'
+                        ${item.id === 'how-it-works'
+                          ? 'bg-yellow-300 text-yellow-900' 
+                          : activeTab === item.id 
+                            ? 'bg-[#2E235C] text-white' 
+                            : 'bg-gray-100 group-hover:bg-gray-200'
                         }
                       `}>
                         <item.icon className="w-4 h-4" />
@@ -1732,6 +1738,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'qr' && 'Event QR Code'}
                     {activeTab === 'moments' && 'Moments'}
                     {activeTab === 'invite' && 'Invite & Earn'}
+                    {activeTab === 'exclusive-deals' && 'Exclusive Deals'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
@@ -1742,6 +1749,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share moments'}
                     {activeTab === 'moments' && 'Share your QR code at your event so your guests can share pictures from your events with you'}
                     {activeTab === 'invite' && 'Refer friends and earn rewards when they use your link'}
+                    {activeTab === 'exclusive-deals' && 'Discover amazing wedding deals from top vendors with huge discounts'}
                   </p>
                 </div>
                 
@@ -1959,7 +1967,9 @@ const Dashboard: React.FC = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">My Events</h2>
-                    <p className="text-gray-600 mt-1">Create events and manage all your RSVP links</p>
+                    <p className="text-gray-600 mt-1">Create your Guest lists, manage Asoebi sales and more</p>
+
+                    
                   </div>
                   <div className="flex space-x-3">
                     
@@ -2967,6 +2977,11 @@ const Dashboard: React.FC = () => {
             {activeTab === 'moments' && (
               <Moments gifts={gifts} onTabChange={setActiveTab} />
             )}
+
+            {/* Exclusive Deals Section */}
+            {/* {activeTab === 'exclusive-deals' && (
+              <ExclusiveDeals />
+            )} */}
 
           </div>
         </main>
@@ -4445,60 +4460,6 @@ const Dashboard: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="space-y-4">
-              {/* Share Invitation/WhatsApp Button - Mobile */}
-              <Button
-                onClick={() => {
-                  const currentGift = gifts.find(g => `${window.location.origin}/gift/${g.shareLink}` === createdGiftLink);
-                  if (currentGift) {
-                    const defaultMessage = generateWhatsAppMessage(currentGift);
-                    setCustomMessage(defaultMessage);
-                    setShowCustomMessage(true);
-                  }
-                }}
-                size="lg"
-                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 whitespace-nowrap text-sm sm:text-base sm:hidden"
-              >
-                <img src="/whatsapp.png" alt="WhatsApp" className="w-4 h-4 filter drop-shadow-lg brightness-110 contrast-125 mr-2" />
-                Share Invitation
-              </Button>
-
-              {/* Share Invitation Button - Desktop */}
-              <Button
-                onClick={() => {
-                  const currentGift = gifts.find(g => `${window.location.origin}/gift/${g.shareLink}` === createdGiftLink);
-                  if (currentGift) {
-                    const defaultMessage = generateWhatsAppMessage(currentGift);
-                    setCustomMessage(defaultMessage);
-                    setShowCustomMessage(true);
-                  }
-                }}
-                size="lg"
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 whitespace-nowrap text-sm sm:text-base hidden sm:flex"
-              >
-                <Share2 className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-                Share Invitation
-              </Button>
-
-              {/* WhatsApp Button - Desktop */}
-              <Button
-                onClick={() => {
-                  const currentGift = gifts.find(g => `${window.location.origin}/gift/${g.shareLink}` === createdGiftLink);
-                  if (currentGift) {
-                    handleWhatsAppShare(currentGift);
-                  } else {
-                    // Fallback for when gift object is not found
-                    const message = `Hello, I would love to invite you to my wedding taking place on February 21st 💍\nPlease kindly click the and RSVP to confirm your attendance. This event is STRICTLY BY INVITATION.\n\nThank you, and I hope to celebrate with you 🙏🏽\n\nKindly RSVP: ${createdGiftLink}`;
-                    const encodedMessage = encodeURIComponent(message);
-                    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-                    window.open(whatsappUrl, '_blank');
-                  }
-                }}
-                size="lg"
-                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 whitespace-nowrap text-sm sm:text-base hidden sm:flex"
-              >
-                <img src="/whatsapp.png" alt="WhatsApp" className="w-4 h-4 sm:w-5 sm:h-5 filter drop-shadow-lg brightness-110 contrast-125 mr-1 sm:mr-2" />
-                WhatsApp
-              </Button>
 
               {/* Copy Link Button */}
               <Button
@@ -4508,7 +4469,7 @@ const Dashboard: React.FC = () => {
                 }}
                 variant="outline"
                 size="lg"
-                className="w-full whitespace-nowrap text-sm sm:text-base border-gray-300 hover:bg-gray-50"
+                className="w-full whitespace-nowrap text-sm sm:text-base border-gray-300 hover:border-[#2E235C] hover:bg-[#2E235C] hover:text-white transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md"
               >
                 <Copy className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                 Copy Link
@@ -4548,7 +4509,7 @@ const Dashboard: React.FC = () => {
                 }}
                 variant="outline"
                 size="lg"
-                className="w-full whitespace-nowrap text-sm sm:text-base border-gray-300 hover:bg-gray-50"
+                className="w-full whitespace-nowrap text-sm sm:text-base border-gray-300 hover:border-[#2E235C] hover:bg-[#2E235C] hover:text-white transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md"
               >
                 <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                 Download QR
@@ -5947,7 +5908,7 @@ const Dashboard: React.FC = () => {
           {
             id: 'my-events',
             title: 'My Events',
-            content: 'View and manage all your created events. Track RSVPs, Asoebi sales, and cash gifts for each event from this central hub.',
+            content: 'Create and manage all your events. Track RSVPs, Set Asoebi Price, and cash gifts for each event in one place.',
             target: '[data-testid="sidebar"]',
             position: 'right',
             action: () => setActiveTab('gifts'),
@@ -5955,31 +5916,39 @@ const Dashboard: React.FC = () => {
           {
             id: 'rsvp-manager',
             title: 'RSVP Manager',
-            content: 'Build and manage your guest lists. Upload guest lists via spreadsheet or manual entry. Track RSVPs and manage Asoebi orders.',
+            content: 'Build and manage your guest lists. Upload guest lists via spreadsheet or manual entry. Track RSVPs and manage guest attendance.',
             target: '[data-testid="sidebar"]',
             position: 'right',
             action: () => setActiveTab('rsvp'),
           },
           {
-            id: 'event-qr',
-            title: 'Event QR Code',
-            content: 'Generate unique QR codes for your events. Guests can scan to access event details, RSVP, and make contributions.',
+            id: 'asoebi',
+            title: 'Asoebi Management',
+            content: 'Manage Asoebi (Uniform). Track orders and payments for your event.',
             target: '[data-testid="sidebar"]',
             position: 'right',
-            action: () => setActiveTab('qr'),
+            action: () => setActiveTab('asoebi'),
           },
           {
             id: 'moments',
             title: 'Moments',
-            content: 'Capture and share special moments from your events. Upload photos, videos, and create lasting memories for you and your guests.',
+            content: 'Allow guests to upload and share special moments from your events. Guests can upload pictures and create lasting memories together.',
             target: '[data-testid="sidebar"]',
             position: 'right',
             action: () => setActiveTab('moments'),
           },
           {
+            id: 'event-qr',
+            title: 'Event QR Code',
+            content: 'Share your unique QR code , so Guests can give cash gifts',
+            target: '[data-testid="sidebar"]',
+            position: 'right',
+            action: () => setActiveTab('qr'),
+          },
+          {
             id: 'expenses',
             title: 'Manage Expenses',
-            content: 'Track and manage event-related expenses. Monitor your spending and keep your event budget organized.',
+            content: 'Track and manage event-related expenses, Schedule payments for your vendor, Monitor your spending and keep your event budget organized.',
             target: '[data-testid="sidebar"]',
             position: 'right',
             action: () => setActiveTab('vendors'),
