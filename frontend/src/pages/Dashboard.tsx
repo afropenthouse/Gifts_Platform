@@ -2096,7 +2096,7 @@ const Dashboard: React.FC = () => {
                               <Package className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                               <p className="text-gray-500">No gifts received yet</p>
                               <p className="text-sm text-gray-400 mt-1">
-                                Share your gift links to start receiving contributions
+                                Share your event links to start receiving contributions
                               </p>
                             </TableCell>
                           </TableRow>
@@ -4681,7 +4681,7 @@ const Dashboard: React.FC = () => {
                               <Package className="w-12 h-12 mx-auto text-gray-300 mb-3" />
                               <p>No contributions yet</p>
                               <p className="text-sm text-gray-400 mt-1">
-                                Share your gift link to receive contributions
+                                Share your event link to receive contributions
                               </p>
                             </TableCell>
                           </TableRow>
@@ -4740,7 +4740,7 @@ const Dashboard: React.FC = () => {
                         <Package className="w-12 h-12 mx-auto text-gray-300 mb-3" />
                         <p>No contributions yet</p>
                         <p className="text-sm text-gray-400 mt-1">
-                          Share your gift link to receive contributions
+                          Share your event link to receive contributions
                         </p>
                       </div>
                     )}
