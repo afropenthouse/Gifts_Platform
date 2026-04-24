@@ -349,6 +349,38 @@ export const GiftLinks = ({
                             <Mail className="w-3.5 h-3.5 mr-1" />
                             Set Reminder
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-9 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all font-medium"
+                            onClick={() => {
+                              // Find the hidden QR code for this gift
+                              const hiddenQr = document.querySelector(`#hidden-qr-${gift.id} svg`);
+                              if (hiddenQr) {
+                                const svgData = new XMLSerializer().serializeToString(hiddenQr);
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                const img = new Image();
+                                
+                                img.onload = () => {
+                                  canvas.width = 200;
+                                  canvas.height = 200;
+                                  ctx?.drawImage(img, 0, 0, 200, 200);
+                                  
+                                  const link = document.createElement('a');
+                                  link.download = `${gift.title || gift.type}-QR-Code.png`;
+                                  link.href = canvas.toDataURL();
+                                  link.click();
+                                };
+                                
+                                img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+                              }
+                            }}
+                            title="Download QR Code"
+                          >
+                            <Download className="w-3.5 h-3.5 mr-1" />
+                            Download QR
+                          </Button>
                         </div>
 
                         <div className="flex-1" />
@@ -451,6 +483,20 @@ export const GiftLinks = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden QR Codes for Download */}
+      <div style={{ display: 'none' }}>
+        {gifts.map((gift) => (
+          <div key={`hidden-qr-${gift.id}`} id={`hidden-qr-${gift.id}`}>
+            <QRCodeSVG 
+              value={`${window.location.origin}/gift/${gift.shareLink}`}
+              size={200}
+              level="H"
+              includeMargin={false}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
