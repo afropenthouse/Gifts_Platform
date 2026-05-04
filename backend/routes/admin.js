@@ -27,10 +27,24 @@ module.exports = () => {
 
   router.get('/metrics', adminAuth, async (req, res) => {
     try {
-      const { time, type, eventId } = req.query;
+      const { time, type, eventId, startDate, endDate } = req.query;
       let dateFilter = {};
 
-      if (time && time !== 'all') {
+      // Handle custom date range
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        // Set end date to end of day
+        end.setHours(23, 59, 59, 999);
+        
+        dateFilter = {
+          createdAt: {
+            gte: start,
+            lte: end
+          }
+        };
+      } else if (time && time !== 'all') {
         const now = new Date();
         const filterDate = new Date();
 

@@ -156,6 +156,9 @@ const AdminDashboard = () => {
   const [selectedEventId, setSelectedEventId] = useState<number | 'all'>('all');
   const [overviewTimeFilter, setOverviewTimeFilter] = useState<TimeFilter>('all');
   const [txnTimeFilter, setTxnTimeFilter] = useState<TimeFilter>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [useCustomDateRange, setUseCustomDateRange] = useState(false);
   const [selectedTxnType, setSelectedTxnType] = useState<'all' | 'cash' | 'asoebi'>('all');
   const [guestEmailFilter, setGuestEmailFilter] = useState<'all' | 'yes' | 'no'>('all');
   const [userSearch, setUserSearch] = useState('');
@@ -215,7 +218,15 @@ const AdminDashboard = () => {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       const metricsTimeFilter = activeTab === 'transactions' ? txnTimeFilter : overviewTimeFilter;
       const metricsParams = new URLSearchParams();
-      metricsParams.set('time', metricsTimeFilter);
+      
+      // Use custom date range if enabled
+      if (useCustomDateRange && customStartDate && customEndDate) {
+        metricsParams.set('startDate', customStartDate);
+        metricsParams.set('endDate', customEndDate);
+      } else {
+        metricsParams.set('time', metricsTimeFilter);
+      }
+      
       if (activeTab === 'transactions') {
         if (selectedTxnType !== 'all') metricsParams.set('type', selectedTxnType);
         if (selectedEventId !== 'all') metricsParams.set('eventId', String(selectedEventId));
@@ -246,7 +257,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, navigate, overviewTimeFilter, selectedEventId, selectedTxnType, txnTimeFilter]);
+  }, [activeTab, navigate, overviewTimeFilter, selectedEventId, selectedTxnType, txnTimeFilter, useCustomDateRange, customStartDate, customEndDate]);
 
   const fetchContributions = useCallback(async (time: TimeFilter = 'all', force = false) => {
     if (!force && (fetchingContributions.current || (contributionsLength.current > 0 && !force))) {
@@ -264,7 +275,15 @@ const AdminDashboard = () => {
       setLoadingContributions(true);
       fetchingContributions.current = true;
       const params = new URLSearchParams();
-      params.set('time', time);
+      
+      // Use custom date range if enabled
+      if (useCustomDateRange && customStartDate && customEndDate) {
+        params.set('startDate', customStartDate);
+        params.set('endDate', customEndDate);
+      } else {
+        params.set('time', time);
+      }
+      
       if (activeTab === 'transactions') {
         if (selectedTxnType !== 'all') params.set('type', selectedTxnType);
         if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
@@ -293,7 +312,7 @@ const AdminDashboard = () => {
       setLoadingContributions(false);
       fetchingContributions.current = false;
     }
-  }, [activeTab, navigate, selectedEventId, selectedTxnType]);
+  }, [activeTab, navigate, selectedEventId, selectedTxnType, useCustomDateRange, customStartDate, customEndDate]);
 
   const fetchGuests = useCallback(async () => {
     if (fetchingGuests.current) {
@@ -513,6 +532,12 @@ const AdminDashboard = () => {
   }, [activeTab, fetchContributions, txnTimeFilter]);
 
   useEffect(() => {
+    if (activeTab === 'transactions' && useCustomDateRange && customStartDate && customEndDate) {
+      fetchContributions('all', true);
+    }
+  }, [activeTab, fetchContributions, useCustomDateRange, customStartDate, customEndDate]);
+
+  useEffect(() => {
     if (activeTab === 'events') {
       fetchEvents();
       fetchContributions('all');
@@ -543,6 +568,12 @@ const AdminDashboard = () => {
       fetchCountryStats();
     }
   }, [activeTab, fetchCountryStats]);
+
+  useEffect(() => {
+    if (activeTab === 'overview' && useCustomDateRange && customStartDate && customEndDate) {
+      fetchDashboardData();
+    }
+  }, [activeTab, fetchDashboardData, useCustomDateRange, customStartDate, customEndDate]);
 
   
   const handleToggleUser = async (userId: number) => {
@@ -2448,13 +2479,23 @@ const AdminDashboard = () => {
           (activeTab === 'transactions' || activeTab === 'events' || activeTab === 'guests') && (
           <div className="flex flex-wrap justify-end gap-4 mb-4">
             {activeTab === 'transactions' && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Label htmlFor="admin-time-filter" className="hidden md:inline whitespace-nowrap">
                   Time Period:
                 </Label>
                 <Select
-                  value={txnTimeFilter}
-                  onValueChange={(value) => setTxnTimeFilter(value as TimeFilter)}
+                  value={useCustomDateRange ? 'custom' : txnTimeFilter}
+                  onValueChange={(value) => {
+                    if (value === 'custom') {
+                      setUseCustomDateRange(true);
+                      setTxnTimeFilter('all');
+                    } else {
+                      setUseCustomDateRange(false);
+                      setTxnTimeFilter(value as TimeFilter);
+                      setCustomStartDate('');
+                      setCustomEndDate('');
+                    }
+                  }}
                 >
                   <SelectTrigger id="admin-time-filter" className="w-[180px]">
                     <SelectValue placeholder="All Time" />
@@ -2466,8 +2507,38 @@ const AdminDashboard = () => {
                     <SelectItem value="30days">Last 30 days</SelectItem>
                     <SelectItem value="3months">Last 3 months</SelectItem>
                     <SelectItem value="year">Last year</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                {useCustomDateRange && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="start-date" className="text-sm whitespace-nowrap">
+                        From:
+                      </Label>
+                      <Input
+                        id="start-date"
+                        type="date"
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        className="w-[140px]"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="end-date" className="text-sm whitespace-nowrap">
+                        To:
+                      </Label>
+                      <Input
+                        id="end-date"
+                        type="date"
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        className="w-[140px]"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
             {activeTab === 'transactions' && (
