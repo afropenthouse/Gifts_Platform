@@ -1804,8 +1804,8 @@ const AdminDashboard = () => {
       });
     }
 
-    const filteredTransactionAmount = rows.reduce((sum, c) => sum + Number(c.amount || 0), 0);
-    const filteredRevenue = rows.reduce((sum, c) => sum + (Number(c.commission) || 0), 0);
+    const filteredTransactionAmount = (metrics?.totalContributions || 0) + (metrics?.totalAsoebiContributions || 0);
+    const filteredRevenue = metrics?.totalRevenue || 0;
     const revenueRatio = filteredTransactionAmount > 0
       ? (filteredRevenue / filteredTransactionAmount) * 100
       : 0;

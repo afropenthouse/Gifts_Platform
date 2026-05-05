@@ -128,6 +128,8 @@ module.exports = () => {
             status: 'completed',
             isAsoebi: false,
             amount: { gt: 0 },
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           }
         }),
@@ -136,6 +138,8 @@ module.exports = () => {
             status: 'completed',
             isAsoebi: true,
             amount: { gt: 0 },
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           }
         }),
@@ -147,6 +151,8 @@ module.exports = () => {
             status: 'completed',
             isAsoebi: false,
             amount: { gt: 0 },
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           }
         }),
@@ -158,6 +164,8 @@ module.exports = () => {
             status: 'completed',
             isAsoebi: true,
             amount: { gt: 0 },
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           }
         }),
@@ -183,6 +191,8 @@ module.exports = () => {
           where: {
             status: 'completed',
             amount: { gt: 0 },
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           },
           select: { amount: true }
