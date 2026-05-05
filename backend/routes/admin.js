@@ -120,7 +120,6 @@ module.exports = () => {
         allContributions,
         allWithdrawals,
         activeUsers,
-        totalTransactionsCount,
       ] = await Promise.all([
         prisma.user.count({ where: dateFilter }),
         prisma.gift.count({ where: dateFilter }),
@@ -200,13 +199,6 @@ module.exports = () => {
             ...dateFilter
           }
         }),
-        prisma.contribution.count({
-          where: {
-            status: 'completed',
-            amount: { gt: 0 },
-            ...dateFilter
-          }
-        }),
       ]);
 
       const platformRevenue = Number(totalRevenue._sum.commission || 0);
@@ -235,10 +227,6 @@ module.exports = () => {
 
       const totalPaystackFees = payoutFees;
       const netProfit = platformRevenue - totalPaystackFees - referralRevenue;
-      
-      // Calculate Profit Ratio (percentage)
-      const totalGrossAmount = allContributions.reduce((sum, c) => sum + Number(c.amount), 0);
-      const profitRatio = totalGrossAmount > 0 ? (netProfit / totalGrossAmount) * 100 : 0;
 
       const [recentUsers, recentContributions] = await Promise.all([
         prisma.user.findMany({
@@ -276,7 +264,6 @@ module.exports = () => {
           totalGifts,
           totalGifters,
           totalAsoebi,
-          totalTransactions: totalTransactionsCount,
           totalContributions: totalContributions._sum.amount || 0,
           totalAsoebiContributions: totalAsoebiContributions._sum.amount || 0,
           totalWalletBalance: totalWalletBalance,
@@ -287,7 +274,6 @@ module.exports = () => {
           estimatedPaystackFees: totalPaystackFees,
           payoutFees,
           netProfit,
-          profitRatio: parseFloat(profitRatio.toFixed(2)),
           activeUsers
         },
         recentUsers,
