@@ -1437,7 +1437,7 @@ const AdminDashboard = () => {
   const renderOverview = () => {
     return (
       <>
-        <div className="flex flex-wrap items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Label htmlFor="overview-time-period" className="text-sm whitespace-nowrap">
               Time Period:
@@ -1469,36 +1469,36 @@ const AdminDashboard = () => {
                 <SelectItem value="custom">Custom Range</SelectItem>
               </SelectContent>
             </Select>
-            
-            {useCustomDateRange && (
-              <>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="overview-start-date" className="text-sm whitespace-nowrap">
-                    From:
-                  </Label>
-                  <Input
-                    id="overview-start-date"
-                    type="date"
-                    value={customStartDate}
-                    onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="w-[140px]"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="overview-end-date" className="text-sm whitespace-nowrap">
-                    To:
-                  </Label>
-                  <Input
-                    id="overview-end-date"
-                    type="date"
-                    value={customEndDate}
-                    onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="w-[140px]"
-                  />
-                </div>
-              </>
-            )}
           </div>
+          
+          {useCustomDateRange && (
+            <>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="overview-start-date" className="text-sm whitespace-nowrap">
+                  From:
+                </Label>
+                <Input
+                  id="overview-start-date"
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-[140px]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="overview-end-date" className="text-sm whitespace-nowrap">
+                  To:
+                </Label>
+                <Input
+                  id="overview-end-date"
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-[140px]"
+                />
+              </div>
+            </>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
