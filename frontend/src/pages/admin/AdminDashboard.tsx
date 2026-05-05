@@ -1437,6 +1437,69 @@ const AdminDashboard = () => {
   const renderOverview = () => {
     return (
       <>
+        <div className="flex flex-wrap items-center gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="overview-time-period" className="text-sm whitespace-nowrap">
+              Time Period:
+            </Label>
+            <Select
+              value={useCustomDateRange ? 'custom' : overviewTimeFilter}
+              onValueChange={(value) => {
+                if (value === 'custom') {
+                  setUseCustomDateRange(true);
+                  setOverviewTimeFilter('all');
+                } else {
+                  setUseCustomDateRange(false);
+                  setOverviewTimeFilter(value as TimeFilter);
+                  setCustomStartDate('');
+                  setCustomEndDate('');
+                }
+              }}
+            >
+              <SelectTrigger id="overview-time-period" className="w-[140px]">
+                <SelectValue placeholder="Select period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="7days">Last 7 Days</SelectItem>
+                <SelectItem value="14days">Last 14 Days</SelectItem>
+                <SelectItem value="30days">Last 30 Days</SelectItem>
+                <SelectItem value="3months">Last 3 Months</SelectItem>
+                <SelectItem value="year">Last Year</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {useCustomDateRange && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="overview-start-date" className="text-sm whitespace-nowrap">
+                    From:
+                  </Label>
+                  <Input
+                    id="overview-start-date"
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="w-[140px]"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="overview-end-date" className="text-sm whitespace-nowrap">
+                    To:
+                  </Label>
+                  <Input
+                    id="overview-end-date"
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="w-[140px]"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <Card>
