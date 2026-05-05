@@ -28,6 +28,7 @@ interface Metrics {
   totalGifts: number;
   totalGifters: number;
   totalAsoebi: number;
+  totalTransactions: number;
   totalContributions: number;
   totalAsoebiContributions: number;
   totalWalletBalance: number;
@@ -38,6 +39,7 @@ interface Metrics {
   estimatedPaystackFees: number;
   payoutFees?: number;
   netProfit: number;
+  profitRatio: number;
   activeUsers: number;
 }
 
@@ -1509,7 +1511,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₦{((metrics?.totalContributions || 0) + (metrics?.totalAsoebiContributions || 0)).toLocaleString()}
+                {metrics?.totalTransactions || 0}
               </div>
             </CardContent>
           </Card>
@@ -1538,6 +1540,42 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">₦{(metrics?.totalAsoebiContributions || 0).toLocaleString()}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Platform Revenue</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-black">
+                ₦{(metrics?.totalRevenue || 0).toLocaleString()}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Platform Profit</CardTitle>
+              <Banknote className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-black">
+                ₦{(metrics?.netProfit || 0).toLocaleString()}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Profit Ratio</CardTitle>
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-black">
+                {metrics?.profitRatio || 0}%
+              </div>
             </CardContent>
           </Card>
         </div>
