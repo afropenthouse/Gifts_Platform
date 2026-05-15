@@ -127,20 +127,17 @@ const checkAndSendReminders = async () => {
 
 const checkAndSendPostEventEmails = async () => {
   try {
+    // Only send post-event emails for events that ended yesterday (not up to 14 days)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    // Look back 14 days to catch any missed events (like the user asked for 7 days ago)
-    const lookbackDate = new Date();
-    lookbackDate.setDate(lookbackDate.getDate() - 14);
-    lookbackDate.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
 
-    // Find gifts where date is between 14 days ago and today (exclusive of today)
-    // OPTIMIZATION: Select only necessary fields
+    // Find gifts where date is exactly yesterday
     const gifts = await prisma.gift.findMany({
       where: {
         date: {
-          gte: lookbackDate,
+          gte: yesterday,
           lt: today
         }
       },
