@@ -487,21 +487,21 @@ module.exports = () => {
         where.type = type;
       }
 
-      // Date range filter (1-12 months from current date) - only apply if no status filter
-      if (dateRange && !Number.isNaN(parseInt(dateRange, 10)) && !status) {
-        const months = parseInt(dateRange, 10);
-        const now = new Date();
-        const startDate = new Date();
-        const endDate = new Date();
-        
-        startDate.setMonth(now.getMonth() - months); // Start X months ago from today
-        endDate.setTime(now.getTime()); // End at current time
-        
-        where.date = {
-          gte: startDate,
-          lte: endDate
-        };
-      }
+       // Date range filter (1-12 months from current date) - only apply if no status filter
+       if (dateRange && !Number.isNaN(parseInt(dateRange, 10)) && !status) {
+         const months = parseInt(dateRange, 10);
+         const now = new Date();
+         const startDate = new Date();
+         const endDate = new Date();
+         
+         startDate.setTime(now.getTime()); // Start at current time
+         endDate.setMonth(now.getMonth() + months); // End X months in the future
+         
+         where.date = {
+           gte: startDate,
+           lte: endDate
+         };
+       }
 
       // Sort by creation date when showing all events or past events, otherwise sort by event date
       const orderBy = (status === 'past' || (!status && !dateRange))
