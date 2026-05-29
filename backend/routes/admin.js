@@ -120,6 +120,8 @@ module.exports = () => {
         allContributions,
         allWithdrawals,
         activeUsers,
+        totalMoments,
+        momentsByEvent,
       ] = await Promise.all([
         prisma.user.count({ where: dateFilter }),
         prisma.gift.count({ where: dateFilter }),
@@ -209,7 +211,14 @@ module.exports = () => {
             ...dateFilter
           }
         }),
+        prisma.moment.count({ where: dateFilter }),
+        prisma.moment.groupBy({
+          by: ['giftId'],
+          where: dateFilter,
+        }),
       ]);
+
+      const totalEventsWithMoments = momentsByEvent.length;
 
       const platformRevenue = Number(totalRevenue._sum.commission || 0);
       const referralRevenue = Number(totalReferralRevenue._sum.amount || 0);
@@ -284,7 +293,9 @@ module.exports = () => {
           estimatedPaystackFees: totalPaystackFees,
           payoutFees,
           netProfit,
-          activeUsers
+          activeUsers,
+          totalMoments,
+          totalEventsWithMoments
         },
         recentUsers,
         recentContributions
@@ -393,6 +404,56 @@ module.exports = () => {
     }
   });
 
+  // Get All Moments
+  router.get('/moments', adminAuth, async (req, res) => {
+    try {
+      const moments = await prisma.moment.findMany({
+        orderBy: {
+          createdAt: 'desc'
+        },
+        include: {
+           Gift: {
+             select: {
+               id: true,
+               title: true,
+               user: {
+                 select: {
+                   name: true,
+                   email: true
+                 }
+               }
+             }
+           },
+          user: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        }
+      });
+      res.json(moments);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error fetching moments' });
+    }
+  });
+
+  // Delete Moment
+  router.delete('/moments/:id', adminAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+      await prisma.moment.delete({
+        where: { id: parseInt(id) }
+      });
+      res.json({ msg: 'Moment deleted successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error deleting moment' });
+    }
+  });
+
+  // Get All Contributions
   router.get('/contributions', adminAuth, async (req, res) => {
     const { type, time, eventId } = req.query;
 

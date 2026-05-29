@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail, TrendingUp, TrendingDown, Globe } from "lucide-react";
+import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail, TrendingUp, TrendingDown, Globe, Camera } from "lucide-react";
 import CountryFlag from "@/components/CountryFlag";
 import {
   DropdownMenu,
@@ -39,6 +39,8 @@ interface Metrics {
   payoutFees?: number;
   netProfit: number;
   activeUsers: number;
+  totalMoments?: number;
+  totalEventsWithMoments?: number;
 }
 
 interface User {
@@ -118,7 +120,26 @@ interface EmailTemplate {
   updatedAt: string;
 }
 
-type AdminTab = 'overview' | 'transactions' | 'events' | 'guests' | 'emails' | 'users';
+interface Moment {
+  id: number;
+  imageUrl: string;
+  event: string;
+  createdAt: string;
+  Gift: {
+    id: number;
+    title: string | null;
+    user: {
+      name: string | null;
+      email: string;
+    };
+  } | null;
+  user: {
+    name: string | null;
+    email: string;
+  } | null;
+}
+
+type AdminTab = 'overview' | 'transactions' | 'events' | 'guests' | 'emails' | 'users' | 'moments';
 type TimeFilter = 'all' | '7days' | '14days' | '30days' | '3months' | 'year';
 
 const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
@@ -127,6 +148,7 @@ const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'transactions', label: 'Transactions', icon: Gift },
   { id: 'guests', label: 'Guest Users', icon: Users },
   { id: 'events', label: 'Events', icon: CalendarDays },
+  { id: 'moments', label: 'Moments', icon: Camera },
   { id: 'emails', label: 'Bulk Emails', icon: Mail },
 ];
 
@@ -136,10 +158,12 @@ const AdminDashboard = () => {
   const [allContributions, setAllContributions] = useState<Contribution[]>([]);
   const [guests, setGuests] = useState<GuestRow[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [moments, setMoments] = useState<Moment[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingContributions, setLoadingContributions] = useState(false);
   const [loadingGuests, setLoadingGuests] = useState(false);
+  const [loadingMoments, setLoadingMoments] = useState(false);
   const [countryStats, setCountryStats] = useState<{ code: string; name: string; count: number }[]>([]);
   const [totalUsersWithPhone, setTotalUsersWithPhone] = useState(0);
   const [loadingCountryStats, setLoadingCountryStats] = useState(false);
@@ -519,6 +543,68 @@ const AdminDashboard = () => {
       setLoadingEmailTemplates(false);
     }
   }, [navigate, selectedEmailTemplateId]);
+
+  const fetchMoments = useCallback(async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      setLoadingMoments(true);
+      const response = await fetch(`${baseUrl}/api/admin/moments`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+        return;
+      }
+
+      if (!response.ok) {
+        toast.error('Failed to fetch moments');
+        return;
+      }
+
+      const data = await response.json();
+      setMoments(data);
+    } catch (error) {
+      toast.error('Failed to fetch moments');
+    } finally {
+      setLoadingMoments(false);
+    }
+  }, [navigate]);
+
+  const handleDeleteMoment = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this moment?')) return;
+
+    const token = localStorage.getItem('adminToken');
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/admin/moments/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        toast.success('Moment deleted');
+        fetchMoments();
+      } else {
+        toast.error('Failed to delete moment');
+      }
+    } catch (error) {
+      toast.error('Error deleting moment');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'moments') {
+      fetchMoments();
+    }
+  }, [activeTab, fetchMoments]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -990,6 +1076,99 @@ const AdminDashboard = () => {
     
     rows = filterByEvent(rows);
     return rows;
+  };
+
+  const renderMoments = () => {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Moments</CardTitle>
+              <Camera className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics?.totalMoments || 0}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Events with Moments</CardTitle>
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics?.totalEventsWithMoments || 0}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>All Moments</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              A collection of all pictures uploaded across all events.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {loadingMoments ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              </div>
+            ) : moments.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                No moments uploaded yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {moments.map((moment) => (
+                  <Card key={moment.id} className="overflow-hidden group relative">
+                    <div className="aspect-square relative">
+                      <img
+                        src={moment.imageUrl}
+                        alt={moment.event}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleDeleteMoment(moment.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <a
+                          href={moment.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-white text-black p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </a>
+                      </div>
+                    </div>
+                    <CardContent className="p-3">
+                      <div className="text-sm font-semibold truncate" title={moment.event}>
+                        {moment.event}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1 truncate">
+                        Event: {moment.Gift?.title || 'N/A'}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        By: {moment.Gift?.user?.name || moment.user?.name || 'Anonymous'}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        {new Date(moment.createdAt).toLocaleDateString()}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
   };
 
   const renderCountries = () => {
@@ -1618,6 +1797,20 @@ const AdminDashboard = () => {
               </div>
               <div className="text-xs text-muted-foreground mt-1">
                 Users with events
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Moment Feature</CardTitle>
+              <Camera className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-black">
+                {metrics?.totalMoments || 0}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {metrics?.totalEventsWithMoments || 0} Events used it
               </div>
             </CardContent>
           </Card>
@@ -2655,6 +2848,7 @@ const AdminDashboard = () => {
           {activeTab === 'users' && renderUsers()}
           {activeTab === 'guests' && renderGuests()}
           {activeTab === 'events' && renderEvents()}
+          {activeTab === 'moments' && renderMoments()}
           {activeTab === 'emails' && renderEmails()}
         </div>
       </main>
