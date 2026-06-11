@@ -23,22 +23,30 @@ async function psRequest(method, path, body) {
     throw err;
   }
 
-  const res = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers: {
-      'Authorization': `Bearer ${sec}`,
-      'Content-Type': 'application/json'
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const err = new Error(json?.message || `Paystack API ${method} ${path} failed`);
-    err.data = json;
-    throw err;
+  try {
+    const res = await fetch(`${baseUrl}${path}`, {
+      method,
+      headers: {
+        'Authorization': `Bearer ${sec}`,
+        'Content-Type': 'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(json?.message || `Paystack API ${method} ${path} failed`);
+      err.data = json;
+      throw err;
+    }
+    return json;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return json;
 }
 
 async function initializePayment(payload) {

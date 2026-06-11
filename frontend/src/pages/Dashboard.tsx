@@ -236,7 +236,7 @@ const Dashboard: React.FC = () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/utils/country-codes`);
         const data = await res.json();
-        setCountries(data);
+        setCountries(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch country codes", err);
         setCountries([

@@ -38,7 +38,7 @@ const SignupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
       try {
         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/utils/country-codes`);
         const data = await res.json();
-        setCountries(data);
+        setCountries(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch country codes", err);
         // Fallback to a minimal list if API fails

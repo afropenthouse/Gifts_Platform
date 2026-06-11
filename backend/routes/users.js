@@ -403,14 +403,16 @@ module.exports = () => {
     try {
       const response = await getBanks();
 
-      if (response.status) {
-        res.json({ banks: response.data || response });
+      if (response.status && Array.isArray(response.data)) {
+        res.json({ banks: response.data });
       } else {
-        res.status(400).json({ msg: 'Failed to fetch banks' });
+        // Fallback to empty array if Paystack fails
+        res.json({ banks: [] });
       }
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ msg: 'Error fetching banks' });
+      console.error('Error fetching banks:', error);
+      // Fallback to empty array if Paystack fails
+      res.json({ banks: [] });
     }
   });
 

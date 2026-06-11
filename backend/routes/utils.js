@@ -8,8 +8,14 @@ module.exports = () => {
   router.get('/country-codes', async (req, res) => {
     try {
       // Fetch only the fields we need to keep the payload small
-      const response = await axios.get('https://restcountries.com/v3.1/all?fields=name,flags,idd');
+      const response = await axios.get('https://restcountries.com/v3.1/all?fields=name,flags,idd', {
+        timeout: 10000 // 10 second timeout
+      });
       
+      if (!Array.isArray(response.data)) {
+        throw new Error('Invalid response from country API');
+      }
+
       const countryCodes = response.data
         .map(country => {
           // Ensure the country has a calling code
@@ -36,7 +42,12 @@ module.exports = () => {
       res.json(countryCodes);
     } catch (err) {
       console.error('Error fetching country codes:', err.message);
-      res.status(500).json({ msg: 'Server error fetching country codes' });
+      // Fallback to a minimal list if API fails
+      res.json([
+        { code: '+234', country: 'Nigeria', flag: '' },
+        { code: '+1', country: 'USA/Canada', flag: '' },
+        { code: '+44', country: 'United Kingdom', flag: '' }
+      ]);
     }
   });
 
