@@ -529,7 +529,7 @@ module.exports = () => {
   // Get all events (gifts)
   router.get('/events', adminAuth, async (req, res) => {
     try {
-      const { dateRange, status, type } = req.query;
+      const { dateRange, status, type, sortBy } = req.query;
       let where = {};
 
       // Status filter (active/past)
@@ -564,10 +564,28 @@ module.exports = () => {
          };
        }
 
-      // Sort by creation date when showing all events or past events, otherwise sort by event date
-      const orderBy = (status === 'past' || (!status && !dateRange))
+      // Sort by option
+      let orderBy;
+      if (sortBy === 'guests-desc') {
+        // Sort by guest count descending - using Prisma's aggregation order
+        orderBy = {
+          guests: {
+            _count: 'desc'
+          }
+        };
+      } else if (sortBy === 'guests-asc') {
+        // Sort by guest count ascending
+        orderBy = {
+          guests: {
+            _count: 'asc'
+          }
+        };
+      } else {
+        // Default sort
+        orderBy = (status === 'past' || (!status && !dateRange))
         ? { createdAt: 'desc' } // Sort by creation date for all events and past events
         : [{ date: 'asc' }, { createdAt: 'desc' }]; // Sort by event date for active events and date range
+      }
 
       const gifts = await prisma.gift.findMany({
         where,

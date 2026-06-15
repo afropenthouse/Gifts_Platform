@@ -193,6 +193,7 @@ const AdminDashboard = () => {
   const [eventDateRange, setEventDateRange] = useState<number>(12); // Default to 12 months
   const [eventStatusFilter, setEventStatusFilter] = useState<'all' | 'active' | 'past'>('all');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all'); // Event type filter
+  const [eventSortBy, setEventSortBy] = useState<string>('default'); // New sort state
   const [emailSourceFilter, setEmailSourceFilter] = useState<'all' | 'user' | 'guest'>('all');
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [sendingBulk, setSendingBulk] = useState(false);
@@ -405,6 +406,11 @@ const AdminDashboard = () => {
       if (eventTypeFilter !== 'all') {
         params.set('type', eventTypeFilter);
       }
+
+      // Only apply sort filter if it's not 'default'
+      if (eventSortBy !== 'default') {
+        params.set('sortBy', eventSortBy);
+      }
       
       const response = await fetch(`${baseUrl}/api/admin/events?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -430,7 +436,7 @@ const AdminDashboard = () => {
       setLoadingEvents(false);
       fetchingEvents.current = false;
     }
-  }, [navigate, eventDateRange, eventStatusFilter, eventTypeFilter]);
+  }, [navigate, eventDateRange, eventStatusFilter, eventTypeFilter, eventSortBy]);
 
   const fetchCountryStats = useCallback(async () => {
     const token = localStorage.getItem('adminToken');
@@ -635,7 +641,7 @@ const AdminDashboard = () => {
     if (activeTab === 'events') {
       fetchEvents();
     }
-  }, [eventDateRange, eventStatusFilter, eventTypeFilter, activeTab, fetchEvents]);
+  }, [eventDateRange, eventStatusFilter, eventTypeFilter, eventSortBy, activeTab, fetchEvents]);
 
   useEffect(() => {
     if (activeTab === 'guests' || activeTab === 'emails') {
@@ -2340,6 +2346,23 @@ const AdminDashboard = () => {
                     <SelectItem value="house warming">House Warming</SelectItem>
                     <SelectItem value="baby shower">Baby Shower</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <Label className="text-sm font-medium">Sort By</Label>
+                <Select
+                  value={eventSortBy}
+                  onValueChange={(value) => setEventSortBy(value)}
+                >
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default</SelectItem>
+                    <SelectItem value="guests-desc">Most Guests First</SelectItem>
+                    <SelectItem value="guests-asc">Fewest Guests First</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
