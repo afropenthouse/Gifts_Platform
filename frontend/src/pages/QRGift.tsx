@@ -358,12 +358,12 @@ const QRGift: React.FC = () => {
     if (successCount > 0) {
       toast({
         title: "Upload successful",
-        description: `${successCount} moment${successCount > 1 ? 's' : ''} uploaded successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}.`,
+        description: `${successCount} photo${successCount > 1 ? 's' : ''} uploaded successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}.`,
       });
     } else {
       toast({
         title: "Upload failed",
-        description: "Failed to upload moments. Please try again.",
+        description: "Failed to upload photos. Please try again.",
         variant: "destructive",
       });
     }
@@ -416,7 +416,7 @@ const QRGift: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               {gift.title}
             </h1>
-            <p className="text-gray-600">Celebrate with them by sharing your moments at their event and sending cash gifts!</p>
+            <p className="text-gray-600">Celebrate with them by sharing your photos at their event and sending cash gifts!</p>
           </div> */}
 
           {gift.picture ? (
@@ -743,9 +743,9 @@ const QRGift: React.FC = () => {
       <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
         <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
           <DialogHeader>
-            <DialogTitle>Upload Pictures</DialogTitle>
-            <p className="text-sm text-gray-600">Share moments from {gift?.title}</p>
-          </DialogHeader>
+              <DialogTitle>Upload Pictures</DialogTitle>
+              <p className="text-sm text-gray-600">Share photos from {gift?.title}</p>
+            </DialogHeader>
 
           <form onSubmit={uploadMoments} className="space-y-4">
             <div>

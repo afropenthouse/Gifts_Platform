@@ -32,6 +32,7 @@ import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Wishes from "./pages/Wishes";
+import ShareWishlist from "./pages/ShareWishlist";
 
 const queryClient = new QueryClient();
 const GOOGLE_TAG_ID = "AW-18055751654";
@@ -117,6 +118,8 @@ const App = () => {
           <Route path="/qr-gift/:slug/:id" element={<QRGift />} />
           <Route path="/wishes/:linkParam" element={<Wishes />} />
           <Route path="/wishes/:slug/:id" element={<Wishes />} />
+          <Route path="/wishlist/:slug/:id" element={<ShareWishlist />} />
+          <Route path="/wishlist/:link" element={<ShareWishlist />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/admin" element={<AdminLogin />} />

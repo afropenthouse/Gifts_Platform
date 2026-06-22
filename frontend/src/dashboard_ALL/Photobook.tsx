@@ -31,12 +31,12 @@ interface MomentGift {
   date?: string;
 }
 
-interface MomentsProps {
+interface PhotobookProps {
   gifts: MomentGift[];
   onTabChange: (tab: string) => void;
 }
 
-const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
+const Photobook: React.FC<PhotobookProps> = ({ gifts, onTabChange }) => {
   const [moments, setMoments] = useState<Moment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -132,19 +132,19 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
         setEventType('');
         setPictureFile(null);
         toast({
-          title: "Moment uploaded",
-          description: "Your moment has been successfully uploaded.",
+          title: "Photo uploaded",
+          description: "Your photo has been successfully uploaded.",
         });
       } else {
         const error = await res.json();
         toast({
           title: "Upload failed",
-          description: error.msg || "Failed to upload moment.",
+          description: error.msg || "Failed to upload photo.",
           variant: "destructive",
         });
       }
     } catch (err) {
-      console.error('Error uploading moment:', err);
+      console.error('Error uploading photo:', err);
       toast({
         title: "Upload failed",
         description: "An error occurred while uploading.",
@@ -174,20 +174,20 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
       if (res.ok) {
         setMoments(moments.filter(m => m.id !== momentToDelete.id));
         toast({
-          title: "Moment deleted",
-          description: "The moment has been successfully deleted.",
+          title: "Photo deleted",
+          description: "The photo has been successfully deleted.",
         });
         setDeleteModalOpen(false);
         setMomentToDelete(null);
       } else {
         toast({
           title: "Delete failed",
-          description: "Failed to delete moment.",
+          description: "Failed to delete photo.",
           variant: "destructive",
         });
       }
     } catch (err) {
-      console.error('Error deleting moment:', err);
+      console.error('Error deleting photo:', err);
       toast({
         title: "Delete failed",
         description: "An error occurred while deleting.",
@@ -218,7 +218,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
     }
   };
 
-  const handleDownloadAll = async (momentsToDownload?: any, folderName: string = "all-moments") => {
+  const handleDownloadAll = async (momentsToDownload?: any, folderName: string = "all-photos") => {
     // Ensure we have an array. If momentsToDownload is a React event, use getVisibleMoments instead.
     const visibleMoments = Array.isArray(momentsToDownload) ? momentsToDownload : getVisibleMoments();
     if (visibleMoments.length === 0) return;
@@ -230,7 +230,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
     try {
       toast({
         title: "Preparing download",
-        description: `Downloading ${visibleMoments.length} moments...`,
+        description: `Downloading ${visibleMoments.length} photos...`,
       });
 
       const downloadPromises = visibleMoments.map(async (moment) => {
@@ -238,7 +238,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
           const response = await fetch(moment.imageUrl);
           const blob = await response.blob();
           const extension = moment.imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
-          folder?.file(`moment-${moment.id}.${extension}`, blob);
+          folder?.file(`photo-${moment.id}.${extension}`, blob);
         } catch (err) {
           console.error(`Failed to download image ${moment.id}:`, err);
         }
@@ -250,7 +250,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
 
       toast({
         title: "Download complete",
-        description: "Your moments have been zipped and downloaded.",
+        description: "Your photos have been zipped and downloaded.",
       });
     } catch (err) {
       console.error('Error creating zip:', err);
@@ -322,7 +322,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 mx-auto border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-muted-foreground">Loading moments...</p>
+          <p className="text-muted-foreground">Loading photos...</p>
         </div>
       </div>
     );
@@ -332,7 +332,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">See Moments</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Photobook</h2>
           <p className="text-gray-600 mt-1">Share your QR code at your event so your guests can share pictures from your events with you</p>
         </div>
         <div className="flex items-center gap-3">
@@ -352,7 +352,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Upload a Moment</DialogTitle>
+              <DialogTitle>Upload a Photo</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleUpload} className="space-y-4">
               <div>
@@ -450,7 +450,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
         <Card className="border-0 shadow-lg">
           <CardContent className="p-12 text-center">
             <ImageIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No moments yet</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No photos yet</h3>
             <p className="text-gray-600 mb-6">
               Share your wedding QR code at your event and let guests upload photos, videos, and memories you can relive here.
             </p>
@@ -477,7 +477,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
                   <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-xl">
                     {gift.title}
                     <span className="text-xs sm:text-sm font-normal text-gray-500 whitespace-nowrap">
-                      ({giftMoments.length} moment{giftMoments.length !== 1 ? 's' : ''})
+                      ({giftMoments.length} photo{giftMoments.length !== 1 ? 's' : ''})
                     </span>
                   </CardTitle>
                   {gift.date && (
@@ -499,7 +499,7 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
                   disabled={downloadingAll}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  <span className="sm:hidden">Download moments</span>
+                  <span className="sm:hidden">Download photos</span>
                   <span className="hidden sm:inline">Download all</span>
                 </Button>
               </CardHeader>
@@ -563,8 +563,8 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Moment</DialogTitle>
-            <p className="text-sm text-gray-600">Are you sure you want to delete this moment? This action cannot be undone.</p>
+            <DialogTitle>Delete Photo</DialogTitle>
+            <p className="text-sm text-gray-600">Are you sure you want to delete this photo? This action cannot be undone.</p>
           </DialogHeader>
 
           <div className="flex gap-3 pt-4">
@@ -652,4 +652,4 @@ const Moments: React.FC<MomentsProps> = ({ gifts, onTabChange }) => {
   );
 };
 
-export default Moments;
+export default Photobook;

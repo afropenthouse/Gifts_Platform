@@ -6,9 +6,10 @@ import { Button } from '../components/ui/button';
 import GiftLinks from '../dashboard_ALL/GiftLinks';
 import QRCodePage from '../dashboard_ALL/QRCodePage';
 import VendorPaymentTracker from '../dashboard_ALL/VendorPaymentTracker';
-import Moments from '../dashboard_ALL/Moments';
+import Photobook from '../dashboard_ALL/Photobook';
 import Asoebi from '../dashboard_ALL/Asoebi';
 import InviteFriends from '../dashboard_ALL/InviteFriends';
+import Wishlists from '../dashboard_ALL/Wishlists';
 import { ExclusiveDeals } from '../dashboard_ALL/ExclusiveDeals';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
@@ -220,6 +221,7 @@ const Dashboard: React.FC = () => {
   const [asoebiFilter, setAsoebiFilter] = useState('all');
   const [tableFilter, setTableFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState<'first-asc' | 'last-asc'>('first-asc');
+  const [preselectedGiftId, setPreselectedGiftId] = useState<number | undefined>(undefined);
 
   // Phone number prompt state
   const [isPhonePromptOpen, setIsPhonePromptOpen] = useState(false);
@@ -329,9 +331,10 @@ const Dashboard: React.FC = () => {
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null, action: undefined },
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length, action: undefined },
+    { id: 'wishlist', label: 'Wishlist', icon: Heart, color: 'text-red-500', badge: null, action: undefined },
     { id: 'rsvp', label: 'RSVP Manager', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests, action: undefined },
     { id: 'asoebi', label: 'Asoebi Orders', icon: Package, color: 'text-purple-600', badge: null, action: undefined },
-    { id: 'moments', label: 'Moments', icon: ImageIcon, color: 'text-pink-500', badge: null, action: undefined },
+    { id: 'photobook', label: 'Photobook', icon: ImageIcon, color: 'text-pink-500', badge: null, action: undefined },
     { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null, action: undefined },
     { id: 'vendors', label: 'Manage Expenses', icon: Wallet, color: 'text-orange-500', badge: null, action: undefined },
     { id: 'invite', label: 'Invite & Earn', icon: Share2, color: 'text-blue-500', badge: null, action: undefined },
@@ -603,6 +606,13 @@ const Dashboard: React.FC = () => {
       setBulkGuests([]);
     }
   }, [bulkNames, bulkTableMode]);
+
+  // Reset preselected gift id when tab changes away from wishlist
+  useEffect(() => {
+    if (activeTab !== 'wishlist') {
+      setPreselectedGiftId(undefined);
+    }
+  }, [activeTab]);
 
   //add filter
   // useEffect(() => {
@@ -1736,8 +1746,9 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'vendors' && 'Manage Expenses'}
                     {activeTab === 'asoebi' && 'Asoebi Orders'}
                     {activeTab === 'qr' && 'Event QR Code'}
-                    {activeTab === 'moments' && 'Moments'}
+                    {activeTab === 'photobook' && 'Photobook'}
                     {activeTab === 'invite' && 'Invite & Earn'}
+                    {activeTab === 'wishlists' && 'Wishlist'}
                     {activeTab === 'exclusive-deals' && 'Exclusive Deals'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
@@ -1746,9 +1757,10 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
                     {activeTab === 'asoebi' && 'Track asoebi orders and payments'}
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
-                    {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share moments'}
-                    {activeTab === 'moments' && 'Share your QR code at your event so your guests can share pictures from your events with you'}
+                    {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share photos in your photobook'}
+                    {activeTab === 'photobook' && 'Share your QR code at your event so your guests can share pictures from your events with you'}
                     {activeTab === 'invite' && 'Refer friends and earn rewards when they use your link'}
+                    {activeTab === 'wishlists' && 'Create and share wishlist with your friends and family'}
                     {activeTab === 'exclusive-deals' && 'Discover amazing wedding deals from top vendors with huge discounts'}
                   </p>
                 </div>
@@ -1998,6 +2010,10 @@ const Dashboard: React.FC = () => {
   onViewDetails={(gift) => {
     setSelectedGiftForTable(gift);
     setIsGiftTableModalOpen(true);
+  }}
+  onCreateWishlistForGift={(gift) => {
+    setPreselectedGiftId(gift.id);
+    setActiveTab('wishlists');
   }}
   deletingGiftId={deletingGiftId}
 />
@@ -2973,9 +2989,17 @@ const Dashboard: React.FC = () => {
               <QRCodePage gifts={gifts} />
             )}
 
-            {/* Moments Section */}
-            {activeTab === 'moments' && (
-              <Moments gifts={gifts} onTabChange={setActiveTab} />
+            {/* Photobook Section */}
+            {activeTab === 'photobook' && (
+              <Photobook gifts={gifts} onTabChange={setActiveTab} />
+            )}
+
+            {/* Wishlists Section */}
+            {activeTab === 'wishlist' && (
+              <Wishlists 
+                preselectedGiftId={preselectedGiftId}
+                onPreselectedGiftIdUsed={() => setPreselectedGiftId(undefined)}
+              />
             )}
 
             {/* Exclusive Deals Section */}
@@ -5930,17 +5954,17 @@ const Dashboard: React.FC = () => {
             action: () => setActiveTab('asoebi'),
           },
           {
-            id: 'moments',
-            title: 'Moments',
+            id: 'photobook',
+            title: 'Photobook',
             content: 'Allow guests to upload and share special moments from your events. Guests can upload pictures and create lasting memories together.',
             target: 'body',
             position: 'center',
-            action: () => setActiveTab('moments'),
+            action: () => setActiveTab('photobook'),
           },
           {
             id: 'event-qr',
             title: 'Event QR Code',
-            content: 'Share your unique QR code, so Guests can give cash gifts and upload moments',
+            content: 'Share your unique QR code, so Guests can give cash gifts and upload photos to your photobook',
             target: 'body',
             position: 'center',
             action: () => setActiveTab('qr'),

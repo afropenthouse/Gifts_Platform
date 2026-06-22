@@ -148,7 +148,7 @@ const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'transactions', label: 'Transactions', icon: Gift },
   { id: 'guests', label: 'Guest Users', icon: Users },
   { id: 'events', label: 'Events', icon: CalendarDays },
-  { id: 'moments', label: 'Moments', icon: Camera },
+  { id: 'moments', label: 'Photobook', icon: Camera },
   { id: 'emails', label: 'Bulk Emails', icon: Mail },
 ];
 
@@ -578,7 +578,7 @@ const AdminDashboard = () => {
       const data = await response.json();
       setMoments(data);
     } catch (error) {
-      toast.error('Failed to fetch moments');
+      toast.error('Failed to fetch photos');
     } finally {
       setLoadingMoments(false);
     }
@@ -1090,7 +1090,7 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Moments</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Photos</CardTitle>
               <Camera className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -1099,7 +1099,7 @@ const AdminDashboard = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Events with Moments</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Events with Photos</CardTitle>
               <CalendarDays className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -1110,7 +1110,7 @@ const AdminDashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>All Moments</CardTitle>
+            <CardTitle>All Photos</CardTitle>
             <p className="text-sm text-muted-foreground">
               A collection of all pictures uploaded across all events.
             </p>
@@ -1122,7 +1122,7 @@ const AdminDashboard = () => {
               </div>
             ) : moments.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                No moments uploaded yet.
+                No photos uploaded yet.
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

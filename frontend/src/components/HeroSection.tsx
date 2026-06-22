@@ -140,7 +140,7 @@ const HeroSection = () => {
         >
           <span style={{ color: '#2E235C' }}>Celebrate Life’s</span>
           <br />
-          <span className="text-gold" style={{ color: '#C9A14A' }}>Special Moments</span>
+          <span className="text-gold" style={{ color: '#C9A14A' }}>Special Memories</span>
           <br />
           <span className="font-serif font-semibold block" style={{ color: '#2E235C' }}>With One Simple Link</span>
         </h1>
@@ -149,7 +149,7 @@ const HeroSection = () => {
           className="font-serif hidden sm:block sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold text-foreground mb-4 md:mb-6 leading-snug md:leading-tight"
         >
           <span style={{ color: '#2E235C' }}>Celebrate Life’s </span>
-          <span className="text-gold" style={{ color: '#C9A14A' }}>Special moments</span>
+          <span className="text-gold" style={{ color: '#C9A14A' }}>Special Memories</span>
           <br />
           <span className="font-serif font-semibold block" style={{ color: '#2E235C' }}>With one simple link</span>
         </h1>
@@ -216,7 +216,7 @@ const HeroSection = () => {
             </div>
             <div>
               <DialogTitle className="text-xl font-semibold text-gray-900">Create Event Link</DialogTitle>
-              <p className="text-sm text-gray-600 mt-1">Share your special moment and receive gifts</p>
+              <p className="text-sm text-gray-600 mt-1">Share your special memory and receive gifts</p>
             </div>
           </div>
         </DialogHeader>

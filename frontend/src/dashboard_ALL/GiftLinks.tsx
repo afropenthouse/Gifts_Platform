@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import {
-  Gift, Copy, Eye, Edit, Download, Filter, Trash2, Users, ExternalLink, Mail, MessageSquare
+  Gift, Copy, Eye, Edit, Download, Filter, Trash2, Users, ExternalLink, Mail, MessageSquare, Heart
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
@@ -43,6 +43,7 @@ interface GiftLinksProps {
   onDeleteGift: (giftId: number) => void;
   onRSVP: (gift: Gift) => void;
   onSetReminder: (gift: Gift) => void;
+  onCreateWishlistForGift: (gift: Gift) => void;
   deletingGiftId?: number | null;
 }
 
@@ -55,6 +56,7 @@ export const GiftLinks = ({
   onDeleteGift,
   onRSVP,
   onSetReminder,
+  onCreateWishlistForGift,
   deletingGiftId,
 }: GiftLinksProps) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -339,6 +341,16 @@ export const GiftLinks = ({
                               Well wishes
                             </Button>
                           )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-9 border-pink-500 text-pink-600 hover:bg-pink-500 hover:text-white transition-all font-medium"
+                            onClick={() => onCreateWishlistForGift(gift)}
+                            title="Create Wishlist"
+                          >
+                            <Heart className="w-3.5 h-3.5 mr-1" />
+                            Create Wishlist
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
