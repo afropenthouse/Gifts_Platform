@@ -121,6 +121,7 @@ app.use('/api/referrals', require('./routes/referrals')());
 app.use('/api/admin', require('./routes/admin')());
 app.use('/api/utils', require('./routes/utils')());
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/wishlists', require('./routes/wishlists')());
 
 app.get('/', (req, res) => res.send('API running'));
 

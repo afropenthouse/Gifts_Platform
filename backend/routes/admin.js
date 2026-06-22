@@ -435,7 +435,7 @@ module.exports = () => {
       res.json(moments);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ msg: 'Server error fetching moments' });
+      res.status(500).json({ msg: 'Server error fetching photos' });
     }
   });
 
@@ -446,10 +446,10 @@ module.exports = () => {
       await prisma.moment.delete({
         where: { id: parseInt(id) }
       });
-      res.json({ msg: 'Moment deleted successfully' });
+      res.json({ msg: 'Photo deleted successfully' });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ msg: 'Server error deleting moment' });
+      res.status(500).json({ msg: 'Server error deleting photo' });
     }
   });
 

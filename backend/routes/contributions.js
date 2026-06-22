@@ -11,7 +11,7 @@ module.exports = () => {
   // Initialize payment
   router.post('/:link(*)/initialize-payment', async (req, res) => {
     const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity, asoebiType, asoebiSelection,
-      asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, currency: currencyRaw } = req.body;
+      asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, currency: currencyRaw, wishlistItemId, wishlistShareLink } = req.body;
 
     try {
       const gift = await prisma.gift.findUnique({ 
@@ -42,6 +42,8 @@ module.exports = () => {
         asoebiGroomWomenQty,
         asoebiItemsDetails,
         currency,
+        wishlistItemId,
+        wishlistShareLink,
         customizations: {
           title: `Contribution to ${gift.user.name}'s ${gift.type}`,
           description: gift.title || gift.type,
@@ -62,7 +64,9 @@ module.exports = () => {
       }
 
       const tx_ref = `gift-${gift.id}-${Date.now()}`;
-      const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`;
+      const redirectUrl = wishlistShareLink 
+        ? `${process.env.FRONTEND_URL || 'http://localhost:5173'}/wishlist/${wishlistShareLink.replace('wishlist/', '')}`
+        : `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`;
 
       // Route all NGN contributions through Paystack; keep other currencies on Flutterwave.
       if (currency === 'NGN') {
@@ -241,8 +245,8 @@ module.exports = () => {
         });
       }
 
-      const meta = provider === 'paystack' ? (response?.data?.metadata || {}) : (response?.data?.meta || {});
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails } = meta;
+      const meta = provider === 'paystack' ? (response.data.metadata || {}) : (response.data.meta || {});
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, wishlistItemId } = meta;
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const convertToNgn = async (fromCurrency, fromAmount, createdAtIso) => {
         const from = String(fromCurrency || '').toUpperCase();
@@ -473,6 +477,7 @@ module.exports = () => {
       const contribution = await prisma.contribution.create({
         data: {
           giftId,
+          wishlistItemId: wishlistItemId ? parseInt(wishlistItemId, 10) : null,
           contributorName: contributorName || 'Anonymous',
           contributorEmail: contributorEmail || '',
           amount,
@@ -511,6 +516,21 @@ module.exports = () => {
               console.error(`❌ Failed to update stock for item ${item.asoebiItemId}:`, err);
             }
           }
+        }
+      }
+
+      // Update wishlist item purchased count
+      if (wishlistItemId) {
+        try {
+          await prisma.wishlistItem.update({
+            where: { id: parseInt(wishlistItemId, 10) },
+            data: {
+              purchased: { increment: 1 }
+            }
+          });
+          console.log(`✅ Updated wishlist item purchased count incremented for item ${wishlistItemId}`);
+        } catch (err) {
+          console.error(`❌ Failed to update wishlist item purchased count for item ${wishlistItemId}:`, err);
         }
       }
 

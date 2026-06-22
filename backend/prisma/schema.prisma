@@ -61,6 +61,7 @@ model Gift {
   guests                      Guest[]
   Moment                      Moment[]
   Vendor                      Vendor[]
+  wishlists                   Wishlist[]
 
   @@index([userId])
   @@index([createdAt])
@@ -82,36 +83,37 @@ model AsoebiItem {
 }
 
 model User {
-  id                       Int            @id @default(autoincrement())
-  name                     String
-  email                    String         @unique
-  password                 String
-  isVerified               Boolean        @default(false)
-  verificationToken        String?
-  verificationTokenExpires DateTime?
-  resetPasswordToken       String?
-  resetPasswordExpires     DateTime?
-  profilePicture           String?
-  wallet                   Decimal        @default(0) @db.Decimal(10, 2)
-  isActive                 Boolean        @default(true)
-  agreedToTerms            Boolean        @default(false)
-  agreedToTermsAt          DateTime?
-  phoneNumber              String?
-  bvn                      String?
-  createdAt                DateTime       @default(now())
-  updatedAt                DateTime       @updatedAt
-  contributions            Contribution[]
-  gifts                    Gift[]
-  guests                   Guest[]
-  moments                  Moment[]
-  withdrawals              Withdrawal[]
-  vendorPaymentFundings    VendorPaymentFunding[]
-  referralCode             String?                @unique
-  referredById             Int?
-  referredBy               User?                  @relation("UserReferrals", fields: [referredById], references: [id])
-  referrals                User[]                 @relation("UserReferrals")
-  referralTransactions     ReferralTransaction[]
-  referralTransactionsReceived ReferralTransaction[] @relation("ReceivedReferralTransactions")
+  id                           Int                    @id @default(autoincrement())
+  name                         String
+  email                        String                 @unique
+  password                     String
+  isVerified                   Boolean                @default(false)
+  verificationToken            String?
+  verificationTokenExpires     DateTime?
+  resetPasswordToken           String?
+  resetPasswordExpires         DateTime?
+  profilePicture               String?
+  wallet                       Decimal                @default(0) @db.Decimal(10, 2)
+  isActive                     Boolean                @default(true)
+  agreedToTerms                Boolean                @default(false)
+  agreedToTermsAt              DateTime?
+  phoneNumber                  String?
+  bvn                          String?
+  createdAt                    DateTime               @default(now())
+  updatedAt                    DateTime               @updatedAt
+  contributions                Contribution[]
+  gifts                        Gift[]
+  guests                       Guest[]
+  moments                      Moment[]
+  wishlists                    Wishlist[]
+  withdrawals                  Withdrawal[]
+  vendorPaymentFundings        VendorPaymentFunding[]
+  referralCode                 String?                @unique
+  referredById                 Int?
+  referredBy                   User?                  @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals                    User[]                 @relation("UserReferrals")
+  referralTransactions         ReferralTransaction[]
+  referralTransactionsReceived ReferralTransaction[]  @relation("ReceivedReferralTransactions")
 
   @@index([email])
 }
@@ -134,6 +136,7 @@ model ReferralTransaction {
 model Contribution {
   id                  Int      @id @default(autoincrement())
   giftId              Int
+  wishlistItemId      Int?
   contributorName     String?
   contributorEmail    String?
   amount              Float
@@ -155,9 +158,11 @@ model Contribution {
   asoebiItemsDetails  Json?
   gift                Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
   user                User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wishlistItem        WishlistItem? @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([giftId])
+  @@index([wishlistItemId])
 }
 
 model Guest {
@@ -220,25 +225,25 @@ model Moment {
 }
 
 model Vendor {
-  id              Int       @id @default(autoincrement())
-  eventId         Int
-  category        String
-  amountAgreed    Decimal   @db.Decimal(10, 2)
-  amountPaid      Decimal   @default(0) @db.Decimal(10, 2)
-  dueDate         DateTime
-  status          String    @default("Not Scheduled")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  releaseDate     DateTime?
-  reminder3DaysSentAt DateTime?
-  reminderDueDaySentAt DateTime?
-  scheduledAmount Decimal   @default(0) @db.Decimal(10, 2)
-  vendorEmail     String?
-  accountName     String?
-  accountNumber   String?
-  bankCode        String?
-  bankName        String?
-  Gift            Gift      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id                    Int                    @id @default(autoincrement())
+  eventId               Int
+  category              String
+  amountAgreed          Decimal                @db.Decimal(10, 2)
+  amountPaid            Decimal                @default(0) @db.Decimal(10, 2)
+  dueDate               DateTime
+  status                String                 @default("Not Scheduled")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  releaseDate           DateTime?
+  reminder3DaysSentAt   DateTime?
+  reminderDueDaySentAt  DateTime?
+  scheduledAmount       Decimal                @default(0) @db.Decimal(10, 2)
+  vendorEmail           String?
+  accountName           String?
+  accountNumber         String?
+  bankCode              String?
+  bankName              String?
+  Gift                  Gift                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
   vendorPaymentFundings VendorPaymentFunding[]
 
   @@index([eventId])
@@ -300,4 +305,41 @@ enum GuestStatus {
 enum GuestListMode {
   open
   restricted
+}
+
+model Wishlist {
+  id          Int            @id @default(autoincrement())
+  userId      Int
+  giftId      Int?
+  title       String
+  description String?
+  address     String? // Delivery address
+  shareLink   String         @unique
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  items       WishlistItem[]
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gift        Gift?          @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([giftId])
+}
+
+model WishlistItem {
+  id                Int      @id @default(autoincrement())
+  wishlistId        Int
+  name              String
+  productUrl        String?
+  price             Decimal? @db.Decimal(10, 2)
+  quantity          Int      @default(1)
+  purchased         Int      @default(0) // How many have been purchased
+  imageUrl          String?
+  description       String?
+  isCashGiftAllowed Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  wishlist          Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  contributions     Contribution[]
+
+  @@index([wishlistId])
 }

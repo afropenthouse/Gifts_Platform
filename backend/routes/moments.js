@@ -8,7 +8,7 @@ const { uploadImage } = require('../utils/cloudinary');
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for moments
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for photos
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -21,7 +21,7 @@ const upload = multer({
 module.exports = () => {
   const router = express.Router();
 
-  // Upload moment (picture) - allow anonymous uploads
+  // Upload photo - allow anonymous uploads
   router.post('/', upload.single('picture'), async (req, res) => {
     const { giftId, event } = req.body;
 
@@ -65,7 +65,7 @@ module.exports = () => {
     }
   });
 
-  // Get moments for user (moments from user's events)
+  // Get photos for user (photos from user's events)
   router.get('/my', auth(), async (req, res) => {
     try {
       const moments = await prisma.moment.findMany({
@@ -88,7 +88,7 @@ module.exports = () => {
     }
   });
 
-  // Get moments for a specific gift
+  // Get photos for a specific gift
   router.get('/gift/:giftId', auth(), async (req, res) => {
     const giftId = parseInt(req.params.giftId);
 
@@ -115,7 +115,7 @@ module.exports = () => {
     }
   });
 
-  // Delete moment
+  // Delete photo
   router.delete('/:id', auth(), async (req, res) => {
     const momentId = parseInt(req.params.id);
 
@@ -126,12 +126,12 @@ module.exports = () => {
       });
 
       if (!moment || moment.Gift.userId !== req.user.id) {
-        return res.status(404).json({ msg: 'Moment not found' });
+        return res.status(404).json({ msg: 'Photo not found' });
       }
 
       await prisma.moment.delete({ where: { id: momentId } });
 
-      res.json({ msg: 'Moment deleted successfully' });
+      res.json({ msg: 'Photo deleted successfully' });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
