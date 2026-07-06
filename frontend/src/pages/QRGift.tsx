@@ -27,6 +27,7 @@ interface Gift {
   enableCashGifts?: boolean;
   enableGuestNotes?: boolean;
   story?: string;
+  wishlists?: { shareLink: string; title?: string }[];
 }
 
 type CurrencyOption = {
@@ -65,6 +66,11 @@ const currencyOptions: CurrencyOption[] = [
 
 const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
 
+const getWishlistPath = (gift: Gift | null) => {
+  const shareLink = gift?.wishlists?.[0]?.shareLink;
+  return shareLink ? `/${shareLink.replace(/^\/+/, '')}` : null;
+};
+
 const QRGift: React.FC = () => {
   const { link, slug, id } = useParams<{ link?: string; slug?: string; id?: string }>();
   const [searchParams] = useSearchParams();
@@ -96,6 +102,7 @@ const QRGift: React.FC = () => {
   const [showNoteThanks, setShowNoteThanks] = useState(false);
   const [showStoryModal, setShowStoryModal] = useState(false);
   const { toast } = useToast();
+  const wishlistPath = getWishlistPath(gift);
 
   useEffect(() => {
     document.title = "Send a Cash Gift";
@@ -539,6 +546,15 @@ const QRGift: React.FC = () => {
                 className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
               >
                 Send Well Wishes
+              </button>
+            )}
+
+            {wishlistPath && (
+              <button
+                onClick={() => window.open(wishlistPath, '_blank', 'noopener,noreferrer')}
+                className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+              >
+                  My Wishlist
               </button>
             )}
           </div>

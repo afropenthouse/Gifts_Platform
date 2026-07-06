@@ -59,6 +59,7 @@ interface Gift {
   soldAsoebiGroomMenQty?: number;
   soldAsoebiGroomWomenQty?: number;
   asoebiItems?: AsoebiItem[];
+  wishlists?: { shareLink: string; title?: string }[];
 }
 
 interface AsoebiItem {
@@ -105,6 +106,10 @@ const currencyOptions: CurrencyOption[] = [
 ];
 
 const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
+const getWishlistPath = (gift: Gift | null) => {
+  const shareLink = gift?.wishlists?.[0]?.shareLink;
+  return shareLink ? `/${shareLink.replace(/^\/+/, '')}` : null;
+};
 
 const ShareGift: React.FC = () => {
   const { link, slug, id } = useParams<{ link?: string; slug?: string; id?: string }>();
@@ -136,6 +141,7 @@ const ShareGift: React.FC = () => {
   const [verifyStatus, setVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
   const [verifyMessage, setVerifyMessage] = useState('');
   const [showStoryModal, setShowStoryModal] = useState(false);
+    const wishlistPath = getWishlistPath(gift);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteMessage, setNoteMessage] = useState('');
   const [noteName, setNoteName] = useState('');
@@ -1148,6 +1154,15 @@ const ShareGift: React.FC = () => {
                   className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
                 >
                   Send Well Wishes
+                </button>
+              )}
+
+              {wishlistPath && (
+                <button
+                  onClick={() => window.open(wishlistPath, '_blank', 'noopener,noreferrer')}
+                  className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+                >
+                  My Wishlist
                 </button>
               )}
             </div>

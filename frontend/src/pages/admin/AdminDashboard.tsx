@@ -284,7 +284,7 @@ const AdminDashboard = () => {
     }
   }, [activeTab, navigate, overviewTimeFilter, selectedEventId, selectedTxnType, txnTimeFilter, useCustomDateRange, customStartDate, customEndDate]);
 
-  const fetchContributions = useCallback(async (time: TimeFilter = 'all', force = false) => {
+  const fetchContributions = useCallback(async (time: TimeFilter = 'all', force = false, skipFilters = false) => {
     if (!force && (fetchingContributions.current || (contributionsLength.current > 0 && !force))) {
       return;
     }
@@ -301,18 +301,22 @@ const AdminDashboard = () => {
       fetchingContributions.current = true;
       const params = new URLSearchParams();
       
-      // Use custom date range if enabled
-      if (useCustomDateRange && customStartDate && customEndDate) {
-        params.set('startDate', customStartDate);
-        params.set('endDate', customEndDate);
-      } else {
-        params.set('time', time);
+      // Only add filters if skipFilters is false
+      if (!skipFilters) {
+        // Use custom date range if enabled
+        if (useCustomDateRange && customStartDate && customEndDate) {
+          params.set('startDate', customStartDate);
+          params.set('endDate', customEndDate);
+        } else {
+          params.set('time', time);
+        }
+        
+        if (activeTab === 'transactions') {
+          if (selectedTxnType !== 'all') params.set('type', selectedTxnType);
+          if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
+        }
       }
       
-      if (activeTab === 'transactions') {
-        if (selectedTxnType !== 'all') params.set('type', selectedTxnType);
-        if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
-      }
       const response = await fetch(`${baseUrl}/api/admin/contributions?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -412,6 +416,7 @@ const AdminDashboard = () => {
         params.set('sortBy', eventSortBy);
       }
       
+      console.log('Fetching events with params:', params.toString());
       const response = await fetch(`${baseUrl}/api/admin/events?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -428,6 +433,7 @@ const AdminDashboard = () => {
       }
 
       const data = await response.json();
+      console.log('Received events:', data.length, data);
       setEvents(data);
       eventsLength.current = data.length;
     } catch (error) {
@@ -632,16 +638,19 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeTab === 'events') {
       fetchEvents();
-      fetchContributions('all');
+      fetchContributions('all', true, true);
     }
   }, [activeTab, fetchEvents, fetchContributions]);
 
   // Refetch events when filters change
   useEffect(() => {
+    console.log('=== Filter change useEffect ===');
+    console.log('Filters:', { eventDateRange, eventStatusFilter, eventTypeFilter, eventSortBy });
     if (activeTab === 'events') {
       fetchEvents();
+      fetchContributions('all', true, true);
     }
-  }, [eventDateRange, eventStatusFilter, eventTypeFilter, eventSortBy, activeTab, fetchEvents]);
+  }, [eventDateRange, eventStatusFilter, eventTypeFilter, eventSortBy, activeTab, fetchEvents, fetchContributions]);
 
   useEffect(() => {
     if (activeTab === 'guests' || activeTab === 'emails') {
@@ -2214,6 +2223,9 @@ const AdminDashboard = () => {
   const renderEvents = () => {
     // Use events directly - backend handles all filtering
     let rows = events;
+    console.log('=== renderEvents ===');
+    console.log('events state:', events.length, events);
+    console.log('allContributions:', allContributions.length, allContributions);
 
     if (eventSearch) {
       const search = eventSearch.toLowerCase();
@@ -2226,12 +2238,18 @@ const AdminDashboard = () => {
       });
     }
 
-    // Calculate stats using all events
-    const eventContributions = allContributions;
+    console.log('rows after search:', rows.length, rows);
+
+    // Calculate stats using filtered events
+    const filteredEventIds = rows.map(e => e.id);
+    console.log('filteredEventIds:', filteredEventIds);
+    const eventContributions = allContributions.filter(c => filteredEventIds.includes(c.gift?.id));
+    console.log('eventContributions:', eventContributions.length, eventContributions);
     const totalAmount = eventContributions.reduce((sum, c) => sum + Number(c.amount), 0);
     const asoebiAmount = eventContributions.filter(c => c.isAsoebi).reduce((sum, c) => sum + Number(c.amount), 0);
     const cashAmount = totalAmount - asoebiAmount;
-    const totalGuests = events.reduce((sum, e) => sum + e._count.guests, 0);
+    const totalGuests = rows.reduce((sum, e) => sum + e._count.guests, 0);
+    console.log('Final stats:', { totalAmount, cashAmount, asoebiAmount, totalGuests });
 
     return (
     <div className="space-y-6">
@@ -2294,6 +2312,7 @@ const AdminDashboard = () => {
                 <Select
                   value={String(eventDateRange)}
                   onValueChange={(value) => {
+                    console.log('Date Range changed to:', value);
                     setEventDateRange(parseInt(value, 10));
                   }}
                 >
@@ -2314,6 +2333,7 @@ const AdminDashboard = () => {
                 <Select
                   value={eventStatusFilter}
                   onValueChange={(value) => {
+                    console.log('Event Status changed to:', value);
                     setEventStatusFilter(value as 'all' | 'active' | 'past');
                   }}
                 >
@@ -2332,7 +2352,10 @@ const AdminDashboard = () => {
                 <Label className="text-sm font-medium">Event Type</Label>
                 <Select
                   value={eventTypeFilter}
-                  onValueChange={(value) => setEventTypeFilter(value)}
+                  onValueChange={(value) => {
+                    console.log('Event Type changed to:', value);
+                    setEventTypeFilter(value);
+                  }}
                 >
                   <SelectTrigger className="w-full sm:w-[140px]">
                     <SelectValue />
@@ -2354,7 +2377,10 @@ const AdminDashboard = () => {
                 <Label className="text-sm font-medium">Sort By</Label>
                 <Select
                   value={eventSortBy}
-                  onValueChange={(value) => setEventSortBy(value)}
+                  onValueChange={(value) => {
+                    console.log('Sort By changed to:', value);
+                    setEventSortBy(value);
+                  }}
                 >
                   <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue />
@@ -2491,7 +2517,40 @@ const AdminDashboard = () => {
               </div>
 
               {/* Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Total Received</CardTitle>
+                    <Banknote className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      ₦{allContributions.filter(c => c.gift?.id === selectedEventForDetails.id).reduce((sum, c) => sum + Number(c.amount), 0).toLocaleString()}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Cash Gifts</CardTitle>
+                    <Gift className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      ₦{allContributions.filter(c => c.gift?.id === selectedEventForDetails.id && !c.isAsoebi).reduce((sum, c) => sum + Number(c.amount), 0).toLocaleString()}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Asoebi Sales</CardTitle>
+                    <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      ₦{allContributions.filter(c => c.gift?.id === selectedEventForDetails.id && c.isAsoebi).reduce((sum, c) => sum + Number(c.amount), 0).toLocaleString()}
+                    </div>
+                  </CardContent>
+                </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">Total Guests</CardTitle>
@@ -2499,28 +2558,6 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{selectedEventForDetails._count.guests}</div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Contributions</CardTitle>
-                    <Gift className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {allContributions.filter(c => c.amount > 0 && c.gift?.id === selectedEventForDetails.id).length}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Asoebi Sales</CardTitle>
-                    <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{(selectedEventForDetails.asoebiSalesCount || 0).toLocaleString()}</div>
                   </CardContent>
                 </Card>
               </div>

@@ -1,11 +1,14 @@
 
 const express = require('express');
+const crypto = require('crypto');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
 const multer = require('multer');
 const { uploadImage } = require('../utils/cloudinary');
 const { sendReminderEmail, sendRsvpCancellationEmail } = require('../utils/emailService');
 const { sendRemindersForGift } = require('../utils/reminderService');
+const paystack = require('../utils/paystack');
+const flutterwave = require('../utils/flutterwave');
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -154,6 +157,13 @@ module.exports = () => {
         where: { userId: req.user.id },
         include: {
           asoebiItems: true,
+          wishlists: {
+            select: {
+              id: true,
+              shareLink: true,
+              title: true
+            }
+          },
           contributions: {
             where: { status: 'completed' },
             select: {
@@ -557,6 +567,120 @@ module.exports = () => {
     }
   });
 
+  // Get website by share link (public) - supports both /website/:shareLink and /website/:template/:shareLink
+  router.get('/website/*', async (req, res) => {
+    try {
+      const parts = req.params[0].split('/').filter(Boolean);
+      let shareLink;
+      
+      // If there are two parts, the second is the share link
+      if (parts.length === 2) {
+        shareLink = parts[1];
+      } else if (parts.length === 1) {
+        // If only one part, that's the share link
+        shareLink = parts[0];
+      }
+      
+      if (!shareLink) {
+        return res.status(400).json({ msg: 'Share link is required' });
+      }
+
+      const website = await prisma.website.findUnique({
+        where: { shareLink },
+        include: {
+          gift: {
+            include: {
+              wishlists: {
+                include: { items: true }
+              }
+            }
+          }
+        }
+      });
+
+      if (!website) {
+        return res.status(404).json({ msg: 'Website not found' });
+      }
+
+      if (!website.published) {
+        return res.status(403).json({ msg: 'Website is not published' });
+      }
+
+      res.json(website);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  // Get website settings for a gift (must come before catch-all /:link(*) route)
+  router.get('/:id/website', auth(), async (req, res) => {
+    const giftId = parseInt(req.params.id);
+
+    try {
+      const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+      if (!gift || gift.userId !== req.user.id) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+
+      let website = await prisma.website.findUnique({
+        where: { giftId: giftId },
+        include: {
+          gift: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              date: true,
+              picture: true,
+              shareLink: true
+            }
+          }
+        }
+      });
+
+      if (!website) {
+        const names = (gift.title || '').split(' & ');
+        website = await prisma.website.create({
+          data: {
+            userId: req.user.id,
+            giftId: giftId,
+            template: 'elegant',
+            primaryColor: '#2E235C',
+            secondaryColor: '#E2B06B',
+            venue: '',
+            coupleName1: names[0] || '',
+            coupleName2: names[1] || '',
+            story: '',
+            published: false,
+            slug: `${gift.title?.toLowerCase().replace(/\s+/g, '-') || 'wedding'}-${Date.now()}`,
+            shareLink: crypto.randomBytes(16).toString('hex'),
+            heroTitle: names[0] ? `${names[0]} & ${names[1] || ''}` : undefined,
+            heroSubtitle: 'We invite you to celebrate our special day',
+            fontFamily: 'Georgia, serif'
+          },
+          include: {
+            gift: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                date: true,
+                picture: true,
+                shareLink: true
+              }
+            }
+          }
+        });
+      }
+
+      res.json(website);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
   // Get gift by share link (supports slashes in shareLink like "slug/123")
   router.get('/:link(*)', async (req, res) => {
     try {
@@ -572,6 +696,9 @@ module.exports = () => {
             } 
           },
           asoebiItems: true,
+          wishlists: {
+            include: { items: true }
+          },
           contributions: {
              where: { status: 'completed', isAsoebi: true },
              select: { asoebiItemsDetails: true }
@@ -639,5 +766,305 @@ module.exports = () => {
     }
   });
 
+  // Update website settings
+  router.put('/:id/website', auth(), async (req, res) => {
+    const giftId = parseInt(req.params.id);
+    const { 
+      template, 
+      primaryColor, 
+      secondaryColor, 
+      venue, 
+      coupleName1, 
+      coupleName2, 
+      story,
+      published,
+      heroTitle,
+      heroSubtitle,
+      fontFamily
+    } = req.body;
+
+    try {
+      const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+      if (!gift || gift.userId !== req.user.id) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+
+      let website = await prisma.website.findUnique({
+        where: { giftId: giftId }
+      });
+
+      if (website) {
+        website = await prisma.website.update({
+          where: { giftId: giftId },
+          data: {
+            template: template || website.template,
+            primaryColor: primaryColor || website.primaryColor,
+            secondaryColor: secondaryColor || website.secondaryColor,
+            venue: venue,
+            coupleName1: coupleName1,
+            coupleName2: coupleName2,
+            story: story,
+            heroTitle: heroTitle,
+            heroSubtitle: heroSubtitle,
+            fontFamily: fontFamily,
+            published: published !== undefined ? published : website.published
+          }
+        });
+      } else {
+        const websiteSlug = `${gift.title?.toLowerCase().replace(/\s+/g, '-') || 'wedding'}-${Date.now()}`;
+        const websiteShareLink = crypto.randomBytes(16).toString('hex');
+        
+        const coupleNames = (coupleName1 || gift.title || '').split(' & ');
+        
+        website = await prisma.website.create({
+          data: {
+            userId: req.user.id,
+            giftId: giftId,
+            template: template || 'elegant',
+            primaryColor: primaryColor || '#2E235C',
+            secondaryColor: secondaryColor || '#E2B06B',
+            venue: venue,
+            coupleName1: coupleName1 || (coupleNames[0] || ''),
+            coupleName2: coupleName2 || (coupleNames[1] || ''),
+            story: story,
+            published: published || false,
+            slug: websiteSlug,
+            shareLink: websiteShareLink,
+            heroTitle: heroTitle || (coupleName1 ? `${coupleName1} & ${coupleName2}` : undefined),
+            heroSubtitle: heroSubtitle || 'We invite you to celebrate our special day',
+            fontFamily: fontFamily || 'Georgia, serif'
+          }
+        });
+      }
+
+      const enriched = await prisma.website.findUnique({
+        where: { id: website.id },
+        include: {
+          gift: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              date: true,
+              picture: true,
+              shareLink: true
+            }
+          }
+        }
+      });
+
+      res.json(enriched);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+
+  // Initialize premium upgrade payment
+  router.post('/:id/premium/initialize', auth(), async (req, res) => {
+    const giftId = parseInt(req.params.id);
+    try {
+      const gift = await prisma.gift.findUnique({ 
+        where: { id: giftId },
+        include: { user: true }
+      });
+      
+      if (!gift || gift.userId !== req.user.id) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+
+      if (gift.isPremium) {
+        return res.status(400).json({ msg: 'This gift is already premium' });
+      }
+
+      // Check if there's already a successful premium payment
+      const existingPayment = await prisma.premiumPayment.findUnique({
+        where: { giftId }
+      });
+      
+      if (existingPayment && existingPayment.status === 'success') {
+        return res.status(400).json({ msg: 'This gift is already premium' });
+      }
+
+      const amount = 50000; // 50,000 NGN
+      const tx_ref = `premium-${giftId}-${Date.now()}`;
+      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?giftId=${giftId}&reference=${tx_ref}`;
+
+      const metadata = {
+        giftId,
+        userId: req.user.id,
+        type: 'premium_upgrade',
+        customizations: {
+          title: 'Premium Upgrade',
+          description: `Upgrade ${gift.title || 'your gift'} to premium`
+        }
+      };
+
+      // Initialize Paystack (since it's NGN)
+      const psPayload = {
+        reference: tx_ref,
+        amount,
+        currency: 'NGN',
+        callback_url: redirect_url,
+        email: req.user.email,
+        metadata,
+        channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
+      };
+
+      const psResponse = await paystack.initializePayment(psPayload);
+      
+      // Always keep a payment row in sync so the dashboard can show history reliably.
+      await prisma.premiumPayment.upsert({
+        where: { giftId },
+        update: {
+          userId: req.user.id,
+          amount,
+          transactionId: tx_ref,
+          status: 'pending'
+        },
+        create: {
+          userId: req.user.id,
+          giftId,
+          amount,
+          transactionId: tx_ref,
+          status: 'pending'
+        }
+      });
+
+      // Return the Paystack response directly for simplicity
+      return res.json({
+        ...psResponse,
+        authorization_url: psResponse?.data?.authorization_url,
+        provider: 'paystack',
+      });
+    } catch (err) {
+      console.error('Initialize premium payment error:', err?.message || err);
+      res.status(500).json({ msg: 'Failed to initialize payment', error: err?.message });
+    }
+  });
+
+  // Verify premium upgrade payment
+  router.post('/:id/premium/verify', auth(), async (req, res) => {
+    const giftId = parseInt(req.params.id);
+    // Get reference from query params or request body
+    const reference = req.query.reference || req.body.transactionId || req.body.txRef;
+    if (!reference) {
+      return res.status(400).json({ msg: 'Transaction reference is required' });
+    }
+
+    try {
+      const gift = await prisma.gift.findUnique({ 
+        where: { id: giftId },
+        include: { user: true }
+      });
+      
+      if (!gift || gift.userId !== req.user.id) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+
+      let response;
+      let provider = 'paystack';
+
+      try {
+        response = await paystack.verifyTransaction(reference);
+      } catch (psErr) {
+        try {
+          response = await flutterwave.verifyTransaction(reference);
+          provider = 'flutterwave';
+        } catch (fwErr) {
+          console.error('Premium payment verification failed:', psErr, fwErr);
+          return res.status(400).json({ msg: 'Payment verification failed' });
+        }
+      }
+
+      const isSuccess = provider === 'paystack' 
+        ? !!response?.status && response?.data?.status === 'success'
+        : !!response?.status && ['successful', 'success', 'completed'].includes(String(response?.data?.status).toLowerCase());
+
+      if (!isSuccess) {
+        return res.status(400).json({ msg: 'Payment not successful' });
+      }
+
+      // Update premium payment status and mark gift as premium
+      await prisma.$transaction([
+        prisma.premiumPayment.upsert({
+          where: { giftId },
+          update: {
+            userId: req.user.id,
+            amount: 50000,
+            transactionId: reference,
+            status: 'success'
+          },
+          create: {
+            userId: req.user.id,
+            giftId,
+            amount: 50000,
+            transactionId: reference,
+            status: 'success'
+          }
+        }),
+        prisma.gift.update({
+          where: { id: giftId },
+          data: { isPremium: true }
+        })
+      ]);
+
+      const updatedGift = await prisma.gift.findUnique({ where: { id: giftId } });
+      res.json({ msg: 'Premium upgrade successful', gift: updatedGift });
+    } catch (err) {
+      console.error('Verify premium payment error:', err?.message || err);
+      res.status(500).json({ msg: 'Failed to verify payment', error: err?.message });
+    }
+  });
+
+  // Get user's premium payments
+  router.get('/premium/payments', auth(), async (req, res) => {
+    try {
+      const premiumGifts = await prisma.gift.findMany({
+        where: { userId: req.user.id, isPremium: true },
+        select: { id: true }
+      });
+
+      const existingPayments = await prisma.premiumPayment.findMany({
+        where: { userId: req.user.id },
+        select: { giftId: true }
+      });
+
+      const existingGiftIds = new Set(existingPayments.map((payment) => payment.giftId));
+
+      for (const gift of premiumGifts) {
+        if (!existingGiftIds.has(gift.id)) {
+          await prisma.premiumPayment.upsert({
+            where: { giftId: gift.id },
+            update: {
+              userId: req.user.id,
+              amount: 50000,
+              status: 'success'
+            },
+            create: {
+              userId: req.user.id,
+              giftId: gift.id,
+              amount: 50000,
+              status: 'success',
+              transactionId: `legacy-premium-${gift.id}`
+            }
+          });
+        }
+      }
+
+      const payments = await prisma.premiumPayment.findMany({
+        where: { userId: req.user.id },
+        include: { gift: true },
+        orderBy: { createdAt: 'desc' }
+      });
+      res.json(payments);
+    } catch (err) {
+      console.error('Get premium payments error:', err?.message || err);
+      res.status(500).json({ msg: 'Failed to fetch payments' });
+    }
+  });
+
   return router;
+
 };

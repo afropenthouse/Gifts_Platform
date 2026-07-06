@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import {
-  Gift, Copy, Eye, Edit, Download, Filter, Trash2, Users, ExternalLink, Mail, MessageSquare, Heart
+  Gift, Copy, Eye, Edit, Download, Filter, Trash2, Users, ExternalLink, Mail, MessageSquare, Heart, Crown
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
@@ -22,6 +22,7 @@ interface Gift {
   isSellingAsoebi?: boolean;
   asoebiPrice?: number | string;
   enableGuestNotes?: boolean;
+  isPremium?: boolean;
 }
 
 interface Contribution {
@@ -44,6 +45,7 @@ interface GiftLinksProps {
   onRSVP: (gift: Gift) => void;
   onSetReminder: (gift: Gift) => void;
   onCreateWishlistForGift: (gift: Gift) => void;
+  onUpgradeToPremium?: (gift: Gift) => void;
   deletingGiftId?: number | null;
 }
 
@@ -57,6 +59,7 @@ export const GiftLinks = ({
   onRSVP,
   onSetReminder,
   onCreateWishlistForGift,
+  onUpgradeToPremium,
   deletingGiftId,
 }: GiftLinksProps) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -118,8 +121,29 @@ export const GiftLinks = ({
             const totalGiftAmount = giftContributions.reduce((sum, c) => sum + Number(c.amount), 0);
 
             return (
-              <Card key={gift.id} className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-0 shadow-lg bg-gradient-to-r from-white to-gray-50 overflow-hidden">
+              <Card key={gift.id} className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-0 shadow-lg bg-gradient-to-r from-white to-gray-50 overflow-hidden relative">
                 <div className="absolute top-0 left-0 w-1 h-full bg-black group-hover:w-1.5 transition-all duration-300"></div>
+                
+                {/* Upgrade / Premium Badge at Top Right */}
+                <div className="absolute top-4 right-4 z-10">
+                  {gift.isPremium ? (
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-md">
+                      <Crown className="w-3 h-3" />
+                      VIP
+                    </div>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="text-xs h-8 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold shadow-md"
+                      onClick={() => onUpgradeToPremium?.(gift)}
+                    >
+                      <Crown className="w-3.5 h-3.5 mr-1" />
+                      Upgrade to VIP
+                    </Button>
+                  )}
+                </div>
+                
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-stretch">
                     {/* Left Section - Visual Assets */}

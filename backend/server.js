@@ -11,6 +11,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'http://localhost:5174',
   'https://gifts-platform.vercel.app',
   'https://www.bethereweddings.com',
   'https://bethereweddings.com',
@@ -122,6 +123,7 @@ app.use('/api/admin', require('./routes/admin')());
 app.use('/api/utils', require('./routes/utils')());
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/wishlists', require('./routes/wishlists')());
+app.use('/api/websites', require('./routes/websites')());
 
 app.get('/', (req, res) => res.send('API running'));
 

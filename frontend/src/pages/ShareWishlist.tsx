@@ -299,12 +299,9 @@ const ShareWishlist: React.FC = () => {
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
-            <Heart className="w-12 h-12 text-purple-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+       <div className="max-w-4xl mx-auto px-4 py-12">
+         <div className="text-center mb-12">
+           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {wishlist.gift.title ? `${wishlist.gift.title}'s Wishlist` : wishlist.title}
           </h1>
           {wishlist.description && <p className="text-gray-500 mt-4">{wishlist.description}</p>}

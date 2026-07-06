@@ -62,9 +62,55 @@ model Gift {
   Moment                      Moment[]
   Vendor                      Vendor[]
   wishlists                   Wishlist[]
+  website                     Website?
+  isPremium                   Boolean        @default(false)
+  premiumPayment              PremiumPayment?
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model PremiumPayment {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  giftId      Int      @unique
+  amount      Decimal  @db.Decimal(10, 2)
+  status      String   @default("pending")
+  transactionId String? @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gift        Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([giftId])
+}
+
+model Website {
+  id              Int      @id @default(autoincrement())
+  userId         Int
+  giftId         Int?     @unique
+  slug           String   @unique
+  shareLink      String   @unique
+  template       String   @default("elegant")
+  published      Boolean  @default(false)
+  venue          String?
+  coupleName1    String?
+  coupleName2    String?
+  story          String?
+  primaryColor   String?  @default("#2E235C")
+  secondaryColor String?  @default("#E2B06B")
+  heroTitle      String?
+  heroSubtitle   String?
+  fontFamily     String?  @default("Georgia, serif")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gift           Gift?    @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([giftId])
+  @@index([slug])
 }
 
 model AsoebiItem {
@@ -114,6 +160,8 @@ model User {
   referrals                    User[]                 @relation("UserReferrals")
   referralTransactions         ReferralTransaction[]
   referralTransactionsReceived ReferralTransaction[]  @relation("ReceivedReferralTransactions")
+  websites                     Website[]
+  premiumPayments              PremiumPayment[]
 
   @@index([email])
 }

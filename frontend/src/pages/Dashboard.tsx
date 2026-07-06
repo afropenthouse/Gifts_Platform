@@ -10,6 +10,7 @@ import Photobook from '../dashboard_ALL/Photobook';
 import Asoebi from '../dashboard_ALL/Asoebi';
 import InviteFriends from '../dashboard_ALL/InviteFriends';
 import Wishlists from '../dashboard_ALL/Wishlists';
+import Website from '../dashboard_ALL/Website';
 import { ExclusiveDeals } from '../dashboard_ALL/ExclusiveDeals';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
@@ -25,11 +26,12 @@ import {
   Star, TrendingDown, CheckCircle, AlertCircle, Wallet,
   CreditCard as CreditCardIcon, Smartphone, Globe as GlobeIcon,
   Link as LinkIcon, User, Mail, Phone, MapPin, Clock, FileDown,
-  Plus, Minus, Trash2
+  Plus, Minus, Trash2, Crown, XCircle
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '../components/ui/dialog';
 
 
 
@@ -98,6 +100,7 @@ interface Gift {
   asoebiBrideWomenQty?: number;
   asoebiGroomMenQty?: number;
   asoebiGroomWomenQty?: number;
+  isPremium?: boolean;
 }
 
 interface Contribution {
@@ -229,6 +232,18 @@ const Dashboard: React.FC = () => {
   const [promptPhoneNumber, setPromptPhoneNumber] = useState('');
   const [isSubmittingPhone, setIsSubmittingPhone] = useState(false);
 
+  // Premium Upgrade State
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const [selectedGiftForUpgrade, setSelectedGiftForUpgrade] = useState<Gift | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [premiumPayments, setPremiumPayments] = useState<any[]>([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(false);
+  
+  // Premium Payment Verification State
+  const [showPremiumVerifyModal, setShowPremiumVerifyModal] = useState(false);
+  const [premiumVerifyStatus, setPremiumVerifyStatus] = useState<'checking' | 'success' | 'error' | null>(null);
+  const [premiumVerifyMessage, setPremiumVerifyMessage] = useState('');
+
   const [countries, setCountries] = useState<CountryData[]>([]);
   const [countrySearch, setCountrySearch] = useState('');
   const [isCountryPopoverOpen, setIsCountryPopoverOpen] = useState(false);
@@ -327,18 +342,34 @@ const Dashboard: React.FC = () => {
   const giftersCount = contributions.filter(c => !c.isAsoebi && Number(c.amount) > 0).length;
   const wishesCount = contributions.filter(c => Number(c.amount) === 0 && c.message && c.message.trim() !== '').length;
   const isMobile = useIsMobile();
+  const activeSubscriptionEvents = gifts.filter((gift) => gift.isPremium);
+  const upgradeableEvents = gifts.filter((gift) => !gift.isPremium);
+  const visibleUpgradeableEvents = upgradeableEvents.slice(0, 3);
+  const hiddenUpgradeableCount = Math.max(0, upgradeableEvents.length - visibleUpgradeableEvents.length);
+  const premiumPaymentHistory = premiumPayments.length > 0
+    ? premiumPayments
+    : activeSubscriptionEvents.map((gift) => ({
+        id: `vip-${gift.id}`,
+        giftId: gift.id,
+        amount: 50000,
+        status: 'success',
+        transactionId: `VIP-${gift.id}`,
+        createdAt: gift.createdAt,
+      }));
 
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null, action: undefined },
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length, action: undefined },
-    { id: 'wishlist', label: 'Wishlist', icon: Heart, color: 'text-red-500', badge: null, action: undefined },
+    {id: 'wishlists', label: 'Wishlist', icon: Heart, color: 'text-red-500', badge: null, action: undefined},
     { id: 'rsvp', label: 'RSVP Manager', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests, action: undefined },
+    { id: 'website', label: 'Website', icon: Globe, color: 'text-purple-600', badge: null, action: undefined },
     { id: 'asoebi', label: 'Asoebi Orders', icon: Package, color: 'text-purple-600', badge: null, action: undefined },
     { id: 'photobook', label: 'Photobook', icon: ImageIcon, color: 'text-pink-500', badge: null, action: undefined },
     { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null, action: undefined },
     { id: 'vendors', label: 'Manage Expenses', icon: Wallet, color: 'text-orange-500', badge: null, action: undefined },
     { id: 'invite', label: 'Invite & Earn', icon: Share2, color: 'text-blue-500', badge: null, action: undefined },
     { id: 'withdraw', label: 'Withdraw', icon: CreditCard, color: 'text-[#2E235C]', badge: null, action: undefined },
+    { id: 'premium', label: 'Subscription', icon: Crown, color: 'text-yellow-500', badge: null, action: undefined },
     // { id: 'exclusive-deals', label: 'Exclusive Deals', icon: Sparkles, color: 'text-yellow-500', badge: null, action: undefined },
     { id: 'how-it-works', label: 'How it works', icon: HelpCircle, color: 'text-gray-500', badge: null, action: () => startTour() },
   ];
@@ -607,12 +638,100 @@ const Dashboard: React.FC = () => {
     }
   }, [bulkNames, bulkTableMode]);
 
-  // Reset preselected gift id when tab changes away from wishlist
+  // Reset preselected gift id when tab changes away from wishlists
   useEffect(() => {
-    if (activeTab !== 'wishlist') {
+    if (activeTab !== 'wishlists') {
       setPreselectedGiftId(undefined);
     }
   }, [activeTab]);
+
+  // Fetch premium payments when premium tab is active
+  useEffect(() => {
+    if (activeTab === 'premium') {
+      fetchPremiumPayments();
+    }
+  }, [activeTab]);
+
+  // Check for payment verification on component mount
+  useEffect(() => {
+    const checkPaymentVerification = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const reference = urlParams.get('reference');
+      const txRef = urlParams.get('tx_ref');
+      const txId = urlParams.get('transaction_id');
+      const giftId = urlParams.get('giftId') || urlParams.get('gift_id');
+      
+      const transactionIdentifier = reference || txRef || txId;
+      
+      if (transactionIdentifier && giftId) {
+        setActiveTab('premium');
+        setShowPremiumVerifyModal(true);
+        setPremiumVerifyStatus('checking');
+        setPremiumVerifyMessage('Confirming your payment...');
+        
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${giftId}/premium/verify?reference=${transactionIdentifier}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            method: 'POST',
+          });
+          
+          if (res.ok) {
+            // Remove query params
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+            
+            // Refresh gifts
+            const fetchGifts = async () => {
+              if (token) {
+                const giftRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (giftRes.ok) {
+                  const giftsData = await giftRes.json();
+                  setGifts(giftsData);
+                }
+              }
+            };
+            await fetchGifts();
+            await fetchPremiumPayments();
+            
+            setPremiumVerifyStatus('success');
+            setPremiumVerifyMessage('Thank you! Your event is now Supersaver - no more commission!');
+            
+            // Trigger confetti!
+            const duration = 15 * 1000;
+            const end = Date.now() + duration;
+            const interval = setInterval(() => {
+              confetti({
+                particleCount: 20,
+                angle: 90,
+                spread: 70,
+                origin: { x: Math.random(), y: 0 },
+                gravity: 2.5,
+                drift: 0,
+                decay: 0.96,
+                colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe', '#fd79a8', '#00b894', '#e17055', '#74b9ff', '#ffeaa7', '#fab1a0']
+              });
+              if (Date.now() > end) {
+                clearInterval(interval);
+              }
+            }, 50);
+          } else {
+            const data = await res.json();
+            setPremiumVerifyStatus('error');
+            setPremiumVerifyMessage(data?.msg || 'Payment verification failed');
+          }
+        } catch (err) {
+          console.error('Error verifying payment:', err);
+          setPremiumVerifyStatus('error');
+          setPremiumVerifyMessage('Could not verify payment.');
+        }
+      }
+    };
+    
+    checkPaymentVerification();
+  }, []);
 
   //add filter
   // useEffect(() => {
@@ -1486,6 +1605,55 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Premium Upgrade Functions
+  const handleUpgradeToPremium = (gift: Gift) => {
+    setSelectedGiftForUpgrade(gift);
+    setIsPremiumModalOpen(true);
+  };
+
+  const processPremiumUpgrade = async () => {
+    if (!selectedGiftForUpgrade) return;
+    setIsProcessingPayment(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${selectedGiftForUpgrade.id}/premium/initialize`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      const authUrl = data?.data?.authorization_url || data?.authorization_url;
+      if (res.ok && authUrl) {
+        // Redirect to Paystack
+        window.location.href = authUrl;
+      } else {
+        alert(data.msg || 'Failed to initialize payment');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error initializing payment');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const fetchPremiumPayments = async () => {
+    setIsLoadingPayments(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/premium/payments`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPremiumPayments(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingPayments(false);
+    }
+  };
+
 
   const totalContributions = contributions.reduce((sum, c) => sum + Number(c.amount), 0);
   const totalAsoebiRevenue = contributions
@@ -1743,6 +1911,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'gifts' && 'Events'}
                     {activeTab === 'withdraw' && 'Withdraw Funds'}
                     {activeTab === 'rsvp' && 'RSVP'}
+                    {activeTab === 'website' && 'Website'}
                     {activeTab === 'vendors' && 'Manage Expenses'}
                     {activeTab === 'asoebi' && 'Asoebi Orders'}
                     {activeTab === 'qr' && 'Event QR Code'}
@@ -1750,6 +1919,7 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'invite' && 'Invite & Earn'}
                     {activeTab === 'wishlists' && 'Wishlist'}
                     {activeTab === 'exclusive-deals' && 'Exclusive Deals'}
+                    {activeTab === 'premium' && 'See active subscription'}
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
@@ -1757,6 +1927,8 @@ const Dashboard: React.FC = () => {
                     {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
                     {activeTab === 'asoebi' && 'Track asoebi orders and payments'}
                     {activeTab === 'rsvp' && 'Manage your event guest list'}
+                    {activeTab === 'website' && 'Build and customize your beautiful event website'}
+                    {activeTab === 'premium' && 'See active subscriptions, upgrade a few events to VIP, and review payment history'}
                     {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share photos in your photobook'}
                     {activeTab === 'photobook' && 'Share your QR code at your event so your guests can share pictures from your events with you'}
                     {activeTab === 'invite' && 'Refer friends and earn rewards when they use your link'}
@@ -2015,6 +2187,7 @@ const Dashboard: React.FC = () => {
     setPreselectedGiftId(gift.id);
     setActiveTab('wishlists');
   }}
+  onUpgradeToPremium={handleUpgradeToPremium}
   deletingGiftId={deletingGiftId}
 />
               </div>
@@ -2235,7 +2408,9 @@ const Dashboard: React.FC = () => {
                           // Calculate commission and received amount
                           let commission = 0;
                           if (isContribution) {
-                             if (transaction.commission !== undefined && transaction.commission !== null && transaction.commission > 0) {
+                             if (gift?.isPremium) {
+                               commission = 0;
+                             } else if (transaction.commission !== undefined && transaction.commission !== null && transaction.commission > 0) {
                                 commission = transaction.commission;
                              } else if (transaction.isAsoebi) {
                                 const qty = (transaction.asoebiQuantity && Number(transaction.asoebiQuantity) > 0) 
@@ -2989,13 +3164,18 @@ const Dashboard: React.FC = () => {
               <QRCodePage gifts={gifts} />
             )}
 
+            {/* Website Section */}
+            {activeTab === 'website' && (
+              <Website />
+            )}
+
             {/* Photobook Section */}
             {activeTab === 'photobook' && (
               <Photobook gifts={gifts} onTabChange={setActiveTab} />
             )}
 
             {/* Wishlists Section */}
-            {activeTab === 'wishlist' && (
+            {activeTab === 'wishlists' && (
               <Wishlists 
                 preselectedGiftId={preselectedGiftId}
                 onPreselectedGiftIdUsed={() => setPreselectedGiftId(undefined)}
@@ -3003,6 +3183,127 @@ const Dashboard: React.FC = () => {
             )}
 
             {/* Exclusive Deals Section */}
+            {activeTab === 'premium' && (
+              <div className="space-y-6">
+                {/* Active Subscription */}
+                <Card className="border-0 shadow-lg bg-gradient-to-r from-yellow-50 to-yellow-100">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <Crown className="w-10 h-10 text-yellow-600" />
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">See active subscription</h3>
+                        <p className="text-sm text-gray-600">Active VIP events and a few upgrade options in one place.</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-xl shadow-sm border border-yellow-200">
+                        <h4 className="font-semibold text-gray-900 mb-3">Active subscriptions</h4>
+                        {activeSubscriptionEvents.length > 0 ? (
+                          <div className="space-y-2">
+                            {activeSubscriptionEvents.map((gift) => (
+                              <div key={gift.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center space-x-2 min-w-0">
+                                  <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                                  <span className="text-sm font-medium truncate">{gift.title}</span>
+                                </div>
+                                <Badge className="bg-yellow-500 text-white">VIP active</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+                            No active subscription yet. Upgrade an event below to make it VIP.
+                          </div>
+                        )}
+                      </div>
+                      <div className="bg-white p-4 rounded-xl shadow-sm border border-yellow-200">
+                        <h4 className="font-semibold text-gray-900 mb-3">Upgrade a few events</h4>
+                        <div className="space-y-2">
+                          {visibleUpgradeableEvents.length > 0 ? (
+                            visibleUpgradeableEvents.map((gift) => (
+                              <div key={gift.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center space-x-2 min-w-0">
+                                  <div className="w-4 h-4 rounded-full bg-gray-300 flex-shrink-0" />
+                                  <span className="text-sm font-medium truncate">{gift.title}</span>
+                                </div>
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleUpgradeToPremium(gift)}
+                                  className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
+                                >
+                                  Upgrade
+                                </Button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+                              All your events are already VIP.
+                            </div>
+                          )}
+                          {hiddenUpgradeableCount > 0 && (
+                            <p className="text-xs text-gray-500">
+                              {hiddenUpgradeableCount} more event{hiddenUpgradeableCount > 1 ? 's' : ''} can be upgraded from the events page.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Payment History */}
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Clock className="w-5 h-5 mr-2 text-gray-600" />
+                      Payment History
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingPayments ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-8 h-8 border-4 border-[#2E235C] border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : premiumPaymentHistory.length > 0 ? (
+                      <div className="space-y-3">
+                        {premiumPaymentHistory.map((payment: any) => {
+                          const gift = gifts.find(g => g.id === payment.giftId);
+                          return (
+                            <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                              <div className="flex items-center space-x-3">
+                                <div className="p-2 bg-yellow-100 rounded-full">
+                                  <Crown className="w-5 h-5 text-yellow-600" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-900">
+                                    Premium Upgrade - {gift?.title || 'Event'}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    {new Date(payment.createdAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-gray-900">₦{Number(payment.amount).toLocaleString()}</p>
+                                <Badge className={payment.status === 'success' ? 'bg-green-500' : 'bg-yellow-500'}>
+                                  {payment.status === 'success' ? 'Successful' : 'Pending'}
+                                </Badge>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No premium payments yet</p>
+                        <p className="text-sm">Upgrade your first event to see payments here</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             {/* {activeTab === 'exclusive-deals' && (
               <ExclusiveDeals />
             )} */}
@@ -5915,6 +6216,140 @@ const Dashboard: React.FC = () => {
               setShowWithdrawSuccess(false);
               setSuccessWithdrawAmount('');
             }}>OK</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Premium Upgrade Modal */}
+      <Dialog open={isPremiumModalOpen} onOpenChange={setIsPremiumModalOpen}>
+        <DialogContent className="w-[90vw] sm:w-full sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-2 sticky top-0 bg-white z-10">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg">
+                <Crown className="w-5 h-5 text-white" />
+              </div>
+              <DialogTitle className="text-2xl font-bold text-gray-900">
+                Upgrade & Save
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-gray-600 mt-2">
+              Keep 100% of all Cash gifts and Asoebi sales
+            </DialogDescription>
+            <div className="bg-yellow-50 px-4 py-2 rounded-xl border border-yellow-200 mt-4">
+              <h4 className="font-semibold text-gray-900 mb-1">Supersaver Benefits</h4>
+              <ul className="space-y-1 text-sm text-gray-600">
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>0% commission on all cash gifts</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>0% commission on all asoebi orders</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Keep 100% of all Cash gifts and Asoebi sales</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Lifetime Supersaver for this event</span>
+                </li>
+              </ul>
+            </div>
+          </DialogHeader>
+
+          <div className="p-6 pt-0">
+            <div className="flex items-center justify-end py-0 mx-4">
+              <p className="text-lg font-bold text-gray-900">₦50,000</p>
+            </div>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-0">
+              <Button
+                variant="outline"
+                onClick={() => setIsPremiumModalOpen(false)}
+                disabled={isProcessingPayment}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={processPremiumUpgrade}
+                disabled={isProcessingPayment}
+                className="w-full sm:w-auto bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
+              >
+                {isProcessingPayment ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" />
+                    Pay Now
+                  </div>
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Premium Payment Verify Modal */}
+      <Dialog open={showPremiumVerifyModal} onOpenChange={setShowPremiumVerifyModal}>
+        <DialogContent className="w-[90vw] sm:w-full sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-white z-10">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg">
+                <CreditCard className="w-5 h-5 text-white" />
+              </div>
+              <DialogTitle className="text-2xl font-bold text-gray-900">
+                Verifying Payment
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+
+          <div className="p-6 space-y-6">
+            {premiumVerifyStatus === 'checking' && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-lg text-gray-700">{premiumVerifyMessage}</p>
+              </div>
+            )}
+
+            {premiumVerifyStatus === 'success' && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
+                <p className="text-gray-600">{premiumVerifyMessage}</p>
+              </div>
+            )}
+
+            {premiumVerifyStatus === 'error' && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <XCircle className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Failed</h3>
+                <p className="text-gray-600">{premiumVerifyMessage}</p>
+              </div>
+            )}
+
+            {(premiumVerifyStatus === 'success' || premiumVerifyStatus === 'error') && (
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    setShowPremiumVerifyModal(false);
+                    setPremiumVerifyStatus(null);
+                    setPremiumVerifyMessage('');
+                  }}
+                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
+                >
+                  Done
+                </Button>
+              </DialogFooter>
+            )}
           </div>
         </DialogContent>
       </Dialog>

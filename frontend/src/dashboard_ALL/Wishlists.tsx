@@ -549,10 +549,9 @@ const Wishlists: React.FC<WishlistsProps> = ({ onTabChange, preselectedGiftId, o
             <Card key={wishlist.id} className="border-0 shadow-lg">
               <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 space-y-0 pb-4">
                 <div className="space-y-1">
-                  <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                    <Heart className="w-5 h-5 text-[#2E235C]" />
-                    {wishlist.title}
-                  </CardTitle>
+                   <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                     {wishlist.title}
+                   </CardTitle>
                   {wishlist.gift && (
                     <p className="text-sm text-purple-600 flex items-center gap-1">
                       <Calendar className="w-4 h-4" />

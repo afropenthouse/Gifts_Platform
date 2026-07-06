@@ -362,9 +362,14 @@ module.exports = () => {
 
       if (existingContribution) {
         if (provider === 'flutterwave' && Number(existingContribution.amount) !== Number(amount)) {
-          const updatedCommission = existingContribution.isAsoebi
-            ? 500 * Number(existingContribution.asoebiQuantity || 0)
-            : Number(amount) * 0.04;
+          let updatedCommission;
+          if (gift.isPremium) {
+            updatedCommission = 0;
+          } else {
+            updatedCommission = existingContribution.isAsoebi
+              ? 500 * Number(existingContribution.asoebiQuantity || 0)
+              : Number(amount) * 0.04;
+          }
           const updatedAmountReceived = Number(amount) - updatedCommission;
           const previousAmountReceived = Number(existingContribution.amount) - Number(existingContribution.commission || 0);
           const walletDelta = updatedAmountReceived - previousAmountReceived;
@@ -440,37 +445,43 @@ module.exports = () => {
       let amountReceived;
       let asoebiTotalQty = 0;
       
-      if (isAsoebi) {
-        const breakdownSum =
-          (asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0) +
-          (asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0) +
-          (asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0) +
-          (asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0) +
-          (asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0) +
-          (asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0);
-        
-        // Use breakdown sum if present, otherwise fall back to generic quantity
-        // This prevents double counting if frontend sends both sum and breakdown
-        const quantity = breakdownSum > 0 ? breakdownSum : (asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0);
-        
-        // Ensure at least 1 for calculation if something went wrong but amount is > 0
-        const finalQty = quantity > 0 ? quantity : 1;
-        
-        asoebiTotalQty = finalQty;
-        commission = 500 * finalQty;
-        amountReceived = amount - commission;
-        if (amountReceived < 0) amountReceived = 0; // Safety check
-        
-        // Update asoebiQuantity to be the true total for DB storage
-        // This ensures Dashboard and other views relying on asoebiQuantity see the correct total
-        if (breakdownSum > 0) {
-           // We are in a local scope, so we can't change the const/let from destructured vars easily if we rely on them later.
-           // But we construct the prisma create object explicitly below.
-        }
+      if (gift.isPremium) {
+        // No commission for premium events
+        commission = 0;
+        amountReceived = amount;
       } else {
-        // Standard 4% commission (updated from 5% per user request)
-        commission = amount * 0.04;
-        amountReceived = amount * 0.96;
+        if (isAsoebi) {
+          const breakdownSum =
+            (asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0) +
+            (asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0) +
+            (asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0) +
+            (asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0) +
+            (asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0) +
+            (asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0);
+          
+          // Use breakdown sum if present, otherwise fall back to generic quantity
+          // This prevents double counting if frontend sends both sum and breakdown
+          const quantity = breakdownSum > 0 ? breakdownSum : (asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0);
+          
+          // Ensure at least 1 for calculation if something went wrong but amount is > 0
+          const finalQty = quantity > 0 ? quantity : 1;
+          
+          asoebiTotalQty = finalQty;
+          commission = 500 * finalQty;
+          amountReceived = amount - commission;
+          if (amountReceived < 0) amountReceived = 0; // Safety check
+          
+          // Update asoebiQuantity to be the true total for DB storage
+          // This ensures Dashboard and other views relying on asoebiQuantity see the correct total
+          if (breakdownSum > 0) {
+             // We are in a local scope, so we can't change the const/let from destructured vars easily if we rely on them later.
+             // But we construct the prisma create object explicitly below.
+          }
+        } else {
+          // Standard 4% commission (updated from 5% per user request)
+          commission = amount * 0.04;
+          amountReceived = amount * 0.96;
+        }
       }
 
       // Create contribution record
@@ -803,27 +814,32 @@ module.exports = () => {
 
         const amountInNaira = amount / 100; // Convert kobo to Naira
 
-        // Deduct 15% commission or Asoebi fee
+        // Deduct commission or not if premium
         let commission;
         let amountReceived;
         
-        if (isAsoebi) {
-          const qtySum =
-            (asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0) +
-            (asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0) +
-            (asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0) +
-            (asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0) +
-            (asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0) +
-            (asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0) +
-            (asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0);
-          const quantity = qtySum > 0 ? qtySum : 1;
-          commission = 500 * quantity;
-          amountReceived = amountInNaira - commission;
-          if (amountReceived < 0) amountReceived = 0; // Safety check
+        if (gift.isPremium) {
+          commission = 0;
+          amountReceived = amountInNaira;
         } else {
-          // Standard 4% commission
-          commission = amountInNaira * 0.04;
-          amountReceived = amountInNaira * 0.96;
+          if (isAsoebi) {
+            const qtySum =
+              (asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0) +
+              (asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0) +
+              (asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0) +
+              (asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0) +
+              (asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0) +
+              (asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0) +
+              (asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0);
+            const quantity = qtySum > 0 ? qtySum : 1;
+            commission = 500 * quantity;
+            amountReceived = amountInNaira - commission;
+            if (amountReceived < 0) amountReceived = 0; // Safety check
+          } else {
+            // Standard 4% commission
+            commission = amountInNaira * 0.04;
+            amountReceived = amountInNaira * 0.96;
+          }
         }
 
         console.log('Creating contribution...');
