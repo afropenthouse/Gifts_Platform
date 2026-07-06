@@ -156,6 +156,7 @@ const AdminDashboard = () => {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [allContributions, setAllContributions] = useState<Contribution[]>([]);
+  const [allWithdrawals, setAllWithdrawals] = useState<any[]>([]);
   const [guests, setGuests] = useState<GuestRow[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [moments, setMoments] = useState<Moment[]>([]);
@@ -184,6 +185,7 @@ const AdminDashboard = () => {
   const [customEndDate, setCustomEndDate] = useState('');
   const [useCustomDateRange, setUseCustomDateRange] = useState(false);
   const [selectedTxnType, setSelectedTxnType] = useState<'all' | 'cash' | 'asoebi'>('all');
+  const [selectedTxnFlow, setSelectedTxnFlow] = useState<'all' | 'inflow' | 'outflow'>('all');
   const [guestEmailFilter, setGuestEmailFilter] = useState<'all' | 'yes' | 'no'>('all');
   const [userSearch, setUserSearch] = useState('');
   const [txnSearch, setTxnSearch] = useState('');
@@ -342,6 +344,50 @@ const AdminDashboard = () => {
       fetchingContributions.current = false;
     }
   }, [activeTab, navigate, selectedEventId, selectedTxnType, useCustomDateRange, customStartDate, customEndDate]);
+
+  const fetchWithdrawals = useCallback(async (time: TimeFilter = 'all', skipFilters = false) => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const params = new URLSearchParams();
+
+      if (!skipFilters) {
+        if (useCustomDateRange && customStartDate && customEndDate) {
+          params.set('startDate', customStartDate);
+          params.set('endDate', customEndDate);
+        } else {
+          params.set('time', time);
+        }
+
+        if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
+      }
+
+      const response = await fetch(`${baseUrl}/api/admin/withdrawals?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+        return;
+      }
+
+      if (!response.ok) {
+        toast.error('Failed to fetch withdrawals');
+        return;
+      }
+
+      const data = await response.json();
+      setAllWithdrawals(Array.isArray(data) ? data : []);
+    } catch (error) {
+      toast.error('Failed to fetch withdrawals');
+    }
+  }, [navigate, selectedEventId, useCustomDateRange, customStartDate, customEndDate]);
 
   const fetchGuests = useCallback(async () => {
     if (fetchingGuests.current) {
@@ -626,14 +672,16 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeTab === 'transactions') {
       fetchContributions(txnTimeFilter, true);
+      fetchWithdrawals(txnTimeFilter);
     }
-  }, [activeTab, fetchContributions, txnTimeFilter]);
+  }, [activeTab, fetchContributions, fetchWithdrawals, txnTimeFilter]);
 
   useEffect(() => {
     if (activeTab === 'transactions' && useCustomDateRange && customStartDate && customEndDate) {
       fetchContributions('all', true);
+      fetchWithdrawals('all');
     }
-  }, [activeTab, fetchContributions, useCustomDateRange, customStartDate, customEndDate]);
+  }, [activeTab, fetchContributions, fetchWithdrawals, useCustomDateRange, customStartDate, customEndDate]);
 
   useEffect(() => {
     if (activeTab === 'events') {
@@ -1075,20 +1123,42 @@ const AdminDashboard = () => {
   );
 
   const filteredContributions = (tab: AdminTab) => {
-    let rows = allContributions;
     if (tab === 'transactions') {
-      // Exclude contributions with amount = 0 (wishes)
-      rows = rows.filter((c) => c.amount > 0);
-      if (selectedTxnType === 'asoebi') {
-        rows = rows.filter((c) => c.isAsoebi);
-      } else if (selectedTxnType === 'cash') {
-        rows = rows.filter((c) => !c.isAsoebi);
-      }
-      rows = filterByEvent(rows);
       // Transactions are now filtered by time on the backend
+      let rows: any[] = [];
+
+      if (selectedTxnFlow === 'all' || selectedTxnFlow === 'inflow') {
+        let inflows = allContributions.filter((c) => c.amount > 0);
+        if (selectedTxnType === 'asoebi') {
+          inflows = inflows.filter((c) => c.isAsoebi);
+        } else if (selectedTxnType === 'cash') {
+          inflows = inflows.filter((c) => !c.isAsoebi);
+        }
+        inflows = filterByEvent(inflows);
+        rows = rows.concat(
+          inflows.map((c) => ({ ...c, flow: 'inflow', personName: c.contributorName || 'Anonymous' }))
+        );
+      }
+
+      if (selectedTxnFlow === 'all' || selectedTxnFlow === 'outflow') {
+        let outflows = allWithdrawals.filter((w) => Number(w.amount) > 0);
+        outflows = filterByEvent(outflows);
+        rows = rows.concat(
+          outflows.map((w) => ({
+            ...w,
+            flow: 'outflow',
+            personName: w.user?.name || w.user?.email || 'Anonymous',
+            isAsoebi: false,
+            gift: null,
+          }))
+        );
+      }
+
+      rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       return rows;
     }
-    
+
+    let rows = allContributions;
     rows = filterByEvent(rows);
     return rows;
   };
@@ -2005,7 +2075,7 @@ const AdminDashboard = () => {
       const search = txnSearch.toLowerCase();
       rows = rows.filter((c) => {
         return (
-          (c.contributorName?.toLowerCase() || 'anonymous').includes(search) ||
+          (c.personName?.toLowerCase() || 'anonymous').includes(search) ||
           (c.gift?.title?.toLowerCase() || '').includes(search) ||
           c.amount.toString().includes(search)
         );
@@ -2156,31 +2226,49 @@ const AdminDashboard = () => {
               </TableHeader>
               <TableBody>
                 {rows.map((contribution) => (
-                  <TableRow key={contribution.id}>
+                  <TableRow key={`${contribution.flow}-${contribution.id}`}>
                     <TableCell className="font-medium">
-                      {contribution.contributorName || 'Anonymous'}
+                      {contribution.personName || 'Anonymous'}
                     </TableCell>
-                    <TableCell>₦{contribution.amount.toLocaleString()}</TableCell>
                     <TableCell>
-                      <span
-                        className={`text-[10px] w-fit px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200`}
-                      >
-                        Inflow
-                      </span>
+                      ₦{Number(contribution.amount).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {contribution.flow === 'outflow' ? (
+                        <span
+                          className={`text-[10px] w-fit px-2 py-1 rounded-full bg-red-100 text-red-700 border border-red-200`}
+                        >
+                          Outflow
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-[10px] w-fit px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200`}
+                        >
+                          Inflow
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {contribution.gift?.title || 'N/A'}
+                      {contribution.gift?.title || (contribution.flow === 'outflow' ? 'Wallet Withdrawal' : 'N/A')}
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`text-[10px] w-fit px-2 py-1 rounded-full ${
-                          contribution.isAsoebi
-                            ? 'bg-black/5 text-black border border-black/10'
-                            : 'bg-black/5 text-black border border-black/10'
-                        }`}
-                      >
-                        {contribution.isAsoebi ? 'Asoebi' : 'Cash Gift'}
-                      </span>
+                      {contribution.flow === 'outflow' ? (
+                        <span
+                          className={`text-[10px] w-fit px-2 py-1 rounded-full bg-black/5 text-black border border-black/10`}
+                        >
+                          Withdrawal
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-[10px] w-fit px-2 py-1 rounded-full ${
+                            contribution.isAsoebi
+                              ? 'bg-black/5 text-black border border-black/10'
+                              : 'bg-black/5 text-black border border-black/10'
+                          }`}
+                        >
+                          {contribution.isAsoebi ? 'Asoebi' : 'Cash Gift'}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
                       {new Date(contribution.createdAt).toLocaleDateString()}
@@ -2873,6 +2961,26 @@ const AdminDashboard = () => {
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="cash">Cash Gift</SelectItem>
                     <SelectItem value="asoebi">Asoebi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {activeTab === 'transactions' && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="admin-txn-flow" className="hidden md:inline whitespace-nowrap">
+                  Flow:
+                </Label>
+                <Select
+                  value={selectedTxnFlow}
+                  onValueChange={(value) => setSelectedTxnFlow(value as 'all' | 'inflow' | 'outflow')}
+                >
+                  <SelectTrigger id="admin-txn-flow" className="w-[160px]">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Flows</SelectItem>
+                    <SelectItem value="inflow">Inflow</SelectItem>
+                    <SelectItem value="outflow">Outflow</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

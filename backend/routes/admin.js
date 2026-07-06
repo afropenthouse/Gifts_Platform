@@ -526,6 +526,72 @@ module.exports = () => {
     }
   });
 
+  // Get All Withdrawals (outflows)
+  router.get('/withdrawals', adminAuth, async (req, res) => {
+    const { type, time, eventId } = req.query;
+
+    try {
+      const where = {
+        status: 'completed'
+      };
+
+      if (time && time !== 'all') {
+        const now = new Date();
+        const filterDate = new Date();
+
+        switch (time) {
+          case '7days':
+            filterDate.setDate(now.getDate() - 7);
+            break;
+          case '14days':
+            filterDate.setDate(now.getDate() - 14);
+            break;
+          case '30days':
+            filterDate.setDate(now.getDate() - 30);
+            break;
+          case '3months':
+            filterDate.setMonth(now.getMonth() - 3);
+            break;
+          case 'year':
+            filterDate.setFullYear(now.getFullYear() - 1);
+            break;
+        }
+        where.createdAt = { gte: filterDate };
+      }
+
+      if (eventId && !Number.isNaN(parseInt(eventId, 10))) {
+        const gift = await prisma.gift.findUnique({
+          where: { id: parseInt(eventId, 10) },
+          select: { userId: true }
+        });
+        if (gift) {
+          where.userId = gift.userId;
+        }
+      }
+
+      const withdrawals = await prisma.withdrawal.findMany({
+        where,
+        orderBy: {
+          createdAt: 'desc'
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      });
+
+      res.json(withdrawals);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error fetching withdrawals' });
+    }
+  });
+
   // Get all events (gifts)
   router.get('/events', adminAuth, async (req, res) => {
     try {
