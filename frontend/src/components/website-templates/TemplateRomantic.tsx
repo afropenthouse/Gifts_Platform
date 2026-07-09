@@ -229,17 +229,8 @@ export const TemplateRomantic = ({
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-14 text-center" style={{ backgroundColor: `${primaryColor}08` }}>
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="h-px w-8" style={{ backgroundColor: `${secondaryColor}40` }} />
-          <Heart className="w-4 h-4" style={{ color: secondaryColor }} />
-          <div className="h-px w-8" style={{ backgroundColor: `${secondaryColor}40` }} />
-        </div>
-        <p className="text-sm tracking-widest uppercase" style={{ color: primaryColor, opacity: 0.5, fontFamily }}>
-          Made with love
-        </p>
-      </footer>
+          {/* Footer */}
+          <footer className="py-16 text-center border-t border-rose-100" />
     </div>
   );
 };

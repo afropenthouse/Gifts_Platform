@@ -4,6 +4,9 @@ import { TemplateElegant } from '../components/website-templates/TemplateElegant
 import { TemplateModern } from '../components/website-templates/TemplateModern';
 import { TemplateRomantic } from '../components/website-templates/TemplateRomantic';
 import { TemplateCleanClassic } from '../components/website-templates/TemplateCleanClassic';
+import { TemplateNocturne } from '../components/website-templates/TemplateNocturne';
+import { TemplateRosette } from '../components/website-templates/TemplateRosette';
+import { TemplateMilk } from '../components/website-templates/TemplateMilk';
 import { Loader2 } from 'lucide-react';
 
 interface Website {
@@ -13,11 +16,17 @@ interface Website {
   coupleName1?: string;
   coupleName2?: string;
   story?: string;
+  date?: string;
   primaryColor?: string;
   secondaryColor?: string;
   heroTitle?: string;
   heroSubtitle?: string;
   fontFamily?: string;
+  gallery?: string[];
+  showWellWishes?: boolean;
+  enableWishlistButton?: boolean;
+  ceremony?: string;
+  reception?: string;
   gift?: {
     id: number;
     type: string;
@@ -87,6 +96,9 @@ const WeddingWebsite = () => {
   const giftShareLink = website.gift?.shareLink || '';
   const wishlists = website.gift?.wishlists || [];
 
+  const ceremony = website.ceremony || '';
+  const reception = website.reception || '';
+
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   const handleCopyLink = async () => {
@@ -108,7 +120,7 @@ const WeddingWebsite = () => {
 
   const props = {
     title,
-    date: website.gift?.date,
+    date: website.date || website.gift?.date,
     venue: website.venue,
     story: website.story,
     shareLink: giftShareLink,
@@ -116,16 +128,21 @@ const WeddingWebsite = () => {
     primaryColor: website.primaryColor,
     secondaryColor: website.secondaryColor,
     wishlists,
+    gallery: website.gallery || [],
+    showWellWishes: website.gift?.enableGuestNotes === true,
+    enableWishlistButton: website.enableWishlistButton !== undefined ? website.enableWishlistButton : true,
     data: {
       heroImage: website.gift?.picture,
       ...(website.gift?.type !== 'wedding' ? { heroTitle: website.heroTitle || title } : {}),
       heroSubtitle: website.heroSubtitle,
       eventName: website.gift?.title,
-      eventDate: website.gift?.date,
+      eventDate: website.date || website.gift?.date,
       eventLocation: website.venue,
       eventType: website.gift?.type,
       coupleNames: `${website.coupleName1 || ''} & ${website.coupleName2 || ''}`.trim(),
       story: website.story,
+      ceremony,
+      reception,
       theme: {
         primaryColor: website.primaryColor,
         secondaryColor: website.secondaryColor,
@@ -143,6 +160,12 @@ const WeddingWebsite = () => {
       return <TemplateRomantic {...props} />;
     case 'clean-classic':
       return <TemplateCleanClassic {...props} />;
+    case 'nocturne':
+      return <TemplateNocturne {...props} />;
+    case 'rosette':
+      return <TemplateRosette {...props} />;
+    case 'milk':
+      return <TemplateMilk {...props} />;
     case 'elegant':
     default:
       return <TemplateElegant {...props} />;

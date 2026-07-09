@@ -589,7 +589,14 @@ module.exports = () => {
         where: { shareLink },
         include: {
           gift: {
-            include: {
+            select: {
+              id: true,
+              type: true,
+              title: true,
+              date: true,
+              picture: true,
+              shareLink: true,
+              enableGuestNotes: true,
               wishlists: {
                 include: { items: true }
               }
@@ -780,7 +787,11 @@ module.exports = () => {
       published,
       heroTitle,
       heroSubtitle,
-      fontFamily
+      fontFamily,
+      ceremony,
+      reception,
+      date,
+      content
     } = req.body;
 
     try {
@@ -807,7 +818,13 @@ module.exports = () => {
             heroTitle: heroTitle,
             heroSubtitle: heroSubtitle,
             fontFamily: fontFamily,
-            published: published !== undefined ? published : website.published
+            ceremony: ceremony !== undefined ? ceremony : website.ceremony,
+            reception: reception !== undefined ? reception : website.reception,
+            date: date !== undefined ? date : website.date,
+            published: published !== undefined ? published : website.published,
+            gallery: content?.gallery !== undefined ? content.gallery : website.gallery,
+            showWellWishes: content?.showWellWishes !== undefined ? content.showWellWishes : website.showWellWishes,
+            enableWishlistButton: content?.enableWishlistButton !== undefined ? content.enableWishlistButton : website.enableWishlistButton
           }
         });
       } else {
@@ -832,7 +849,13 @@ module.exports = () => {
             shareLink: websiteShareLink,
             heroTitle: heroTitle || (coupleName1 ? `${coupleName1} & ${coupleName2}` : undefined),
             heroSubtitle: heroSubtitle || 'We invite you to celebrate our special day',
-            fontFamily: fontFamily || 'Georgia, serif'
+            fontFamily: fontFamily || 'Georgia, serif',
+            ceremony: ceremony || null,
+            reception: reception || null,
+            date: date || null,
+            gallery: content?.gallery || [],
+            showWellWishes: content?.showWellWishes || false,
+            enableWishlistButton: content?.enableWishlistButton !== undefined ? content.enableWishlistButton : true
           }
         });
       }

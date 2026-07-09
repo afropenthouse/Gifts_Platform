@@ -226,12 +226,8 @@ return (
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-16 text-center border-t border-white/5">
-        <p className="text-white/20 text-xs tracking-[0.3em] uppercase">
-          Made with love
-        </p>
-      </footer>
+          {/* Footer */}
+          <footer className="py-16 text-center border-t border-stone-200/70" />
     </div>
   );
 };

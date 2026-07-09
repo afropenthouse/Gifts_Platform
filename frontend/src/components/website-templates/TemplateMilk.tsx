@@ -36,14 +36,14 @@ interface TemplateProps {
   };
 }
 
-export const TemplateModern = ({ 
+export const TemplateMilk = ({ 
   title: propTitle, 
   date: propDate, 
   venue: propVenue, 
   story: propStory, 
   shareLink: propShareLink, 
   picture: propPicture, 
-  primaryColor: propPrimaryColor = '#0a0a0a', 
+  primaryColor: propPrimaryColor = '#1c1917', 
   secondaryColor: propSecondaryColor = '#c9a96e',
   wishlists,
   gallery = [],
@@ -86,7 +86,7 @@ export const TemplateModern = ({
   })();
 
   return (
-    <div className="min-h-screen" style={{ fontFamily, backgroundColor: '#0a0a0a', color: '#fafafa' }}>
+    <div className="min-h-screen font-sans" style={{ fontFamily, backgroundColor: '#fefdfb', color: '#1c1917' }}>
       <div className="md:grid md:grid-cols-2">
         {/* Picture column - sticky for the whole page scroll */}
         <div className="md:order-1">
@@ -94,56 +94,55 @@ export const TemplateModern = ({
             {picture ? (
               <img src={picture} alt="" className="w-full h-full object-cover object-top" />
             ) : (
-              <div className="w-full h-full" style={{ background: `radial-gradient(ellipse at center, ${primaryColor}40 0%, #0a0a0a 70%)` }} />
+              <div className="w-full h-full bg-gradient-to-b from-white via-[#fefdfb] to-[#faf8f5]" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/70 md:from-black/40 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
-              <p className="text-2xl md:text-4xl lg:text-5xl font-black text-white tracking-tight">{heroName}</p>
-              <p className="mt-3 text-xs md:text-sm text-white/70 max-w-md leading-relaxed">{slogan}</p>
+            <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#fefdfb]/70 md:from-[#fefdfb]/40 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+              <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight">{heroName}</p>
+              <p className="mt-3 text-xs md:text-sm text-white/80 max-w-md leading-relaxed">{slogan}</p>
             </div>
           </div>
         </div>
 
         {/* Content column */}
-        <div className="md:order-2 relative" style={{ backgroundColor: '#0a0a0a' }}>
+        <div className="md:order-2 relative" style={{ backgroundColor: '#fefdfb' }}>
           {/* Hero details */}
           <section className="px-8 py-20 md:px-14 md:py-28 max-w-xl mx-auto">
-            <FlowerDecor className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] h-auto opacity-25 pointer-events-none" />
+            <FlowerDecor className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] h-auto opacity-40 pointer-events-none text-stone-300" />
             <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
             <div className="hidden md:block mb-8">
               {data?.heroSubtitle && (
-                <p className="text-xs md:text-sm tracking-[0.4em] uppercase text-white/50">{data.heroSubtitle}</p>
+                <p className="text-xs md:text-sm tracking-[0.4em] uppercase text-stone-500 font-light">{data.heroSubtitle}</p>
               )}
             </div>
 
             <div className="flex items-center justify-center md:justify-start gap-4 mb-8">
-              <div className="h-px w-8" style={{ backgroundColor: secondaryColor }} />
-              <span className="text-sm tracking-[0.2em] uppercase" style={{ color: secondaryColor }}>{countdownText}</span>
-              <div className="h-px w-8" style={{ backgroundColor: secondaryColor }} />
+              <div className="h-px w-8 bg-stone-300" />
+              <span className="text-sm tracking-[0.2em] uppercase text-stone-500">{countdownText}</span>
+              <div className="h-px w-8 bg-stone-300" />
             </div>
 
-            <div className="flex flex-col items-center md:items-start gap-4 mb-12">
+            <div className="flex flex-col items-center md:items-start gap-5 mb-12">
               <Button
                 size="lg"
-                className="rounded-none px-12 py-7 text-sm tracking-[0.2em] uppercase font-bold"
-                style={{ backgroundColor: secondaryColor, color: primaryColor }}
+                className="rounded-none px-12 py-6 text-xs tracking-[0.25em] uppercase font-medium bg-transparent border border-stone-300 text-stone-700 hover:bg-stone-50 hover:border-stone-400 transition-all duration-500"
                 onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
               >
-                RSVP NOW
+                RSVP
               </Button>
             </div>
 
             {data?.ceremony && (
               <div className="w-full mb-8">
-                <p className="text-xs tracking-[0.3em] uppercase mb-2" style={{ color: secondaryColor }}>Ceremony</p>
-                <p className="text-white/80 whitespace-pre-line leading-relaxed">{data.ceremony}</p>
+                <p className="text-xs tracking-[0.3em] uppercase mb-2 text-stone-400">Ceremony</p>
+                <p className="text-stone-600 whitespace-pre-line leading-relaxed">{data.ceremony}</p>
               </div>
             )}
 
             {data?.reception && (
               <div className="w-full">
-                <p className="text-xs tracking-[0.3em] uppercase mb-2" style={{ color: secondaryColor }}>Reception</p>
-                <p className="text-white/80 whitespace-pre-line leading-relaxed">{data.reception}</p>
+                <p className="text-xs tracking-[0.3em] uppercase mb-2 text-stone-400">Reception</p>
+                <p className="text-stone-600 whitespace-pre-line leading-relaxed">{data.reception}</p>
               </div>
             )}
             </div>
@@ -151,27 +150,26 @@ export const TemplateModern = ({
 
           {/* Story Section */}
           {story && (
-            <section className="py-24 px-8 md:px-14 max-w-xl mx-auto">
-              <div className="flex items-center gap-4 mb-12">
-                <div className="h-px flex-1" style={{ backgroundColor: `${secondaryColor}30` }} />
-                <span className="text-xs tracking-[0.3em] uppercase" style={{ color: secondaryColor }}>Our Story</span>
-                <div className="h-px flex-1" style={{ backgroundColor: `${secondaryColor}30` }} />
-              </div>
-              <p className="text-xl md:text-2xl leading-relaxed text-white/70 font-light">
+            <section className="py-16 px-8 md:px-14 max-w-xl mx-auto text-center">
+              <div className="w-8 h-px bg-stone-200 mx-auto mb-10" />
+              <h2 className="text-2xl md:text-3xl font-normal mb-10 text-stone-800 tracking-wide">
+                Our Story
+              </h2>
+              <p className="text-base leading-loose text-stone-600 font-light">
                 {story}
               </p>
+              <div className="w-8 h-px bg-stone-200 mx-auto mt-10" />
             </section>
           )}
 
           {/* Gallery Section */}
           {gallery && gallery.length > 0 && (
-            <section className="py-24 px-8 md:px-14 max-w-xl mx-auto">
-              <div className="flex items-center gap-4 mb-12">
-                <div className="h-px flex-1" style={{ backgroundColor: `${secondaryColor}30` }} />
-                <span className="text-xs tracking-[0.3em] uppercase" style={{ color: secondaryColor }}>Gallery</span>
-                <div className="h-px flex-1" style={{ backgroundColor: `${secondaryColor}30` }} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+            <section className="py-16 px-8 md:px-14 max-w-xl mx-auto text-center">
+              <div className="w-8 h-px bg-stone-200 mx-auto mb-10" />
+              <h2 className="text-2xl md:text-3xl font-normal mb-10 text-stone-800 tracking-wide">
+                Gallery
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
                 {gallery.map((image, index) => (
                   <img 
                     key={index} 
@@ -181,68 +179,67 @@ export const TemplateModern = ({
                   />
                 ))}
               </div>
+              <div className="w-8 h-px bg-stone-200 mx-auto mt-10" />
             </section>
           )}
 
           {/* Actions Section */}
-          <section className="py-24 px-8 md:px-14 max-w-xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-black text-center mb-4 text-white tracking-tight">
-              CELEBRATE WITH US
+          <section className="py-16 px-8 md:px-14 max-w-xl mx-auto border-t border-stone-100">
+            <p className="text-xs tracking-[0.3em] uppercase text-stone-400 mb-6 text-center">
+              Celebrate With Us
+            </p>
+            <h2 className="text-2xl md:text-3xl font-normal mb-3 text-stone-800 tracking-wide text-center">
+              Join Our Celebration
             </h2>
-            <p className="text-center text-white/40 mb-16 tracking-wide text-sm uppercase">
-              Your presence is the greatest gift
+            <p className="text-sm text-stone-500 mb-16 tracking-wide font-light text-center">
+              We would love to have you with us
             </p>
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-px bg-stone-100">
               <button
                 onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
-                className="flex flex-col items-center gap-5 py-12 border transition-colors hover:bg-white/5"
-                style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
+                className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
               >
-                <Users className="w-8 h-8" />
-                <span className="text-xs tracking-[0.2em] uppercase font-bold">RSVP</span>
+                <Users className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
+                <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">RSVP</span>
               </button>
               <button
                 onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
-                className="flex flex-col items-center gap-5 py-12 border transition-colors hover:bg-white/5"
-                style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
+                className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
               >
-                <ShoppingBag className="w-8 h-8" />
-                <span className="text-xs tracking-[0.2em] uppercase font-bold">Buy Asoebi</span>
+                <ShoppingBag className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
+                <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Buy Asoebi</span>
               </button>
               {enableWishlistButton && wishlists && wishlists.length > 0 && wishlists[0].shareLink && (
                 <button
                   onClick={() => window.open(`/${wishlists[0].shareLink}`, '_blank')}
-                  className="flex flex-col items-center gap-5 py-12 border transition-colors hover:bg-white/5"
-                  style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
+                  className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
                 >
-                  <Heart className="w-8 h-8" />
-                  <span className="text-xs tracking-[0.2em] uppercase font-bold">Our Wishlists</span>
+                  <Heart className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
+                  <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Our Wishlists</span>
                 </button>
               )}
               {showWellWishes && (
                 <button
                   onClick={() => window.open(`/gift/${shareLink}#wishes`, '_blank')}
-                  className="flex flex-col items-center gap-5 py-12 border transition-colors hover:bg-white/5"
-                  style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
+                  className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
                 >
-                  <MessageSquareHeart className="w-8 h-8" />
-                  <span className="text-xs tracking-[0.2em] uppercase font-bold">Well Wishes</span>
+                  <MessageSquareHeart className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
+                  <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Well Wishes</span>
                 </button>
               )}
               <button
                 onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
-                className="flex flex-col items-center gap-5 py-12 border transition-colors hover:bg-white/5"
-                style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
+                className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
               >
-                <Gift className="w-8 h-8" />
-                <span className="text-xs tracking-[0.2em] uppercase font-bold">Cash Gifts</span>
+                <Gift className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
+                <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Cash Gifts</span>
               </button>
             </div>
           </section>
 
           {/* Footer */}
-          <footer className="py-16 text-center border-t border-white/5" />
+          <footer className="py-16 text-center border-t border-stone-200/70" />
         </div>
       </div>
     </div>

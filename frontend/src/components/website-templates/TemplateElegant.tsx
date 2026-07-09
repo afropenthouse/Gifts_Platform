@@ -1,5 +1,5 @@
 import { Button } from '../ui/button';
-import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, ChevronDown } from 'lucide-react';
+import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, ChevronDown, MessageSquareHeart } from 'lucide-react';
 
 interface TemplateProps {
   title?: string;
@@ -11,6 +11,9 @@ interface TemplateProps {
   primaryColor?: string;
   secondaryColor?: string;
   wishlists?: any[];
+  gallery?: string[];
+  showWellWishes?: boolean;
+  enableWishlistButton?: boolean;
   data?: {
     heroImage?: string;
     heroTitle?: string;
@@ -39,6 +42,9 @@ export const TemplateElegant = ({
   primaryColor: propPrimaryColor = '#2E235C', 
   secondaryColor: propSecondaryColor = '#E2B06B',
   wishlists,
+  gallery = [],
+  showWellWishes = false,
+  enableWishlistButton = true,
   data 
 }: TemplateProps) => {
   const title = data?.eventName || propTitle || 'Our Wedding';
@@ -163,6 +169,29 @@ export const TemplateElegant = ({
         </section>
       )}
 
+      {/* Gallery Section */}
+      {gallery && gallery.length > 0 && (
+        <section className="py-24 px-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="w-12 h-0.5 mx-auto mb-10" style={{ backgroundColor: secondaryColor }} />
+            <h2 className="text-3xl md:text-4xl font-bold mb-10 text-center" style={{ color: primaryColor, fontFamily }}>
+              Gallery
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {gallery.map((image, index) => (
+                <img 
+                  key={index} 
+                  src={image} 
+                  alt={`Gallery ${index + 1}`} 
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              ))}
+            </div>
+            <div className="w-12 h-0.5 mx-auto mt-10" style={{ backgroundColor: secondaryColor }} />
+          </div>
+        </section>
+      )}
+
       {/* Actions Section */}
       <section className="py-24 px-6" style={{ backgroundColor: primaryColor }}>
         <div className="max-w-3xl mx-auto text-center">
@@ -188,13 +217,22 @@ export const TemplateElegant = ({
               <ShoppingBag className="w-7 h-7" />
               <span className="text-sm tracking-widest uppercase">Asoebi</span>
             </button>
-            {wishlists && wishlists.length > 0 && wishlists[0].shareLink && (
+            {enableWishlistButton && wishlists && wishlists.length > 0 && wishlists[0].shareLink && (
               <button
                 onClick={() => window.open(`/${wishlists[0].shareLink}`, '_blank')}
                 className="flex flex-col items-center gap-4 py-8 text-white hover:bg-white/10 transition-colors"
               >
                 <Heart className="w-7 h-7" />
                 <span className="text-sm tracking-widest uppercase">Wishlist</span>
+              </button>
+            )}
+            {showWellWishes && (
+              <button
+                onClick={() => window.open(`/gift/${shareLink}#wishes`, '_blank')}
+                className="flex flex-col items-center gap-4 py-8 text-white hover:bg-white/10 transition-colors"
+              >
+                <MessageSquareHeart className="w-7 h-7" />
+                <span className="text-sm tracking-widest uppercase">Well Wishes</span>
               </button>
             )}
             <button
@@ -208,12 +246,8 @@ export const TemplateElegant = ({
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 text-center" style={{ backgroundColor: primaryColor }}>
-        <p className="text-white/40 text-sm tracking-widest uppercase" style={{ fontFamily }}>
-          Made with love
-        </p>
-      </footer>
+          {/* Footer */}
+          <footer className="py-16 text-center border-t border-stone-100" />
     </div>
   );
 };

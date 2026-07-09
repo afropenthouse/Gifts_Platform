@@ -6,11 +6,15 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Checkbox } from '../components/ui/checkbox';
 import { 
   Globe, Calendar, Users, Copy, Eye, Save, 
-  Wand2, Type, MapPin, BookOpen
+  Wand2, Type, MapPin, BookOpen, Image, Plus, X, Upload
 } from 'lucide-react';
 import { TemplateModern } from '../components/website-templates/TemplateModern';
+import { TemplateNocturne } from '../components/website-templates/TemplateNocturne';
+import { TemplateRosette } from '../components/website-templates/TemplateRosette';
+import { TemplateMilk } from '../components/website-templates/TemplateMilk';
 import { useToast } from '../hooks/use-toast';
 
 interface Gift {
@@ -20,6 +24,7 @@ interface Gift {
   date?: string;
   picture?: string;
   shareLink: string;
+  enableGuestNotes?: boolean;
   wishlists?: { shareLink: string }[];
 }
 
@@ -39,6 +44,9 @@ interface WebsiteData {
   shareLink?: string;
   slug?: string;
   giftId?: number;
+  gallery?: string[];
+  showWellWishes?: boolean;
+  enableWishlistButton?: boolean;
 }
 
 const PRESET_THEMES = [
@@ -66,7 +74,41 @@ const Website = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [website, setWebsite] = useState<WebsiteData | null>(null);
   const { toast } = useToast();
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [activeControlTab, setActiveControlTab] = useState('content');
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/websites/upload-image`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setWebsiteData(prev => ({ ...prev, gallery: [...prev.gallery, data.url] }));
+        toast({ title: 'Image uploaded', description: 'Your image has been added to the gallery.' });
+      } else {
+        toast({ title: 'Upload failed', description: 'Failed to upload image.', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      toast({ title: 'Upload failed', description: 'An error occurred while uploading.', variant: 'destructive' });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const [websiteData, setWebsiteData] = useState({
     heroTitle: '',
@@ -76,9 +118,12 @@ const Website = () => {
     date: '',
     venue: '',
     story: '',
+    ceremony: '',
+    reception: '',
     primaryColor: '#312e81',
     secondaryColor: '#a78bfa',
     fontFamily: 'Georgia, serif',
+    gallery: [] as string[],
   });
 
   useEffect(() => {
@@ -120,12 +165,15 @@ const Website = () => {
           heroSubtitle: data.heroSubtitle || 'We invite you to celebrate our special day',
           coupleName1: data.coupleName1 || '',
           coupleName2: data.coupleName2 || '',
-          date: selectedGift?.date ? selectedGift.date.split('T')[0] : '',
+          date: data.date ? data.date.split('T')[0] : (selectedGift?.date ? selectedGift.date.split('T')[0] : ''),
           venue: data.venue || '',
           story: data.story || '',
+          ceremony: data.ceremony || '',
+          reception: data.reception || '',
           primaryColor: data.primaryColor || '#312e81',
           secondaryColor: data.secondaryColor || '#a78bfa',
           fontFamily: data.fontFamily || 'Georgia, serif',
+          gallery: data.gallery || [],
         });
         if (!data.coupleName1 && !data.coupleName2 && selectedGift?.title) {
           const names = selectedGift.title.split(' & ');
@@ -195,6 +243,14 @@ const Website = () => {
         heroTitle: websiteData.heroTitle,
         heroSubtitle: websiteData.heroSubtitle,
         fontFamily: websiteData.fontFamily,
+        ceremony: websiteData.ceremony,
+        reception: websiteData.reception,
+        date: websiteData.date,
+        content: {
+          gallery: websiteData.gallery,
+          showWellWishes: !!selectedGift?.enableGuestNotes,
+          enableWishlistButton: true,
+        },
       };
       
       console.log('Saving website settings with body:', body);
@@ -253,6 +309,9 @@ const Website = () => {
       primaryColor: websiteData.primaryColor,
       secondaryColor: websiteData.secondaryColor,
       wishlists: selectedGift.wishlists,
+      gallery: websiteData.gallery,
+      showWellWishes: !!selectedGift?.enableGuestNotes,
+      enableWishlistButton: true,
       data: {
         heroImage: selectedGift.picture,
         ...(selectedGift.type !== 'wedding' ? { heroTitle: websiteData.heroTitle || (websiteData.coupleName1 && websiteData.coupleName2 ? `${websiteData.coupleName1} & ${websiteData.coupleName2}` : undefined) } : {}),
@@ -263,6 +322,8 @@ const Website = () => {
         eventType: selectedGift.type,
         coupleNames: `${websiteData.coupleName1} & ${websiteData.coupleName2}`.trim(),
         story: websiteData.story,
+        ceremony: websiteData.ceremony,
+        reception: websiteData.reception,
         theme: {
           primaryColor: websiteData.primaryColor,
           secondaryColor: websiteData.secondaryColor,
@@ -271,7 +332,19 @@ const Website = () => {
       },
     };
 
-    return <TemplateModern {...props} />;
+    const useTemplate = selectedTemplate || 'modern';
+
+    switch (useTemplate) {
+      case 'nocturne':
+        return <TemplateNocturne {...props} />;
+      case 'rosette':
+        return <TemplateRosette {...props} />;
+      case 'milk':
+        return <TemplateMilk {...props} />;
+      case 'modern':
+      default:
+        return <TemplateModern {...props} />;
+    }
   };
 
   return (
@@ -400,6 +473,63 @@ const Website = () => {
                     <div>
                       <p className="text-sm font-medium text-gray-900">Noir</p>
                       <p className="text-xs text-gray-500">Bold and modern</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setSelectedTemplate('nocturne')}
+                  className={`w-full p-3 rounded-lg border text-left transition-all ${
+                    selectedTemplate === 'nocturne' 
+                      ? 'border-orange-500 bg-orange-50/50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md flex items-center justify-center bg-gradient-to-br from-slate-800 to-stone-800">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-orange-400 to-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Nocturne</p>
+                      <p className="text-xs text-gray-500">Dark, moody & refined</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setSelectedTemplate('rosette')}
+                  className={`w-full p-3 rounded-lg border text-left transition-all ${
+                    selectedTemplate === 'rosette' 
+                      ? 'border-rose-500 bg-rose-50/50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md flex items-center justify-center bg-gradient-to-br from-rose-100 to-red-100">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-rose-500 to-red-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Rosette</p>
+                      <p className="text-xs text-gray-500">Bold, romantic & vibrant</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setSelectedTemplate('milk')}
+                  className={`w-full p-3 rounded-lg border text-left transition-all ${
+                    selectedTemplate === 'milk' 
+                      ? 'border-stone-400 bg-stone-50/80' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md flex items-center justify-center bg-gradient-to-br from-stone-100 to-orange-50">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-stone-400 to-orange-300" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Milk</p>
+                      <p className="text-xs text-gray-500">Pure, fine & timeless</p>
                     </div>
                   </div>
                 </button>
@@ -580,6 +710,116 @@ const Website = () => {
                     rows={4}
                     className="text-sm resize-none"
                   />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                    Ceremony Details
+                  </Label>
+                  <Textarea 
+                    value={websiteData.ceremony}
+                    onChange={(e) => setWebsiteData(prev => ({ ...prev, ceremony: e.target.value }))}
+                    placeholder="e.g. 3:00 PM, St. Mary's Chapel"
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                    Reception Details
+                  </Label>
+                  <Textarea 
+                    value={websiteData.reception}
+                    onChange={(e) => setWebsiteData(prev => ({ ...prev, reception: e.target.value }))}
+                    placeholder="e.g. 6:00 PM, The Grand Hall"
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+                    <Image className="w-3.5 h-3.5" />
+                    Gallery Images
+                  </Label>
+                  <div className="space-y-3">
+                    {websiteData.gallery.filter(url => url).length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {websiteData.gallery.map((url, index) => url && (
+                          <div key={index} className="relative group aspect-square rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                            <img 
+                              src={url} 
+                              alt={`Gallery ${index + 1}`} 
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setWebsiteData(prev => ({ ...prev, gallery: prev.gallery.filter((_, i) => i !== index) }))}
+                              className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-opacity"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {websiteData.gallery.map((url, index) => url === '' && (
+                      <div key={`url-${index}`} className="flex gap-2">
+                        <Input 
+                          value={url}
+                          onChange={(e) => {
+                            const newGallery = [...websiteData.gallery];
+                            newGallery[index] = e.target.value;
+                            setWebsiteData(prev => ({ ...prev, gallery: newGallery }));
+                          }}
+                          placeholder="Paste image URL"
+                          className="h-9 text-sm flex-1"
+                        />
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setWebsiteData(prev => ({ ...prev, gallery: prev.gallery.filter((_, i) => i !== index) }))}
+                          className="h-9 px-2"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => setWebsiteData(prev => ({ ...prev, gallery: [...prev.gallery, ''] }))}
+                        className="flex-1 h-9 text-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1.5" />
+                        Add URL
+                      </Button>
+                      <label className="flex-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-full h-9 text-sm"
+                          disabled={uploadingImage}
+                          asChild
+                        >
+                          <span>
+                            <Upload className="w-3.5 h-3.5 mr-1.5" />
+                            {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                          </span>
+                        </Button>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-gray-400">
+                      Uploaded images are stored securely and added to your live gallery.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
