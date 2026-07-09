@@ -1,7 +1,8 @@
 import { Fragment } from 'react';
 import { Button } from '../ui/button';
-import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, MessageSquareHeart } from 'lucide-react';
+import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, MessageSquareHeart, Camera } from 'lucide-react';
 import { FlowerDecor } from './FlowerDecor';
+import { GalleryLightbox } from './GalleryLightbox';
 
 interface TemplateProps {
   title?: string;
@@ -169,16 +170,7 @@ export const TemplateMilk = ({
               <h2 className="text-2xl md:text-3xl font-normal mb-10 text-stone-800 tracking-wide">
                 Gallery
               </h2>
-              <div className="grid grid-cols-2 gap-4">
-                {gallery.map((image, index) => (
-                  <img 
-                    key={index} 
-                    src={image} 
-                    alt={`Gallery ${index + 1}`} 
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                ))}
-              </div>
+              <GalleryLightbox images={gallery} imageClassName="w-full h-48 object-cover rounded-lg" />
               <div className="w-8 h-px bg-stone-200 mx-auto mt-10" />
             </section>
           )}
@@ -225,7 +217,7 @@ export const TemplateMilk = ({
                   className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
                 >
                   <MessageSquareHeart className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
-                  <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Well Wishes</span>
+                  <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Well-wishes</span>
                 </button>
               )}
               <button
@@ -234,6 +226,13 @@ export const TemplateMilk = ({
               >
                 <Gift className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
                 <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Cash Gifts</span>
+              </button>
+              <button
+                onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
+                className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
+              >
+                <Camera className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
+                <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Photobook</span>
               </button>
             </div>
           </section>

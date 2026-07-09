@@ -195,7 +195,7 @@ export const TemplateJoyBlossom = ({
         <section id="wishes" className="py-24 px-6">
           <div className="max-w-2xl mx-auto text-center">
             <BookOpen className="w-8 h-8 mx-auto mb-5" style={{ color: accent }} />
-            <p className="text-[11px] tracking-[0.3em] uppercase mb-3" style={{ color: secondary }}>Well Wishes</p>
+            <p className="text-[11px] tracking-[0.3em] uppercase mb-3" style={{ color: secondary }}>Well-wishes</p>
             <h3 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Leave Us a Note</h3>
             <p className="mb-10" style={{ color: primary, opacity: 0.75 }}>{guestbookNote || 'We would love to hear from you. Send us your warmest wishes!'}</p>
             <Button size="lg" className="rounded-full px-10 text-sm tracking-[0.2em] uppercase" style={{ backgroundColor: accent, color: '#fff' }} onClick={() => window.open(`/gift/${shareLink}`, '_blank')}>

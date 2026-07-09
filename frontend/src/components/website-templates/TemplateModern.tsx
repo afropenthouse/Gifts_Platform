@@ -1,7 +1,8 @@
 import { Fragment } from 'react';
 import { Button } from '../ui/button';
-import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, MessageSquareHeart } from 'lucide-react';
+import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, MessageSquareHeart, Camera } from 'lucide-react';
 import { FlowerDecor } from './FlowerDecor';
+import { GalleryLightbox } from './GalleryLightbox';
 
 interface TemplateProps {
   title?: string;
@@ -171,16 +172,7 @@ export const TemplateModern = ({
                 <span className="text-xs tracking-[0.3em] uppercase" style={{ color: secondaryColor }}>Gallery</span>
                 <div className="h-px flex-1" style={{ backgroundColor: `${secondaryColor}30` }} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {gallery.map((image, index) => (
-                  <img 
-                    key={index} 
-                    src={image} 
-                    alt={`Gallery ${index + 1}`} 
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                ))}
-              </div>
+              <GalleryLightbox images={gallery} imageClassName="w-full h-48 object-cover rounded-lg" />
             </section>
           )}
 
@@ -227,7 +219,7 @@ export const TemplateModern = ({
                   style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
                 >
                   <MessageSquareHeart className="w-8 h-8" />
-                  <span className="text-xs tracking-[0.2em] uppercase font-bold">Well Wishes</span>
+                  <span className="text-xs tracking-[0.2em] uppercase font-bold">Well-wishes</span>
                 </button>
               )}
               <button
@@ -237,6 +229,14 @@ export const TemplateModern = ({
               >
                 <Gift className="w-8 h-8" />
                 <span className="text-xs tracking-[0.2em] uppercase font-bold">Cash Gifts</span>
+              </button>
+              <button
+                onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
+                className="flex flex-col items-center gap-5 py-12 border transition-colors hover:bg-white/5"
+                style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
+              >
+                <Camera className="w-8 h-8" />
+                <span className="text-xs tracking-[0.2em] uppercase font-bold">Photobook</span>
               </button>
             </div>
           </section>

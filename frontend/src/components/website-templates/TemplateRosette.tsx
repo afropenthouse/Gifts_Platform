@@ -1,7 +1,8 @@
 import { Fragment } from 'react';
 import { Button } from '../ui/button';
-import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, MessageSquareHeart } from 'lucide-react';
+import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, MessageSquareHeart, Camera } from 'lucide-react';
 import { FlowerDecor } from './FlowerDecor';
+import { GalleryLightbox } from './GalleryLightbox';
 
 interface TemplateProps {
   title?: string;
@@ -182,16 +183,7 @@ export const TemplateRosette = ({
                   <div className="h-px w-16 bg-gradient-to-l from-transparent via-red-200 to-red-200" />
                 </div>
                 <h2 className="text-3xl md:text-4xl font-black mb-8 text-gray-900 tracking-tight">Gallery</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  {gallery.map((image, index) => (
-                    <img 
-                      key={index} 
-                      src={image} 
-                      alt={`Gallery ${index + 1}`} 
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  ))}
-                </div>
+                <GalleryLightbox images={gallery} imageClassName="w-full h-48 object-cover rounded-lg" />
               </div>
             </section>
           )}
@@ -243,7 +235,7 @@ export const TemplateRosette = ({
                     <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 group-hover:from-rose-600 group-hover:to-rose-700 transition-colors shadow-lg shadow-rose-200/40">
                       <MessageSquareHeart className="w-7 h-7 text-white" />
                     </div>
-                    <span className="text-sm tracking-[0.15em] uppercase font-bold text-gray-800">Well Wishes</span>
+                    <span className="text-sm tracking-[0.15em] uppercase font-bold text-gray-800">Well-wishes</span>
                   </button>
                 )}
                 <button
@@ -254,6 +246,15 @@ export const TemplateRosette = ({
                     <Gift className="w-7 h-7 text-white" />
                   </div>
                   <span className="text-sm tracking-[0.15em] uppercase font-bold text-gray-800">Cash Gifts</span>
+                </button>
+                <button
+                  onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
+                  className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-rose-100 bg-white hover:border-rose-300 hover:shadow-2xl hover:shadow-rose-100/40 transition-all duration-300"
+                >
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 group-hover:from-rose-600 group-hover:to-rose-700 transition-colors shadow-lg shadow-rose-200/40">
+                    <Camera className="w-7 h-7 text-white" />
+                  </div>
+                  <span className="text-sm tracking-[0.15em] uppercase font-bold text-gray-800">Photobook</span>
                 </button>
               </div>
             </div>

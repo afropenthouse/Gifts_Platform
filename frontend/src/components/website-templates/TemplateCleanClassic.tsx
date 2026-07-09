@@ -1,5 +1,5 @@
 import { Button } from '../ui/button';
-import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, ChevronDown } from 'lucide-react';
+import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, ChevronDown, Camera } from 'lucide-react';
 
 interface TemplateProps {
   title?: string;
@@ -221,6 +221,14 @@ return (
             >
               <Gift className="w-8 h-8" />
               <span className="text-xs tracking-[0.2em] uppercase font-bold">Gifts</span>
+            </button>
+            <button
+              onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
+              className="flex flex-col items-center gap-5 py-12 border transition-colors hover:bg-white/5"
+              style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
+            >
+              <Camera className="w-8 h-8" />
+              <span className="text-xs tracking-[0.2em] uppercase font-bold">Photobook</span>
             </button>
           </div>
         </div>
