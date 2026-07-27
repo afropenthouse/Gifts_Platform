@@ -60,7 +60,7 @@ export const TemplateMilk = ({
   const picture = data?.heroImage || propPicture;
   const primaryColor = data?.theme?.primaryColor || propPrimaryColor;
   const secondaryColor = data?.theme?.secondaryColor || propSecondaryColor;
-  const fontFamily = data?.theme?.fontFamily || 'system-ui, sans-serif';
+  const fontFamily = data?.theme?.fontFamily || 'Playfair Display, Georgia, serif';
 
   const formatDate = (d?: string) => {
     if (!d) return '';
@@ -71,7 +71,7 @@ export const TemplateMilk = ({
 
   const heroName = data?.eventType === 'wedding' && data?.coupleNames ? data.coupleNames : title;
   const eventLabel = data?.eventType && data.eventType !== 'wedding' ? data.eventType : 'wedding';
-  const slogan = `We can't wait to share our special day with you. help us capture our ${eventLabel} with Bethere`;
+  const slogan = `We can't wait to share our special day with you. help us capture our ${eventLabel}`;
   const countdownText = (() => {
     if (!date) return '';
     const eventDay = new Date(date);
@@ -113,7 +113,7 @@ export const TemplateMilk = ({
             <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left">
             <div className="hidden md:block mb-8">
               {data?.heroSubtitle && (
-                <p className="text-xs md:text-sm tracking-[0.4em] uppercase text-stone-500 font-light">{data.heroSubtitle}</p>
+                <p className="text-xs md:text-sm tracking-[0.4em] text-stone-500 font-light">{data.heroSubtitle}</p>
               )}
             </div>
 
@@ -156,7 +156,7 @@ export const TemplateMilk = ({
               <h2 className="text-2xl md:text-3xl font-normal mb-10 text-stone-800 tracking-wide">
                 Our Story
               </h2>
-              <p className="text-base leading-loose text-stone-600 font-light">
+              <p className="text-lg leading-8 text-stone-600 font-light">
                 {story}
               </p>
               <div className="w-8 h-px bg-stone-200 mx-auto mt-10" />
@@ -170,7 +170,7 @@ export const TemplateMilk = ({
               <h2 className="text-2xl md:text-3xl font-normal mb-10 text-stone-800 tracking-wide">
                 Gallery
               </h2>
-              <GalleryLightbox images={gallery} imageClassName="w-full h-48 object-cover rounded-lg" />
+              <GalleryLightbox images={gallery} imageClassName="w-full h-48 object-cover rounded-lg object-top" />
               <div className="w-8 h-px bg-stone-200 mx-auto mt-10" />
             </section>
           )}
@@ -193,14 +193,14 @@ export const TemplateMilk = ({
                 className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
               >
                 <Users className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
-                <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">RSVP</span>
+                <span className="text-[10px] tracking-[0.1em] font-medium text-stone-600">RSVP</span>
               </button>
               <button
                 onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
                 className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
               >
                 <ShoppingBag className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
-                <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Buy Asoebi</span>
+                <span className="text-[10px] tracking-[0.1em] font-medium text-stone-600">Buy Asoebi</span>
               </button>
               {enableWishlistButton && wishlists && wishlists.length > 0 && wishlists[0].shareLink && (
                 <button
@@ -208,7 +208,7 @@ export const TemplateMilk = ({
                   className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
                 >
                   <Heart className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
-                  <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Our Wishlists</span>
+                  <span className="text-[10px] tracking-[0.1em] font-medium text-stone-600">Wishlists</span>
                 </button>
               )}
               {showWellWishes && (
@@ -217,7 +217,7 @@ export const TemplateMilk = ({
                   className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
                 >
                   <MessageSquareHeart className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
-                  <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Well-wishes</span>
+                  <span className="text-[10px] tracking-[0.1em] font-medium text-stone-600">Well Wishes</span>
                 </button>
               )}
               <button
@@ -225,14 +225,14 @@ export const TemplateMilk = ({
                 className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
               >
                 <Gift className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
-                <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Cash Gifts</span>
+                <span className="text-[10px] tracking-[0.1em] font-medium text-stone-600">Cash Gifts</span>
               </button>
               <button
                 onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
                 className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
               >
                 <Camera className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
-                <span className="text-[10px] tracking-[0.2em] uppercase font-medium text-stone-600">Photobook</span>
+                <span className="text-[10px] tracking-[0.1em] font-medium text-stone-600">Photobook</span>
               </button>
             </div>
           </section>

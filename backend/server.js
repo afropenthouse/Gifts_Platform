@@ -12,6 +12,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:5175',
   'https://gifts-platform.vercel.app',
   'https://www.bethereweddings.com',
   'https://bethereweddings.com',
@@ -124,9 +125,10 @@ app.use('/api/utils', require('./routes/utils')());
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/wishlists', require('./routes/wishlists')());
 app.use('/api/websites', require('./routes/websites')());
+app.use('/api/invitations', require('./routes/invitations')());
 
 app.get('/', (req, res) => res.send('API running'));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

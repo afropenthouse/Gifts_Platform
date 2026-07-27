@@ -34,6 +34,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import Wishes from "./pages/Wishes";
 import ShareWishlist from "./pages/ShareWishlist";
 import WeddingWebsite from "./pages/WeddingWebsite";
+import PublicInvitation from "./pages/PublicInvitation";
 
 const queryClient = new QueryClient();
 const GOOGLE_TAG_ID = "AW-18055751654";
@@ -123,6 +124,8 @@ const App = () => {
           <Route path="/wishlist/:link" element={<ShareWishlist />} />
           <Route path="/wedding-website/:template?/:link" element={<WeddingWebsite />} />
           <Route path="/wedding-website/:template/:slug/:id" element={<WeddingWebsite />} />
+          <Route path="/invitation/:template?/:link" element={<PublicInvitation />} />
+          <Route path="/invitation/:template/:slug/:id" element={<PublicInvitation />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/admin" element={<AdminLogin />} />

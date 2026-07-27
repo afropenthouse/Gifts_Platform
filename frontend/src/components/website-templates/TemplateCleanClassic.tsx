@@ -49,7 +49,7 @@ export const TemplateCleanClassic = ({
   const picture = data?.heroImage || propPicture;
   const primaryColor = data?.theme?.primaryColor || propPrimaryColor;
   const secondaryColor = data?.theme?.secondaryColor || propSecondaryColor;
-  const fontFamily = data?.theme?.fontFamily || 'system-ui, sans-serif';
+  const fontFamily = data?.theme?.fontFamily || 'Playfair Display, Georgia, serif';
 
   const formatDate = (d?: string) => {
     if (!d) return '';
@@ -84,7 +84,7 @@ return (
 
         <div className="relative z-10 text-center px-6 py-20 max-w-5xl mx-auto">
           {data?.heroSubtitle && (
-            <p className="text-xs md:text-sm tracking-[0.4em] uppercase mb-8 text-white/50">
+            <p className="text-xs md:text-sm tracking-[0.4em] mb-8 text-white/50">
               {data.heroSubtitle}
             </p>
           )}
@@ -170,7 +170,7 @@ return (
               <span className="text-xs tracking-[0.3em] uppercase" style={{ color: secondaryColor }}>Our Story</span>
               <div className="h-px flex-1" style={{ backgroundColor: `${secondaryColor}30` }} />
             </div>
-            <p className="text-xl md:text-2xl leading-relaxed text-white/70 font-light">
+            <p className="text-lg leading-8 text-white/70 font-light">
               {story}
             </p>
           </div>
@@ -194,7 +194,7 @@ return (
               style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
             >
               <Users className="w-8 h-8" />
-              <span className="text-xs tracking-[0.2em] uppercase font-bold">RSVP</span>
+              <span className="text-xs tracking-[0.1em]">RSVP</span>
             </button>
             <button
               onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
@@ -202,7 +202,7 @@ return (
               style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
             >
               <ShoppingBag className="w-8 h-8" />
-              <span className="text-xs tracking-[0.2em] uppercase font-bold">Asoebi</span>
+              <span className="text-xs tracking-[0.1em]">Asoebi</span>
             </button>
             {wishlists && wishlists.length > 0 && wishlists[0].shareLink && (
               <button
@@ -211,7 +211,7 @@ return (
                 style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
               >
                 <Heart className="w-8 h-8" />
-                <span className="text-xs tracking-[0.2em] uppercase font-bold">Wishlist</span>
+                <span className="text-xs tracking-[0.1em]">Wishlists</span>
               </button>
             )}
             <button
@@ -220,7 +220,7 @@ return (
               style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
             >
               <Gift className="w-8 h-8" />
-              <span className="text-xs tracking-[0.2em] uppercase font-bold">Gifts</span>
+              <span className="text-xs tracking-[0.1em]">Cash Gifts</span>
             </button>
             <button
               onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
@@ -228,7 +228,7 @@ return (
               style={{ borderColor: `${secondaryColor}30`, color: secondaryColor }}
             >
               <Camera className="w-8 h-8" />
-              <span className="text-xs tracking-[0.2em] uppercase font-bold">Photobook</span>
+              <span className="text-xs tracking-[0.1em]">Photobook</span>
             </button>
           </div>
         </div>

@@ -63,8 +63,10 @@ model Gift {
   Vendor                      Vendor[]
   wishlists                   Wishlist[]
   website                     Website?
-  isPremium                   Boolean        @default(false)
+  invitation                  Invitation?
+   isPremium                   Boolean        @default(false)
   premiumPayment              PremiumPayment?
+  templatePurchases           TemplatePurchase[]
 
   @@index([userId])
   @@index([createdAt])
@@ -82,6 +84,24 @@ model PremiumPayment {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   gift        Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([giftId])
+}
+
+model TemplatePurchase {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  giftId        Int
+  template      String
+  amount        Decimal  @db.Decimal(10, 2)
+  status        String   @default("pending")
+  transactionId String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gift          Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@unique([giftId, template])
   @@index([userId])
   @@index([giftId])
 }
@@ -114,6 +134,53 @@ model Website {
   updatedAt      DateTime @updatedAt
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   gift           Gift?    @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([giftId])
+  @@index([slug])
+}
+
+model Invitation {
+  id                  Int      @id @default(autoincrement())
+  userId             Int
+  giftId             Int?     @unique
+  slug               String   @unique
+  shareLink          String   @unique
+  template           String   @default("elegant")
+  isPremium          Boolean  @default(false)
+  published          Boolean  @default(false)
+  venue              String?
+  coupleName1        String?
+  coupleName2        String?
+  story              String?
+  primaryColor       String?  @default("#2E235C")
+  secondaryColor     String?  @default("#E2B06B")
+  heroTitle          String?
+  heroSubtitle       String?
+  fontFamily         String? @default("Georgia, serif")
+  ceremony           String?
+  reception          String?
+  date               String?
+  gallery            Json?
+  showWellWishes     Boolean @default(false)
+  enableWishlistButton Boolean @default(true)
+  parentGroomName1   String?
+  parentGroomName2   String?
+  parentBrideName1   String?
+  parentBrideName2   String?
+  weddingTime        String?
+  ceremonyVenue      String?
+  ceremonyTime       String?
+  receptionVenue     String?
+  receptionTime      String?
+  bestMan            String?
+  maidOfHonor        String?
+  dressCode          String?
+  hashtag            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gift               Gift?    @relation(fields: [giftId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([giftId])
@@ -168,7 +235,9 @@ model User {
   referralTransactions         ReferralTransaction[]
   referralTransactionsReceived ReferralTransaction[]  @relation("ReceivedReferralTransactions")
   websites                     Website[]
+  invitations                  Invitation[]
   premiumPayments              PremiumPayment[]
+  templatePurchases            TemplatePurchase[]
 
   @@index([email])
 }

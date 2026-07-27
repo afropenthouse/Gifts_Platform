@@ -10,6 +10,37 @@ const { sendRemindersForGift } = require('../utils/reminderService');
 const paystack = require('../utils/paystack');
 const flutterwave = require('../utils/flutterwave');
 
+const PREMIUM_WEBSITE_TEMPLATES = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst'];
+
+const getUnlockedWebsiteTemplates = async (gift) => {
+  if (!gift) {
+    return { hasTemplatePremium: false, unlockedTemplates: [], pendingTemplatePurchase: null };
+  }
+
+  // Check for legacy premium payment (unlocks all templates)
+  const legacyPayment = await prisma.premiumPayment.findUnique({
+    where: { giftId: gift.id }
+  });
+  const hasTemplatePremium = !!legacyPayment && legacyPayment.status === 'success' && legacyPayment.amount >= 10000;
+
+  // Check for individual template purchases
+  const templatePurchases = await prisma.templatePurchase.findMany({
+    where: { giftId: gift.id, status: 'success' }
+  });
+  const unlockedTemplates = templatePurchases.map(tp => tp.template);
+
+  // Check for pending template purchase
+  const pendingTemplatePurchase = await prisma.templatePurchase.findFirst({
+    where: { giftId: gift.id, status: 'pending' }
+  });
+
+  return {
+    hasTemplatePremium,
+    unlockedTemplates: hasTemplatePremium ? [...PREMIUM_WEBSITE_TEMPLATES] : unlockedTemplates,
+    pendingTemplatePurchase: pendingTemplatePurchase ? pendingTemplatePurchase.template : null
+  };
+};
+
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -596,6 +627,7 @@ module.exports = () => {
               date: true,
               picture: true,
               shareLink: true,
+              isPremium: true,
               enableGuestNotes: true,
               wishlists: {
                 include: { items: true }
@@ -613,7 +645,12 @@ module.exports = () => {
         return res.status(403).json({ msg: 'Website is not published' });
       }
 
-      res.json(website);
+      const premiumState = await getUnlockedWebsiteTemplates(website.gift);
+
+      res.json({
+        ...website,
+        ...premiumState
+      });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
@@ -640,7 +677,8 @@ module.exports = () => {
               type: true,
               date: true,
               picture: true,
-              shareLink: true
+              shareLink: true,
+              isPremium: true
             }
           }
         }
@@ -674,14 +712,23 @@ module.exports = () => {
                 type: true,
                 date: true,
                 picture: true,
-                shareLink: true
+                shareLink: true,
+                isPremium: true
               }
             }
           }
         });
       }
 
-      res.json(website);
+      const { hasTemplatePremium, unlockedTemplates, pendingTemplatePurchase } = await getUnlockedWebsiteTemplates(gift);
+
+      res.json({
+        ...website,
+        hasTemplatePremium,
+        unlockedTemplates,
+        pendingTemplatePurchase,
+        isEventPremium: gift.isPremium
+      });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
@@ -689,8 +736,15 @@ module.exports = () => {
   });
 
   // Get gift by share link (supports slashes in shareLink like "slug/123")
-  router.get('/:link(*)', async (req, res) => {
+  router.get('/:link(*)', async (req, res, next) => {
     try {
+      // Skip the wildcard for known reserved route prefixes so routes defined
+      // later (e.g. GET /premium/payments, GET /:id/website) are reachable.
+      const firstSegment = String(req.params.link || '').split('/')[0];
+      const reservedPrefixes = ['premium', 'my', 'public', 'website', 'vendors', 'guests', 'contributions'];
+      if (reservedPrefixes.includes(firstSegment)) {
+        return next();
+      }
       const gift = await prisma.gift.findUnique({
         where: { shareLink: req.params.link },
         include: { 
@@ -804,6 +858,17 @@ module.exports = () => {
         where: { giftId: giftId }
       });
 
+      const requestedTemplate = String(template || '').toLowerCase();
+      const effectiveTemplate = requestedTemplate || website?.template || '';
+      const premiumState = await getUnlockedWebsiteTemplates(gift);
+      if (
+        effectiveTemplate &&
+        PREMIUM_WEBSITE_TEMPLATES.includes(effectiveTemplate) &&
+        !premiumState.unlockedTemplates.includes(effectiveTemplate)
+      ) {
+        return res.status(403).json({ msg: 'Please unlock this premium template before previewing, saving, or publishing it.' });
+      }
+
       if (website) {
         website = await prisma.website.update({
           where: { giftId: giftId },
@@ -876,7 +941,11 @@ module.exports = () => {
         }
       });
 
-      res.json(enriched);
+      res.json({
+        ...enriched,
+        ...premiumState,
+        isEventPremium: gift.isPremium
+      });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });
@@ -887,6 +956,9 @@ module.exports = () => {
   // Initialize premium upgrade payment
   router.post('/:id/premium/initialize', auth(), async (req, res) => {
     const giftId = parseInt(req.params.id);
+    const { type = 'event', template } = req.body; // 'event' (50k) or 'template' (10k per template)
+    const PREMIUM_TEMPLATES = PREMIUM_WEBSITE_TEMPLATES;
+    console.log('Premium initialize request body:', req.body);
     try {
       const gift = await prisma.gift.findUnique({ 
         where: { id: giftId },
@@ -897,30 +969,59 @@ module.exports = () => {
         return res.status(404).json({ msg: 'Gift not found' });
       }
 
-      if (gift.isPremium) {
+      if (type === 'event' && gift.isPremium) {
         return res.status(400).json({ msg: 'This gift is already premium' });
       }
 
-      // Check if there's already a successful premium payment
+      // Template unlocks are now per-template; a template name is required.
+      let templateKey = null;
+      if (type === 'template') {
+        templateKey = String(template || '').toLowerCase();
+        console.log('templateKey set to:', templateKey);
+        if (!PREMIUM_TEMPLATES.includes(templateKey)) {
+          return res.status(400).json({ msg: 'Invalid premium template' });
+        }
+        // Already unlocked? (per-template, legacy single-payment, or full premium event)
+        const existingTemplatePurchase = await prisma.templatePurchase.findUnique({
+          where: { giftId_template: { giftId, template: templateKey } }
+        });
+        if (gift.isPremium || (existingTemplatePurchase && existingTemplatePurchase.status === 'success')) {
+          return res.status(400).json({ msg: 'This template is already unlocked' });
+        }
+        const legacyPayment = await prisma.premiumPayment.findUnique({ where: { giftId } });
+        if (legacyPayment && legacyPayment.status === 'success' && legacyPayment.amount >= 10000) {
+          return res.status(400).json({ msg: 'Premium templates are already unlocked for this event' });
+        }
+        // Auto-cancel any stale pending template purchase for this gift/template so the user can retry cleanly.
+        await prisma.templatePurchase.updateMany({
+          where: { giftId, template: templateKey, status: 'pending' },
+          data: { status: 'cancelled' }
+        });
+      }
+
+      // Check if there's already a successful payment for this type
       const existingPayment = await prisma.premiumPayment.findUnique({
         where: { giftId }
       });
       
-      if (existingPayment && existingPayment.status === 'success') {
+      if (type === 'event' && existingPayment && existingPayment.status === 'success' && existingPayment.amount >= 50000) {
         return res.status(400).json({ msg: 'This gift is already premium' });
       }
 
-      const amount = 50000; // 50,000 NGN
-      const tx_ref = `premium-${giftId}-${Date.now()}`;
-      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?giftId=${giftId}&reference=${tx_ref}`;
+      const amount = type === 'template' ? 10000 : 50000; // 10k or 50k NGN
+      const tx_ref = `${type === 'template' ? `template-premium-${templateKey}` : 'premium'}-${giftId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?giftId=${giftId}&reference=${tx_ref}&type=${type}${templateKey ? `&template=${templateKey}` : ''}`;
 
       const metadata = {
         giftId,
         userId: req.user.id,
-        type: 'premium_upgrade',
+        type: type === 'template' ? 'template_premium_upgrade' : 'premium_upgrade',
+        template: templateKey || undefined,
         customizations: {
-          title: 'Premium Upgrade',
-          description: `Upgrade ${gift.title || 'your gift'} to premium`
+          title: type === 'template' ? `Premium Template (${templateKey})` : 'Premium Upgrade',
+          description: type === 'template' 
+            ? `Unlock the ${templateKey} premium wedding website template for ${gift.title || 'your gift'}`
+            : `Upgrade ${gift.title || 'your gift'} to premium`
         }
       };
 
@@ -937,23 +1038,43 @@ module.exports = () => {
 
       const psResponse = await paystack.initializePayment(psPayload);
       
-      // Always keep a payment row in sync so the dashboard can show history reliably.
-      await prisma.premiumPayment.upsert({
-        where: { giftId },
-        update: {
-          userId: req.user.id,
-          amount,
-          transactionId: tx_ref,
-          status: 'pending'
-        },
-        create: {
-          userId: req.user.id,
-          giftId,
-          amount,
-          transactionId: tx_ref,
-          status: 'pending'
-        }
-      });
+      // Keep a payment row in sync so the dashboard can show history reliably.
+      if (type === 'template') {
+        await prisma.templatePurchase.upsert({
+          where: { giftId_template: { giftId, template: templateKey } },
+          update: {
+            userId: req.user.id,
+            amount,
+            transactionId: tx_ref,
+            status: 'pending'
+          },
+          create: {
+            userId: req.user.id,
+            giftId,
+            template: templateKey,
+            amount,
+            transactionId: tx_ref,
+            status: 'pending'
+          }
+        });
+      } else {
+        await prisma.premiumPayment.upsert({
+          where: { giftId },
+          update: {
+            userId: req.user.id,
+            amount,
+            transactionId: tx_ref,
+            status: 'pending'
+          },
+          create: {
+            userId: req.user.id,
+            giftId,
+            amount,
+            transactionId: tx_ref,
+            status: 'pending'
+          }
+        });
+      }
 
       // Return the Paystack response directly for simplicity
       return res.json({
@@ -967,13 +1088,56 @@ module.exports = () => {
     }
   });
 
+  // Cancel pending premium template purchase
+  router.post('/:id/premium/cancel', auth(), async (req, res) => {
+    const giftId = parseInt(req.params.id);
+    const { template } = req.body;
+    if (!template) {
+      return res.status(400).json({ msg: 'Template is required' });
+    }
+    const templateKey = String(template).toLowerCase();
+    try {
+      const gift = await prisma.gift.findUnique({ where: { id: giftId } });
+      if (!gift || gift.userId !== req.user.id) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+      await prisma.templatePurchase.updateMany({
+        where: {
+          giftId,
+          template: templateKey,
+          status: 'pending'
+        },
+        data: { status: 'cancelled' }
+      });
+      res.json({ msg: 'Pending template purchase cancelled' });
+    } catch (err) {
+      console.error('Cancel pending template purchase error:', err?.message || err);
+      res.status(500).json({ msg: 'Failed to cancel pending purchase', error: err?.message });
+    }
+  });
+
   // Verify premium upgrade payment
   router.post('/:id/premium/verify', auth(), async (req, res) => {
     const giftId = parseInt(req.params.id);
     // Get reference from query params or request body
     const reference = req.query.reference || req.body.transactionId || req.body.txRef;
+    const type = req.query.type || req.body.type || (String(reference).startsWith('template-premium') ? 'template' : 'event');
+    const PREMIUM_TEMPLATES = PREMIUM_WEBSITE_TEMPLATES;
     if (!reference) {
       return res.status(400).json({ msg: 'Transaction reference is required' });
+    }
+
+    // Resolve which premium template this payment is for (template flow only)
+    let templateKey = req.query.template || req.body.template || null;
+    if (type === 'template' && !templateKey && String(reference).startsWith('template-premium-')) {
+      const parts = String(reference).split('-'); // template-premium-<template>-<giftId>-<ts>
+      if (parts.length >= 3) templateKey = parts[2];
+    }
+    if (type === 'template') {
+      templateKey = String(templateKey || '').toLowerCase();
+      if (!PREMIUM_TEMPLATES.includes(templateKey)) {
+        return res.status(400).json({ msg: 'Invalid premium template' });
+      }
     }
 
     try {
@@ -1006,35 +1170,76 @@ module.exports = () => {
         : !!response?.status && ['successful', 'success', 'completed'].includes(String(response?.data?.status).toLowerCase());
 
       if (!isSuccess) {
+        if (type === 'template' && templateKey) {
+          await prisma.templatePurchase.updateMany({
+            where: {
+              giftId,
+              template: templateKey,
+              status: 'pending'
+            },
+            data: { status: 'failed' }
+          });
+        } else if (type === 'event') {
+          await prisma.premiumPayment.updateMany({
+            where: {
+              giftId,
+              status: 'pending'
+            },
+            data: { status: 'failed' }
+          });
+        }
         return res.status(400).json({ msg: 'Payment not successful' });
       }
 
-      // Update premium payment status and mark gift as premium
-      await prisma.$transaction([
-        prisma.premiumPayment.upsert({
-          where: { giftId },
+      const amount = type === 'template' ? 10000 : 50000;
+
+      if (type === 'template') {
+        // Record the per-template unlock
+        await prisma.templatePurchase.upsert({
+          where: { giftId_template: { giftId, template: templateKey } },
           update: {
             userId: req.user.id,
-            amount: 50000,
+            amount,
             transactionId: reference,
             status: 'success'
           },
           create: {
             userId: req.user.id,
             giftId,
-            amount: 50000,
+            template: templateKey,
+            amount,
             transactionId: reference,
             status: 'success'
           }
+        });
+
+        return res.json({ msg: `The ${templateKey.charAt(0).toUpperCase() + templateKey.slice(1)} template is now unlocked`, type, template: templateKey });
+      }
+
+      // Event upgrade flow (unchanged) — mark gift premium
+      const paymentUpdate = {
+        userId: req.user.id,
+        amount,
+        transactionId: reference,
+        status: 'success'
+      };
+
+      const operations = [
+        prisma.premiumPayment.upsert({
+          where: { giftId },
+          update: paymentUpdate,
+          create: { ...paymentUpdate, giftId }
         }),
         prisma.gift.update({
           where: { id: giftId },
           data: { isPremium: true }
         })
-      ]);
+      ];
+
+      await prisma.$transaction(operations);
 
       const updatedGift = await prisma.gift.findUnique({ where: { id: giftId } });
-      res.json({ msg: 'Premium upgrade successful', gift: updatedGift });
+      res.json({ msg: 'Premium upgrade successful', gift: updatedGift, type });
     } catch (err) {
       console.error('Verify premium payment error:', err?.message || err);
       res.status(500).json({ msg: 'Failed to verify payment', error: err?.message });
@@ -1076,11 +1281,24 @@ module.exports = () => {
         }
       }
 
-      const payments = await prisma.premiumPayment.findMany({
-        where: { userId: req.user.id },
-        include: { gift: true },
-        orderBy: { createdAt: 'desc' }
-      });
+      const [premiumPayments, templatePurchases] = await Promise.all([
+        prisma.premiumPayment.findMany({
+          where: { userId: req.user.id },
+          include: { gift: true },
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.templatePurchase.findMany({
+          where: { userId: req.user.id },
+          include: { gift: true },
+          orderBy: { createdAt: 'desc' }
+        })
+      ]);
+
+      const payments = [
+        ...premiumPayments.map((p) => ({ ...p, paymentType: 'event' })),
+        ...templatePurchases.map((p) => ({ ...p, paymentType: 'template' }))
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
       res.json(payments);
     } catch (err) {
       console.error('Get premium payments error:', err?.message || err);

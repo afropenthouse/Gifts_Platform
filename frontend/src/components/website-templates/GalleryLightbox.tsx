@@ -1,50 +1,102 @@
-import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface GalleryLightboxProps {
   images?: string[];
-  columns?: number;
   imageClassName?: string;
 }
 
 export const GalleryLightbox = ({
   images,
-  columns = 2,
-  imageClassName = 'w-full h-48 object-cover rounded-lg',
+  imageClassName = 'h-48 w-full object-cover rounded-lg object-top',
 }: GalleryLightboxProps) => {
   const photos = Array.isArray(images) ? images.filter(Boolean) : [];
   const [preview, setPreview] = useState<string | null>(null);
+  const [perPage, setPerPage] = useState(1);
+  const [page, setPage] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const update = () => {
+      const next = window.innerWidth >= 1024 ? 2 : 1;
+      setPerPage(next);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const maxPage = Math.max(0, photos.length - perPage);
+  useEffect(() => {
+    setPage((p) => Math.min(p, maxPage));
+  }, [maxPage]);
+
+  const scrollByPage = useCallback((dir: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nextPage = Math.min(Math.max(page + dir, 0), maxPage);
+    setPage(nextPage);
+    const scrollAmt = (el.clientWidth / perPage) * nextPage;
+    el.scrollTo({ left: scrollAmt, behavior: 'smooth' });
+  }, [page, maxPage, perPage]);
 
   if (photos.length === 0) return null;
 
   const currentIndex = preview ? photos.indexOf(preview) : -1;
 
   const go = (dir: number) => {
-    const next = (currentIndex + dir + photos.length) % photos.length;
-    setPreview(photos[next]);
+    if (currentIndex < 0) return;
+    const nextIdx = (currentIndex + dir + photos.length) % photos.length;
+    setPreview(photos[nextIdx]);
   };
 
   return (
     <>
-      <div
-        className="grid gap-3"
-        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-      >
-        {photos.map((src, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setPreview(src)}
-            className="block overflow-hidden rounded-lg"
-            title="Click to view"
-          >
-            <img
-              src={src}
-              alt={`Gallery ${i + 1}`}
-              className={`${imageClassName} transition-transform duration-300 hover:scale-[1.03]`}
-            />
-          </button>
-        ))}
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-center"
+        >
+          {photos.map((src, i) => (
+            <div
+              key={i}
+              className={`snap-center flex-shrink-0 mx-auto ${perPage === 2 ? 'w-1/2' : 'w-full max-w-md'}`}
+            >
+              <button
+                type="button"
+                onClick={() => setPreview(src)}
+                className="block overflow-hidden rounded-lg w-full"
+                title="Click to view"
+              >
+                <img
+                  src={src}
+                  alt={`Gallery ${i + 1}`}
+                  className={`${imageClassName} transition-transform duration-300 hover:scale-[1.03] block mx-auto`}
+                />
+              </button>
+            </div>
+          ))}
+        </div>
+        {photos.length > perPage && (
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => scrollByPage(-1)}
+              disabled={page === 0}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-black/40 text-white hover:bg-black/60 disabled:opacity-30"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollByPage(1)}
+              disabled={page >= maxPage}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-black/40 text-white hover:bg-black/60 disabled:opacity-30"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {preview && (

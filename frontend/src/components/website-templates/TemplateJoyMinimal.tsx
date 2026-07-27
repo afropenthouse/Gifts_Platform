@@ -23,14 +23,14 @@ interface JoyTemplateProps {
   schedule?: ScheduleItem[];
   faq?: FaqItem[];
   // Conditional actions (only shown if enabled on the event)
-  showRsvp?: boolean;
+  showRSVP?: boolean;
   showAsoebi?: boolean;
   showCashGift?: boolean;
   showWishlist?: boolean;
   showGuestbook?: boolean;
   guestbookNote?: string;
   theme?: { primaryColor?: string; secondaryColor?: string; accentColor?: string; fontFamily?: string; };
-  onRsvp?: () => void;
+  onRSVP?: () => void;
 }
 
 const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '';
@@ -73,8 +73,8 @@ export const TemplateJoyMinimal = ({
   title: propTitle, date: propDate, venue: propVenue, story: propStory,
   picture: propPicture, shareLink = '', wishlists,
   coupleName1, coupleName2, showCountdown = true,
-  schedule = [], faq = [], theme = {}, onRsvp,
-  showRsvp = true, showAsoebi = false, showCashGift = true, showWishlist = false,
+  schedule = [], faq = [], theme = {}, onRSVP,
+  showRSVP = true, showAsoebi = false, showCashGift = true, showWishlist = false,
   showGuestbook = true, guestbookNote
 }: JoyTemplateProps) => {
   const primary = theme.primaryColor || '#1c1917';
@@ -92,11 +92,11 @@ export const TemplateJoyMinimal = ({
   ].filter(Boolean) as { icon: React.ReactNode; label: string; value: string }[];
 
   const actions = [
-    showRsvp && { icon: <Users className="w-5 h-5" />, label: 'RSVP', onClick: onRsvp },
+    showRSVP && { icon: <Users className="w-5 h-5" />, label: 'RSVP', onClick: onRSVP },
     showAsoebi && { icon: <Package className="w-5 h-5" />, label: 'Asoebi', onClick: () => window.open(`/gift/${shareLink}`, '_blank') },
-    showCashGift && { icon: <Gift className="w-5 h-5" />, label: 'Cash Gift', onClick: () => window.open(`/gift/${shareLink}`, '_blank') },
+    showCashGift && { icon: <Gift className="w-5 h-5" />, label: 'Cash Gifts', onClick: () => window.open(`/gift/${shareLink}`, '_blank') },
     showWishlist && wishlists && wishlists.length > 0 && wishlists[0].shareLink &&
-      { icon: <Heart className="w-5 h-5" />, label: 'Wishlist', onClick: () => window.open(`/${wishlists[0].shareLink}`, '_blank') },
+      { icon: <Heart className="w-5 h-5" />, label: 'Wishlists', onClick: () => window.open(`/${wishlists[0].shareLink}`, '_blank') },
   ].filter(Boolean) as { icon: React.ReactNode; label: string; onClick?: () => void }[];
 
   return (
@@ -113,7 +113,7 @@ export const TemplateJoyMinimal = ({
             <button onClick={() => scrollTo('story')} className="hover:text-primary transition-colors">Story</button>
             <button onClick={() => scrollTo('wishes')} className="hover:text-primary transition-colors">Wishes</button>
           </nav>
-          {showRsvp && <Button size="sm" className="rounded-full px-6 text-xs tracking-[0.18em] uppercase" style={{ backgroundColor: secondary, color: '#fff' }} onClick={onRsvp}>RSVP</Button>}
+          {showRSVP && <Button size="sm" className="rounded-full px-6 text-xs tracking-[0.18em] uppercase" style={{ backgroundColor: secondary, color: '#fff' }} onClick={onRSVP}>RSVP</Button>}
         </div>
       </header>
 
@@ -138,7 +138,7 @@ export const TemplateJoyMinimal = ({
           {propDate && <p className="text-lg md:text-2xl font-light tracking-wide mb-3">{fmt(propDate)}</p>}
           {propVenue && <p className="flex items-center justify-center gap-2 text-sm md:text-base opacity-85"><MapPin className="w-4 h-4" /> {propVenue}</p>}
           <div className="mt-12 flex justify-center">
-            <Button size="lg" className="rounded-full px-10 py-6 text-sm tracking-[0.2em] uppercase" style={{ backgroundColor: accent, color: '#fff' }} onClick={onRsvp}>RSVP Now</Button>
+            <Button size="lg" className="rounded-full px-10 py-6 text-sm tracking-[0.2em] uppercase" style={{ backgroundColor: accent, color: '#fff' }} onClick={onRSVP}>RSVP Now</Button>
           </div>
         </div>
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce opacity-60"><ChevronDown className="w-6 h-6" style={{ color: picture ? '#fff' : primary }} /></div>
@@ -209,7 +209,7 @@ export const TemplateJoyMinimal = ({
         <section id="wishes" className="py-24 px-6">
           <div className="max-w-2xl mx-auto text-center">
             <BookOpen className="w-8 h-8 mx-auto mb-5" style={{ color: accent }} />
-            <p className="text-[11px] tracking-[0.3em] uppercase mb-3" style={{ color: secondary }}>Well-wishes</p>
+            <p className="text-[11px] tracking-[0.3em] uppercase mb-3" style={{ color: secondary }}>Well Wishes</p>
             <h3 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Leave Us a Note</h3>
             <p className="text-gray-600 mb-10">{guestbookNote || 'We would love to hear from you. Send us your warmest wishes!'}</p>
             <Button size="lg" className="rounded-full px-10 text-sm tracking-[0.2em] uppercase" style={{ backgroundColor: accent, color: '#fff' }} onClick={() => window.open(`/gift/${shareLink}`, '_blank')}>
@@ -229,7 +229,7 @@ export const TemplateJoyMinimal = ({
               {actions.map((a, i) => (
                 <button key={i} onClick={a.onClick} className="flex flex-col items-center gap-3 py-10 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                   <span style={{ color: accent }}>{a.icon}</span>
-                  <span className="text-xs tracking-[0.2em] uppercase font-bold">{a.label}</span>
+                   <span className="text-xs tracking-[0.1em] font-bold">{a.label}</span>
                 </button>
               ))}
             </div>

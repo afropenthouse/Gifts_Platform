@@ -79,7 +79,7 @@ export const TemplateElegant = ({
         
         <div className="relative z-10 text-center px-6 py-20 max-w-4xl mx-auto">
           {data?.heroSubtitle && (
-            <p className="text-sm md:text-base tracking-[0.3em] uppercase mb-6" style={{ color: primaryColor, opacity: 0.8 }}>
+            <p className="text-sm md:text-base tracking-[0.3em] mb-6" style={{ color: primaryColor, opacity: 0.8 }}>
               {data.heroSubtitle}
             </p>
           )}
@@ -161,7 +161,7 @@ export const TemplateElegant = ({
             <h2 className="text-3xl md:text-4xl font-bold mb-10" style={{ color: primaryColor, fontFamily }}>
               Our Story
             </h2>
-            <p className="text-lg leading-relaxed" style={{ color: primaryColor, opacity: 0.75 }}>
+            <p className="text-lg leading-8" style={{ color: primaryColor, opacity: 0.75 }}>
               {story}
             </p>
             <div className="w-12 h-0.5 mx-auto mt-10" style={{ backgroundColor: secondaryColor }} />
@@ -177,7 +177,7 @@ export const TemplateElegant = ({
             <h2 className="text-3xl md:text-4xl font-bold mb-10 text-center" style={{ color: primaryColor, fontFamily }}>
               Gallery
             </h2>
-            <GalleryLightbox images={gallery} imageClassName="w-full h-48 object-cover rounded-lg" />
+            <GalleryLightbox images={gallery} imageClassName="w-full h-48 object-cover rounded-lg object-top" />
             <div className="w-12 h-0.5 mx-auto mt-10" style={{ backgroundColor: secondaryColor }} />
           </div>
         </section>
@@ -199,14 +199,14 @@ export const TemplateElegant = ({
               className="flex flex-col items-center gap-4 py-8 text-white hover:bg-white/10 transition-colors"
             >
               <Users className="w-7 h-7" />
-              <span className="text-sm tracking-widest uppercase">RSVP</span>
+              <span className="text-sm tracking-wide">RSVP</span>
             </button>
             <button
               onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
               className="flex flex-col items-center gap-4 py-8 text-white hover:bg-white/10 transition-colors"
             >
               <ShoppingBag className="w-7 h-7" />
-              <span className="text-sm tracking-widest uppercase">Asoebi</span>
+              <span className="text-sm tracking-wide">Asoebi</span>
             </button>
             {enableWishlistButton && wishlists && wishlists.length > 0 && wishlists[0].shareLink && (
               <button
@@ -214,7 +214,7 @@ export const TemplateElegant = ({
                 className="flex flex-col items-center gap-4 py-8 text-white hover:bg-white/10 transition-colors"
               >
                 <Heart className="w-7 h-7" />
-                <span className="text-sm tracking-widest uppercase">Wishlist</span>
+                <span className="text-sm tracking-wide">Wishlists</span>
               </button>
             )}
             {showWellWishes && (
@@ -223,7 +223,7 @@ export const TemplateElegant = ({
                 className="flex flex-col items-center gap-4 py-8 text-white hover:bg-white/10 transition-colors"
               >
                 <MessageSquareHeart className="w-7 h-7" />
-                <span className="text-sm tracking-widest uppercase">Well-wishes</span>
+                <span className="text-sm tracking-wide">Well Wishes</span>
               </button>
             )}
             <button
@@ -231,14 +231,14 @@ export const TemplateElegant = ({
               className="flex flex-col items-center gap-4 py-8 text-white hover:bg-white/10 transition-colors"
             >
               <Gift className="w-7 h-7" />
-              <span className="text-sm tracking-widest uppercase">Gifts</span>
+              <span className="text-sm tracking-wide">Cash Gifts</span>
             </button>
             <button
               onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
               className="flex flex-col items-center gap-4 py-8 text-white hover:bg-white/10 transition-colors"
             >
               <Camera className="w-7 h-7" />
-              <span className="text-sm tracking-widest uppercase">Photobook</span>
+              <span className="text-sm tracking-wide">Photobook</span>
             </button>
           </div>
         </div>

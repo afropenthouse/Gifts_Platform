@@ -1,5 +1,6 @@
 interface FlowerDecorProps {
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const Bloom = ({ x, y, s = 1 }: { x: number; y: number; s?: number }) => (
@@ -24,11 +25,12 @@ const Bloom = ({ x, y, s = 1 }: { x: number; y: number; s?: number }) => (
   </g>
 );
 
-export const FlowerDecor = ({ className }: FlowerDecorProps) => (
+export const FlowerDecor = ({ className, style }: FlowerDecorProps) => (
   <svg
     viewBox="0 0 320 160"
     fill="none"
     className={className}
+    style={style}
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >

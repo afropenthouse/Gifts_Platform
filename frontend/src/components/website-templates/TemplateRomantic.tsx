@@ -78,12 +78,12 @@ export const TemplateRomantic = ({
         <div className="relative z-10 text-center px-6 py-20 max-w-4xl mx-auto">
           <div className="flex items-center justify-center gap-4 mb-8">
             <div className="h-px w-12" style={{ backgroundColor: secondaryColor }} />
-            <Heart className="w-5 h-5" style={{ color: secondaryColor }} />
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: secondaryColor }} />
             <div className="h-px w-12" style={{ backgroundColor: secondaryColor }} />
           </div>
 
           {data?.heroSubtitle && (
-            <p className="text-xs tracking-[0.3em] uppercase mb-6" style={{ color: primaryColor, opacity: 0.7 }}>
+            <p className="text-xs tracking-[0.3em] mb-6" style={{ color: primaryColor, opacity: 0.7 }}>
               {data.heroSubtitle}
             </p>
           )}
@@ -144,13 +144,12 @@ export const TemplateRomantic = ({
           )}
           
           <div className="flex flex-col items-center gap-4">
-            <Button 
+            <Button
               size="lg"
               className="rounded-full px-10 py-6 text-sm tracking-widest uppercase font-medium shadow-lg"
               style={{ backgroundColor: primaryColor, color: 'white' }}
               onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
             >
-              <Heart className="w-4 h-4 mr-2" />
               RSVP Now
             </Button>
           </div>
@@ -173,7 +172,7 @@ export const TemplateRomantic = ({
             <h2 className="text-3xl md:text-4xl font-bold mb-10" style={{ color: primaryColor, fontFamily }}>
               Our Story
             </h2>
-            <p className="text-lg leading-relaxed" style={{ color: primaryColor, opacity: 0.7 }}>
+            <p className="text-lg leading-8" style={{ color: primaryColor, opacity: 0.7 }}>
               {story}
             </p>
           </div>
@@ -197,7 +196,7 @@ export const TemplateRomantic = ({
               style={{ backgroundColor: primaryColor, color: 'white' }}
             >
               <Users className="w-7 h-7" />
-              <span className="text-xs tracking-[0.15em] uppercase font-medium">RSVP</span>
+              <span className="text-xs tracking-[0.08em] font-medium">RSVP</span>
             </button>
             <button
               onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
@@ -205,7 +204,7 @@ export const TemplateRomantic = ({
               style={{ borderColor: `${primaryColor}20`, color: primaryColor }}
             >
               <ShoppingBag className="w-7 h-7" />
-              <span className="text-xs tracking-[0.15em] uppercase font-medium">Asoebi</span>
+              <span className="text-xs tracking-[0.08em] font-medium">Asoebi</span>
             </button>
             {wishlists && wishlists.length > 0 && wishlists[0].shareLink && (
               <button
@@ -214,7 +213,7 @@ export const TemplateRomantic = ({
                 style={{ borderColor: `${primaryColor}20`, color: primaryColor }}
               >
                 <Heart className="w-7 h-7" />
-                <span className="text-xs tracking-[0.15em] uppercase font-medium">Wishlist</span>
+                <span className="text-xs tracking-[0.08em] font-medium">Wishlists</span>
               </button>
             )}
             <button
@@ -223,7 +222,7 @@ export const TemplateRomantic = ({
               style={{ borderColor: `${primaryColor}20`, color: primaryColor }}
             >
               <Gift className="w-7 h-7" />
-              <span className="text-xs tracking-[0.15em] uppercase font-medium">Gifts</span>
+              <span className="text-xs tracking-[0.08em] font-medium">Cash Gifts</span>
             </button>
             <button
               onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
@@ -231,7 +230,7 @@ export const TemplateRomantic = ({
               style={{ borderColor: `${primaryColor}20`, color: primaryColor }}
             >
               <Camera className="w-7 h-7" />
-              <span className="text-xs tracking-[0.15em] uppercase font-medium">Photobook</span>
+              <span className="text-xs tracking-[0.08em] font-medium">Photobook</span>
             </button>
           </div>
         </div>

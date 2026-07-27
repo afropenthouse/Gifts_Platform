@@ -11,6 +11,7 @@ import Asoebi from '../dashboard_ALL/Asoebi';
 import InviteFriends from '../dashboard_ALL/InviteFriends';
 import Wishlists from '../dashboard_ALL/Wishlists';
 import Website from '../dashboard_ALL/Website';
+import Invitation from '../dashboard_ALL/Invitation';
 import { ExclusiveDeals } from '../dashboard_ALL/ExclusiveDeals';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
@@ -54,6 +55,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Toaster } from '../components/ui/toaster';
 import GuidedTour from '../components/ui/guided-tour';
 import { useGuidedTour } from '../hooks/use-guided-tour';
+
+declare global {
+  interface Window {
+    PaystackPop: any;
+  }
+}
 
 interface CountryData {
   code: string;
@@ -266,6 +273,14 @@ const Dashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!window.PaystackPop) {
+      const script = document.createElement('script');
+      script.src = 'https://js.paystack.co/v1/inline.js';
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!loading && user && !user.phoneNumber) {
       setIsPhonePromptOpen(true);
     }
@@ -346,16 +361,15 @@ const Dashboard: React.FC = () => {
   const upgradeableEvents = gifts.filter((gift) => !gift.isPremium);
   const visibleUpgradeableEvents = upgradeableEvents.slice(0, 3);
   const hiddenUpgradeableCount = Math.max(0, upgradeableEvents.length - visibleUpgradeableEvents.length);
-  const premiumPaymentHistory = premiumPayments.length > 0
-    ? premiumPayments
-    : activeSubscriptionEvents.map((gift) => ({
-        id: `vip-${gift.id}`,
-        giftId: gift.id,
-        amount: 50000,
-        status: 'success',
-        transactionId: `VIP-${gift.id}`,
-        createdAt: gift.createdAt,
-      }));
+  const premiumPaymentHistory = premiumPayments;
+  const unlockedTemplatePurchases = premiumPayments.filter(
+    (p: any) => p.paymentType === 'template' && p.status === 'success'
+  );
+  const templatesByGift = unlockedTemplatePurchases.reduce((acc: Record<number, any[]>, p: any) => {
+    if (!acc[p.giftId]) acc[p.giftId] = [];
+    acc[p.giftId].push(p);
+    return acc;
+  }, {} as Record<number, any[]>);
 
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null, action: undefined },
@@ -363,6 +377,7 @@ const Dashboard: React.FC = () => {
     {id: 'wishlists', label: 'Wishlist', icon: Heart, color: 'text-red-500', badge: null, action: undefined},
     { id: 'rsvp', label: 'RSVP Manager', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests, action: undefined },
     { id: 'website', label: 'Website', icon: Globe, color: 'text-purple-600', badge: null, action: undefined },
+    { id: 'invitation', label: 'Invitation', icon: Mail, color: 'text-pink-600', badge: null, action: undefined },
     { id: 'asoebi', label: 'Asoebi Orders', icon: Package, color: 'text-purple-600', badge: null, action: undefined },
     { id: 'photobook', label: 'Photobook', icon: ImageIcon, color: 'text-pink-500', badge: null, action: undefined },
     { id: 'qr', label: 'Event QR Code', icon: QrCode, color: 'text-green-500', badge: null, action: undefined },
@@ -652,6 +667,11 @@ const Dashboard: React.FC = () => {
     }
   }, [activeTab]);
 
+  // Reset payment states on component mount (prevents stuck loading)
+  useEffect(() => {
+    setIsProcessingPayment(false);
+  }, []);
+
   // Check for payment verification on component mount
   useEffect(() => {
     const checkPaymentVerification = async () => {
@@ -660,6 +680,8 @@ const Dashboard: React.FC = () => {
       const txRef = urlParams.get('tx_ref');
       const txId = urlParams.get('transaction_id');
       const giftId = urlParams.get('giftId') || urlParams.get('gift_id');
+      const paymentTypeParam = urlParams.get('type');
+      const templateParam = urlParams.get('template');
       
       const transactionIdentifier = reference || txRef || txId;
       
@@ -671,7 +693,12 @@ const Dashboard: React.FC = () => {
         
         try {
           const token = localStorage.getItem('token');
-          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${giftId}/premium/verify?reference=${transactionIdentifier}`, {
+          const verifyUrl = new URL(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${giftId}/premium/verify`);
+          verifyUrl.searchParams.set('reference', transactionIdentifier);
+          if (paymentTypeParam) verifyUrl.searchParams.set('type', paymentTypeParam);
+          if (templateParam) verifyUrl.searchParams.set('template', templateParam);
+
+          const res = await fetch(verifyUrl.toString(), {
             headers: { Authorization: `Bearer ${token}` },
             method: 'POST',
           });
@@ -680,7 +707,10 @@ const Dashboard: React.FC = () => {
             // Remove query params
             const newUrl = window.location.pathname;
             window.history.replaceState({}, document.title, newUrl);
-            
+
+            const responseData = await res.json();
+            const paymentType = (responseData?.type as string) || paymentTypeParam || 'event';
+
             // Refresh gifts
             const fetchGifts = async () => {
               if (token) {
@@ -695,9 +725,13 @@ const Dashboard: React.FC = () => {
             };
             await fetchGifts();
             await fetchPremiumPayments();
-            
+
+            const successMessage = paymentType === 'template'
+              ? `Thank you! Your ${(responseData?.template || templateParam || 'premium').charAt(0).toUpperCase() + (responseData?.template || templateParam || 'premium').slice(1)} website template is now unlocked.`
+              : 'Thank you! Your event is now Supersaver - no more commission!';
+
             setPremiumVerifyStatus('success');
-            setPremiumVerifyMessage('Thank you! Your event is now Supersaver - no more commission!');
+            setPremiumVerifyMessage(successMessage);
             
             // Trigger confetti!
             const duration = 15 * 1000;
@@ -726,11 +760,25 @@ const Dashboard: React.FC = () => {
           console.error('Error verifying payment:', err);
           setPremiumVerifyStatus('error');
           setPremiumVerifyMessage('Could not verify payment.');
+        } finally {
+          // Reset payment state
+          setIsProcessingPayment(false);
         }
       }
     };
     
     checkPaymentVerification();
+  }, []);
+
+  // Clean up invitation template selection from URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const template = urlParams.get('template');
+
+    if (template) {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
   }, []);
 
   //add filter
@@ -1618,20 +1666,32 @@ const Dashboard: React.FC = () => {
       const token = localStorage.getItem('token');
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${selectedGiftForUpgrade.id}/premium/initialize`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type: 'event',
+        }),
       });
       const data = await res.json();
-      const authUrl = data?.data?.authorization_url || data?.authorization_url;
-      if (res.ok && authUrl) {
-        // Redirect to Paystack
-        window.location.href = authUrl;
+      if (res.ok && data.authorization_url) {
+        window.location.href = data.authorization_url;
       } else {
-        alert(data.msg || 'Failed to initialize payment');
+        toast({
+          title: 'Error',
+          description: data.msg || 'Failed to initialize payment',
+          variant: 'destructive',
+        });
+        setIsProcessingPayment(false);
       }
     } catch (err) {
-      console.error(err);
-      alert('Error initializing payment');
-    } finally {
+      console.error('Premium upgrade error:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to initialize payment',
+        variant: 'destructive',
+      });
       setIsProcessingPayment(false);
     }
   };
@@ -1906,35 +1966,37 @@ const Dashboard: React.FC = () => {
             <div className="p-4 lg:p-6 pl-16 lg:pl-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {activeTab === 'overview' && 'Dashboard Overview'}
-                    {activeTab === 'gifts' && 'Events'}
-                    {activeTab === 'withdraw' && 'Withdraw Funds'}
-                    {activeTab === 'rsvp' && 'RSVP'}
-                    {activeTab === 'website' && 'Website'}
-                    {activeTab === 'vendors' && 'Manage Expenses'}
-                    {activeTab === 'asoebi' && 'Asoebi Orders'}
-                    {activeTab === 'qr' && 'Event QR Code'}
-                    {activeTab === 'photobook' && 'Photobook'}
-                    {activeTab === 'invite' && 'Invite & Earn'}
-                    {activeTab === 'wishlists' && 'Wishlist'}
-                    {activeTab === 'exclusive-deals' && 'Exclusive Deals'}
-                    {activeTab === 'premium' && 'See active subscription'}
+                   <h1 className="text-2xl font-bold text-gray-900">
+                     {activeTab === 'overview' && 'Dashboard Overview'}
+                     {activeTab === 'gifts' && 'Events'}
+                     {activeTab === 'withdraw' && 'Withdraw Funds'}
+                     {activeTab === 'rsvp' && 'RSVP'}
+                      {activeTab === 'website' && 'Website'}
+                      {activeTab === 'invitation' && 'Invitation'}
+                      {activeTab === 'vendors' && 'Manage Expenses'}
+                     {activeTab === 'asoebi' && 'Asoebi Orders'}
+                     {activeTab === 'qr' && 'Event QR Code'}
+                     {activeTab === 'photobook' && 'Photobook'}
+                     {activeTab === 'invite' && 'Invite & Earn'}
+                     {activeTab === 'wishlists' && 'Wishlist'}
+                     {activeTab === 'exclusive-deals' && 'Exclusive Deals'}
+                     {activeTab === 'premium' && 'Subscription'}
                   </h1>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
-                    {activeTab === 'gifts' && 'Manage all your event links & cash gifts'}
-                    {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
-                    {activeTab === 'asoebi' && 'Track asoebi orders and payments'}
-                    {activeTab === 'rsvp' && 'Manage your event guest list'}
-                    {activeTab === 'website' && 'Build and customize your beautiful event website'}
-                    {activeTab === 'premium' && 'See active subscriptions, upgrade a few events to VIP, and review payment history'}
-                    {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share photos in your photobook'}
-                    {activeTab === 'photobook' && 'Share your QR code at your event so your guests can share pictures from your events with you'}
-                    {activeTab === 'invite' && 'Refer friends and earn rewards when they use your link'}
-                    {activeTab === 'wishlists' && 'Create and share wishlist with your friends and family'}
-                    {activeTab === 'exclusive-deals' && 'Discover amazing wedding deals from top vendors with huge discounts'}
-                  </p>
+                   <p className="text-sm text-gray-600 mt-1">
+                     {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
+                     {activeTab === 'gifts' && 'Manage all your event links & cash gifts'}
+                     {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
+                     {activeTab === 'asoebi' && 'Track asoebi orders and payments'}
+                     {activeTab === 'rsvp' && 'Manage your event guest list'}
+                      {activeTab === 'website' && 'Build and customize your beautiful event website'}
+                      {activeTab === 'invitation' && 'Design and send beautiful wedding invitations'}
+                      {activeTab === 'premium' && 'Manage Premium Upgrade, Premium Templates, and review payment history'}
+                     {activeTab === 'qr' && 'Place this QR code at your event to receive cash gifts & share photos in your photobook'}
+                     {activeTab === 'photobook' && 'Share your QR code at your event so your guests can share pictures from your events with you'}
+                     {activeTab === 'invite' && 'Refer friends and earn rewards when they use your link'}
+                     {activeTab === 'wishlists' && 'Create and share wishlist with your friends and family'}
+                     {activeTab === 'exclusive-deals' && 'Discover amazing wedding deals from top vendors with huge discounts'}
+                   </p>
                 </div>
                 
                 <div className="flex flex-col lg:flex-row items-center space-y-2 lg:space-y-0 lg:space-x-4">
@@ -3169,6 +3231,11 @@ const Dashboard: React.FC = () => {
               <Website />
             )}
 
+            {/* Invitation Section */}
+            {activeTab === 'invitation' && (
+              <Invitation />
+            )}
+
             {/* Photobook Section */}
             {activeTab === 'photobook' && (
               <Photobook gifts={gifts} onTabChange={setActiveTab} />
@@ -3185,67 +3252,142 @@ const Dashboard: React.FC = () => {
             {/* Exclusive Deals Section */}
             {activeTab === 'premium' && (
               <div className="space-y-6">
-                {/* Active Subscription */}
-                <Card className="border-0 shadow-lg bg-gradient-to-r from-yellow-50 to-yellow-100">
+                {/* Premium Upgrade Card */}
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 text-white overflow-hidden">
                   <CardContent className="p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <Crown className="w-10 h-10 text-yellow-600" />
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">See active subscription</h3>
-                        <p className="text-sm text-gray-600">Active VIP events and a few upgrade options in one place.</p>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="p-3 bg-white/20 backdrop-blur rounded-xl">
+                          <Crown className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-white">Premium Upgrade</h3>
+                          <p className="text-purple-100 mt-1">Make your event Supersaver VIP and keep 100% of all gifts</p>
+                          <ul className="mt-4 space-y-2">
+                            <li className="flex items-center space-x-2 text-sm text-purple-50">
+                              <CheckCircle className="w-4 h-4 text-purple-200" />
+                              <span>0% commission on all cash gifts</span>
+                            </li>
+                            <li className="flex items-center space-x-2 text-sm text-purple-50">
+                              <CheckCircle className="w-4 h-4 text-purple-200" />
+                              <span>0% commission on all asoebi orders</span>
+                            </li>
+                            <li className="flex items-center space-x-2 text-sm text-purple-50">
+                              <CheckCircle className="w-4 h-4 text-purple-200" />
+                              <span>Lifetime Supersaver VIP for this event</span>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="text-center md:text-right">
+                        <div className="text-4xl font-extrabold text-white mb-1">₦50,000</div>
+                        <p className="text-purple-100 text-sm mb-4">One-time payment per event</p>
+                        {upgradeableEvents.length > 0 ? (
+                          <Select onValueChange={(value) => {
+                            const gift = gifts.find(g => g.id === parseInt(value));
+                            if (gift) handleUpgradeToPremium(gift);
+                          }}>
+                            <SelectTrigger className="w-full md:w-[240px] bg-white/95 text-gray-900 border-0 hover:bg-white">
+                              <SelectValue placeholder="Select event to upgrade" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white text-gray-900">
+                              {upgradeableEvents.map((gift) => (
+                                <SelectItem key={gift.id} value={gift.id.toString()}>
+                                  {gift.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge className="bg-purple-400 text-white">All events are VIP</Badge>
+                        )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white p-4 rounded-xl shadow-sm border border-yellow-200">
-                        <h4 className="font-semibold text-gray-900 mb-3">Active subscriptions</h4>
+                  </CardContent>
+                </Card>
+
+                {/* Premium Websites Unlocks */}
+                <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50 to-white">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <Globe className="w-10 h-10 text-[#2E235C]" />
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">Premium Websites</h3>
+                          <p className="text-sm text-gray-600">Premium templates you've unlocked per event</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setActiveTab('website')}
+                        className="border-[#2E235C]/30 text-[#2E235C] hover:bg-[#2E235C]/5"
+                      >
+                        <Globe className="w-4 h-4 mr-1" />
+                        Go to Website
+                      </Button>
+                    </div>
+                    {unlockedTemplatePurchases.length > 0 ? (
+                      <div className="space-y-3">
+                        {Object.entries(templatesByGift).map(([giftId, templates]) => {
+                          const gift = gifts.find(g => g.id === Number(giftId));
+                          return (
+                            <div key={giftId} className="bg-white p-4 rounded-xl shadow-sm border border-[#2E235C]/20">
+                              <div className="flex items-center space-x-2 mb-3">
+                                <Globe className="w-4 h-4 text-[#2E235C] flex-shrink-0" />
+                                <span className="font-semibold text-gray-900">{gift?.title || `Event #${giftId}`}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {templates.map((tp: any) => (
+                                  <Badge
+                                    key={tp.id}
+                                    className="bg-[#2E235C] text-white"
+                                  >
+                                    {tp.template ? tp.template.charAt(0).toUpperCase() + tp.template.slice(1) : 'Premium'} Template
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg bg-white p-4 text-sm text-gray-600 border border-[#2E235C]/20 shadow-sm">
+                        No premium templates unlocked yet. Visit the Website tab to unlock beautiful premium website templates for ₦10,000 each.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Active Subscription */}
+                <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50 to-white">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <Crown className="w-10 h-10 text-[#2E235C]" />
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">Active subscriptions</h3>
+                        <p className="text-sm text-gray-600">Your current VIP events</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="bg-white p-4 rounded-xl shadow-sm border border-[#2E235C]/20">
                         {activeSubscriptionEvents.length > 0 ? (
                           <div className="space-y-2">
                             {activeSubscriptionEvents.map((gift) => (
                               <div key={gift.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div className="flex items-center space-x-2 min-w-0">
-                                  <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                                  <Crown className="w-4 h-4 text-[#2E235C] flex-shrink-0" />
                                   <span className="text-sm font-medium truncate">{gift.title}</span>
                                 </div>
-                                <Badge className="bg-yellow-500 text-white">VIP active</Badge>
+                                <Badge className="bg-[#2E235C] text-white">VIP active</Badge>
                               </div>
                             ))}
                           </div>
                         ) : (
                           <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
-                            No active subscription yet. Upgrade an event below to make it VIP.
+                            No active subscription yet. Upgrade an event with Premium Upgrade above to make it VIP.
                           </div>
                         )}
-                      </div>
-                      <div className="bg-white p-4 rounded-xl shadow-sm border border-yellow-200">
-                        <h4 className="font-semibold text-gray-900 mb-3">Upgrade a few events</h4>
-                        <div className="space-y-2">
-                          {visibleUpgradeableEvents.length > 0 ? (
-                            visibleUpgradeableEvents.map((gift) => (
-                              <div key={gift.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center space-x-2 min-w-0">
-                                  <div className="w-4 h-4 rounded-full bg-gray-300 flex-shrink-0" />
-                                  <span className="text-sm font-medium truncate">{gift.title}</span>
-                                </div>
-                                <Button 
-                                  size="sm" 
-                                  onClick={() => handleUpgradeToPremium(gift)}
-                                  className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
-                                >
-                                  Upgrade
-                                </Button>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
-                              All your events are already VIP.
-                            </div>
-                          )}
-                          {hiddenUpgradeableCount > 0 && (
-                            <p className="text-xs text-gray-500">
-                              {hiddenUpgradeableCount} more event{hiddenUpgradeableCount > 1 ? 's' : ''} can be upgraded from the events page.
-                            </p>
-                          )}
-                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -3255,8 +3397,8 @@ const Dashboard: React.FC = () => {
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <Clock className="w-5 h-5 mr-2 text-gray-600" />
-                      Payment History
+                      <Clock className="w-5 h-5 mr-2 text-[#2E235C]" />
+                      Payment History (Premium Upgrade &amp; Templates)
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -3268,15 +3410,22 @@ const Dashboard: React.FC = () => {
                       <div className="space-y-3">
                         {premiumPaymentHistory.map((payment: any) => {
                           const gift = gifts.find(g => g.id === payment.giftId);
+                          const isTemplate = payment.paymentType === 'template';
                           return (
                             <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
                               <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-yellow-100 rounded-full">
-                                  <Crown className="w-5 h-5 text-yellow-600" />
+                                <div className="p-2 rounded-full bg-[#2E235C]/10">
+                                  {isTemplate ? (
+                                    <Globe className="w-5 h-5 text-[#2E235C]" />
+                                  ) : (
+                                    <Crown className="w-5 h-5 text-[#2E235C]" />
+                                  )}
                                 </div>
                                 <div>
                                   <p className="font-medium text-gray-900">
-                                    Premium Upgrade - {gift?.title || 'Event'}
+                                    {isTemplate 
+                                      ? `Template Unlock - ${payment.template ? payment.template.charAt(0).toUpperCase() + payment.template.slice(1) : gift?.title || 'Event'}` 
+                                      : `Premium Upgrade - ${gift?.title || 'Event'}`}
                                   </p>
                                   <p className="text-sm text-gray-500">
                                     {new Date(payment.createdAt).toLocaleDateString()}
@@ -3285,7 +3434,7 @@ const Dashboard: React.FC = () => {
                               </div>
                               <div className="text-right">
                                 <p className="font-bold text-gray-900">₦{Number(payment.amount).toLocaleString()}</p>
-                                <Badge className={payment.status === 'success' ? 'bg-green-500' : 'bg-yellow-500'}>
+                                <Badge className={payment.status === 'success' ? 'bg-green-500' : 'bg-gray-500'}>
                                   {payment.status === 'success' ? 'Successful' : 'Pending'}
                                 </Badge>
                               </div>
@@ -3296,7 +3445,7 @@ const Dashboard: React.FC = () => {
                     ) : (
                       <div className="text-center py-8 text-gray-500">
                         <p>No premium payments yet</p>
-                        <p className="text-sm">Upgrade your first event to see payments here</p>
+                        <p className="text-sm">Upgrade an event or unlock a premium template to see payments here</p>
                       </div>
                     )}
                   </CardContent>
@@ -6296,10 +6445,10 @@ const Dashboard: React.FC = () => {
 
       {/* Premium Payment Verify Modal */}
       <Dialog open={showPremiumVerifyModal} onOpenChange={setShowPremiumVerifyModal}>
-        <DialogContent className="w-[90vw] sm:w-full sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-hidden">
+        <DialogContent className="w-[90vw] sm:w-full sm:max-w-[400px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-4 border-b sticky top-0 bg-white z-10">
             <div className="flex items-center space-x-2">
-              <div className="p-2 bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg">
+              <div className="p-2 bg-rose rounded-lg">
                 <CreditCard className="w-5 h-5 text-white" />
               </div>
               <DialogTitle className="text-2xl font-bold text-gray-900">
@@ -6311,7 +6460,7 @@ const Dashboard: React.FC = () => {
           <div className="p-6 space-y-6">
             {premiumVerifyStatus === 'checking' && (
               <div className="text-center py-8">
-                <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
+                <div className="w-16 h-16 border-4 border-rose-light border-t-rose rounded-full animate-spin mx-auto mb-4" />
                 <p className="text-lg text-gray-700">{premiumVerifyMessage}</p>
               </div>
             )}
@@ -6344,7 +6493,7 @@ const Dashboard: React.FC = () => {
                     setPremiumVerifyStatus(null);
                     setPremiumVerifyMessage('');
                   }}
-                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
+                  className="w-full bg-rose hover:bg-rose/90 text-white"
                 >
                   Done
                 </Button>

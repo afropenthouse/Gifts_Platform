@@ -7,6 +7,11 @@ import { TemplateCleanClassic } from '../components/website-templates/TemplateCl
 import { TemplateNocturne } from '../components/website-templates/TemplateNocturne';
 import { TemplateRosette } from '../components/website-templates/TemplateRosette';
 import { TemplateMilk } from '../components/website-templates/TemplateMilk';
+import { TemplateEmerald } from '../components/website-templates/TemplateEmerald';
+import { TemplateSapphire } from '../components/website-templates/TemplateSapphire';
+import { TemplateRuby } from '../components/website-templates/TemplateRuby';
+import { TemplatePearl } from '../components/website-templates/TemplatePearl';
+import { TemplateAmethyst } from '../components/website-templates/TemplateAmethyst';
 import { Loader2 } from 'lucide-react';
 
 interface Website {
@@ -27,6 +32,8 @@ interface Website {
   enableWishlistButton?: boolean;
   ceremony?: string;
   reception?: string;
+  hasTemplatePremium?: boolean;
+  unlockedTemplates?: string[];
   gift?: {
     id: number;
     type: string;
@@ -37,6 +44,8 @@ interface Website {
     wishlists?: { id: number; shareLink: string; title: string }[];
   };
 }
+
+const PREMIUM_TEMPLATE_KEYS = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst'];
 
 const WeddingWebsite = () => {
   const { template, link } = useParams<{ template?: string; link: string }>();
@@ -151,7 +160,19 @@ const WeddingWebsite = () => {
     },
   };
 
-  const useTemplate = urlTemplate || website?.template || 'elegant';
+  const isPremiumUnlocked = (templateKey?: string) => {
+    if (!templateKey || !PREMIUM_TEMPLATE_KEYS.includes(templateKey)) return true;
+    if (website.hasTemplatePremium) return true;
+    return (website.unlockedTemplates || []).includes(templateKey);
+  };
+
+  const savedTemplate = website?.template || 'elegant';
+  const requestedTemplate = urlTemplate || savedTemplate;
+  const useTemplate = isPremiumUnlocked(requestedTemplate)
+    ? requestedTemplate
+    : isPremiumUnlocked(savedTemplate)
+      ? savedTemplate
+      : 'modern';
 
   switch (useTemplate) {
     case 'modern':
@@ -166,6 +187,16 @@ const WeddingWebsite = () => {
       return <TemplateRosette {...props} />;
     case 'milk':
       return <TemplateMilk {...props} />;
+    case 'emerald':
+      return <TemplateEmerald {...props} />;
+    case 'sapphire':
+      return <TemplateSapphire {...props} />;
+    case 'ruby':
+      return <TemplateRuby {...props} />;
+    case 'pearl':
+      return <TemplatePearl {...props} />;
+    case 'amethyst':
+      return <TemplateAmethyst {...props} />;
     case 'elegant':
     default:
       return <TemplateElegant {...props} />;

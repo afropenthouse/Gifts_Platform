@@ -60,7 +60,7 @@ export const TemplateNocturne = ({
   const picture = data?.heroImage || propPicture;
   const primaryColor = data?.theme?.primaryColor || propPrimaryColor;
   const secondaryColor = data?.theme?.secondaryColor || propSecondaryColor;
-  const fontFamily = data?.theme?.fontFamily || 'system-ui, sans-serif';
+  const fontFamily = data?.theme?.fontFamily || 'Playfair Display, Georgia, serif';
 
   const formatDate = (d?: string) => {
     if (!d) return '';
@@ -71,7 +71,7 @@ export const TemplateNocturne = ({
 
   const heroName = data?.eventType === 'wedding' && data?.coupleNames ? data.coupleNames : title;
   const eventLabel = data?.eventType && data.eventType !== 'wedding' ? data.eventType : 'wedding';
-  const slogan = `We can't wait to share our special day with you. help us capture our ${eventLabel} with Bethere`;
+  const slogan = `We can't wait to share our special day with you. help us capture our ${eventLabel}`;
   const countdownText = (() => {
     if (!date) return '';
     const eventDay = new Date(date);
@@ -97,10 +97,10 @@ export const TemplateNocturne = ({
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-slate-900 via-stone-900 to-neutral-900" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/70 md:from-black/40 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+            <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/50 md:from-black/30 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-black/30 backdrop-blur-md border-t border-white/10">
               <p className="text-2xl md:text-4xl lg:text-5xl font-black text-white tracking-tight">{heroName}</p>
-              <p className="mt-3 text-xs md:text-sm text-white/70 max-w-md leading-relaxed">{slogan}</p>
+              <p className="mt-3 text-xs md:text-sm text-white/80 max-w-md leading-relaxed">{slogan}</p>
             </div>
           </div>
         </div>
@@ -116,7 +116,7 @@ export const TemplateNocturne = ({
             <div className="relative z-10 flex flex-col items-center md:items-start w-full">
             <div className="hidden md:block mb-8">
               {data?.heroSubtitle && (
-                <p className="text-xs tracking-[0.3em] uppercase font-bold text-orange-300">{data.heroSubtitle}</p>
+                 <p className="text-xs tracking-[0.3em] font-bold" style={{ color: secondaryColor }}>{data.heroSubtitle}</p>
               )}
             </div>
 
@@ -133,7 +133,6 @@ export const TemplateNocturne = ({
                 style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: 'white' }}
                 onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
               >
-                <Heart className="w-4 h-4 mr-2" />
                 RSVP Now
               </Button>
             </div>
@@ -166,7 +165,7 @@ export const TemplateNocturne = ({
                   <div className="h-px w-16 bg-gradient-to-l from-transparent via-amber-500/30 to-amber-500/30" />
                 </div>
                 <h2 className="text-3xl md:text-4xl font-black mb-8 text-white tracking-tight">Our Story</h2>
-                <p className="text-xl leading-relaxed text-stone-400 font-light">{story}</p>
+                <p className="text-lg leading-8 text-stone-400 font-light">{story}</p>
               </div>
             </section>
           )}
@@ -183,7 +182,7 @@ export const TemplateNocturne = ({
                   <div className="h-px w-16 bg-gradient-to-l from-transparent via-amber-500/30 to-amber-500/30" />
                 </div>
                 <h2 className="text-3xl md:text-4xl font-black mb-8 text-white tracking-tight">Gallery</h2>
-                <GalleryLightbox images={gallery} imageClassName="w-full h-48 object-cover rounded-lg" />
+                <GalleryLightbox images={gallery} imageClassName="w-full h-48 object-cover rounded-lg object-top" />
               </div>
             </section>
           )}
@@ -205,7 +204,7 @@ export const TemplateNocturne = ({
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 group-hover:from-orange-600 group-hover:to-orange-700 transition-colors shadow-lg shadow-orange-500/30">
                     <Users className="w-7 h-7 text-white" />
                   </div>
-                  <span className="text-sm tracking-[0.15em] uppercase font-bold text-orange-100">RSVP</span>
+                   <span className="text-sm tracking-[0.08em] text-orange-100">RSVP</span>
                 </button>
                 <button
                   onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
@@ -214,7 +213,7 @@ export const TemplateNocturne = ({
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 group-hover:from-amber-600 group-hover:to-amber-700 transition-colors shadow-lg shadow-amber-500/30">
                     <ShoppingBag className="w-7 h-7 text-white" />
                   </div>
-                  <span className="text-sm tracking-[0.15em] uppercase font-bold text-amber-100">Buy Asoebi</span>
+                   <span className="text-sm tracking-[0.08em] text-amber-100">Buy Asoebi</span>
                 </button>
                 {enableWishlistButton && wishlists && wishlists.length > 0 && wishlists[0].shareLink && (
                   <button
@@ -224,7 +223,7 @@ export const TemplateNocturne = ({
                     <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 group-hover:from-rose-600 group-hover:to-rose-700 transition-colors shadow-lg shadow-rose-500/30">
                       <Heart className="w-7 h-7 text-white" />
                     </div>
-                    <span className="text-sm tracking-[0.15em] uppercase font-bold text-rose-100">Our Wishlists</span>
+                     <span className="text-sm tracking-[0.08em] text-rose-100">Wishlists</span>
                   </button>
                 )}
                 {showWellWishes && (
@@ -235,7 +234,7 @@ export const TemplateNocturne = ({
                     <div className="p-4 rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 group-hover:from-pink-600 group-hover:to-pink-700 transition-colors shadow-lg shadow-pink-500/30">
                       <MessageSquareHeart className="w-7 h-7 text-white" />
                     </div>
-                    <span className="text-sm tracking-[0.15em] uppercase font-bold text-pink-100">Well-wishes</span>
+                     <span className="text-sm tracking-[0.08em] text-pink-100">Well Wishes</span>
                   </button>
                 )}
                 <button
@@ -245,7 +244,7 @@ export const TemplateNocturne = ({
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-500 to-yellow-600 group-hover:from-yellow-600 group-hover:to-yellow-700 transition-colors shadow-lg shadow-yellow-500/30">
                     <Gift className="w-7 h-7 text-white" />
                   </div>
-                  <span className="text-sm tracking-[0.15em] uppercase font-bold text-yellow-100">Cash Gifts</span>
+                   <span className="text-sm tracking-[0.08em] text-yellow-100">Cash Gifts</span>
                 </button>
                 <button
                   onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
@@ -254,7 +253,7 @@ export const TemplateNocturne = ({
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 group-hover:from-orange-600 group-hover:to-amber-700 transition-colors shadow-lg shadow-orange-500/30">
                     <Camera className="w-7 h-7 text-white" />
                   </div>
-                  <span className="text-sm tracking-[0.15em] uppercase font-bold text-orange-100">Photobook</span>
+                   <span className="text-sm tracking-[0.08em] text-orange-100">Photobook</span>
                 </button>
               </div>
             </div>

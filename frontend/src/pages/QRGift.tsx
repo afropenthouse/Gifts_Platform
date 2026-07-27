@@ -11,6 +11,7 @@ import Navbar from '../components/Navbar';
 import confetti from 'canvas-confetti';
 import { useToast } from '../hooks/use-toast';
 import { Gift as GiftIcon, Camera } from 'lucide-react';
+import { openFlutterwaveCheckout, loadFlutterwaveScript } from '../lib/flutterwave';
 
 interface Gift {
   id: string;
@@ -71,6 +72,12 @@ const getWishlistPath = (gift: Gift | null) => {
   return shareLink ? `/${shareLink.replace(/^\/+/, '')}` : null;
 };
 
+declare global {
+  interface Window {
+    PaystackPop: any;
+  }
+}
+
 const QRGift: React.FC = () => {
   const { link, slug, id } = useParams<{ link?: string; slug?: string; id?: string }>();
   const [searchParams] = useSearchParams();
@@ -106,6 +113,15 @@ const QRGift: React.FC = () => {
 
   useEffect(() => {
     document.title = "Send a Cash Gift";
+  }, []);
+
+  useEffect(() => {
+    if (!window.PaystackPop) {
+      const script = document.createElement('script');
+      script.src = 'https://js.paystack.co/v1/inline.js';
+      document.head.appendChild(script);
+    }
+    loadFlutterwaveScript().catch(() => null);
   }, []);
 
   // Handle redirect back from payment providers: verify payment
@@ -264,10 +280,171 @@ const QRGift: React.FC = () => {
         throw new Error(msg);
       }
 
-      const authorizationUrl =
-        initData?.data?.authorization_url || initData?.data?.link || initData?.data?.checkout_url;
-      if (authorizationUrl) {
-        window.location.href = authorizationUrl;
+      if (currency === 'NGN') {
+        const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+        if (!publicKey) {
+          alert('Payment is unavailable: missing Paystack public key.');
+          setProcessingPayment(false);
+          return;
+        }
+
+        const reference = initData?.data?.reference;
+        if (!reference) {
+          alert('Payment initialization failed: missing reference');
+          setProcessingPayment(false);
+          return;
+        }
+
+        const config = {
+          key: publicKey,
+          email: email,
+          amount: parseFloat(amount) * 100,
+          currency: 'NGN',
+          ref: reference,
+          channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
+          callback: async (paymentData: any) => {
+            try {
+              if (paymentData.status === 'success') {
+                const verifyRes = await fetch(
+                  `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/verify-payment`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      transactionId: paymentData.reference,
+                      reference: paymentData.reference,
+                      txRef: paymentData.reference,
+                      status: paymentData.status,
+                    }),
+                  }
+                );
+                const verifyData = await verifyRes.json();
+                if (verifyRes.ok) {
+                  setShowVerifyModal(true);
+                  setVerifyStatus('success');
+                  setVerifyMessage('Thank you! Your gift was successful.');
+                  setShowNameModal(false);
+                  setAmount('');
+                  setContributorName('');
+                  setContributorEmail('');
+                  setIsAnonymous(false);
+                } else {
+                  setShowVerifyModal(true);
+                  setVerifyStatus('error');
+                  setVerifyMessage(verifyData?.msg || 'Payment verification failed');
+                }
+              } else {
+                setShowVerifyModal(true);
+                setVerifyStatus('error');
+                setVerifyMessage('Payment was not completed.');
+              }
+            } catch (err) {
+              console.error('Verification error:', err);
+              setShowVerifyModal(true);
+              setVerifyStatus('error');
+              setVerifyMessage('Failed to verify payment.');
+            } finally {
+              setProcessingPayment(false);
+            }
+          },
+          onClose: () => {
+            setProcessingPayment(false);
+          },
+        };
+
+        if (window.PaystackPop) {
+          window.PaystackPop.setup(config).openIframe();
+        } else {
+          alert('Paystack is not loaded. Please refresh the page and try again.');
+          setProcessingPayment(false);
+        }
+      } else {
+        const publicKey = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY;
+        if (!publicKey) {
+          alert('Payment is unavailable: missing Flutterwave public key.');
+          setProcessingPayment(false);
+          return;
+        }
+
+        const txRef = initData?.data?.tx_ref;
+        if (!txRef) {
+          alert('Payment initialization failed: missing transaction reference');
+          setProcessingPayment(false);
+          return;
+        }
+
+        try {
+          await openFlutterwaveCheckout({
+            public_key: publicKey,
+            tx_ref: txRef,
+            amount: Number(amount),
+            currency: currency,
+            customer: {
+              email: email,
+              name: name,
+            },
+            customizations: {
+              title: gift?.title || 'Cash Gift',
+              description: `Gift to ${gift?.title || 'celebrant'}`,
+            },
+            callback: (data: any) => {
+              const status = String(data?.status || '').toLowerCase();
+              if (status === 'successful' || status === 'success') {
+                fetch(
+                  `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/verify-payment`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      transactionId: data.transaction_id,
+                      reference: data.tx_ref,
+                      txRef: data.tx_ref,
+                      status: data.status,
+                    }),
+                  }
+                )
+                  .then((verifyRes) => verifyRes.json())
+                  .then((verifyData) => {
+                    if (verifyRes.ok) {
+                      setShowVerifyModal(true);
+                      setVerifyStatus('success');
+                      setVerifyMessage('Thank you! Your gift was successful.');
+                      setShowNameModal(false);
+                      setAmount('');
+                      setContributorName('');
+                      setContributorEmail('');
+                      setIsAnonymous(false);
+                    } else {
+                      setShowVerifyModal(true);
+                      setVerifyStatus('error');
+                      setVerifyMessage(verifyData?.msg || 'Payment verification failed');
+                    }
+                  })
+                  .catch((err) => {
+                    console.error('Verification error:', err);
+                    setShowVerifyModal(true);
+                    setVerifyStatus('error');
+                    setVerifyMessage('Failed to verify payment.');
+                  })
+                  .finally(() => {
+                    setProcessingPayment(false);
+                  });
+              } else {
+                setShowVerifyModal(true);
+                setVerifyStatus('error');
+                setVerifyMessage('Payment was not completed.');
+                setProcessingPayment(false);
+              }
+            },
+            onclose: () => {
+              setProcessingPayment(false);
+            },
+          });
+        } catch (err) {
+          console.error('Flutterwave checkout error:', err);
+          alert('Payment initialization failed');
+          setProcessingPayment(false);
+        }
       }
     } catch (err: any) {
       console.error(err);

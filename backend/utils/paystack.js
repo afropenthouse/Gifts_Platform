@@ -95,7 +95,7 @@ async function initializePayment(payload) {
     };
 
     const response = await psRequest('POST', '/transaction/initialize', psPayload);
-    console.log('Paystack payment initialization response:', response?.status);
+    console.log('Paystack payment initialization response:', response);
     return response;
   } catch (error) {
     console.error('Paystack Payment.initialize error:', error?.message || error);
@@ -181,7 +181,7 @@ async function getBanks() {
   try {
       // console.log('Fetching Paystack banks list');
         
-      const response = await psRequest('GET', '/bank?country=nigeria');
+      const response = await psRequest('GET', '/bank?country=ng');
 
       // console.log('Paystack banks fetch response:', response?.status);
     return response;
