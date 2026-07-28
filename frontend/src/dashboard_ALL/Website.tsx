@@ -91,7 +91,7 @@ const Website = () => {
   const { user } = useAuth();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [selectedGift, setSelectedGift] = useState<Gift | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState('modern');
+  const [selectedTemplate, setSelectedTemplate] = useState('nocturne');
   const [isPublished, setIsPublished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [website, setWebsite] = useState<WebsiteData & { hasTemplatePremium?: boolean; isEventPremium?: boolean; unlockedTemplates?: string[]; pendingTemplatePurchase?: string | null } | null>(null);
@@ -101,7 +101,7 @@ const Website = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [payingTemplate, setPayingTemplate] = useState<string | null>(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  const [previewTemplate, setPreviewTemplate] = useState<string>('modern');
+  const [previewTemplate, setPreviewTemplate] = useState<string>('nocturne');
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
   const [templateToUnlock, setTemplateToUnlock] = useState<string | null>(null);
 
@@ -186,7 +186,7 @@ const Website = () => {
         const data = await res.json();
         console.log('Website data loaded:', data);
         setWebsite(data);
-        const savedTemplate = data.template || 'modern';
+        const savedTemplate = data.template || 'nocturne';
         // Always use the saved template for preview, even if it's locked
         setSelectedTemplate(savedTemplate);
         setIsPublished(data.published || false);
@@ -289,9 +289,9 @@ const Website = () => {
 
   const getPublicTemplate = () => {
     if (PREMIUM_TEMPLATE_KEYS.includes(selectedTemplate) && !isTemplateUnlocked(selectedTemplate)) {
-      return 'modern';
+      return 'nocturne';
     }
-    return selectedTemplate || 'modern';
+    return selectedTemplate || 'nocturne';
   };
 
   const copyShareLink = async () => {
@@ -498,7 +498,7 @@ const Website = () => {
       },
     };
 
-    const useTemplate = templateKey || selectedTemplate || 'modern';
+    const useTemplate = templateKey || selectedTemplate || 'nocturne';
 
     switch (useTemplate) {
               case 'nocturne':
@@ -639,7 +639,6 @@ const Website = () => {
               </CardHeader>
               <CardContent className="p-4 pt-0 space-y-3">
                 {[
-          { key: 'modern', name: 'Noir', desc: 'Bold and modern', color: '#c9a96e', bg: '#c9a96e20', dot: '#c9a96e', premium: false },
           { key: 'nocturne', name: 'Nocturne', desc: 'Dark, moody & refined', gradient: 'from-slate-800 to-stone-800', dotGradient: 'from-orange-400 to-amber-400', premium: false },
           { key: 'rosette', name: 'Rosette', desc: 'Bold, romantic & vibrant', gradient: 'from-rose-100 to-red-100', dotGradient: 'from-rose-500 to-red-500', premium: false },
           { key: 'milk', name: 'Milk', desc: 'Pure, fine & timeless', gradient: 'from-stone-100 to-orange-50', dotGradient: 'from-stone-400 to-orange-300', premium: false },
@@ -671,25 +670,27 @@ const Website = () => {
                       : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-              <div className="flex items-center gap-3">
-                {tpl.gradient ? (
-                  <div className={`w-10 h-10 rounded-md flex items-center justify-center bg-gradient-to-br ${tpl.gradient} relative`}>
-                    {tpl.dotGradient ? (
-                      <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${tpl.dotGradient}`} />
-                    ) : (
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: tpl.dot || tpl.color }} />
-                    )}
-                    {isPremium && !isUnlocked && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-gray-800 text-white rounded-full flex items-center justify-center">
-                        <Lock className="w-3 h-3" />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-md flex items-center justify-center relative" style={{ backgroundColor: tpl.bg }}>
-                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: tpl.color }} />
-                  </div>
-                )}
+                <div className="flex items-center gap-3">
+                  {tpl.gradient ? (
+                    <div className={`w-10 h-10 rounded-md flex items-center justify-center bg-gradient-to-br ${tpl.gradient} relative`}>
+                      {tpl.dotGradient ? (
+                        <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${tpl.dotGradient}`} />
+                      ) : TplIcon ? (
+                        <TplIcon className="w-5 h-5 text-white/80 drop-shadow" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-white/60" />
+                      )}
+                      {isPremium && !isUnlocked && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-gray-800 text-white rounded-full flex items-center justify-center">
+                          <Lock className="w-3 h-3" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-md flex items-center justify-center relative bg-gray-100">
+                      <div className="w-4 h-4 rounded-full bg-gray-400" />
+                    </div>
+                  )}
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-gray-900">{tpl.name}</p>
