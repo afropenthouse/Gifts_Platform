@@ -39,7 +39,9 @@ async function psRequest(method, path, body) {
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = new Error(json?.message || `Paystack API ${method} ${path} failed`);
+      const body = json?.message || json?.data || `Paystack API ${method} ${path} failed (status ${res.status})`;
+      const err = new Error(body);
+      err.status = res.status;
       err.data = json;
       throw err;
     }
@@ -177,14 +179,27 @@ async function verifyBVNMatch({ bvn, account_number, bank_code }) {
   }
 }
 
-async function getBanks() {
+async function getBanks(country = 'ng') {
   try {
-      // console.log('Fetching Paystack banks list');
-        
-      const response = await psRequest('GET', '/bank?country=ng');
+    const endpoints = [`/bank?country=${encodeURIComponent(country)}`, '/bank'];
+    let lastError;
 
-      // console.log('Paystack banks fetch response:', response?.status);
-    return response;
+    for (const path of endpoints) {
+      try {
+        const response = await psRequest('GET', path);
+        if (response?.status && Array.isArray(response.data)) {
+          return response;
+        }
+      } catch (err) {
+        lastError = err;
+        console.error(`Paystack getBanks error for ${path}:`, err?.message || err);
+      }
+    }
+
+    const msg = lastError?.message || 'Paystack API getBanks failed';
+    const err = new Error(msg);
+    err.data = lastError?.data || {};
+    throw err;
   } catch (error) {
     console.error('Paystack getBanks error:', error?.message || error);
     throw error;
