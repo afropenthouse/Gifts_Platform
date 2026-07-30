@@ -1187,6 +1187,26 @@ module.exports = () => {
         data: { wallet: { increment: amountReceived } },
       });
 
+      sendGiftReceivedEmail({
+        recipientEmail: gift.user.email,
+        recipientName: gift.user.name,
+        contributorName: contributorName || 'Anonymous',
+        amount: amountNum,
+        gift: gift,
+        message: contributorMessage || '',
+        isAsoebi,
+      }).catch(err => console.error('Background gift received email failed:', err));
+
+      if (contributorEmail) {
+        sendContributorThankYouEmail({
+          recipientEmail: contributorEmail,
+          contributorName: contributorName || 'Anonymous',
+          amount: amountNum,
+          gift: gift,
+          isAsoebi,
+        }).catch(err => console.error('Background contributor thank you email failed:', err));
+      }
+
       res.status(200).send('OK');
     } catch (err) {
       console.log('=== FLUTTERWAVE WEBHOOK ERROR ===');

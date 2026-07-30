@@ -1328,6 +1328,192 @@ module.exports = () => {
     }
   });
 
+  // Webhook for Paystack premium payments
+  router.post('/premium/webhook/paystack', async (req, res) => {
+    try {
+      console.log('=== PAYSTACK PREMIUM WEBHOOK RECEIVED ===');
+      const secret = process.env.PAYSTACK_WEBHOOK_SECRET;
+      const signature = req.headers['x-paystack-signature'];
+      const payloadBuffer = req.rawBody;
+
+      if (!secret) {
+        console.error('PAYSTACK_WEBHOOK_SECRET not set');
+        return res.status(500).send('Server error');
+      }
+
+      if (!payloadBuffer) {
+        console.error('❌ Webhook Error: rawBody is missing.');
+        return res.status(500).send('Internal Server Error: Missing Raw Body');
+      }
+
+      const hash = crypto.createHmac('sha512', secret).update(payloadBuffer).digest('hex');
+      if (hash !== signature) {
+        console.error('❌ Invalid Paystack webhook signature');
+        return res.status(401).send('Unauthorized');
+      }
+
+      console.log('✓ Paystack premium webhook signature verified');
+
+      const event = req.body;
+      console.log('Event type:', event.event);
+      console.log('Event data:', JSON.stringify(event.data, null, 2));
+
+      if (event.event !== 'charge.success') {
+        console.log('Ignoring non-success event:', event.event);
+        return res.status(200).send('OK');
+      }
+
+      const { reference, amount, currency, status } = event.data;
+      console.log('Transaction details:', { reference, amount, currency, status });
+
+      if (status !== 'success') {
+        console.log('Payment not successful:', status);
+        return res.status(200).send('OK');
+      }
+
+      const payment = await prisma.premiumPayment.findFirst({
+        where: { transactionId: reference },
+        include: { gift: { include: { user: true } } }
+      });
+
+      if (!payment) {
+        console.error('No premium payment found for reference:', reference);
+        return res.status(200).send('OK');
+      }
+
+      if (payment.status === 'success') {
+        console.log('Premium payment already processed:', payment.id);
+        return res.status(200).send('OK');
+      }
+
+      const [updatedPayment] = await prisma.$transaction([
+        prisma.premiumPayment.update({
+          where: { id: payment.id },
+          data: { status: 'success', transactionId: reference }
+        }),
+        prisma.gift.update({
+          where: { id: payment.giftId },
+          data: { isPremium: true }
+        })
+      ]);
+
+      console.log('✅ Premium payment verified via webhook:', updatedPayment.id);
+
+      sendGiftReceivedEmail({
+        recipientEmail: payment.gift.user.email,
+        recipientName: payment.gift.user.name,
+        contributorName: payment.user?.name || 'Event Owner',
+        amount: Number(payment.amount),
+        gift: payment.gift,
+        message: 'Premium/VIP Upgrade activated',
+        isAsoebi: false,
+      }).catch(err => console.error('Background premium gift received email failed:', err));
+
+      res.status(200).send('OK');
+    } catch (err) {
+      console.log('=== PAYSTACK PREMIUM WEBHOOK ERROR ===');
+      console.error('Error:', err?.message || err);
+      res.status(500).send('Server error');
+    }
+  });
+
+  // Webhook for Flutterwave premium payments
+  router.post('/premium/webhook/flutterwave', async (req, res) => {
+    try {
+      console.log('=== FLUTTERWAVE PREMIUM WEBHOOK RECEIVED ===');
+      const secret = process.env.FLW_SECRET_KEY;
+      const signature = req.headers['verif-hash'];
+      const payloadBuffer = req.rawBody;
+
+      if (!secret) {
+        console.error('FLW_SECRET_KEY not set');
+        return res.status(500).send('Server error');
+      }
+
+      if (!payloadBuffer) {
+        console.error('❌ Webhook Error: rawBody is missing.');
+        return res.status(500).send('Internal Server Error: Missing Raw Body');
+      }
+
+      if (!flutterwave.verifyWebhookSignature(payloadBuffer, signature, secret)) {
+        console.error('❌ Invalid Flutterwave premium webhook signature');
+        return res.status(401).send('Unauthorized');
+      }
+
+      console.log('✓ Flutterwave premium webhook signature verified');
+
+      const event = req.body;
+      console.log('Event type:', event.event);
+      console.log('Event data:', JSON.stringify(event.data, null, 2));
+
+      const successfulEvents = new Set([
+        'charge.completed',
+        'card.charge.completed',
+        'account.charge.completed',
+        'mobilemoney.charge.completed',
+        'successful'
+      ]);
+
+      if (!successfulEvents.has(event.event)) {
+        console.log('Ignoring non-successful event:', event.event);
+        return res.status(200).send('OK');
+      }
+
+      const data = event.data || {};
+      const txRef = data.tx_ref || data.reference;
+      const transactionIdCandidates = [
+        data.id?.toString?.(),
+        txRef
+      ].filter(Boolean);
+
+      const existingPayment = await prisma.premiumPayment.findFirst({
+        where: {
+          OR: transactionIdCandidates.map((id) => ({ transactionId: id })),
+        },
+        include: { gift: { include: { user: true } } }
+      });
+
+      if (!existingPayment) {
+        console.error('No premium payment found for candidates:', transactionIdCandidates);
+        return res.status(200).send('OK');
+      }
+
+      if (existingPayment.status === 'success') {
+        console.log('Premium payment already processed:', existingPayment.id);
+        return res.status(200).send('OK');
+      }
+
+      const [updatedPayment] = await prisma.$transaction([
+        prisma.premiumPayment.update({
+          where: { id: existingPayment.id },
+          data: { status: 'success', transactionId: transactionIdCandidates[0] || existingPayment.transactionId }
+        }),
+        prisma.gift.update({
+          where: { id: existingPayment.giftId },
+          data: { isPremium: true }
+        })
+      ]);
+
+      console.log('✅ Flutterwave premium payment verified via webhook:', updatedPayment.id);
+
+      sendGiftReceivedEmail({
+        recipientEmail: existingPayment.gift.user.email,
+        recipientName: existingPayment.gift.user.name,
+        contributorName: existingPayment.user?.name || 'Event Owner',
+        amount: Number(existingPayment.amount),
+        gift: existingPayment.gift,
+        message: 'Premium/VIP Upgrade activated',
+        isAsoebi: false,
+      }).catch(err => console.error('Background premium gift received email failed:', err));
+
+      res.status(200).send('OK');
+    } catch (err) {
+      console.log('=== FLUTTERWAVE PREMIUM WEBHOOK ERROR ===');
+      console.error('Error:', err?.message || err);
+      res.status(500).send('Server error');
+    }
+  });
+
   return router;
 
 };

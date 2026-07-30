@@ -51,6 +51,8 @@ app.use(express.json({
     const webhookPaths = [
       '/api/contributions/webhook',
       '/api/contributions/webhook/flutterwave',
+      '/api/gifts/premium/webhook/paystack',
+      '/api/gifts/premium/webhook/flutterwave',
       '/api/vendors/webhook',
       '/api/v1/campaigns/paystack/webhook'
     ];
