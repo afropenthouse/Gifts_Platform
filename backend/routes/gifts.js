@@ -10,7 +10,7 @@ const { sendRemindersForGift } = require('../utils/reminderService');
 const paystack = require('../utils/paystack');
 const flutterwave = require('../utils/flutterwave');
 
-const PREMIUM_WEBSITE_TEMPLATES = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst'];
+const PREMIUM_WEBSITE_TEMPLATES = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir'];
 
 const getUnlockedWebsiteTemplates = async (gift) => {
   if (!gift) {

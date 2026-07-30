@@ -19,6 +19,7 @@ import { TemplateEmerald } from '../components/website-templates/TemplateEmerald
 import { TemplateSapphire } from '../components/website-templates/TemplateSapphire';
 import { TemplateRuby } from '../components/website-templates/TemplateRuby';
 import { TemplatePearl } from '../components/website-templates/TemplatePearl';
+import { TemplateNoir } from '../components/website-templates/TemplateNoir';
 import { TemplateAmethyst } from '../components/website-templates/TemplateAmethyst';
 import { TemplateJoyBlossom } from '../components/website-templates/TemplateJoyBlossom';
 import { useToast } from '../hooks/use-toast';
@@ -73,7 +74,7 @@ const FONT_OPTIONS = [
   { value: 'Cormorant Garamond, serif', label: 'Cormorant' },
 ];
 
-const PREMIUM_TEMPLATE_KEYS = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst'];
+const PREMIUM_TEMPLATE_KEYS = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir'];
 
 const PREMIUM_TEMPLATE_OPTIONS = [
   { key: 'emerald', name: 'Emerald', desc: 'Photo-led, elegant & vibrant', gradient: 'from-emerald-950 via-emerald-700 to-amber-300', iconBg: 'bg-emerald-900', ring: 'border-emerald-700 bg-emerald-50 shadow-md', hover: 'hover:border-emerald-300', Icon: Heart },
@@ -524,6 +525,8 @@ const Website = () => {
                 return <TemplateRuby {...props} />;
               case 'pearl':
                 return <TemplatePearl {...props} />;
+              case 'noir':
+                return <TemplateNoir {...props} />;
               case 'amethyst':
                 return <TemplateAmethyst {...props} />;
               case 'modern':
@@ -655,6 +658,7 @@ const Website = () => {
           { key: 'sapphire', name: 'Sapphire', desc: 'Editorial, classic & timeless', gradient: 'from-blue-950 via-blue-700 to-sky-300', iconBg: 'bg-blue-900', ring: 'border-blue-700 bg-blue-50 shadow-md', hover: 'hover:border-blue-300', Icon: Crown, premium: true },
           { key: 'ruby', name: 'Ruby', desc: 'Sleek reception luxury', gradient: 'from-zinc-950 via-rose-950 to-rose-400', iconBg: 'bg-rose-950', ring: 'border-rose-800 bg-rose-50 shadow-md', hover: 'hover:border-rose-300', Icon: Wand2, premium: true },
           {key: 'pearl', name: 'Pearl', desc: 'Minimal editorial elegance', gradient: 'from-stone-950 via-stone-300 to-white', iconBg: 'bg-stone-900', ring: 'border-stone-700 bg-stone-50 shadow-md', hover: 'hover:border-stone-300', Icon: Crown, premium: true},
+          {key: 'noir', name: 'Noir', desc: 'Navy, gold & refined editorial', gradient: 'from-[#1a2332] via-[#2a3a52] to-[#c9a959]', iconBg: 'bg-[#1a2332]', ring: 'border-[#1a2332] bg-[#faf8f5] shadow-md', hover: 'hover:border-[#c9a959]', Icon: Crown, premium: true},
           {key: 'amethyst', name: 'Amethyst', desc: 'Airy purple & lavender elegance', gradient: 'from-purple-900 via-violet-800 to-fuchsia-700', iconBg: 'bg-purple-900', ring: 'border-purple-700 bg-purple-50 shadow-md', hover: 'hover:border-purple-300', Icon: Crown, premium: true},
         ].map((tpl) => {
           const isPremium = !!tpl.premium;

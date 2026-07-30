@@ -11,6 +11,7 @@ import { TemplateEmerald } from '../components/website-templates/TemplateEmerald
 import { TemplateSapphire } from '../components/website-templates/TemplateSapphire';
 import { TemplateRuby } from '../components/website-templates/TemplateRuby';
 import { TemplatePearl } from '../components/website-templates/TemplatePearl';
+import { TemplateNoir } from '../components/website-templates/TemplateNoir';
 import { TemplateAmethyst } from '../components/website-templates/TemplateAmethyst';
 import { TemplateJoyBlossom } from '../components/website-templates/TemplateJoyBlossom';
 import { Loader2 } from 'lucide-react';
@@ -46,12 +47,12 @@ interface Website {
   };
 }
 
-const PREMIUM_TEMPLATE_KEYS = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst'];
+const PREMIUM_TEMPLATE_KEYS = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir'];
 
 const WeddingWebsite = () => {
   const { template, link, slug, id: shareLinkId } = useParams<{ template?: string; link?: string; slug?: string; id?: string }>();
   let shareLink = slug || link || shareLinkId || '';
-  let urlTemplate = template || 'elegant';
+  let urlTemplate = template;
   
   // Handle backward compatibility for old routes
   if (!shareLink && template) {
@@ -198,6 +199,8 @@ const WeddingWebsite = () => {
       return <TemplateRuby {...props} />;
     case 'pearl':
       return <TemplatePearl {...props} />;
+    case 'noir':
+      return <TemplateNoir {...props} />;
     case 'amethyst':
       return <TemplateAmethyst {...props} />;
     case 'elegant':
