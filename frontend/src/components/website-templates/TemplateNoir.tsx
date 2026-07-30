@@ -1,4 +1,3 @@
-import { Button } from '../ui/button';
 import { Calendar, Camera, Gift, Heart, MapPin, MessageSquareHeart, ShoppingBag, Users } from 'lucide-react';
 import { GalleryLightbox } from './GalleryLightbox';
 
@@ -63,8 +62,8 @@ export const TemplateNoir = ({
         : '';
 
     const allActions = [
-        { label: 'RSVP', icon: Users, enabled: true, url: `/gift/${shareLink}`, color: 'from-navy-700 to-navy-900' },
-        { label: 'Buy Asoebi', icon: ShoppingBag, enabled: true, url: `/gift/${shareLink}`, color: 'from-gold-600 to-amber-700' },
+        { label: 'RSVP', icon: Users, enabled: true, url: `/gift/${shareLink}`, color: 'from-slate-800 to-slate-900' },
+        { label: 'Buy Asoebi', icon: ShoppingBag, enabled: true, url: `/gift/${shareLink}`, color: 'from-amber-700 to-amber-900' },
         { label: 'Cash Gifts', icon: Gift, enabled: true, url: `/gift/${shareLink}`, color: 'from-emerald-600 to-teal-700' },
         { label: 'Photobook', icon: Camera, enabled: true, url: `/qr-gift/${shareLink}`, color: 'from-slate-600 to-slate-800' },
         { label: 'Wishlists', icon: Heart, enabled: !!(enableWishlistButton && wishlists?.[0]?.shareLink), url: wishlists?.[0]?.shareLink ? `/${wishlists[0].shareLink}` : `/gift/${shareLink}`, color: 'from-rose-500 to-pink-600' },
@@ -117,14 +116,32 @@ export const TemplateNoir = ({
                                 )}
                             </div>
                         )}
-                        <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                            <Button
-                                size="lg"
-                                className="rounded-none border border-[#c9a959] bg-transparent px-12 py-7 text-sm font-light uppercase tracking-[0.3em] text-[#c9a959] transition-all duration-300 hover:bg-[#c9a959] hover:text-[#1a2332]"
-                                onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
-                            >
-                                RSVP Now
-                            </Button>
+                        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl">
+                            {allActions.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <button
+                                        key={item.label}
+                                        onClick={() => window.open(item.url, '_blank')}
+                                        className="group relative overflow-hidden bg-white/10 border border-white/10 p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:border-white/20 hover:shadow-[0_8px_40px_rgba(26,35,50,0.20)]"
+                                    >
+                                        <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center bg-gradient-to-br ${item.color} transition-transform duration-300 group-hover:scale-110`}>
+                                            <Icon className="h-5 w-5 text-white" />
+                                        </div>
+                                        <p className="text-sm font-light tracking-[0.05em] text-white">
+                                            {item.label}
+                                        </p>
+                                        <p className="mt-1 text-xs font-light text-white/50">
+                                            {item.label === 'RSVP' && 'Confirm your attendance'}
+                                            {item.label === 'Buy Asoebi' && 'Shop our wedding fabric'}
+                                            {item.label === 'Cash Gifts' && 'Support with a cash gift'}
+                                            {item.label === 'Photobook' && 'Browse our photo memory book'}
+                                            {item.label === 'Wishlists' && (item.enabled ? 'Pick a gift from our list' : 'Wishlist coming soon')}
+                                            {item.label === 'Well Wishes' && (item.enabled ? 'Leave us a sweet note' : 'Coming soon')}
+                                        </p>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -204,62 +221,8 @@ export const TemplateNoir = ({
                     </section>
                 )}
 
-                {/* ===== ACTION BUTTONS ===== */}
-                <section className="mx-auto mt-28 max-w-6xl">
-                    <div className="mb-14 flex flex-col items-center text-center">
-                        <p className="text-xs font-light uppercase tracking-[0.4em] text-[#c9a959]">Join Us</p>
-                        <h2 className="mt-2 text-4xl font-light text-[#1a2332]">Celebrate With Us</h2>
-                        <div className="mt-3 h-px w-12 bg-[#c9a959]/40" />
-                        <p className="mt-6 max-w-md text-sm font-light text-[#1a2332]/60">
-                            Choose how you would like to be part of our special day
-                        </p>
-                    </div>
-
-                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                        {allActions.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <button
-                                    key={item.label}
-                                    onClick={() => window.open(item.url, '_blank')}
-                                    style={{ fontFamily }}
-                                    className={`group relative overflow-hidden bg-white p-8 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_60px_rgba(26,35,50,0.10)] ${item.enabled
-                                            ? 'border border-[#1a2332]/10'
-                                            : 'border border-[#1a2332]/5 opacity-50 grayscale hover:bg-white'
-                                        }`}
-                                >
-                                    <div
-                                        className={`mb-5 inline-flex h-14 w-14 items-center justify-center bg-gradient-to-br ${item.color} transition-transform duration-300 group-hover:scale-110`}
-                                    >
-                                        <Icon className="h-6 w-6 text-white" />
-                                    </div>
-                                    <p className="text-base font-light tracking-[0.05em] text-[#1a2332]">
-                                        {item.label}
-                                    </p>
-                                    <p className="mt-1.5 text-sm font-light text-[#1a2332]/50">
-                                        {item.label === 'RSVP' && 'Confirm your attendance'}
-                                        {item.label === 'Buy Asoebi' && 'Shop our wedding fabric'}
-                                        {item.label === 'Cash Gifts' && 'Support with a cash gift'}
-                                        {item.label === 'Photobook' && 'Browse our photo memory book'}
-                                        {item.label === 'Wishlists' && (item.enabled ? 'Pick a gift from our list' : 'Wishlist coming soon')}
-                                        {item.label === 'Well Wishes' && (item.enabled ? 'Leave us a sweet note' : 'Coming soon')}
-                                    </p>
-                                    <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#c9a959] transition-all duration-300 group-hover:w-full" />
-                                </button>
-                            );
-                        })}
-                    </div>
-                </section>
-
                 {/* ===== FOOTER ===== */}
-                <footer className="mx-auto mt-28 max-w-6xl border-t border-[#1a2332]/10 pt-12 text-center">
-                    <p className="text-sm font-light tracking-[0.2em] text-[#1a2332]/40">
-                        With love, <span className="text-[#c9a959]">{heroName}</span>
-                    </p>
-                    <p className="mt-2 text-xs font-light tracking-[0.15em] text-[#1a2332]/25">
-                        {formattedDate || 'Save the date'}
-                    </p>
-                </footer>
+                <footer className="mx-auto mt-16 max-w-6xl border-t border-[#1a2332]/10 pt-8 text-center" />
             </main>
         </div>
     );

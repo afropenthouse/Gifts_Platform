@@ -280,12 +280,13 @@ module.exports = () => {
       if (provider === 'paystack') {
         amount = parseFloat((response.data.amount / 100).toFixed(2));
       } else {
+        const txCurrency = String(response?.data?.currency || meta?.currency || '').toUpperCase();
         const chargedAmount = Number(response?.data?.charged_amount ?? 0);
         const baseAmount = Number(response?.data?.amount ?? 0);
-        const rawAmount = Number.isFinite(chargedAmount) && chargedAmount > 0 ? chargedAmount : baseAmount;
+        const rawAmount = Number.isFinite(baseAmount) && baseAmount > 0 ? baseAmount : chargedAmount;
 
         if (txCurrency === 'NGN') {
-          amount = rawAmount; // charged_amount if present, else amount
+          amount = rawAmount;
         } else {
           const settledCurrency = String(response?.data?.settlement_currency || response?.data?.settled_currency || '').toUpperCase();
           const settledAmount = Number(response?.data?.amount_settled ?? 0);
@@ -330,7 +331,14 @@ module.exports = () => {
         }
       }
 
-      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, rawAmount: provider === 'paystack' ? response?.data?.amount : response?.data?.amount, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiItemsDetails });
+      const emailCurrency = provider === 'paystack'
+        ? String(response?.data?.currency || meta?.currency || 'NGN').toUpperCase()
+        : txCurrency;
+      const emailBaseAmount = provider === 'paystack'
+        ? Number(response?.data?.amount / 100)
+        : (paymentMeta?.amount || rawAmount);
+
+      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, emailCurrency, emailBaseAmount, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiItemsDetails });
 
       if (!giftId) {
         console.error('❌ No giftId in transaction meta');
@@ -671,6 +679,8 @@ module.exports = () => {
         gift: gift,
         message: contributorMessage || '',
         isAsoebi,
+        currency: emailCurrency,
+        baseAmount: emailBaseAmount,
       }).catch(err => console.error('Background gift received email failed:', err));
       
       // Send thank you email to contributor if email provided
@@ -681,6 +691,8 @@ module.exports = () => {
           amount,
           gift: gift,
           isAsoebi,
+          currency: emailCurrency,
+          baseAmount: emailBaseAmount,
         }).catch(err => console.error('Background contributor thank you email failed:', err));
       }
 
@@ -829,6 +841,8 @@ module.exports = () => {
               gift: gift,
               message: `Premium template "${templateKey}" unlocked`,
               isAsoebi: false,
+              currency: 'NGN',
+              baseAmount: templateAmount,
             }).catch(err => console.error('Background template premium email failed:', err));
 
             return res.status(200).send('OK');
@@ -876,6 +890,8 @@ module.exports = () => {
             gift: gift,
             message: 'Premium/VIP Upgrade activated',
             isAsoebi: false,
+            currency: 'NGN',
+            baseAmount: 50000,
           }).catch(err => console.error('Background premium gift received email failed:', err));
 
           return res.status(200).send('OK');
@@ -940,6 +956,8 @@ module.exports = () => {
         }
 
         const amountInNaira = amount / 100; // Convert kobo to Naira
+        const emailCurrency = String(response?.data?.currency || response?.data?.metadata?.currency || 'NGN').toUpperCase();
+        const emailBaseAmount = Number(response?.data?.amount / 100);
 
         // Deduct commission or not if premium
         let commission;
@@ -1137,6 +1155,8 @@ module.exports = () => {
           gift: gift,
           message: contributorMessage || '',
           isAsoebi,
+          currency: emailCurrency,
+          baseAmount: emailBaseAmount,
         }).catch(err => console.error('Background gift received email failed:', err));
         
         // Send thank you email to contributor if email provided
@@ -1147,6 +1167,8 @@ module.exports = () => {
             amount: amountInNaira,
             gift: gift,
             isAsoebi,
+            currency: emailCurrency,
+            baseAmount: emailBaseAmount,
           }).catch(err => console.error('Background contributor thank you email failed:', err));
         }
         
@@ -1251,7 +1273,7 @@ module.exports = () => {
       const txCurrency = String(data.currency || meta.currency || 'NGN').toUpperCase();
       const chargedAmount = Number(data.charged_amount ?? 0);
       const baseAmount = Number(data.amount ?? 0);
-      const rawAmount = Number.isFinite(chargedAmount) && chargedAmount > 0 ? chargedAmount : baseAmount;
+      const rawAmount = Number.isFinite(baseAmount) && baseAmount > 0 ? baseAmount : chargedAmount;
 
       let amount = rawAmount;
       let currency = txCurrency;
@@ -1320,6 +1342,8 @@ module.exports = () => {
         gift: gift,
         message: contributorMessage || '',
         isAsoebi,
+        currency: txCurrency,
+        baseAmount: baseAmount,
       }).catch(err => console.error('Background gift received email failed:', err));
 
       if (contributorEmail) {
@@ -1329,6 +1353,8 @@ module.exports = () => {
           amount: amountNum,
           gift: gift,
           isAsoebi,
+          currency: txCurrency,
+          baseAmount: baseAmount,
         }).catch(err => console.error('Background contributor thank you email failed:', err));
       }
 
@@ -1438,6 +1464,8 @@ module.exports = () => {
           contributorName: contributorName || 'Anonymous',
           amount,
           gift: gift,
+          currency: 'NGN',
+          baseAmount: amount,
         }).catch(err => console.error('Background contributor thank you email failed:', err));
       }
 

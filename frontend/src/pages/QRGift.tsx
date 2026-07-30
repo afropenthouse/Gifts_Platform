@@ -163,7 +163,19 @@ const QRGift: React.FC = () => {
           return;
         }
         setVerifyStatus('success');
-        setVerifyMessage('Thank you! Your gift was successful.');
+
+        const contribution = data?.contribution;
+        const currency = contribution?.currency || 'NGN';
+        const amount = contribution?.amount;
+        const baseAmount = contribution?.asoebiItemsDetails?.paymentMeta?.baseAmount || contribution?.asoebiItemsDetails?.paymentMeta?.amount;
+
+        if (currency && currency !== 'NGN' && baseAmount) {
+          const symbols: Record<string, string> = { USD: '$', CAD: 'CA$', GBP: '£', EUR: '€' };
+          const symbol = symbols[currency] || currency;
+          setVerifyMessage(`Thank you! Your gift of ${symbol}${Number(baseAmount).toLocaleString()} ${currency} (₦${Number(amount).toLocaleString()}) was successful.`);
+        } else {
+          setVerifyMessage(`Thank you! Your gift of ₦${Number(amount || 0).toLocaleString()} was successful.`);
+        }
       } catch (err) {
         console.error(err);
         setVerifyStatus('error');

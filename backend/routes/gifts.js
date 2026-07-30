@@ -1407,6 +1407,8 @@ module.exports = () => {
         gift: payment.gift,
         message: 'Premium/VIP Upgrade activated',
         isAsoebi: false,
+        currency: 'NGN',
+        baseAmount: Number(payment.amount),
       }).catch(err => console.error('Background premium gift received email failed:', err));
 
       res.status(200).send('OK');
@@ -1504,6 +1506,8 @@ module.exports = () => {
         gift: existingPayment.gift,
         message: 'Premium/VIP Upgrade activated',
         isAsoebi: false,
+        currency: 'NGN',
+        baseAmount: Number(existingPayment.amount),
       }).catch(err => console.error('Background premium gift received email failed:', err));
 
       res.status(200).send('OK');

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail, TrendingUp, TrendingDown, Globe, Camera } from "lucide-react";
+import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail, TrendingUp, TrendingDown, Globe, Camera, Crown } from "lucide-react";
 import CountryFlag from "@/components/CountryFlag";
 import {
   DropdownMenu,
@@ -41,6 +41,8 @@ interface Metrics {
   activeUsers: number;
   totalMoments?: number;
   totalEventsWithMoments?: number;
+  totalPremiumPayments?: number;
+  totalPremiumAmount?: number;
 }
 
 interface User {
@@ -141,13 +143,14 @@ interface Moment {
   } | null;
 }
 
-type AdminTab = 'overview' | 'transactions' | 'events' | 'guests' | 'emails' | 'users' | 'moments';
+type AdminTab = 'overview' | 'transactions' | 'premium' | 'events' | 'guests' | 'emails' | 'users' | 'moments';
 type TimeFilter = 'all' | '7days' | '14days' | '30days' | '3months' | 'year';
 
 const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'transactions', label: 'Transactions', icon: Gift },
+  { id: 'premium', label: 'Premium / VIP', icon: Crown },
   { id: 'guests', label: 'Guest Users', icon: Users },
   { id: 'events', label: 'Events', icon: CalendarDays },
   { id: 'moments', label: 'Photobook', icon: Camera },
@@ -159,6 +162,7 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [allContributions, setAllContributions] = useState<Contribution[]>([]);
   const [allWithdrawals, setAllWithdrawals] = useState<any[]>([]);
+  const [premiumPayments, setPremiumPayments] = useState<any[]>([]);
   const [guests, setGuests] = useState<GuestRow[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [moments, setMoments] = useState<Moment[]>([]);
@@ -388,6 +392,55 @@ const AdminDashboard = () => {
       setAllWithdrawals(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error('Failed to fetch withdrawals');
+    }
+  }, [navigate, selectedEventId, useCustomDateRange, customStartDate, customEndDate]);
+
+  const fetchPremiumPayments = useCallback(async (time: TimeFilter = 'all', skipFilters = false) => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      setLoadingContributions(true);
+      fetchingContributions.current = true;
+      const params = new URLSearchParams();
+
+      if (!skipFilters) {
+        if (useCustomDateRange && customStartDate && customEndDate) {
+          params.set('startDate', customStartDate);
+          params.set('endDate', customEndDate);
+        } else {
+          params.set('time', time);
+        }
+
+        if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
+      }
+
+      const response = await fetch(`${baseUrl}/api/admin/premium-payments?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+        return;
+      }
+
+      if (!response.ok) {
+        toast.error('Failed to fetch premium payments');
+        return;
+      }
+
+      const data = await response.json();
+      setPremiumPayments(Array.isArray(data) ? data : []);
+    } catch (error) {
+      toast.error('Failed to fetch premium payments');
+    } finally {
+      setLoadingContributions(false);
+      fetchingContributions.current = false;
     }
   }, [navigate, selectedEventId, useCustomDateRange, customStartDate, customEndDate]);
 
@@ -675,15 +728,18 @@ const AdminDashboard = () => {
     if (activeTab === 'transactions') {
       fetchContributions(txnTimeFilter, true);
       fetchWithdrawals(txnTimeFilter);
+    } else if (activeTab === 'premium') {
+      fetchPremiumPayments(txnTimeFilter, true);
     }
-  }, [activeTab, fetchContributions, fetchWithdrawals, txnTimeFilter]);
+  }, [activeTab, fetchContributions, fetchWithdrawals, fetchPremiumPayments, txnTimeFilter]);
 
   useEffect(() => {
-    if (activeTab === 'transactions' && useCustomDateRange && customStartDate && customEndDate) {
+    if ((activeTab === 'transactions' || activeTab === 'premium') && useCustomDateRange && customStartDate && customEndDate) {
       fetchContributions('all', true);
       fetchWithdrawals('all');
+      fetchPremiumPayments('all', true);
     }
-  }, [activeTab, fetchContributions, fetchWithdrawals, useCustomDateRange, customStartDate, customEndDate]);
+  }, [activeTab, fetchContributions, fetchWithdrawals, fetchPremiumPayments, useCustomDateRange, customStartDate, customEndDate]);
 
   useEffect(() => {
     if (activeTab === 'events') {
@@ -1126,11 +1182,10 @@ const AdminDashboard = () => {
 
   const filteredContributions = (tab: AdminTab) => {
     if (tab === 'transactions') {
-      // Transactions are now filtered by time on the backend
       let rows: any[] = [];
 
       if (selectedTxnFlow === 'all' || selectedTxnFlow === 'inflow') {
-        let inflows = allContributions.filter((c) => c.amount > 0);
+        let inflows = allContributions.filter((c) => c.amount > 0 && c.type !== 'premium');
         if (selectedTxnType === 'asoebi') {
           inflows = inflows.filter((c) => c.isAsoebi);
         } else if (selectedTxnType === 'cash') {
@@ -1158,6 +1213,10 @@ const AdminDashboard = () => {
 
       rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       return rows;
+    }
+
+    if (tab === 'premium') {
+      return filterByEvent(premiumPayments);
     }
 
     let rows = allContributions;
@@ -1901,6 +1960,18 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">VIP / Premium</CardTitle>
+              <Crown className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₦{(metrics?.totalPremiumAmount || 0).toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {metrics?.totalPremiumPayments || 0} upgrades
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </>
     );
@@ -2071,6 +2142,84 @@ const AdminDashboard = () => {
   };
 
   const renderContributions = (tab: AdminTab) => {
+    if (tab === 'premium') {
+      const rows = filterByEvent(premiumPayments);
+
+      if (txnSearch) {
+        const search = txnSearch.toLowerCase();
+        rows = rows.filter((c) => {
+          return (
+            (c.contributorName?.toLowerCase() || 'anonymous').includes(search) ||
+            (c.gift?.title?.toLowerCase() || '').includes(search) ||
+            c.amount.toString().includes(search) ||
+            c.transactionId?.toLowerCase().includes(search)
+          );
+        });
+      }
+
+      const totalPremium = rows.reduce((sum, r) => sum + Number(r.amount), 0);
+
+      return (
+        <>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Premium / VIP Upgrades</h3>
+                  <p className="text-sm text-muted-foreground">Total: {rows.length} records • ₦{totalPremium.toLocaleString()}</p>
+                </div>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Event Owner</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-medium">
+                        {payment.contributorName || 'Anonymous'}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">₦{Number(payment.amount).toLocaleString()}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`text-[10px] w-fit px-2 py-1 rounded-full ${
+                            payment.status === 'success'
+                              ? 'bg-black/5 text-black border border-black/10'
+                              : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                          }`}
+                        >
+                          {payment.status === 'success' ? 'Paid' : payment.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {new Date(payment.createdAt).toLocaleDateString()}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {rows.length === 0 && (
+                    <TableRow>
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                      No premium payments found
+                    </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
+      );
+    }
+
     let rows = filteredContributions(tab);
 
     if (txnSearch) {
@@ -2232,25 +2381,25 @@ const AdminDashboard = () => {
                      <TableCell className="font-medium">
                        {contribution.personName || 'Anonymous'}
                      </TableCell>
-                     <TableCell>
-                       {contribution.currency && contribution.currency !== 'NGN' ? (
-                         <div className="flex flex-col">
-                           <span className="font-medium">
-                             {contribution.currency === 'USD' && '$'}
-                             {contribution.currency === 'CAD' && 'CA$'}
-                             {contribution.currency === 'GBP' && '£'}
-                             {contribution.currency === 'EUR' && '€'}
-                             {!['USD', 'CAD', 'GBP', 'EUR'].includes(contribution.currency) && contribution.currency}
-                             {contribution.asoebiItemsDetails?.paymentMeta?.amount?.toLocaleString?.() ?? Number(contribution.asoebiItemsDetails?.paymentMeta?.amount || 0).toLocaleString()}
-                           </span>
-                           <span className="text-[10px] text-muted-foreground">
-                             ₦{Number(contribution.amount).toLocaleString()}
-                           </span>
-                         </div>
-                       ) : (
-                         <span>₦{Number(contribution.amount).toLocaleString()}</span>
-                       )}
-                     </TableCell>
+                      <TableCell>
+                        {contribution.currency && contribution.currency !== 'NGN' ? (
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {contribution.currency === 'USD' && '$'}
+                              {contribution.currency === 'CAD' && 'CA$'}
+                              {contribution.currency === 'GBP' && '£'}
+                              {contribution.currency === 'EUR' && '€'}
+                              {!['USD', 'CAD', 'GBP', 'EUR'].includes(contribution.currency) && contribution.currency}
+                              {(Number(contribution.asoebiItemsDetails?.paymentMeta?.baseAmount || contribution.asoebiItemsDetails?.paymentMeta?.amount || 0)).toLocaleString()}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              ₦{Number(contribution.amount).toLocaleString()}
+                            </span>
+                          </div>
+                        ) : (
+                          <span>₦{Number(contribution.amount).toLocaleString()}</span>
+                        )}
+                      </TableCell>
                      <TableCell>
                       {contribution.flow === 'outflow' ? (
                         <span
@@ -3033,6 +3182,7 @@ const AdminDashboard = () => {
         <div className="space-y-6">
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'transactions' && renderContributions('transactions')}
+          {activeTab === 'premium' && renderContributions('premium')}
           {activeTab === 'users' && renderUsers()}
           {activeTab === 'guests' && renderGuests()}
           {activeTab === 'events' && renderEvents()}

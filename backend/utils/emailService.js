@@ -416,7 +416,7 @@ const sendPostEventEmail = async ({ recipient, guestName, gift, eventUrl }) => {
   }
 };
 
-const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, amount, gift, isAsoebi }) => {
+const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, amount, gift, isAsoebi, currency, baseAmount }) => {
   if (!emailEnabled) {
     console.warn('Contributor thank you email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
@@ -438,9 +438,13 @@ const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, a
 
   const title = isAsoebi ? 'Thank You for Your Purchase' : 'Thank You!';
   
+  const symbols = { USD: '$', CAD: 'CA$', GBP: '£', EUR: '€' };
+  const symbol = currency ? (symbols[currency] || currency) : '';
+  const foreignAmount = baseAmount ? Number(baseAmount).toLocaleString() : null;
+
   const messageBody = isAsoebi
-    ? `Thank you for purchasing Asoebi for <strong>${heading}</strong>. We have received your payment of <strong>₦${amount.toLocaleString()}</strong>.`
-    : `Thank you for your generous gift of <strong>₦${amount.toLocaleString()}</strong>. Your kindness means so much to us.`;
+    ? `Thank you for purchasing Asoebi for <strong>${heading}</strong>. We have received your payment of <strong>${foreignAmount && currency ? symbol + foreignAmount + ' ' + currency + ' (' : ''}₦${amount.toLocaleString()}${foreignAmount && currency ? ')' : ''}</strong>.`
+    : `Thank you for your generous gift of <strong>${foreignAmount && currency ? symbol + foreignAmount + ' ' + currency + ' (' : ''}₦${amount.toLocaleString()}${foreignAmount && currency ? ')' : ''}</strong>. Your kindness means so much to us.`;
 
   const html = `
     <div style="background: #f3f2fb; padding: 24px; font-family: Arial, sans-serif; color: #1f2937;">
@@ -479,7 +483,7 @@ const sendContributorThankYouEmail = async ({ recipientEmail, contributorName, a
   }
 };
 
-const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributorName, amount, gift, message, isAsoebi }) => {
+const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributorName, amount, gift, message, isAsoebi, currency, baseAmount }) => {
   if (!emailEnabled) {
     console.warn('Gift received email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
@@ -509,11 +513,15 @@ const sendGiftReceivedEmail = async ({ recipientEmail, recipientName, contributo
       ? 'New Asoebi Payment' 
       : 'You Received a Gift!';
   
+  const symbols = { USD: '$', CAD: 'CA$', GBP: '£', EUR: '€' };
+  const symbol = currency ? (symbols[currency] || currency) : '';
+  const foreignAmount = baseAmount ? Number(baseAmount).toLocaleString() : null;
+
   const messageBody = amount === 0
     ? `Someone has sent you a message to celebrate this special moment with you.<br><br>Tap the button below to read the message and see all the well wishes from your friends, family, and colleagues.`
     : isAsoebi
-      ? `${senderDisplay} has paid for Asoebi (<strong>₦${amount.toLocaleString()}</strong>).`
-      : `${senderDisplay} has sent you a cash gift of <strong>₦${amount.toLocaleString()}</strong>.`;
+      ? `${senderDisplay} has paid for Asoebi (<strong>${foreignAmount && currency ? symbol + foreignAmount + ' ' + currency + ' (' : ''}₦${amount.toLocaleString()}${foreignAmount && currency ? ')' : ''}</strong>).`
+      : `${senderDisplay} has sent you a cash gift of <strong>${foreignAmount && currency ? symbol + foreignAmount + ' ' + currency + ' (' : ''}₦${amount.toLocaleString()}${foreignAmount && currency ? ')' : ''}</strong>.`;
 
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const actionButton = amount === 0 

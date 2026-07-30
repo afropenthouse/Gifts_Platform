@@ -247,7 +247,7 @@ module.exports = () => {
       const totalPaystackFees = payoutFees;
       const netProfit = platformRevenue - totalPaystackFees - referralRevenue;
 
-      const [recentUsers, recentContributions] = await Promise.all([
+      const [recentUsers, recentContributions, premiumPaymentsAgg] = await Promise.all([
         prisma.user.findMany({
           take: 5,
           orderBy: {
@@ -274,8 +274,16 @@ module.exports = () => {
               }
             }
           }
+        }),
+        prisma.premiumPayment.aggregate({
+          _count: { id: true },
+          _sum: { amount: true },
+          where: dateFilter
         })
       ]);
+
+      const totalPremiumPayments = Number(premiumPaymentsAgg._count.id || 0);
+      const totalPremiumAmount = Number(premiumPaymentsAgg._sum.amount || 0);
 
       res.json({
         metrics: {
@@ -295,7 +303,9 @@ module.exports = () => {
           netProfit,
           activeUsers,
           totalMoments,
-          totalEventsWithMoments
+          totalEventsWithMoments,
+          totalPremiumPayments,
+          totalPremiumAmount
         },
         recentUsers,
         recentContributions
@@ -455,7 +465,7 @@ module.exports = () => {
 
   // Get All Contributions
   router.get('/contributions', adminAuth, async (req, res) => {
-    const { type, time, eventId } = req.query;
+    const { type, time, eventId, includePremium } = req.query;
 
     try {
       const now = new Date();
@@ -495,52 +505,9 @@ module.exports = () => {
         contributionsWhere.giftId = parseInt(eventId, 10);
       }
 
-      const [contributions, premiumPayments] = await Promise.all([
+      const [contributions] = await Promise.all([
         prisma.contribution.findMany({
           where: contributionsWhere,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            gift: {
-              select: {
-                id: true,
-                title: true,
-                type: true
-              }
-            },
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
-          }
-        }),
-        prisma.premiumPayment.findMany({
-          where: {
-            ...(eventId && !Number.isNaN(parseInt(eventId, 10)) ? { giftId: parseInt(eventId, 10) } : {}),
-            ...(time && time !== 'all' ? (() => {
-              const filterDate = new Date();
-              switch (time) {
-                case '7days':
-                  filterDate.setDate(now.getDate() - 7);
-                  break;
-                case '14days':
-                  filterDate.setDate(now.getDate() - 14);
-                  break;
-                case '30days':
-                  filterDate.setDate(now.getDate() - 30);
-                  break;
-                case '3months':
-                  filterDate.setMonth(now.getMonth() - 3);
-                  break;
-                case 'year':
-                  filterDate.setFullYear(now.getFullYear() - 1);
-                  break;
-              }
-              return { createdAt: { gte: filterDate } };
-            })() : {})
-          },
           orderBy: { createdAt: 'desc' },
           include: {
             gift: {
@@ -561,7 +528,71 @@ module.exports = () => {
         })
       ]);
 
-      const normalizedPremiumPayments = premiumPayments.map((payment) => ({
+      const normalized = contributions.map((c) => ({ ...c, flow: 'inflow', type: c.isAsoebi ? 'asoebi' : 'cash' }));
+
+      res.json(normalized);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error fetching contributions' });
+    }
+  });
+
+  // Get Premium/VIP Payments
+  router.get('/premium-payments', adminAuth, async (req, res) => {
+    const { time, eventId } = req.query;
+
+    try {
+      const now = new Date();
+      const where = {};
+
+      if (time && time !== 'all') {
+        const filterDate = new Date();
+        switch (time) {
+          case '7days':
+            filterDate.setDate(now.getDate() - 7);
+            break;
+          case '14days':
+            filterDate.setDate(now.getDate() - 14);
+            break;
+          case '30days':
+            filterDate.setDate(now.getDate() - 30);
+            break;
+          case '3months':
+            filterDate.setMonth(now.getMonth() - 3);
+            break;
+          case 'year':
+            filterDate.setFullYear(now.getFullYear() - 1);
+            break;
+        }
+        where.createdAt = { gte: filterDate };
+      }
+
+      if (eventId && !Number.isNaN(parseInt(eventId, 10))) {
+        where.giftId = parseInt(eventId, 10);
+      }
+
+      const premiumPayments = await prisma.premiumPayment.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          gift: {
+            select: {
+              id: true,
+              title: true,
+              type: true
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      });
+
+      const normalized = premiumPayments.map((payment) => ({
         id: `premium-${payment.id}`,
         amount: Number(payment.amount),
         currency: 'NGN',
@@ -579,15 +610,10 @@ module.exports = () => {
         type: 'premium'
       }));
 
-      const combined = [
-        ...contributions.map((c) => ({ ...c, flow: 'inflow', type: c.isAsoebi ? 'asoebi' : 'cash' })),
-        ...normalizedPremiumPayments
-      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-      res.json(combined);
+      res.json(normalized);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ msg: 'Server error fetching contributions' });
+      res.status(500).json({ msg: 'Server error fetching premium payments' });
     }
   });
 

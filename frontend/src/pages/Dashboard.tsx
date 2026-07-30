@@ -2302,9 +2302,25 @@ const Dashboard: React.FC = () => {
                                     </div>
                                   </div>
                                 </TableCell>
-                                <TableCell>
-                                  <span className="font-bold text-green-600">₦{(typeof contribution.amount === 'number' ? contribution.amount : parseFloat(String(contribution.amount))).toFixed(2)}</span>
-                                </TableCell>
+                                 <TableCell>
+                                   {contribution.currency && contribution.currency !== 'NGN' ? (
+                                     <div className="flex flex-col">
+                                       <span className="font-bold text-green-600">
+                                         {contribution.currency === 'USD' && '$'}
+                                         {contribution.currency === 'CAD' && 'CA$'}
+                                         {contribution.currency === 'GBP' && '£'}
+                                         {contribution.currency === 'EUR' && '€'}
+                                         {!['USD', 'CAD', 'GBP', 'EUR'].includes(contribution.currency) && contribution.currency}
+                                         {(Number(contribution.asoebiItemsDetails?.paymentMeta?.baseAmount || contribution.asoebiItemsDetails?.paymentMeta?.amount || 0)).toLocaleString()}
+                                       </span>
+                                       <span className="text-[10px] text-muted-foreground">
+                                         ₦{Number(contribution.amount).toLocaleString()}
+                                       </span>
+                                     </div>
+                                   ) : (
+                                     <span className="font-bold text-green-600">₦{(typeof contribution.amount === 'number' ? contribution.amount : parseFloat(String(contribution.amount))).toFixed(2)}</span>
+                                   )}
+                                 </TableCell>
                                 <TableCell className="max-w-xs">
                                   <p className="truncate">{contribution.message || '-'}</p>
                                 </TableCell>
