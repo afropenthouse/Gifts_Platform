@@ -756,6 +756,131 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
+        const isPremiumRef = String(reference || '').startsWith('premium-');
+        const isTemplateRef = String(reference || '').startsWith('template-premium-');
+
+        if (isPremiumRef || isTemplateRef) {
+          console.log('=== PROCESSING PREMIUM/TEMPLATE PAYMENT VIA WEBHOOK ===');
+          const response = await paystack.verifyTransaction(reference);
+          const meta = response.data?.metadata || {};
+          const type = meta.type === 'template_premium_upgrade' ? 'template' : 'event';
+          const templateKey = meta.template ? String(meta.template).toLowerCase() : null;
+          const giftId = meta.giftId ? parseInt(meta.giftId, 10) : null;
+
+          console.log('Premium/Template webhook details:', { reference, type, templateKey, giftId });
+
+          if (!giftId) {
+            console.error('No giftId in premium webhook meta');
+            return res.status(200).send('OK');
+          }
+
+          const gift = await prisma.gift.findUnique({
+            where: { id: giftId },
+            include: { user: true }
+          });
+          if (!gift) {
+            console.error('Gift not found for premium webhook:', giftId);
+            return res.status(200).send('OK');
+          }
+
+          if (type === 'template') {
+            if (!templateKey) {
+              console.error('Missing template key for template premium webhook');
+              return res.status(200).send('OK');
+            }
+
+            const existingPurchase = await prisma.templatePurchase.findFirst({
+              where: { transactionId: reference }
+            });
+
+            if (existingPurchase && existingPurchase.status === 'success') {
+              console.log('Template purchase already processed:', existingPurchase.id);
+              return res.status(200).send('OK');
+            }
+
+            const templateAmount = 10000;
+            const [updatedPurchase] = await prisma.$transaction([
+              prisma.templatePurchase.upsert({
+                where: { giftId_template: { giftId, template: templateKey } },
+                update: {
+                  userId: gift.userId,
+                  amount: templateAmount,
+                  transactionId: reference,
+                  status: 'success'
+                },
+                create: {
+                  userId: gift.userId,
+                  giftId,
+                  template: templateKey,
+                  amount: templateAmount,
+                  transactionId: reference,
+                  status: 'success'
+                }
+              })
+            ]);
+
+            console.log('✅ Template premium payment verified via webhook:', updatedPurchase.id);
+
+            sendGiftReceivedEmail({
+              recipientEmail: gift.user.email,
+              recipientName: gift.user.name,
+              contributorName: gift.user.name || 'Event Owner',
+              amount: templateAmount,
+              gift: gift,
+              message: `Premium template "${templateKey}" unlocked`,
+              isAsoebi: false,
+            }).catch(err => console.error('Background template premium email failed:', err));
+
+            return res.status(200).send('OK');
+          }
+
+          const existingPayment = await prisma.premiumPayment.findFirst({
+            where: { transactionId: reference }
+          });
+
+          if (existingPayment && existingPayment.status === 'success') {
+            console.log('Premium payment already processed:', existingPayment.id);
+            return res.status(200).send('OK');
+          }
+
+          const [updatedPayment] = await prisma.$transaction([
+            prisma.premiumPayment.upsert({
+              where: { giftId },
+              update: {
+                userId: gift.userId,
+                amount: 50000,
+                transactionId: reference,
+                status: 'success'
+              },
+              create: {
+                userId: gift.userId,
+                giftId,
+                amount: 50000,
+                transactionId: reference,
+                status: 'success'
+              }
+            }),
+            prisma.gift.update({
+              where: { id: giftId },
+              data: { isPremium: true }
+            })
+          ]);
+
+          console.log('✅ Premium payment verified via webhook:', updatedPayment.id);
+
+          sendGiftReceivedEmail({
+            recipientEmail: gift.user.email,
+            recipientName: gift.user.name,
+            contributorName: gift.user.name || 'Event Owner',
+            amount: 50000,
+            gift: gift,
+            message: 'Premium/VIP Upgrade activated',
+            isAsoebi: false,
+          }).catch(err => console.error('Background premium gift received email failed:', err));
+
+          return res.status(200).send('OK');
+        }
+
         console.log('Verifying transaction with Paystack...');
         // Verify transaction
         const response = await paystack.verifyTransaction(reference);

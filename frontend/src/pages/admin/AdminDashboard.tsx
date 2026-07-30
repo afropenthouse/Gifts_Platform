@@ -2269,25 +2269,27 @@ const AdminDashboard = () => {
                     <TableCell className="text-sm">
                       {contribution.gift?.title || (contribution.flow === 'outflow' ? 'Wallet Withdrawal' : 'N/A')}
                     </TableCell>
-                    <TableCell>
-                      {contribution.flow === 'outflow' ? (
-                        <span
-                          className={`text-[10px] w-fit px-2 py-1 rounded-full bg-black/5 text-black border border-black/10`}
-                        >
-                          Withdrawal
-                        </span>
-                      ) : (
-                        <span
-                          className={`text-[10px] w-fit px-2 py-1 rounded-full ${
-                            contribution.isAsoebi
-                              ? 'bg-black/5 text-black border border-black/10'
-                              : 'bg-black/5 text-black border border-black/10'
-                          }`}
-                        >
-                          {contribution.isAsoebi ? 'Asoebi' : 'Cash Gift'}
-                        </span>
-                      )}
-                    </TableCell>
+                     <TableCell>
+                       {contribution.flow === 'outflow' ? (
+                         <span
+                           className={`text-[10px] w-fit px-2 py-1 rounded-full bg-black/5 text-black border border-black/10`}
+                         >
+                           Withdrawal
+                         </span>
+                       ) : (
+                         <span
+                           className={`text-[10px] w-fit px-2 py-1 rounded-full ${
+                             contribution.type === 'premium'
+                               ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                               : contribution.isAsoebi
+                                 ? 'bg-black/5 text-black border border-black/10'
+                                 : 'bg-black/5 text-black border border-black/10'
+                           }`}
+                         >
+                           {contribution.type === 'premium' ? 'Premium/VIP' : contribution.isAsoebi ? 'Asoebi' : 'Cash Gift'}
+                         </span>
+                       )}
+                     </TableCell>
                     <TableCell className="text-sm">
                       {new Date(contribution.createdAt).toLocaleDateString()}
                     </TableCell>
