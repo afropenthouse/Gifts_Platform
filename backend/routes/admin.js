@@ -1488,5 +1488,74 @@ module.exports = () => {
     }
   });
 
+  // Admin: manually verify/activate premium payment
+  router.post('/gifts/:id/premium/verify', adminAuth, async (req, res) => {
+    try {
+      const giftId = parseInt(req.params.id, 10);
+      const { reference } = req.body;
+
+      const gift = await prisma.gift.findUnique({
+        where: { id: giftId },
+        include: { user: true }
+      });
+
+      if (!gift) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+
+      if (gift.isPremium) {
+        return res.status(400).json({ msg: 'Gift is already premium' });
+      }
+
+      if (!reference) {
+        return res.status(400).json({ msg: 'Payment reference is required' });
+      }
+
+      const paystack = require('../utils/paystack');
+
+      const response = await paystack.verifyTransaction(reference);
+      const isSuccess = !!response?.status && response?.data?.status === 'success';
+
+      if (!isSuccess) {
+        return res.status(400).json({ msg: 'Payment verification failed with Paystack' });
+      }
+
+      const amount = 50000;
+
+      const [updatedPayment] = await prisma.$transaction([
+        prisma.premiumPayment.upsert({
+          where: { giftId },
+          update: {
+            userId: gift.userId,
+            amount,
+            transactionId: reference,
+            status: 'success'
+          },
+          create: {
+            userId: gift.userId,
+            giftId,
+            amount,
+            transactionId: reference,
+            status: 'success'
+          }
+        }),
+        prisma.gift.update({
+          where: { id: giftId },
+          data: { isPremium: true }
+        })
+      ]);
+
+      await prisma.user.update({
+        where: { id: gift.userId },
+        data: { wallet: { increment: amount } }
+      });
+
+      res.json({ msg: 'Premium payment verified and activated successfully', payment: updatedPayment });
+    } catch (err) {
+      console.error('Admin premium verify error:', err);
+      res.status(500).json({ msg: 'Server error verifying premium payment' });
+    }
+  });
+
   return router;
 };
