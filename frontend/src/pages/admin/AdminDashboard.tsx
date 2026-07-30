@@ -2173,6 +2173,7 @@ const AdminDashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Event Owner</TableHead>
+                    <TableHead>Event</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Date</TableHead>
@@ -2183,6 +2184,9 @@ const AdminDashboard = () => {
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">
                         {payment.contributorName || 'Anonymous'}
+                      </TableCell>
+                      <TableCell>
+                        <p className="truncate max-w-[220px]">{payment.gift?.title || '-'}</p>
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">₦{Number(payment.amount).toLocaleString()}</span>
@@ -2207,7 +2211,7 @@ const AdminDashboard = () => {
                   ))}
                   {rows.length === 0 && (
                     <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                       No premium payments found
                     </TableCell>
                     </TableRow>
