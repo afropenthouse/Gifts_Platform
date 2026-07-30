@@ -189,12 +189,12 @@ module.exports = () => {
       const coupleNames = content?.coupleNames?.split(' & ') || [];
       const coupleName1 = coupleNames[0] || '';
       const coupleName2 = coupleNames[1] || '';
-      const newSlugBase = [coupleName1, coupleName2].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || (title || 'wedding').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      let newSlug = newSlugBase;
-      const slugExists = await prisma.website.findFirst({ where: { slug: { startsWith: newSlugBase }, id: { not: existingWebsite.id } } });
-      if (slugExists) {
-        newSlug = `${newSlugBase}-${crypto.randomBytes(3).toString('hex').substring(0, 6)}`;
-      }
+       const newSlugBase = [coupleName1, coupleName2].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || (title || 'wedding').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+       let newSlug = newSlugBase;
+       const slugExists = await prisma.website.findFirst({ where: { slug: { startsWith: newSlugBase }, id: { not: existingWebsite.id } } });
+       if (slugExists) {
+         newSlug = `${newSlugBase}-${crypto.randomBytes(3).toString('hex').substring(0, 6)}`;
+       }
 
       const updatedWebsite = await prisma.website.update({
         where: { id: parseInt(id) },

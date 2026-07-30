@@ -350,13 +350,32 @@ module.exports = () => {
           asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty) : null,
       };
 
-      // Perform main update first
-      await prisma.gift.update({
-        where: { id: giftId },
-        data: updateData,
-      });
+// Perform main update first
+       await prisma.gift.update({
+         where: { id: giftId },
+         data: updateData,
+       });
 
-      // Handle Asoebi Items manually to preserve Sold history
+       // Sync website slug if title changed
+       if (title && gift.title !== title) {
+         const existingWebsite = await prisma.website.findUnique({ where: { giftId } });
+         if (existingWebsite) {
+           const slugBase = (title || 'wedding').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+           let newSlug = slugBase;
+           const slugConflict = await prisma.website.findFirst({
+             where: { slug: { startsWith: slugBase }, id: { not: existingWebsite.id } }
+           });
+           if (slugConflict) {
+             newSlug = `${slugBase}-${crypto.randomBytes(4).toString('hex')}`;
+           }
+           await prisma.website.update({
+             where: { id: existingWebsite.id },
+             data: { slug: newSlug }
+           });
+         }
+       }
+
+       // Handle Asoebi Items manually to preserve Sold history
       if (asoebiItemsParsed.length > 0 || (isSellingAsoebi === 'true' || isSellingAsoebi === true)) {
           const existingItems = await prisma.asoebiItem.findMany({ where: { giftId } });
           const incomingIds = asoebiItemsParsed.filter(i => i.id).map(i => parseInt(i.id));
@@ -915,10 +934,13 @@ module.exports = () => {
           }
         });
       } else {
-        const websiteSlug = `${gift.title?.toLowerCase().replace(/\s+/g, '-') || 'wedding'}-${Date.now()}`;
+const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'wedding';
+         let websiteSlug = slugBase;
+         const existingSlug = await prisma.website.findFirst({ where: { slug: { startsWith: slugBase } } });
+         if (existingSlug) {
+           websiteSlug = `${slugBase}-${crypto.randomBytes(4).toString('hex')}`;
+         }
         const websiteShareLink = crypto.randomBytes(16).toString('hex');
-        
-        const coupleNames = (coupleName1 || gift.title || '').split(' & ');
         
         website = await prisma.website.create({
           data: {

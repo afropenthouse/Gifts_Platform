@@ -249,30 +249,25 @@ module.exports = () => {
       const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, wishlistItemId, currency: metaCurrency } = meta;
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
       const txCurrency = String(provider === 'paystack' ? (response.data.currency || metaCurrency || 'NGN') : (response?.data?.currency || metaCurrency || 'NGN')).toUpperCase();
-      const convertToNgn = async (fromCurrency, fromAmount, createdAtIso) => {
+      const convertToNgn = async (fromCurrency, fromAmount) => {
         const from = String(fromCurrency || '').toUpperCase();
         const amountValue = Number(fromAmount);
         if (!from) throw new Error('Missing transaction currency');
         if (!Number.isFinite(amountValue) || amountValue <= 0) throw new Error('Invalid transaction amount');
         if (from === 'NGN') return { ngn: amountValue, rate: 1, date: null, source: 'na' };
 
-        let date;
-        if (createdAtIso) {
-          const d = new Date(createdAtIso);
-          if (!Number.isNaN(d.getTime())) {
-            date = d.toISOString().slice(0, 10);
-          }
+        const rateKey = `FX_BUY_RATE_${from}`;
+        const rate = Number(process.env[rateKey]);
+        if (!Number.isFinite(rate) || rate <= 0) {
+          throw new Error(`Missing FX rate for ${from}. Set ${rateKey} in .env`);
         }
 
-        const fromLower = from.toLowerCase();
-        const dateSegment = date ? date : 'latest';
-        const fxUrl = `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${dateSegment}/v1/currencies/${fromLower}.json`;
-        const fxRes = await axios.get(fxUrl, { timeout: 15000 });
-        const rate = Number(fxRes?.data?.[fromLower]?.ngn);
-        if (!Number.isFinite(rate) || rate <= 0) {
-          throw new Error('FX conversion failed');
-        }
-        return { ngn: parseFloat((amountValue * rate).toFixed(2)), rate, date: dateSegment === 'latest' ? null : dateSegment, source: 'fawazahmed0' };
+        return {
+          ngn: parseFloat((amountValue * rate).toFixed(2)),
+          rate,
+          date: null,
+          source: 'env_fixed'
+        };
       };
 
       let amount;
