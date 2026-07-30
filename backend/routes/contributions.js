@@ -246,8 +246,9 @@ module.exports = () => {
       }
 
       const meta = provider === 'paystack' ? (response.data.metadata || {}) : (response.data.meta || {});
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, wishlistItemId } = meta;
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, wishlistItemId, currency: metaCurrency } = meta;
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
+      const txCurrency = String(provider === 'paystack' ? (response.data.currency || metaCurrency || 'NGN') : (response?.data?.currency || metaCurrency || 'NGN')).toUpperCase();
       const convertToNgn = async (fromCurrency, fromAmount, createdAtIso) => {
         const from = String(fromCurrency || '').toUpperCase();
         const amountValue = Number(fromAmount);
@@ -279,7 +280,6 @@ module.exports = () => {
       if (provider === 'paystack') {
         amount = parseFloat((response.data.amount / 100).toFixed(2));
       } else {
-        const txCurrency = String(response?.data?.currency || meta?.currency || '').toUpperCase();
         const chargedAmount = Number(response?.data?.charged_amount ?? 0);
         const baseAmount = Number(response?.data?.amount ?? 0);
         const rawAmount = Number.isFinite(chargedAmount) && chargedAmount > 0 ? chargedAmount : baseAmount;
@@ -379,6 +379,7 @@ module.exports = () => {
               where: { id: existingContribution.id },
               data: {
                 amount: Number(amount),
+                currency: txCurrency,
                 commission: updatedCommission,
                 ...(existingContribution.isAsoebi ? {} : (paymentMeta ? { asoebiItemsDetails: { paymentMeta } } : {})),
               },
@@ -492,6 +493,7 @@ module.exports = () => {
           contributorName: contributorName || 'Anonymous',
           contributorEmail: contributorEmail || '',
           amount,
+          currency: txCurrency,
           commission,
           isAsoebi: !!isAsoebi,
           asoebiQuantity: isAsoebi ? asoebiTotalQty : (asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0),
@@ -850,13 +852,13 @@ module.exports = () => {
             contributorName: contributorName || 'Anonymous',
             contributorEmail: contributorEmail || '',
             amount: amountInNaira,
+            currency: 'NGN',
             commission,
             isAsoebi: !!isAsoebi,
             asoebiQuantity: asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0,
             asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0,
             asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0,
-            asoebiBrideMenQty: asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0,
-            asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
+            asoebiBrideMenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
             asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
             asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
             asoebiItemsDetails: asoebiItemsDetails || undefined,
@@ -1036,6 +1038,164 @@ module.exports = () => {
     }
   });
 
+  // Webhook for Flutterwave
+  router.post('/webhook/flutterwave', async (req, res) => {
+    try {
+      console.log('=== FLUTTERWAVE WEBHOOK RECEIVED ===');
+      console.log('Headers:', JSON.stringify(req.headers, null, 2));
+      console.log('Body:', JSON.stringify(req.body, null, 2));
+
+      const secret = process.env.FLW_SECRET_KEY;
+      const signature = req.headers['verif-hash'];
+
+      if (!secret) {
+        console.error('FLW_SECRET_KEY not set');
+        return res.status(500).send('Server error');
+      }
+
+      const payloadBuffer = req.rawBody;
+      if (!payloadBuffer) {
+        console.error('❌ Webhook Error: rawBody is missing. Check server.js middleware.');
+        return res.status(500).send('Internal Server Error: Missing Raw Body');
+      }
+
+      if (!flutterwave.verifyWebhookSignature(payloadBuffer, signature, secret)) {
+        console.error('❌ Invalid Flutterwave webhook signature');
+        return res.status(401).send('Unauthorized');
+      }
+
+      console.log('✓ Flutterwave webhook signature verified successfully');
+
+      const event = req.body;
+      console.log('=== FLUTTERWAVE WEBHOOK EVENT ===');
+      console.log('Event type:', event.event);
+      console.log('Event data:', JSON.stringify(event.data, null, 2));
+
+      const successfulEvents = new Set([
+        'charge.completed',
+        'card.charge.completed',
+        'account.charge.completed',
+        'mobilemoney.charge.completed',
+        'transfer.completed',
+        'transfer successful',
+        'successful'
+      ]);
+
+      if (!successfulEvents.has(event.event)) {
+        console.log('Ignoring non-successful event:', event.event);
+        return res.status(200).send('OK');
+      }
+
+      const data = event.data || {};
+      const txRef = data.tx_ref || data.reference;
+      const transactionIdCandidates = [
+        data.id?.toString?.(),
+        txRef
+      ].filter(Boolean);
+
+      const existingContribution = await prisma.contribution.findFirst({
+        where: {
+          OR: transactionIdCandidates.map((id) => ({ transactionId: id })),
+        },
+      });
+
+      if (existingContribution) {
+        console.log('Contribution already exists:', existingContribution.id);
+        return res.status(200).send('OK');
+      }
+
+      const meta = data.meta || {};
+      const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, wishlistItemId } = meta;
+      const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
+
+      if (!giftId) {
+        console.error('No giftId in Flutterwave webhook meta');
+        return res.status(200).send('OK');
+      }
+
+      const gift = await prisma.gift.findUnique({
+        where: { id: giftId },
+        include: { user: true }
+      });
+
+      if (!gift) {
+        console.error('Gift not found:', giftId);
+        return res.status(200).send('OK');
+      }
+
+      const txCurrency = String(data.currency || meta.currency || 'NGN').toUpperCase();
+      const chargedAmount = Number(data.charged_amount ?? 0);
+      const baseAmount = Number(data.amount ?? 0);
+      const rawAmount = Number.isFinite(chargedAmount) && chargedAmount > 0 ? chargedAmount : baseAmount;
+
+      let amount = rawAmount;
+      let currency = txCurrency;
+
+      if (txCurrency !== 'NGN') {
+        const settledCurrency = String(data.settlement_currency || data.settled_currency || '').toUpperCase();
+        const settledAmount = Number(data.amount_settled ?? 0);
+
+        if (Number.isFinite(settledAmount) && settledAmount > 0 && settledCurrency === 'NGN') {
+          amount = settledAmount;
+        }
+      }
+
+      const amountNum = Number(amount);
+      if (!Number.isFinite(amountNum) || amountNum <= 0) {
+        console.error('Invalid amount in Flutterwave webhook:', amount);
+        return res.status(200).send('OK');
+      }
+
+      let commission;
+      let amountReceived;
+      if (gift.isPremium) {
+        commission = 0;
+        amountReceived = amountNum;
+      } else {
+        commission = amountNum * 0.04;
+        amountReceived = amountNum * 0.96;
+      }
+
+      const contribution = await prisma.contribution.create({
+        data: {
+          giftId,
+          wishlistItemId: wishlistItemId ? parseInt(wishlistItemId, 10) : null,
+          contributorName: contributorName || 'Anonymous',
+          contributorEmail: contributorEmail || '',
+          amount: amountNum,
+          currency: currency,
+          commission,
+          isAsoebi: !!isAsoebi,
+          asoebiQuantity: isAsoebi ? (parseInt(asoebiQuantity || '0', 10) || 1) : 0,
+          asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0,
+          asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0,
+          asoebiBrideMenQty: asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0,
+          asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
+          asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
+          asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
+          asoebiItemsDetails: asoebiItemsDetails || undefined,
+          message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
+          transactionId: transactionIdCandidates[0] || undefined,
+          status: 'completed',
+        },
+      });
+
+      console.log('✅ Flutterwave webhook contribution created:', contribution.id);
+
+      await prisma.user.update({
+        where: { id: gift.userId },
+        data: { wallet: { increment: amountReceived } },
+      });
+
+      res.status(200).send('OK');
+    } catch (err) {
+      console.log('=== FLUTTERWAVE WEBHOOK ERROR ===');
+      console.error('Error message:', err?.message || err);
+      console.error('Full error:', err);
+      res.status(500).send('Server error');
+    }
+  });
+
   // Submit a note/wish (0 amount contribution)
   router.post('/note/submit', async (req, res) => {
     const { contributorName, contributorEmail, message, shareLink } = req.body;
@@ -1058,6 +1218,7 @@ module.exports = () => {
           contributorName: contributorName || 'Anonymous',
           contributorEmail: contributorEmail || '',
           amount: 0,
+          currency: 'NGN',
           message: message,
           status: 'completed',
         },
@@ -1110,6 +1271,7 @@ module.exports = () => {
           contributorName,
           contributorEmail,
           amount,
+          currency: 'NGN',
           message,
         },
       });

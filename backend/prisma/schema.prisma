@@ -264,6 +264,7 @@ model Contribution {
   contributorName     String?
   contributorEmail    String?
   amount              Float
+  currency            String? @default("NGN")
   message             String?
   transactionId       String?  @unique
   status              String   @default("completed")

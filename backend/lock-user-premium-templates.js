@@ -40,7 +40,7 @@ async function main() {
 
   // 4. Reset all this user's website templates to free ones if they were premium
   console.log('Resetting website templates for this user...');
-  const freeTemplates = ['modern', 'nocturne', 'rosette', 'milk', 'elegant'];
+  const freeTemplates = ['modern', 'joy-blossom', 'nocturne', 'rosette', 'milk', 'elegant'];
   const userWebsites = await prisma.website.findMany({
     where: {
       userId: user.id,

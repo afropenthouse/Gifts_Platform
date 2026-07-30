@@ -37,6 +37,54 @@ const INVITATION_TEMPLATES = [
     tier: 'free',
     previewColor: '#2f5f3d',
     accentColor: '#8eb28a'
+  },
+  {
+    id: 'luxury-minimal',
+    name: 'Luxury Minimal',
+    description: 'Black card with a thin gold border and elegant serif typography',
+    tier: 'free',
+    previewColor: '#0a0a0a',
+    accentColor: '#c9a96e'
+  },
+  {
+    id: 'watercolor-floral',
+    name: 'Watercolor Floral',
+    description: 'Soft pink cream background with dreamy watercolor blooms',
+    tier: 'free',
+    previewColor: '#5c4a4a',
+    accentColor: '#e8a0a0'
+  },
+  {
+    id: 'modern-geometric',
+    name: 'Modern Geometric',
+    description: 'Navy and white with clean geometric lines and modern typography',
+    tier: 'free',
+    previewColor: '#1e3a5f',
+    accentColor: '#ffffff'
+  },
+  {
+    id: 'romantic-rose',
+    name: 'Romantic Rose',
+    description: 'Blush pink with elegant rose petal watercolor accents',
+    tier: 'free',
+    previewColor: '#8b5a5a',
+    accentColor: '#d4a0a0'
+  },
+  {
+    id: 'art-deco-greenery',
+    name: 'Art Deco Greenery',
+    description: 'Sophisticated art deco frame with lush green foliage',
+    tier: 'free',
+    previewColor: '#1A3B2B',
+    accentColor: '#D49A6A'
+  },
+  {
+    id: 'classic-invitation',
+    name: 'Classic',
+    description: 'Simple navy and gold bordered invitation',
+    tier: 'free',
+    previewColor: '#1e3a5f',
+    accentColor: '#c9a96e'
   }
 ];
 

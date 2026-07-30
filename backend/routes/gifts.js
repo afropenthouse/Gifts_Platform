@@ -598,26 +598,25 @@ module.exports = () => {
     }
   });
 
-  // Get website by share link (public) - supports both /website/:shareLink and /website/:template/:shareLink
+  // Get website by share link or slug (public) - supports both /website/:shareLink and /website/:template/:shareLink
   router.get('/website/*', async (req, res) => {
     try {
       const parts = req.params[0].split('/').filter(Boolean);
-      let shareLink;
+      let link;
       
-      // If there are two parts, the second is the share link
+      // If there are two parts, the second is the link (shareLink or slug)
       if (parts.length === 2) {
-        shareLink = parts[1];
+        link = parts[1];
       } else if (parts.length === 1) {
-        // If only one part, that's the share link
-        shareLink = parts[0];
+        link = parts[0];
       }
       
-      if (!shareLink) {
-        return res.status(400).json({ msg: 'Share link is required' });
+      if (!link) {
+        return res.status(400).json({ msg: 'Link is required' });
       }
 
-      const website = await prisma.website.findUnique({
-        where: { shareLink },
+      let website = await prisma.website.findUnique({
+        where: { shareLink: link },
         include: {
           gift: {
             select: {
@@ -636,6 +635,29 @@ module.exports = () => {
           }
         }
       });
+
+      if (!website) {
+        website = await prisma.website.findUnique({
+          where: { slug: link },
+          include: {
+            gift: {
+              select: {
+                id: true,
+                type: true,
+                title: true,
+                date: true,
+                picture: true,
+                shareLink: true,
+                isPremium: true,
+                enableGuestNotes: true,
+                wishlists: {
+                  include: { items: true }
+                }
+              }
+            }
+          }
+        });
+      }
 
       if (!website) {
         return res.status(404).json({ msg: 'Website not found' });
@@ -698,7 +720,7 @@ module.exports = () => {
             coupleName2: names[1] || '',
             story: '',
             published: false,
-            slug: `${gift.title?.toLowerCase().replace(/\s+/g, '-') || 'wedding'}-${Date.now()}`,
+            slug: [names[0], names[1]].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'wedding',
             shareLink: crypto.randomBytes(16).toString('hex'),
             heroTitle: names[0] ? `${names[0]} & ${names[1] || ''}` : undefined,
             heroSubtitle: 'We invite you to celebrate our special day',

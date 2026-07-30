@@ -93,11 +93,15 @@ module.exports = () => {
       const { giftId, title, template, heroImage, heroTitle, heroSubtitle, theme, content } = req.body;
 
       const shareLink = crypto.randomBytes(16).toString('hex');
-      const slug = `${(title || 'wedding').toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-
       const coupleNames = content?.coupleNames?.split(' & ') || [];
       const coupleName1 = coupleNames[0] || '';
       const coupleName2 = coupleNames[1] || '';
+      const slugBase = [coupleName1, coupleName2].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'wedding';
+      let slug = slugBase;
+      const existing = await prisma.website.findFirst({ where: { slug: { startsWith: slugBase } } });
+      if (existing) {
+        slug = `${slugBase}-${shareLink.substring(0, 6)}`;
+      }
 
       const website = await prisma.website.create({
         data: {
@@ -185,6 +189,12 @@ module.exports = () => {
       const coupleNames = content?.coupleNames?.split(' & ') || [];
       const coupleName1 = coupleNames[0] || '';
       const coupleName2 = coupleNames[1] || '';
+      const newSlugBase = [coupleName1, coupleName2].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || (title || 'wedding').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      let newSlug = newSlugBase;
+      const slugExists = await prisma.website.findFirst({ where: { slug: { startsWith: newSlugBase }, id: { not: existingWebsite.id } } });
+      if (slugExists) {
+        newSlug = `${newSlugBase}-${crypto.randomBytes(3).toString('hex').substring(0, 6)}`;
+      }
 
       const updatedWebsite = await prisma.website.update({
         where: { id: parseInt(id) },
@@ -202,7 +212,8 @@ module.exports = () => {
           fontFamily: theme?.fontFamily || existingWebsite.fontFamily,
           gallery: content?.gallery !== undefined ? content.gallery : existingWebsite.gallery,
           showWellWishes: content?.showWellWishes !== undefined ? content.showWellWishes : existingWebsite.showWellWishes,
-          enableWishlistButton: content?.enableWishlistButton !== undefined ? content.enableWishlistButton : existingWebsite.enableWishlistButton
+          enableWishlistButton: content?.enableWishlistButton !== undefined ? content.enableWishlistButton : existingWebsite.enableWishlistButton,
+          slug: newSlug
         },
         include: {
           gift: {

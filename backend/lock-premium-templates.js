@@ -27,7 +27,7 @@ async function main() {
 
   // Optional: Also reset any gift.website.template if it's a premium template, to a free one
   console.log('Resetting website templates to free ones if they were premium...');
-  const freeTemplates = ['modern', 'nocturne', 'rosette', 'milk', 'elegant'];
+  const freeTemplates = ['modern', 'joy-blossom', 'nocturne', 'rosette', 'milk', 'elegant'];
   const websitesToUpdate = await prisma.website.findMany({
     where: {
       template: {
