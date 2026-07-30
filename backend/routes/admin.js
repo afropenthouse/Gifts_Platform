@@ -285,18 +285,24 @@ module.exports = () => {
       const totalPremiumPayments = Number(premiumPaymentsAgg._count.id || 0);
       const totalPremiumAmount = Number(premiumPaymentsAgg._sum.amount || 0);
 
+      const totalContributionsAmount = Number(totalContributions._sum.amount || 0);
+      const totalAsoebiAmount = Number(totalAsoebiContributions._sum.amount || 0);
+      const totalTransactions = totalContributionsAmount + totalAsoebiAmount + totalPremiumAmount;
+      const totalPlatformRevenue = platformRevenue + totalPremiumAmount;
+
       res.json({
         metrics: {
           totalUsers,
           totalGifts,
           totalGifters,
           totalAsoebi,
-          totalContributions: totalContributions._sum.amount || 0,
-          totalAsoebiContributions: totalAsoebiContributions._sum.amount || 0,
+          totalContributions: totalContributionsAmount,
+          totalAsoebiContributions: totalAsoebiAmount,
+          totalTransactions,
           totalWalletBalance: totalWalletBalance,
           guestListOpenEvents: openGuestEvents,
           guestListRestrictedEvents: restrictedGuestEvents,
-          totalRevenue: platformRevenue,
+          totalRevenue: totalPlatformRevenue,
           referralRevenue,
           estimatedPaystackFees: totalPaystackFees,
           payoutFees,

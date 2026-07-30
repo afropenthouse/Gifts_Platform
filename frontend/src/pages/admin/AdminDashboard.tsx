@@ -34,6 +34,7 @@ interface Metrics {
   guestListOpenEvents: number;
   guestListRestrictedEvents: number;
   totalRevenue: number;
+  totalTransactions?: number;
   referralRevenue: number;
   estimatedPaystackFees: number;
   payoutFees?: number;
@@ -1834,7 +1835,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₦{((metrics?.totalContributions || 0) + (metrics?.totalAsoebiContributions || 0)).toLocaleString()}
+                ₦{(metrics?.totalTransactions || 0).toLocaleString()}
               </div>
             </CardContent>
           </Card>
@@ -2237,7 +2238,7 @@ const AdminDashboard = () => {
       });
     }
 
-    const filteredTransactionAmount = (metrics?.totalContributions || 0) + (metrics?.totalAsoebiContributions || 0);
+    const filteredTransactionAmount = metrics?.totalTransactions || (metrics?.totalContributions || 0) + (metrics?.totalAsoebiContributions || 0);
     const filteredRevenue = metrics?.totalRevenue || 0;
     const revenueRatio = filteredTransactionAmount > 0
       ? (filteredRevenue / filteredTransactionAmount) * 100
@@ -2512,6 +2513,35 @@ const AdminDashboard = () => {
     const totalGuests = rows.reduce((sum, e) => sum + e._count.guests, 0);
     console.log('Final stats:', { totalAmount, cashAmount, asoebiAmount, totalGuests });
 
+    if (eventSortBy === 'cash-desc' || eventSortBy === 'cash-asc' || eventSortBy === 'asoebi-desc' || eventSortBy === 'asoebi-asc') {
+      const eventCashMap = new Map<number, number>();
+      const eventAsoebiMap = new Map<number, number>();
+
+      eventContributions.forEach((c) => {
+        const giftId = c.gift?.id;
+        if (!giftId) return;
+        const currentCash = eventCashMap.get(giftId) || 0;
+        const currentAsoebi = eventAsoebiMap.get(giftId) || 0;
+        if (c.isAsoebi) {
+          eventAsoebiMap.set(giftId, currentAsoebi + Number(c.amount));
+        } else {
+          eventCashMap.set(giftId, currentCash + Number(c.amount));
+        }
+      });
+
+      rows = [...rows].sort((a, b) => {
+        const aCash = eventCashMap.get(a.id) || 0;
+        const bCash = eventCashMap.get(b.id) || 0;
+        const aAsoebi = eventAsoebiMap.get(a.id) || 0;
+        const bAsoebi = eventAsoebiMap.get(b.id) || 0;
+
+        if (eventSortBy === 'cash-desc') return bCash - aCash;
+        if (eventSortBy === 'cash-asc') return aCash - bCash;
+        if (eventSortBy === 'asoebi-desc') return bAsoebi - aAsoebi;
+        return aAsoebi - bAsoebi;
+      });
+    }
+
     return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
@@ -2650,6 +2680,10 @@ const AdminDashboard = () => {
                     <SelectItem value="default">Default</SelectItem>
                     <SelectItem value="guests-desc">Most Guests First</SelectItem>
                     <SelectItem value="guests-asc">Fewest Guests First</SelectItem>
+                    <SelectItem value="cash-desc">Cash Gifts Received (High to Low)</SelectItem>
+                    <SelectItem value="cash-asc">Cash Gifts Received (Low to High)</SelectItem>
+                    <SelectItem value="asoebi-desc">Asoebi Received (High to Low)</SelectItem>
+                    <SelectItem value="asoebi-asc">Asoebi Received (Low to High)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
