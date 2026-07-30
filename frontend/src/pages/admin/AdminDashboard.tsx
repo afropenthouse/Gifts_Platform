@@ -61,9 +61,11 @@ interface Contribution {
   id: number;
   contributorName: string | null;
   amount: number;
+  currency?: string;
   commission: number;
   createdAt: string;
   isAsoebi: boolean;
+  asoebiItemsDetails?: any;
   gift: {
     id?: number;
     title: string | null;
@@ -2226,14 +2228,30 @@ const AdminDashboard = () => {
               </TableHeader>
               <TableBody>
                 {rows.map((contribution) => (
-                  <TableRow key={`${contribution.flow}-${contribution.id}`}>
-                    <TableCell className="font-medium">
-                      {contribution.personName || 'Anonymous'}
-                    </TableCell>
-                    <TableCell>
-                      ₦{Number(contribution.amount).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
+                   <TableRow key={`${contribution.flow}-${contribution.id}`}>
+                     <TableCell className="font-medium">
+                       {contribution.personName || 'Anonymous'}
+                     </TableCell>
+                     <TableCell>
+                       {contribution.currency && contribution.currency !== 'NGN' ? (
+                         <div className="flex flex-col">
+                           <span className="font-medium">
+                             {contribution.currency === 'USD' && '$'}
+                             {contribution.currency === 'CAD' && 'CA$'}
+                             {contribution.currency === 'GBP' && '£'}
+                             {contribution.currency === 'EUR' && '€'}
+                             {!['USD', 'CAD', 'GBP', 'EUR'].includes(contribution.currency) && contribution.currency}
+                             {contribution.asoebiItemsDetails?.paymentMeta?.amount?.toLocaleString?.() ?? Number(contribution.asoebiItemsDetails?.paymentMeta?.amount || 0).toLocaleString()}
+                           </span>
+                           <span className="text-[10px] text-muted-foreground">
+                             ₦{Number(contribution.amount).toLocaleString()}
+                           </span>
+                         </div>
+                       ) : (
+                         <span>₦{Number(contribution.amount).toLocaleString()}</span>
+                       )}
+                     </TableCell>
+                     <TableCell>
                       {contribution.flow === 'outflow' ? (
                         <span
                           className={`text-[10px] w-fit px-2 py-1 rounded-full bg-red-100 text-red-700 border border-red-200`}

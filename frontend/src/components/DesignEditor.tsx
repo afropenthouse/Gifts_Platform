@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
 import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
@@ -11,6 +10,16 @@ import {
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { useToast } from '../hooks/use-toast';
+import {
+  BotanicalSprig,
+  GardenOval,
+  LuxuryMinimal,
+  WatercolorFloral,
+  ArtDecoGreenery,
+  ModernGeometric,
+  RomanticRose,
+  ClassicInvitation,
+} from './invitation-templates';
 
 interface Template {
   id: string;
@@ -138,7 +147,68 @@ const OrnateFrame = ({ className = '', color = '#1a1a1a' }: { className?: string
   </svg>
 );
 
-const ARTWORK_FAMILY: Record<string, 'botanical' | 'garden'> = {
+const LuxuryBorder = ({ className = '', color = '#c9a96e' }: { className?: string; color?: string }) => (
+  <svg viewBox="0 0 400 520" width="100%" height="100%" className={className} aria-hidden="true">
+    <rect x="18" y="18" width="364" height="484" fill="none" stroke={color} strokeWidth="1.2" />
+    <rect x="26" y="26" width="348" height="468" fill="none" stroke={color} strokeWidth="0.6" opacity="0.6" />
+    {[
+      [30, 30, 0],
+      [370, 30, 90],
+      [370, 490, 180],
+      [30, 490, 270]
+    ].map(([cx, cy, r], i) => (
+      <g key={i} transform={`translate(${cx} ${cy}) rotate(${r})`} fill="none" stroke={color} strokeWidth="1.4">
+        <path d="M0 0 C10 0 16 6 22 12" />
+        <circle cx="26" cy="16" r="2.2" fill={color} />
+      </g>
+    ))}
+  </svg>
+);
+
+const WatercolorBloom = ({ className = '', color = '#e8a0a0' }: { className?: string; color?: string }) => (
+  <svg viewBox="0 0 320 420" width="100%" height="100%" className={className} aria-hidden="true">
+    <defs>
+      <radialGradient id="wc-grad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+        <stop offset="55%" stopColor={color} stopOpacity="0.18" />
+        <stop offset="100%" stopColor={color} stopOpacity="0" />
+      </radialGradient>
+    </defs>
+    {[
+      [80, 90, 110], [200, 140, 130], [120, 260, 140], [240, 300, 120],
+      [60, 340, 100], [180, 360, 110], [260, 200, 100]
+    ].map(([cx, cy, r], i) => (
+      <circle key={i} cx={cx} cy={cy} r={r} fill="url(#wc-grad)" opacity="0.85" />
+    ))}
+    <g fill="none" stroke="#6b8f71" strokeWidth="1.1" opacity="0.45">
+      {[[60, 80, 28], [180, 120, -22], [100, 240, 15], [220, 280, -18], [140, 360, 25]].map(([x, y, rot], i) => (
+        <g key={i} transform={`translate(${x} ${y}) rotate(${rot})`}>
+          <ellipse cx="0" cy="0" rx="14" ry="34" />
+          <ellipse cx="14" cy="10" rx="10" ry="26" transform="rotate(30 14 10)" />
+          <path d="M0 -30 L0 30" />
+        </g>
+      ))}
+    </g>
+  </svg>
+);
+
+const GeometricFrame = ({ className = '', color = '#1e3a5f' }: { className?: string; color?: string }) => (
+  <svg viewBox="0 0 400 520" width="100%" height="100%" className={className} aria-hidden="true">
+    <g fill="none" stroke={color} strokeWidth="1.6">
+      <path d="M30 30 L370 30 L370 370 L30 370 Z" />
+      <path d="M44 44 L356 44 L356 356 L44 356 Z" opacity="0.5" />
+      <path d="M30 30 L50 50 M370 30 L350 50 M370 490 L350 470 M30 490 L50 470" />
+      <path d="M30 30 L60 30 M30 30 L30 60 M370 30 L340 30 M370 30 L370 60" />
+      <path d="M370 490 L370 460 M30 490 L30 460 M30 30 L30 60 M370 30 L370 60" opacity="0.6" />
+      <line x1="200" y1="44" x2="200" y2="80" opacity="0.4" />
+      <line x1="44" y1="200" x2="80" y2="200" opacity="0.4" />
+      <line x1="356" y1="200" x2="320" y2="200" opacity="0.4" />
+      <line x1="200" y1="356" x2="200" y2="320" opacity="0.4" />
+    </g>
+  </svg>
+);
+
+const ARTWORK_FAMILY: Record<string, 'botanical' | 'garden' | 'luxury' | 'watercolor' | 'geometric' | 'rose' | 'artdeco' | 'classic'> = {
   'botanical-sprig': 'botanical',
   classic: 'botanical',
   elegant: 'botanical',
@@ -152,6 +222,23 @@ const ARTWORK_FAMILY: Record<string, 'botanical' | 'garden'> = {
   'premium-royal': 'garden',
   'gold-luxury': 'garden',
   sapphire: 'garden',
+  'luxury-minimal': 'luxury',
+  'watercolor-floral': 'watercolor',
+  'modern-geometric': 'geometric',
+  'romantic-rose': 'rose',
+  'art-deco-greenery': 'artdeco',
+  'classic-invitation': 'classic',
+};
+
+const TemplateMap: Record<string, React.FC<any>> = {
+  botanical: BotanicalSprig,
+  garden: GardenOval,
+  luxury: LuxuryMinimal,
+  watercolor: WatercolorFloral,
+  geometric: ModernGeometric,
+  rose: RomanticRose,
+  artdeco: ArtDecoGreenery,
+  classic: ClassicInvitation,
 };
 
 const InvitationCardArtwork = ({
@@ -174,72 +261,19 @@ const InvitationCardArtwork = ({
   compact?: boolean;
 }) => {
   const activeTemplate = templateId || 'botanical-sprig';
-  const names = coupleNames || 'Groom & Bride';
-  const occasionLine = 'For the marriage of';
-  const detailLine = note?.trim() || 'Formal Invitation to Follow';
-  const prettyDate = formatDisplayDate(date);
-  const place = venue || 'Seattle, Washington';
-  const cardScale = compact ? 'h-full' : 'min-h-[640px]';
   const family = ARTWORK_FAMILY[activeTemplate] || 'botanical';
-  const headingFont = 'Cormorant Garamond, Georgia, serif';
-
-  if (family === 'garden') {
-    return (
-      <div
-        className={`relative ${cardScale} bg-[#fbfbf7] overflow-hidden shadow-2xl`}
-        style={{ fontFamily: 'Georgia, serif' }}
-      >
-        <GardenPattern className="absolute inset-0 w-full h-full" />
-        <div
-          className="absolute bg-[#fbfbf7] border-[3px]"
-          style={{
-            borderColor: primaryColor,
-            inset: compact ? '6% 14% 6% 14%' : '7% 16% 7% 16%',
-            borderRadius: compact ? '46% / 38%' : '48% / 40%',
-          }}
-        />
-        <div className="relative z-10 h-full min-h-[inherit] flex flex-col items-center justify-center text-center px-12">
-          <p className="text-[10px] tracking-[0.42em] uppercase mb-7" style={{ color: primaryColor }}>Save the Date</p>
-          <h1
-            className={`${compact ? 'text-2xl' : 'text-5xl'} italic font-light leading-tight`}
-            style={{ color: accentColor, fontFamily: headingFont }}
-          >
-            {names}
-          </h1>
-          <div className="flex items-center gap-3 my-5">
-            <span className="h-px w-10" style={{ backgroundColor: primaryColor }} />
-            <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: primaryColor }}>and</p>
-            <span className="h-px w-10" style={{ backgroundColor: primaryColor }} />
-          </div>
-          <p className="text-[11px] tracking-[0.24em] uppercase" style={{ color: primaryColor }}>{prettyDate}</p>
-          <p className="text-[11px] tracking-[0.28em] uppercase mt-4" style={{ color: primaryColor }}>{place}</p>
-          <p className="mt-7 italic text-base leading-6 max-w-[80%]" style={{ color: accentColor, fontFamily: headingFont }}>{detailLine}</p>
-        </div>
-      </div>
-    );
-  }
+  const TemplateComponent = TemplateMap[family] || BotanicalSprig;
 
   return (
-    <div
-      className={`relative ${cardScale} bg-white overflow-hidden shadow-2xl`}
-      style={{ fontFamily: 'Georgia, serif' }}
-    >
-      <LeafSprig className="absolute right-0 top-0 h-full w-2/5" color={accentColor} />
-      <OrnateFrame className="absolute inset-0 w-full h-full" color={primaryColor} />
-      <div className="relative z-10 h-full min-h-[inherit] flex flex-col justify-center px-14 pr-[40%]">
-        <h1
-          className={`${compact ? 'text-3xl' : 'text-6xl'} uppercase leading-[0.95] tracking-[0.16em]`}
-          style={{ color: primaryColor }}
-        >
-          Save<br /><span className="italic normal-case tracking-normal text-[0.82em]">the</span> Date
-        </h1>
-        <div className="h-px w-16 mt-9 mb-7" style={{ backgroundColor: accentColor }} />
-        <p className="text-[10px] tracking-[0.38em] uppercase" style={{ color: primaryColor }}>{occasionLine}</p>
-        <p className="text-sm tracking-[0.42em] uppercase mt-3" style={{ color: primaryColor }}>{names}</p>
-        <p className="text-[11px] tracking-[0.28em] uppercase mt-9 leading-6" style={{ color: primaryColor }}>{prettyDate}<br />{place}</p>
-        <p className="mt-10 italic text-base leading-6" style={{ color: accentColor, fontFamily: headingFont }}>{detailLine}</p>
-      </div>
-    </div>
+    <TemplateComponent
+      coupleNames={coupleNames}
+      date={date}
+      venue={venue}
+      note={note}
+      primaryColor={primaryColor}
+      accentColor={accentColor}
+      compact={compact}
+    />
   );
 };
 
@@ -382,10 +416,9 @@ export const DesignEditor = ({
               <div className="relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 aspect-[3/4]">
                 {renderMiniPreview(template)}
                 
-                {/* Overlay with template info */}
+                 {/* Overlay with template info */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4">
                   <h3 className="text-white font-bold text-lg mb-1">{template.name}</h3>
-                  <p className="text-white/80 text-xs mb-3">{template.description}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div 
@@ -414,7 +447,6 @@ export const DesignEditor = ({
                 {/* Template name always visible at bottom */}
                 <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm p-3 border-t border-gray-100">
                   <h3 className="text-sm font-bold text-gray-900">{template.name}</h3>
-                  <p className="text-xs text-gray-500 truncate">{template.description}</p>
                 </div>
               </div>
             </div>

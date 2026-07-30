@@ -1,5 +1,6 @@
 import { Button } from '../ui/button';
 import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, ChevronDown, MessageSquareHeart, Camera } from 'lucide-react';
+import { GalleryLightbox } from './GalleryLightbox';
 
 interface TemplateProps {
   title?: string;

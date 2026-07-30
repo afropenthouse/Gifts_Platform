@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import { Button } from '../ui/button';
 import { Calendar, Heart, Gift, Users, ShoppingBag, MapPin, MessageSquareHeart, Camera } from 'lucide-react';
 import { FlowerDecor } from './FlowerDecor';
@@ -88,6 +87,10 @@ export const TemplateNocturne = ({
 
   return (
     <div className="min-h-screen font-sans" style={{ fontFamily, backgroundColor: '#0c0a09', color: '#fafaf9' }}>
+      <style>{`@keyframes noctFade{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+        .noct-in{animation:noctFade .8s cubic-bezier(.2,.7,.2,1) both}
+        .noct-in-1{animation-delay:.05s}.noct-in-2{animation-delay:.15s}.noct-in-3{animation-delay:.25s}.noct-in-4{animation-delay:.35s}
+        @media (prefers-reduced-motion: reduce){.noct-in{animation:none}}`}</style>
       <div className="md:grid md:grid-cols-2">
         {/* Picture column - sticky for the whole page scroll */}
         <div className="md:order-1">
@@ -114,19 +117,50 @@ export const TemplateNocturne = ({
           <section className="relative z-10 px-8 py-20 md:px-14 md:py-28 max-w-xl mx-auto">
             <FlowerDecor className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] h-auto opacity-20 pointer-events-none text-orange-400" />
             <div className="relative z-10 flex flex-col items-center md:items-start w-full">
-            <div className="hidden md:block mb-8">
-              {data?.heroSubtitle && (
-                 <p className="text-xs tracking-[0.3em] font-bold" style={{ color: secondaryColor }}>{data.heroSubtitle}</p>
-              )}
+            <div className="mb-8 noct-in">
+              <p className="text-xs tracking-[0.3em] font-bold uppercase" style={{ color: secondaryColor }}>
+                {data?.heroSubtitle || `A ${eventLabel} celebration`}
+              </p>
             </div>
 
-            <div className="flex items-center justify-center md:justify-start gap-4 mb-8">
-              <div className="h-px w-8 bg-gradient-to-r from-transparent via-orange-500/50 to-orange-500/50" />
-              <span className="text-sm tracking-[0.2em] uppercase text-orange-300">{countdownText}</span>
-              <div className="h-px w-8 bg-gradient-to-l from-transparent via-orange-500/50 to-orange-500/50" />
-            </div>
+            {/* Countdown */}
+            {countdownText && (
+              <div className="flex items-center justify-center md:justify-start gap-4 mb-8 noct-in noct-in-1">
+                <div className="h-px w-8 bg-gradient-to-r from-transparent via-orange-500/50 to-orange-500/50" />
+                <span className="text-sm tracking-[0.2em] uppercase text-orange-300">{countdownText}</span>
+                <div className="h-px w-8 bg-gradient-to-l from-transparent via-orange-500/50 to-orange-500/50" />
+              </div>
+            )}
 
-            <div className="flex flex-col items-center md:items-start gap-4 mb-12">
+            {/* Date & Venue — the details a guest actually needs, front and center */}
+            {(date || venue) && (
+              <div className="w-full flex flex-col sm:flex-row gap-3 mb-10 noct-in noct-in-2">
+                {date && (
+                  <div className="flex-1 flex items-center gap-3 px-5 py-4 rounded-2xl border border-orange-500/20 bg-white/5">
+                    <div className="shrink-0 p-2.5 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg shadow-orange-500/20">
+                      <Calendar className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] tracking-[0.2em] uppercase text-orange-400/80 mb-0.5">When</p>
+                      <p className="text-sm text-orange-50 leading-snug truncate">{formatDate(date)}</p>
+                    </div>
+                  </div>
+                )}
+                {venue && (
+                  <div className="flex-1 flex items-center gap-3 px-5 py-4 rounded-2xl border border-amber-500/20 bg-white/5">
+                    <div className="shrink-0 p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/20">
+                      <MapPin className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] tracking-[0.2em] uppercase text-amber-400/80 mb-0.5">Where</p>
+                      <p className="text-sm text-orange-50 leading-snug truncate">{venue}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-col items-center md:items-start gap-4 mb-12 noct-in noct-in-3">
               <Button
                 size="lg"
                 className="rounded-full px-12 py-7 text-sm tracking-[0.2em] uppercase font-bold shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 hover:scale-105 transition-all duration-300"
@@ -137,17 +171,20 @@ export const TemplateNocturne = ({
               </Button>
             </div>
 
-            {data?.ceremony && (
-              <div className="w-full mb-8">
-                <p className="text-xs tracking-[0.3em] uppercase mb-2 text-orange-400">Ceremony</p>
-                <p className="text-orange-100/80 whitespace-pre-line leading-relaxed">{data.ceremony}</p>
-              </div>
-            )}
-
-            {data?.reception && (
-              <div className="w-full">
-                <p className="text-xs tracking-[0.3em] uppercase mb-2 text-orange-400">Reception</p>
-                <p className="text-orange-100/80 whitespace-pre-line leading-relaxed">{data.reception}</p>
+            {(data?.ceremony || data?.reception) && (
+              <div className="w-full flex flex-col gap-4 noct-in noct-in-4">
+                {data?.ceremony && (
+                  <div className="rounded-2xl border border-orange-500/15 bg-white/[0.03] px-6 py-5">
+                    <p className="text-xs tracking-[0.3em] uppercase mb-2 text-orange-400">Ceremony</p>
+                    <p className="text-orange-100/80 whitespace-pre-line leading-relaxed">{data.ceremony}</p>
+                  </div>
+                )}
+                {data?.reception && (
+                  <div className="rounded-2xl border border-amber-500/15 bg-white/[0.03] px-6 py-5">
+                    <p className="text-xs tracking-[0.3em] uppercase mb-2 text-orange-400">Reception</p>
+                    <p className="text-orange-100/80 whitespace-pre-line leading-relaxed">{data.reception}</p>
+                  </div>
+                )}
               </div>
             )}
             </div>
@@ -199,7 +236,7 @@ export const TemplateNocturne = ({
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
-                  className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-orange-500/20 bg-white/5 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-300"
+                  className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-orange-500/20 bg-white/5 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400 focus-visible:outline-offset-2"
                 >
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 group-hover:from-orange-600 group-hover:to-orange-700 transition-colors shadow-lg shadow-orange-500/30">
                     <Users className="w-7 h-7 text-white" />
@@ -208,7 +245,7 @@ export const TemplateNocturne = ({
                 </button>
                 <button
                   onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
-                  className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-amber-500/20 bg-white/5 hover:border-amber-500/40 hover:bg-white/10 transition-all duration-300"
+                  className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-amber-500/20 bg-white/5 hover:border-amber-500/40 hover:bg-white/10 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 focus-visible:outline-offset-2"
                 >
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 group-hover:from-amber-600 group-hover:to-amber-700 transition-colors shadow-lg shadow-amber-500/30">
                     <ShoppingBag className="w-7 h-7 text-white" />
@@ -218,7 +255,7 @@ export const TemplateNocturne = ({
                 {enableWishlistButton && wishlists && wishlists.length > 0 && wishlists[0].shareLink && (
                   <button
                     onClick={() => window.open(`/${wishlists[0].shareLink}`, '_blank')}
-                    className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-rose-500/20 bg-white/5 hover:border-rose-500/40 hover:bg-white/10 transition-all duration-300"
+                    className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-rose-500/20 bg-white/5 hover:border-rose-500/40 hover:bg-white/10 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-400 focus-visible:outline-offset-2"
                   >
                     <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 group-hover:from-rose-600 group-hover:to-rose-700 transition-colors shadow-lg shadow-rose-500/30">
                       <Heart className="w-7 h-7 text-white" />
@@ -229,7 +266,7 @@ export const TemplateNocturne = ({
                 {showWellWishes && (
                   <button
                     onClick={() => window.open(`/gift/${shareLink}#wishes`, '_blank')}
-                    className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-pink-500/20 bg-white/5 hover:border-pink-500/40 hover:bg-white/10 transition-all duration-300"
+                    className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-pink-500/20 bg-white/5 hover:border-pink-500/40 hover:bg-white/10 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-pink-400 focus-visible:outline-offset-2"
                   >
                     <div className="p-4 rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 group-hover:from-pink-600 group-hover:to-pink-700 transition-colors shadow-lg shadow-pink-500/30">
                       <MessageSquareHeart className="w-7 h-7 text-white" />
@@ -239,7 +276,7 @@ export const TemplateNocturne = ({
                 )}
                 <button
                   onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
-                  className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-yellow-500/20 bg-white/5 hover:border-yellow-500/40 hover:bg-white/10 transition-all duration-300"
+                  className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-yellow-500/20 bg-white/5 hover:border-yellow-500/40 hover:bg-white/10 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-400 focus-visible:outline-offset-2"
                 >
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-500 to-yellow-600 group-hover:from-yellow-600 group-hover:to-yellow-700 transition-colors shadow-lg shadow-yellow-500/30">
                     <Gift className="w-7 h-7 text-white" />
@@ -248,7 +285,7 @@ export const TemplateNocturne = ({
                 </button>
                 <button
                   onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
-                  className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-orange-500/20 bg-white/5 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-300"
+                  className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-orange-500/20 bg-white/5 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400 focus-visible:outline-offset-2"
                 >
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 group-hover:from-orange-600 group-hover:to-amber-700 transition-colors shadow-lg shadow-orange-500/30">
                     <Camera className="w-7 h-7 text-white" />

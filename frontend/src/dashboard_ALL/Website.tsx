@@ -20,6 +20,7 @@ import { TemplateSapphire } from '../components/website-templates/TemplateSapphi
 import { TemplateRuby } from '../components/website-templates/TemplateRuby';
 import { TemplatePearl } from '../components/website-templates/TemplatePearl';
 import { TemplateAmethyst } from '../components/website-templates/TemplateAmethyst';
+import { TemplateJoyBlossom } from '../components/website-templates/TemplateJoyBlossom';
 import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 
@@ -294,10 +295,16 @@ const Website = () => {
     return selectedTemplate || 'nocturne';
   };
 
+  const getPublicLink = () => {
+    if (!website) return '';
+    const linkId = website.slug || website.shareLink;
+    return `${window.location.origin}/wedding-website/${linkId}`;
+  };
+
   const copyShareLink = async () => {
     try {
-      if (website && website.shareLink) {
-        const link = `${window.location.origin}/wedding-website/${getPublicTemplate()}/${website.shareLink}`;
+      if (website?.shareLink) {
+        const link = getPublicLink();
         await navigator.clipboard.writeText(link);
         toast({ title: 'Link copied!', description: 'Your website link is ready to share.' });
       } else {
@@ -501,6 +508,8 @@ const Website = () => {
     const useTemplate = templateKey || selectedTemplate || 'nocturne';
 
     switch (useTemplate) {
+              case 'joy-blossom':
+                return <TemplateJoyBlossom {...props} />;
               case 'nocturne':
                 return <TemplateNocturne {...props} />;
               case 'rosette':
@@ -524,9 +533,8 @@ const Website = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex gap-5">
-      {/* Controls Panel */}
-      <div className="w-full md:w-[380px] lg:w-[400px] flex-shrink-0 overflow-y-auto pr-1 space-y-4">
+    <div className="h-[calc(100vh-8rem)] overflow-y-auto">
+      <div className="max-w-5xl mx-auto space-y-4 p-4 md:p-6">
         {/* Header */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -560,9 +568,7 @@ const Website = () => {
                   <p className="text-xs text-amber-700 mb-2">Publish your website to make it visible to guests.</p>
                 )}
                 <code className="block w-full bg-white px-3 py-2.5 rounded-lg border text-xs font-mono overflow-x-auto mb-3 text-gray-700 font-semibold">
-                  {website.shareLink 
-                    ? `${window.location.origin}/wedding-website/${getPublicTemplate()}/${website.shareLink}`
-                    : 'Loading link...'}
+                  {getPublicLink() || 'Loading link...'}
                 </code>
                 <div className="flex gap-2">
                   <Button 
@@ -579,11 +585,12 @@ const Website = () => {
                     size="sm" 
                     className={`flex-1 h-9 text-xs font-bold ${isPublished ? 'bg-green-600 hover:bg-green-700' : 'bg-[#2E235C] hover:bg-[#2E235C]/90'} text-white`} 
                     onClick={() => {
-                      if (website.shareLink) {
-                        window.open(`${window.location.origin}/wedding-website/${getPublicTemplate()}/${website.shareLink}`, '_blank');
+                      const link = getPublicLink();
+                      if (link) {
+                        window.open(link, '_blank');
                       }
                     }}
-                    disabled={!website.shareLink}
+                    disabled={!website?.shareLink}
                   >
                     <Eye className="w-3.5 h-3.5 mr-1.5" />
                     {isPublished ? 'Open Website' : 'Preview'}
@@ -637,8 +644,10 @@ const Website = () => {
                 <CardTitle className="text-sm font-medium">All Templates</CardTitle>
                 <p className="text-xs text-gray-500">Free templates are ready to use. Premium templates unlock with a one-time ₦10,000 payment each.</p>
               </CardHeader>
-              <CardContent className="p-4 pt-0 space-y-3">
+              <CardContent className="p-4 pt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
+          { key: 'joy-blossom', name: 'Joy Blossom', desc: 'Festive, floral & joyful', gradient: 'from-pink-100 to-rose-100', dotGradient: 'from-pink-500 to-rose-500', premium: false },
           { key: 'nocturne', name: 'Nocturne', desc: 'Dark, moody & refined', gradient: 'from-slate-800 to-stone-800', dotGradient: 'from-orange-400 to-amber-400', premium: false },
           { key: 'rosette', name: 'Rosette', desc: 'Bold, romantic & vibrant', gradient: 'from-rose-100 to-red-100', dotGradient: 'from-rose-500 to-red-500', premium: false },
           { key: 'milk', name: 'Milk', desc: 'Pure, fine & timeless', gradient: 'from-stone-100 to-orange-50', dotGradient: 'from-stone-400 to-orange-300', premium: false },
@@ -662,7 +671,7 @@ const Website = () => {
                     setUnlockModalOpen(true);
                   }
                 }}
-                className={`relative w-full p-3 rounded-lg border text-left transition-all duration-200 cursor-pointer ${
+                className={`relative p-3 rounded-lg border text-left transition-all duration-200 cursor-pointer ${
                   isSelected
                     ? tpl.ring || 'border-[#2E235C] bg-[#2E235C]/[0.03]'
                     : isPremium
@@ -691,14 +700,14 @@ const Website = () => {
                       <div className="w-4 h-4 rounded-full bg-gray-400" />
                     </div>
                   )}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">{tpl.name}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{tpl.name}</p>
                     {isPremium && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold uppercase tracking-wider">Premium</span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500">{tpl.desc}</p>
+                  <p className="text-xs text-gray-500 truncate">{tpl.desc}</p>
                 </div>
                 <button
                   type="button"
@@ -706,7 +715,7 @@ const Website = () => {
                     e.stopPropagation();
                     openPreview(tpl.key);
                   }}
-                  className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                  className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 flex-shrink-0"
                 >
                   <Eye className="w-4 h-4" />
                 </button>
@@ -714,6 +723,7 @@ const Website = () => {
             </div>
           );
         })}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -721,66 +731,68 @@ const Website = () => {
           <TabsContent value="style" className="space-y-3 mt-3">
             <Card className="border-gray-200/80 shadow-sm">
               <CardContent className="p-4 space-y-4">
-                <div>
-                  <Label className="text-xs font-medium text-gray-500 mb-2.5 block">Color Theme</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {PRESET_THEMES.map(theme => (
-                      <button
-                        key={theme.name}
-                        onClick={() => setWebsiteData(prev => ({ 
-                          ...prev, 
-                          primaryColor: theme.primary,
-                          secondaryColor: theme.secondary,
-                        }))}
-                        className={`p-2 rounded-lg border transition-all ${
-                          websiteData.primaryColor === theme.primary 
-                            ? 'border-[#2E235C] ring-1 ring-[#2E235C]' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex gap-1 mb-1.5">
-                          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.primary }} />
-                          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.secondary }} />
-                        </div>
-                        <span className="text-[10px] text-gray-500">{theme.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-xs font-medium text-gray-500 mb-2.5 block">Custom Colors</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-[10px] text-gray-400 mb-1 block">Primary</Label>
-                      <div className="flex gap-1.5">
-                        <input 
-                          type="color" 
-                          value={websiteData.primaryColor} 
-                          onChange={(e) => setWebsiteData(prev => ({ ...prev, primaryColor: e.target.value }))}
-                          className="w-8 h-8 rounded cursor-pointer border-0 p-0"
-                        />
-                        <Input 
-                          value={websiteData.primaryColor}
-                          onChange={(e) => setWebsiteData(prev => ({ ...prev, primaryColor: e.target.value }))}
-                          className="h-8 text-xs flex-1"
-                        />
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500 mb-2.5 block">Color Theme</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {PRESET_THEMES.map(theme => (
+                        <button
+                          key={theme.name}
+                          onClick={() => setWebsiteData(prev => ({ 
+                            ...prev, 
+                            primaryColor: theme.primary,
+                            secondaryColor: theme.secondary,
+                          }))}
+                          className={`p-2 rounded-lg border transition-all ${
+                            websiteData.primaryColor === theme.primary 
+                              ? 'border-[#2E235C] ring-1 ring-[#2E235C]' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex gap-1 mb-1.5">
+                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.primary }} />
+                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.secondary }} />
+                          </div>
+                          <span className="text-[10px] text-gray-500">{theme.name}</span>
+                        </button>
+                      ))}
                     </div>
-                    <div>
-                      <Label className="text-[10px] text-gray-400 mb-1 block">Accent</Label>
-                      <div className="flex gap-1.5">
-                        <input 
-                          type="color" 
-                          value={websiteData.secondaryColor} 
-                          onChange={(e) => setWebsiteData(prev => ({ ...prev, secondaryColor: e.target.value }))}
-                          className="w-8 h-8 rounded cursor-pointer border-0 p-0"
-                        />
-                        <Input 
-                          value={websiteData.secondaryColor}
-                          onChange={(e) => setWebsiteData(prev => ({ ...prev, secondaryColor: e.target.value }))}
-                          className="h-8 text-xs flex-1"
-                        />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500 mb-2.5 block">Custom Colors</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-[10px] text-gray-400 mb-1 block">Primary</Label>
+                        <div className="flex gap-1.5">
+                          <input 
+                            type="color" 
+                            value={websiteData.primaryColor} 
+                            onChange={(e) => setWebsiteData(prev => ({ ...prev, primaryColor: e.target.value }))}
+                            className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                          />
+                          <Input 
+                            value={websiteData.primaryColor}
+                            onChange={(e) => setWebsiteData(prev => ({ ...prev, primaryColor: e.target.value }))}
+                            className="h-8 text-xs flex-1"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-gray-400 mb-1 block">Accent</Label>
+                        <div className="flex gap-1.5">
+                          <input 
+                            type="color" 
+                            value={websiteData.secondaryColor} 
+                            onChange={(e) => setWebsiteData(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                            className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                          />
+                          <Input 
+                            value={websiteData.secondaryColor}
+                            onChange={(e) => setWebsiteData(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                            className="h-8 text-xs flex-1"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -806,31 +818,57 @@ const Website = () => {
           <TabsContent value="content" className="space-y-3 mt-3">
             <Card className="border-gray-200/80 shadow-sm">
               <CardContent className="p-4 space-y-3.5">
-                {selectedGift?.type !== 'wedding' && (
-                <div>
-                  <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <Type className="w-3.5 h-3.5" />
-                    Hero Title
-                  </Label>
-                  <Input 
-                    value={websiteData.heroTitle}
-                    onChange={(e) => setWebsiteData(prev => ({ ...prev, heroTitle: e.target.value }))}
-                    placeholder="Sarah & James"
-                    className="h-9 text-sm"
-                  />
-                </div>
-                )}
-                <div>
-                  <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <Wand2 className="w-3.5 h-3.5" />
-                    Hero Subtitle
-                  </Label>
-                  <Input 
-                    value={websiteData.heroSubtitle}
-                    onChange={(e) => setWebsiteData(prev => ({ ...prev, heroSubtitle: e.target.value }))}
-                    placeholder="We invite you to celebrate..."
-                    className="h-9 text-sm"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedGift?.type !== 'wedding' && (
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+                      <Type className="w-3.5 h-3.5" />
+                      Hero Title
+                    </Label>
+                    <Input 
+                      value={websiteData.heroTitle}
+                      onChange={(e) => setWebsiteData(prev => ({ ...prev, heroTitle: e.target.value }))}
+                      placeholder="Sarah & James"
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  )}
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+                      <Wand2 className="w-3.5 h-3.5" />
+                      Hero Subtitle
+                    </Label>
+                    <Input 
+                      value={websiteData.heroSubtitle}
+                      onChange={(e) => setWebsiteData(prev => ({ ...prev, heroSubtitle: e.target.value }))}
+                      placeholder="We invite you to celebrate..."
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      Date
+                    </Label>
+                    <Input 
+                      type="date"
+                      value={websiteData.date}
+                      onChange={(e) => setWebsiteData(prev => ({ ...prev, date: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5" />
+                      Venue
+                    </Label>
+                    <Input 
+                      value={websiteData.venue}
+                      onChange={(e) => setWebsiteData(prev => ({ ...prev, venue: e.target.value }))}
+                      placeholder="Grand Hotel, Lagos"
+                      className="h-9 text-sm"
+                    />
+                  </div>
                 </div>
                 {selectedGift?.type === 'wedding' && (
                 <div>
@@ -857,30 +895,6 @@ const Website = () => {
                 )}
                 <div>
                   <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Date
-                  </Label>
-                  <Input 
-                    type="date"
-                    value={websiteData.date}
-                    onChange={(e) => setWebsiteData(prev => ({ ...prev, date: e.target.value }))}
-                    className="h-9 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" />
-                    Venue
-                  </Label>
-                  <Input 
-                    value={websiteData.venue}
-                    onChange={(e) => setWebsiteData(prev => ({ ...prev, venue: e.target.value }))}
-                    placeholder="Grand Hotel, Lagos"
-                    className="h-9 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
                     <BookOpen className="w-3.5 h-3.5" />
                     Your Story
                   </Label>
@@ -892,31 +906,33 @@ const Website = () => {
                     className="text-sm resize-none"
                   />
                 </div>
-                <div>
-                  <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" />
-                    Ceremony Details
-                  </Label>
-                  <Textarea 
-                    value={websiteData.ceremony}
-                    onChange={(e) => setWebsiteData(prev => ({ ...prev, ceremony: e.target.value }))}
-                    placeholder="e.g. 3:00 PM, St. Mary's Chapel"
-                    rows={2}
-                    className="text-sm resize-none"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" />
-                    Reception Details
-                  </Label>
-                  <Textarea 
-                    value={websiteData.reception}
-                    onChange={(e) => setWebsiteData(prev => ({ ...prev, reception: e.target.value }))}
-                    placeholder="e.g. 6:00 PM, The Grand Hall"
-                    rows={2}
-                    className="text-sm resize-none"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5" />
+                      Ceremony Details
+                    </Label>
+                    <Textarea 
+                      value={websiteData.ceremony}
+                      onChange={(e) => setWebsiteData(prev => ({ ...prev, ceremony: e.target.value }))}
+                      placeholder="e.g. 3:00 PM, St. Mary's Chapel"
+                      rows={2}
+                      className="text-sm resize-none"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5" />
+                      Reception Details
+                    </Label>
+                    <Textarea 
+                      value={websiteData.reception}
+                      onChange={(e) => setWebsiteData(prev => ({ ...prev, reception: e.target.value }))}
+                      placeholder="e.g. 6:00 PM, The Grand Hall"
+                      rows={2}
+                      className="text-sm resize-none"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
@@ -1006,24 +1022,6 @@ const Website = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-
-      {/* Preview Area */}
-      <div className="hidden md:flex flex-1 min-w-0">
-        <div className="w-full max-w-5xl mx-auto rounded-xl border border-gray-200/80 shadow-sm overflow-hidden bg-white">
-          {selectedGift ? (
-            <div className="h-full overflow-auto">
-              {renderPreview()}
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center bg-gray-50/50">
-              <div className="text-center p-8">
-                <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm text-gray-400">Select an event to preview</p>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {previewModalOpen && (
