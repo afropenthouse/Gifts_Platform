@@ -1054,7 +1054,8 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
 
       const amount = type === 'template' ? 10000 : 50000; // 10k or 50k NGN
       const tx_ref = `${type === 'template' ? `template-premium-${templateKey}` : 'premium'}-${giftId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?giftId=${giftId}&reference=${tx_ref}&type=${type}${templateKey ? `&template=${templateKey}` : ''}`;
+      const redirectTarget = req.body.redirectTo || '/dashboard';
+      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}${redirectTarget}?giftId=${giftId}&reference=${tx_ref}&type=${type}${templateKey ? `&template=${templateKey}` : ''}`;
 
       const metadata = {
         giftId,

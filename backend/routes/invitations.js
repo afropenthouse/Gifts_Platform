@@ -26,7 +26,7 @@ const INVITATION_TEMPLATES = [
     id: 'botanical-sprig',
     name: 'Botanical Sprig',
     description: 'Clean white card with soft greenery along the edge',
-    tier: 'free',
+    tier: 'premium',
     previewColor: '#1f2933',
     accentColor: '#7b9a78'
   },
@@ -34,7 +34,7 @@ const INVITATION_TEMPLATES = [
     id: 'garden-oval',
     name: 'Garden Oval',
     description: 'Vintage botanical frame with an oval name plate',
-    tier: 'free',
+    tier: 'premium',
     previewColor: '#2f5f3d',
     accentColor: '#8eb28a'
   },
@@ -42,7 +42,7 @@ const INVITATION_TEMPLATES = [
     id: 'luxury-minimal',
     name: 'Luxury Minimal',
     description: 'Black card with a thin gold border and elegant serif typography',
-    tier: 'free',
+    tier: 'premium',
     previewColor: '#0a0a0a',
     accentColor: '#c9a96e'
   },
@@ -50,7 +50,7 @@ const INVITATION_TEMPLATES = [
     id: 'watercolor-floral',
     name: 'Watercolor Floral',
     description: 'Soft pink cream background with dreamy watercolor blooms',
-    tier: 'free',
+    tier: 'premium',
     previewColor: '#5c4a4a',
     accentColor: '#e8a0a0'
   },
@@ -58,7 +58,7 @@ const INVITATION_TEMPLATES = [
     id: 'modern-geometric',
     name: 'Modern Geometric',
     description: 'Navy and white with clean geometric lines and modern typography',
-    tier: 'free',
+    tier: 'premium',
     previewColor: '#1e3a5f',
     accentColor: '#ffffff'
   },
@@ -66,7 +66,7 @@ const INVITATION_TEMPLATES = [
     id: 'romantic-rose',
     name: 'Romantic Rose',
     description: 'Blush pink with elegant rose petal watercolor accents',
-    tier: 'free',
+    tier: 'premium',
     previewColor: '#8b5a5a',
     accentColor: '#d4a0a0'
   },
@@ -74,7 +74,7 @@ const INVITATION_TEMPLATES = [
     id: 'art-deco-greenery',
     name: 'Art Deco Greenery',
     description: 'Sophisticated art deco frame with lush green foliage',
-    tier: 'free',
+    tier: 'premium',
     previewColor: '#1A3B2B',
     accentColor: '#D49A6A'
   },
@@ -82,7 +82,7 @@ const INVITATION_TEMPLATES = [
     id: 'classic-invitation',
     name: 'Classic',
     description: 'Simple navy and gold bordered invitation',
-    tier: 'free',
+    tier: 'premium',
     previewColor: '#1e3a5f',
     accentColor: '#c9a96e'
   }
