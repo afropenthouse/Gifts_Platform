@@ -204,7 +204,7 @@ const AdminDashboard = () => {
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all'); // Event type filter
   const [eventSortBy, setEventSortBy] = useState<string>('default'); // New sort state
   const [selectedTierFilter, setSelectedTierFilter] = useState<'all' | 'vip' | 'royal'>('all'); // Tier filter for premium tab
-  const [emailSourceFilter, setEmailSourceFilter] = useState<'all' | 'user' | 'guest'>('all');
+  const [emailSourceFilter, setEmailSourceFilter] = useState<'all' | 'user' | 'guest' | 'user-active'>('all');
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [sendingBulk, setSendingBulk] = useState(false);
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
@@ -1449,6 +1449,12 @@ const AdminDashboard = () => {
       baseEmails = Array.from(new Set([...userEmails, ...guestEmails]));
     } else if (emailSourceFilter === 'user') {
       baseEmails = Array.from(new Set(userEmails));
+    } else if (emailSourceFilter === 'user-active') {
+      const activeUserEmails = users
+        .filter((u) => (u as any)._count?.gifts > 0)
+        .map((u) => u.email.toLowerCase().trim())
+        .filter(Boolean);
+      baseEmails = Array.from(new Set(activeUserEmails));
     } else {
       baseEmails = Array.from(new Set(guestEmails));
     }
@@ -1559,7 +1565,7 @@ const AdminDashboard = () => {
               <Select
                 value={emailSourceFilter}
                 onValueChange={(value) => {
-                  setEmailSourceFilter(value as 'all' | 'user' | 'guest');
+                  setEmailSourceFilter(value as 'all' | 'user' | 'guest' | 'user-active');
                   setSelectedEmails([]); // Clear selection when switching filters to avoid hidden selections
                 }}
               >
@@ -1569,6 +1575,7 @@ const AdminDashboard = () => {
                 <SelectContent>
                   <SelectItem value="all">All Sources</SelectItem>
                   <SelectItem value="user">Users Only</SelectItem>
+                  <SelectItem value="user-active">Users with Active Events</SelectItem>
                   <SelectItem value="guest">Guests Only</SelectItem>
                 </SelectContent>
               </Select>
