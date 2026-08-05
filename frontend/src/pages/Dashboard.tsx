@@ -3300,17 +3300,15 @@ const Dashboard: React.FC = () => {
                <div className="space-y-6">
                  {/* Tier Cards */}
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Free Tier */}
-                    <Card className="border-2 border-[#2E235C]/20 shadow-lg bg-white overflow-hidden">
-                      <CardContent className="p-6">
-                        <div className="text-center mb-4">
-                          <div className="w-12 h-12 mx-auto mb-3 bg-[#2E235C]/10 rounded-full flex items-center justify-center">
-                            <Gift className="w-6 h-6 text-[#2E235C]" />
-                          </div>
-                          <h3 className="text-lg font-bold text-gray-900">Free</h3>
-                          <p className="text-2xl font-extrabold text-gray-900 mt-1">₦0</p>
-                          <p className="text-sm text-gray-500">Basic event tools</p>
-                        </div>
+{/* Free Tier */}
+                     <Card className="border-2 border-[#2E235C]/20 shadow-lg bg-white overflow-hidden">
+                       <CardContent className="p-6">
+                         <div className="text-center mb-4">
+                           <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${isSubscriptionModalOpen ? 'bg-amber-400/25' : 'bg-amber-300/15'}`}>
+                               <Gift className="w-6 h-6 text-amber-500" />
+                             </div>
+                           <h3 className="text-lg font-bold text-gray-900">Free</h3>
+                         </div>
                         <ul className="space-y-2 mb-6">
                           <li className="flex items-center space-x-2 text-sm text-gray-600">
                             <CheckCircle className="w-4 h-4 text-green-500" />
@@ -3324,8 +3322,8 @@ const Dashboard: React.FC = () => {
                             <XCircle className="w-4 h-4 text-red-400" />
                             <span>4% commission on cash gifts</span>
                           </li>
-                          <li className="flex items-center space-x-2 text-sm text-gray-600">
-                            <XCircle className="w-4 h-4 text-red-400" />
+                          <li className="flex items-start space-x-2 text-sm text-gray-600">
+                            <XCircle className="w-4 h-4 text-red-400 mt-0.5" />
                             <span>₦500 commission per asoebi order</span>
                           </li>
                         </ul>
@@ -3338,14 +3336,13 @@ const Dashboard: React.FC = () => {
                          MOST POPULAR
                        </div>
                        <CardContent className="p-6 pt-8">
-                         <div className="text-center mb-4">
-                           <div className="w-12 h-12 mx-auto mb-3 bg-[#2E235C]/10 rounded-full flex items-center justify-center">
-                             <Crown className="w-6 h-6 text-[#2E235C]" />
+                        <div className="text-center mb-4">
+                             <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${isSubscriptionModalOpen ? 'bg-yellow-400/30' : 'bg-amber-300/20'}`}>
+                                 <Crown className="w-6 h-6 text-yellow-500" />
+                               </div>
+                             <h3 className="text-lg font-bold text-gray-900">VIP</h3>
+                             <p className="text-2xl font-extrabold text-gray-900 mt-1">₦50,000</p>
                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">VIP</h3>
-                            <p className="text-2xl font-extrabold text-gray-900 mt-1">₦50,000</p>
-                           <p className="text-sm text-gray-500">Free commission only</p>
-                         </div>
                          <ul className="space-y-2 mb-6">
                            <li className="flex items-center space-x-2 text-sm text-gray-600">
                              <CheckCircle className="w-4 h-4 text-green-500" />
@@ -3383,17 +3380,16 @@ const Dashboard: React.FC = () => {
                    {/* Royal Tier */}
                    <Card className="border-2 border-[#2E235C] shadow-lg bg-gradient-to-b from-[#2E235C]/5 to-white overflow-hidden relative">
                      <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#2E235C] to-[#392B74] text-white text-xs font-bold text-center py-1">
-                       ULTIMATE
-                     </div>
-                     <CardContent className="p-6 pt-8">
-                       <div className="text-center mb-4">
-                         <div className="w-12 h-12 mx-auto mb-3 bg-[#2E235C]/10 rounded-full flex items-center justify-center">
-                           <Crown className="w-6 h-6 text-[#2E235C]" />
-                         </div>
+ULTIMATE
+                        </div>
+                      <CardContent className="p-6 pt-8">
+                        <div className="text-center mb-4">
+                          <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${isSubscriptionModalOpen ? 'bg-yellow-500/30' : 'bg-amber-400/20'}`}>
+                              <Crown className="w-6 h-6 text-yellow-600" />
+                            </div>
                           <h3 className="text-lg font-bold text-gray-900">Royal</h3>
                           <p className="text-2xl font-extrabold text-gray-900 mt-1">₦100,000</p>
-                         <p className="text-sm text-gray-500">Full premium experience</p>
-                       </div>
+                          </div>
                        <ul className="space-y-2 mb-6">
                          <li className="flex items-center space-x-2 text-sm text-gray-600">
                            <CheckCircle className="w-4 h-4 text-green-500" />
@@ -3434,7 +3430,7 @@ const Dashboard: React.FC = () => {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <Globe className="w-10 h-10 text-[#2E235C]" />
+                        <Globe className="w-10 h-10 text-amber-500" />
                         <div>
                           <h3 className="text-xl font-bold text-gray-900">Premium Websites</h3>
                           <p className="text-sm text-gray-600">Premium templates you've unlocked per event</p>
@@ -3444,7 +3440,7 @@ const Dashboard: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => setActiveTab('website')}
-                        className="border-[#2E235C]/30 text-[#2E235C] hover:bg-[#2E235C]/5"
+                        className="border-amber-400/40 text-amber-600 hover:bg-amber-300/10"
                       >
                         <Globe className="w-4 h-4 mr-1" />
                         Go to Website
@@ -3457,7 +3453,7 @@ const Dashboard: React.FC = () => {
                           return (
                             <div key={giftId} className="bg-white p-4 rounded-xl shadow-sm border border-[#2E235C]/20">
                               <div className="flex items-center space-x-2 mb-3">
-                                <Globe className="w-4 h-4 text-[#2E235C] flex-shrink-0" />
+                                <Globe className="w-4 h-4 text-amber-500 flex-shrink-0" />
                                 <span className="font-semibold text-gray-900">{gift?.title || `Event #${giftId}`}</span>
                               </div>
                               <div className="flex flex-wrap gap-2">
@@ -3486,7 +3482,7 @@ const Dashboard: React.FC = () => {
                 <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50 to-white">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-3 mb-4">
-                      <Crown className="w-10 h-10 text-[#2E235C]" />
+                      <Crown className="w-10 h-10 text-yellow-600" />
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">Active subscriptions</h3>
                         <p className="text-sm text-gray-600">Your current VIP / Royal events</p>
@@ -6570,7 +6566,7 @@ const Dashboard: React.FC = () => {
               }}
               className="w-full sm:w-auto bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white font-bold"
             >
-              Subscribe
+              Proceed
             </Button>
           </DialogFooter>
         </DialogContent>

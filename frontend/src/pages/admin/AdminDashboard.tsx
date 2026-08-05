@@ -191,7 +191,7 @@ const AdminDashboard = () => {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [useCustomDateRange, setUseCustomDateRange] = useState(false);
-  const [selectedTxnType, setSelectedTxnType] = useState<'all' | 'cash' | 'asoebi' | 'premium-vip' | 'premium-royal'>('all');
+  const [selectedTxnType, setSelectedTxnType] = useState<'all' | 'cash' | 'asoebi' | 'cash-asoebi' | 'premium-vip' | 'premium-royal' | 'premium-all'>('all');
   const [selectedTxnFlow, setSelectedTxnFlow] = useState<'all' | 'inflow' | 'outflow'>('all');
   const [guestEmailFilter, setGuestEmailFilter] = useState<'all' | 'yes' | 'no'>('all');
   const [userSearch, setUserSearch] = useState('');
@@ -263,7 +263,9 @@ const AdminDashboard = () => {
       }
       
       if (activeTab === 'transactions') {
-        if (selectedTxnType !== 'all') metricsParams.set('type', selectedTxnType);
+        if (selectedTxnType !== 'all' && selectedTxnType !== 'cash-asoebi') {
+          metricsParams.set('type', selectedTxnType);
+        }
         if (selectedEventId !== 'all') metricsParams.set('eventId', String(selectedEventId));
       }
 
@@ -322,9 +324,9 @@ const AdminDashboard = () => {
         }
         
         if (activeTab === 'transactions') {
-          if (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal') {
+          if (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal' || selectedTxnType === 'premium-all') {
             // These are handled client-side via premiumPayments, skip server-side type filter
-          } else if (selectedTxnType !== 'all') {
+          } else if (selectedTxnType !== 'all' && selectedTxnType !== 'cash-asoebi') {
             params.set('type', selectedTxnType);
           }
           if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
@@ -741,7 +743,7 @@ const AdminDashboard = () => {
   }, [activeTab, fetchContributions, fetchWithdrawals, fetchPremiumPayments, txnTimeFilter]);
 
   useEffect(() => {
-    if (activeTab === 'transactions' && (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal')) {
+    if (activeTab === 'transactions' && (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal' || selectedTxnType === 'premium-all')) {
       fetchPremiumPayments(txnTimeFilter, true);
     }
   }, [activeTab, selectedTxnType, txnTimeFilter, fetchPremiumPayments]);
@@ -1198,14 +1200,28 @@ const AdminDashboard = () => {
       let rows: any[] = [];
 
       if (selectedTxnFlow === 'all' || selectedTxnFlow === 'inflow') {
-        if (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal') {
-          const targetTier = selectedTxnType === 'premium-vip' ? 'vip' : 'royal';
-          const premiumInflows = (Array.isArray(premiumPayments) ? premiumPayments : [])
+        if (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal' || selectedTxnType === 'premium-all') {
+          let premiumInflows = (Array.isArray(premiumPayments) ? premiumPayments : [])
             .filter((p) => {
               const matchStatus = p.status === 'success';
-              const matchTier = p.tier === targetTier;
+              let matchTier = true;
+              if (selectedTxnType === 'premium-vip') {
+                matchTier = p.tier === 'vip';
+              } else if (selectedTxnType === 'premium-royal') {
+                matchTier = p.tier === 'royal';
+              }
               return matchStatus && matchTier;
             });
+          if (!useCustomDateRange) {
+            premiumInflows = filterByTime(premiumInflows, txnTimeFilter);
+          } else if (customStartDate && customEndDate) {
+            const start = new Date(customStartDate);
+            const end = new Date(customEndDate + 'T23:59:59');
+            premiumInflows = premiumInflows.filter((p) => {
+              const d = new Date(p.createdAt);
+              return d >= start && d <= end;
+            });
+          }
           const filtered = filterByEvent(premiumInflows);
           
           rows = rows.concat(
@@ -1221,6 +1237,18 @@ const AdminDashboard = () => {
             inflows = inflows.filter((c) => c.isAsoebi);
           } else if (selectedTxnType === 'cash') {
             inflows = inflows.filter((c) => !c.isAsoebi);
+          } else if (selectedTxnType === 'cash-asoebi') {
+            // Include both cash and asoebi - no additional filter needed
+          }
+          if (!useCustomDateRange) {
+            inflows = filterByTime(inflows, txnTimeFilter);
+          } else if (customStartDate && customEndDate) {
+            const start = new Date(customStartDate);
+            const end = new Date(customEndDate + 'T23:59:59');
+            inflows = inflows.filter((c) => {
+              const d = new Date(c.createdAt);
+              return d >= start && d <= end;
+            });
           }
           inflows = filterByEvent(inflows);
           rows = rows.concat(
@@ -1228,8 +1256,18 @@ const AdminDashboard = () => {
           );
 
           if (selectedTxnType === 'all') {
-            const allPremium = (Array.isArray(premiumPayments) ? premiumPayments : [])
+            let allPremium = (Array.isArray(premiumPayments) ? premiumPayments : [])
               .filter((p) => p.status === 'success');
+            if (!useCustomDateRange) {
+              allPremium = filterByTime(allPremium, txnTimeFilter);
+            } else if (customStartDate && customEndDate) {
+              const start = new Date(customStartDate);
+              const end = new Date(customEndDate + 'T23:59:59');
+              allPremium = allPremium.filter((p) => {
+                const d = new Date(p.createdAt);
+                return d >= start && d <= end;
+              });
+            }
             const filtered = filterByEvent(allPremium);
             rows = rows.concat(
               filtered.map((p) => ({ ...p, flow: 'inflow', personName: p.user?.name || p.user?.email || 'Event Owner' }))
@@ -1239,7 +1277,17 @@ const AdminDashboard = () => {
       }
 
       if (selectedTxnFlow === 'all' || selectedTxnFlow === 'outflow') {
-        const outflows = allWithdrawals.filter((w) => Number(w.amount) > 0);
+        let outflows = allWithdrawals.filter((w) => Number(w.amount) > 0);
+        if (!useCustomDateRange) {
+          outflows = filterByTime(outflows, txnTimeFilter);
+        } else if (customStartDate && customEndDate) {
+          const start = new Date(customStartDate);
+          const end = new Date(customEndDate + 'T23:59:59');
+          outflows = outflows.filter((w) => {
+            const d = new Date(w.createdAt);
+            return d >= start && d <= end;
+          });
+        }
         const filtered = filterByEvent(outflows);
         rows = rows.concat(
           filtered.map((w) => ({
@@ -2321,8 +2369,17 @@ const AdminDashboard = () => {
       });
     }
 
-    const filteredTransactionAmount = rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
-    const filteredRevenue = rows.filter((r) => r.flow === 'inflow').reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const inflowSum = rows.filter((r) => r.flow === 'inflow').reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const outflowSum = rows.filter((r) => r.flow === 'outflow').reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const filteredTransactionAmount = selectedTxnFlow === 'outflow' ? outflowSum : inflowSum;
+    const filteredRevenue = rows
+      .filter((r) => r.flow === 'inflow')
+      .reduce((sum, r) => {
+        if (r.tier && (r.tier === 'vip' || r.tier === 'royal')) {
+          return sum + Number(r.amount || 0);
+        }
+        return sum + Number(r.commission || 0);
+      }, 0);
     const revenueRatio = filteredTransactionAmount > 0 ? (filteredRevenue / filteredTransactionAmount) * 100 : 0;
     const timeFilterLabelMap: Record<TimeFilter, string> = {
       all: 'All Time',
@@ -3248,17 +3305,19 @@ const AdminDashboard = () => {
                 </Label>
                 <Select
                   value={selectedTxnType}
-                  onValueChange={(value) => setSelectedTxnType(value as 'all' | 'cash' | 'asoebi' | 'premium-vip' | 'premium-royal')}
+                  onValueChange={(value) => setSelectedTxnType(value as 'all' | 'cash' | 'asoebi' | 'cash-asoebi' | 'premium-vip' | 'premium-royal' | 'premium-all')}
                 >
-                  <SelectTrigger id="admin-txn-type" className="w-[160px]">
+                  <SelectTrigger id="admin-txn-type" className="w-[170px]">
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="cash">Cash Gift</SelectItem>
                     <SelectItem value="asoebi">Asoebi</SelectItem>
+                    <SelectItem value="cash-asoebi">Cash + Asoebi</SelectItem>
                     <SelectItem value="premium-vip">Premium VIP</SelectItem>
                     <SelectItem value="premium-royal">Premium Royal</SelectItem>
+                    <SelectItem value="premium-all">Premium VIP + Royal</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

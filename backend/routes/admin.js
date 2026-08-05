@@ -89,6 +89,8 @@ module.exports = () => {
         amount: { gt: 0 },
         ...(type === 'asoebi' ? { isAsoebi: true } : {}),
         ...(type === 'cash' ? { isAsoebi: false } : {}),
+        ...(type === 'cash-asoebi' ? {} : {}),
+        ...(type === 'premium-vip' || type === 'premium-royal' || type === 'premium-all' ? { AND: [{ NOT: { id: -1 } }] } : {}),
         ...(parsedEventId ? { giftId: parsedEventId } : {}),
         ...dateFilter,
       };
@@ -96,6 +98,7 @@ module.exports = () => {
       const referralScopeWhere = {
         ...(type === 'asoebi' ? { type: 'asoebi_commission' } : {}),
         ...(type === 'cash' ? { type: 'cash_gift_commission' } : {}),
+        ...(type === 'cash-asoebi' ? {} : {}),
         ...(eventOwnerId ? { referredUserId: eventOwnerId } : {}),
         ...dateFilter,
       };
@@ -130,7 +133,8 @@ module.exports = () => {
             status: 'completed',
             isAsoebi: false,
             amount: { gt: 0 },
-            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : type === 'cash-asoebi' ? {} : {}),
+            ...(type === 'premium-vip' || type === 'premium-royal' || type === 'premium-all' ? { AND: [{ NOT: { id: -1 } }] } : {}),
             ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           }
@@ -140,7 +144,8 @@ module.exports = () => {
             status: 'completed',
             isAsoebi: true,
             amount: { gt: 0 },
-            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : type === 'cash-asoebi' ? {} : {}),
+            ...(type === 'premium-vip' || type === 'premium-royal' || type === 'premium-all' ? { AND: [{ NOT: { id: -1 } }] } : {}),
             ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           }
@@ -153,7 +158,8 @@ module.exports = () => {
             status: 'completed',
             isAsoebi: false,
             amount: { gt: 0 },
-            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : type === 'cash-asoebi' ? {} : {}),
+            ...(type === 'premium-vip' || type === 'premium-royal' || type === 'premium-all' ? { AND: [{ NOT: { id: -1 } }] } : {}),
             ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           }
@@ -166,7 +172,8 @@ module.exports = () => {
             status: 'completed',
             isAsoebi: true,
             amount: { gt: 0 },
-            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : type === 'cash-asoebi' ? {} : {}),
+            ...(type === 'premium-vip' || type === 'premium-royal' || type === 'premium-all' ? { AND: [{ NOT: { id: -1 } }] } : {}),
             ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           }
@@ -193,7 +200,8 @@ module.exports = () => {
           where: {
             status: 'completed',
             amount: { gt: 0 },
-            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : {}),
+            ...(type === 'asoebi' ? { isAsoebi: true } : type === 'cash' ? { isAsoebi: false } : type === 'cash-asoebi' ? {} : {}),
+            ...(type === 'premium-vip' || type === 'premium-royal' || type === 'premium-all' ? { AND: [{ NOT: { id: -1 } }] } : {}),
             ...(parsedEventId ? { giftId: parsedEventId } : {}),
             ...dateFilter
           },
@@ -278,7 +286,13 @@ module.exports = () => {
         prisma.premiumPayment.aggregate({
           _count: { id: true },
           _sum: { amount: true },
-          where: dateFilter
+          where: {
+            status: 'success',
+            ...(type === 'premium-vip' ? { tier: 'vip' } : {}),
+            ...(type === 'premium-royal' ? { tier: 'royal' } : {}),
+            ...(eventOwnerId ? { userId: eventOwnerId } : {}),
+            ...dateFilter
+          }
         })
       ]);
 
@@ -287,7 +301,7 @@ module.exports = () => {
 
       const totalContributionsAmount = Number(totalContributions._sum.amount || 0);
       const totalAsoebiAmount = Number(totalAsoebiContributions._sum.amount || 0);
-      const totalTransactions = totalContributionsAmount + totalAsoebiAmount;
+      const totalTransactions = totalContributionsAmount + totalAsoebiAmount + totalPremiumAmount;
       const totalPlatformRevenue = platformRevenue + totalPremiumAmount;
 
       res.json({
