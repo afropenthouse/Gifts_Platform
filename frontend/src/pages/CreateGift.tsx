@@ -31,6 +31,7 @@ const CreateGift: React.FC = () => {
   const [shareLink, setShareLink] = useState('');
   const [story, setStory] = useState('');
   const [enableGuestNotes, setEnableGuestNotes] = useState(true);
+  const [enableWebsite, setEnableWebsite] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -122,6 +123,7 @@ const CreateGift: React.FC = () => {
     }
     formData.append('story', story);
     formData.append('enableGuestNotes', String(enableGuestNotes));
+    formData.append('enableWebsite', String(enableWebsite));
 
     const token = localStorage.getItem('token');
     try {
@@ -301,6 +303,17 @@ const CreateGift: React.FC = () => {
           />
           <Label htmlFor="enableGuestNotes" className="text-sm font-medium text-gray-900">
             Allow guests to send a note?
+          </Label>
+        </div>
+
+        <div className="flex items-center space-x-2 border p-4 rounded-lg">
+          <Checkbox 
+            id="enableWebsite" 
+            checked={enableWebsite}
+            onCheckedChange={(checked) => setEnableWebsite(checked as boolean)}
+          />
+          <Label htmlFor="enableWebsite" className="text-sm font-medium text-gray-900">
+            Include website?
           </Label>
         </div>
 

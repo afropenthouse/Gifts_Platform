@@ -114,7 +114,7 @@ const CountdownRing = ({ date, accent }: { date?: string; accent: string }) => {
                 style={{ transition: 'stroke-dashoffset 0.3s' }}
               />
             </svg>
-            <span className="absolute text-2xl md:text-3xl font-bold" style={{ color: accent }}>
+            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl md:text-3xl font-bold" style={{ color: accent }}>
               {String(item.value).padStart(2, '0')}
             </span>
             <span className="mt-2 text-[10px] tracking-[0.2em] uppercase text-gray-400">
@@ -265,7 +265,7 @@ export const TemplateJoyBlossom = ({
         <div className="absolute inset-0">
           {picture ? (
             <>
-              <img src={picture} alt="" className="w-full h-full object-cover" />
+               <img src={picture} alt="" className="w-full h-full object-cover object-top" />
               <div
                 className="absolute inset-0"
                 style={{
@@ -335,15 +335,11 @@ export const TemplateJoyBlossom = ({
       </section>
 
       {/* ─── Countdown ─── */}
-      {showCountdown && (
-        <section className="py-20 px-6 bg-white/60 backdrop-blur-sm shadow-soft">
-          <div className="max-w-4xl mx-auto text-center">
-            <p
-              className="text-[10px] tracking-[0.3em] uppercase mb-6"
-              style={{ color: secondary }}
-            >
-              Until we say "I do"
-            </p>
+      {showCountdown && propDate && (
+        <section className="relative py-12 px-6 overflow-hidden">
+          <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, #fffbf8 0%, ${secondary}08 100%)` }} />
+          <div className="relative max-w-4xl mx-auto text-center">
+            <Flower2 className="w-8 h-8 mx-auto mb-4" style={{ color: secondary }} />
             <CountdownRing date={propDate} accent={secondary} />
           </div>
         </section>
@@ -351,12 +347,12 @@ export const TemplateJoyBlossom = ({
 
       {/* ─── At a Glance ─── */}
       {glance.length > 0 && (
-        <section className="py-16 px-6">
-          <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <section className="py-8 px-6">
+          <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4">
             {glance.map((g, i) => (
               <div
                 key={i}
-                className="reveal delay-1 text-center p-8 rounded-3xl bg-white shadow-soft hover:shadow-elevated transition-shadow duration-300"
+                className="reveal delay-1 text-center p-6 rounded-3xl bg-white shadow-soft hover:shadow-elevated transition-shadow duration-300"
                 style={{ borderTop: `4px solid ${accent}` }}
               >
                 <div className="flex justify-center mb-4" style={{ color: secondary }}>
@@ -372,18 +368,10 @@ export const TemplateJoyBlossom = ({
         </section>
       )}
 
-      {/* ─── Schedule ─── */}
-      <section id="details" className="py-24 px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-16">
-            <Flower2 className="w-7 h-7 mx-auto mb-4" style={{ color: accent }} />
-            <p className="text-[10px] tracking-[0.3em] uppercase mb-3" style={{ color: secondary }}>
-              The Celebration
-            </p>
-            <h3 className="text-4xl md:text-5xl font-bold tracking-tight">Schedule of Events</h3>
-          </div>
-          {schedule.length > 0 ? (
-            <div className="space-y-10">
+      {schedule.length > 0 && (
+        <section id="details" className="py-12 px-6">
+          <div className="max-w-3xl mx-auto">
+            <div className="space-y-6">
               {schedule.map((item, i) => {
                 const Icon = item.icon || (() => {
                   if (item.title.toLowerCase().includes('ceremony')) return Church;
@@ -393,16 +381,16 @@ export const TemplateJoyBlossom = ({
                   return Clock;
                 })();
                 return (
-                  <div key={i} className="relative pl-14 reveal">
+                  <div key={i} className="relative pl-10 reveal">
                     <div
-                      className="absolute left-0 top-2 w-10 h-10 rounded-full flex items-center justify-center"
+                      className="absolute left-0 top-2 w-8 h-8 rounded-full flex items-center justify-center"
                       style={{ backgroundColor: `${accent}20`, color: accent }}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-4 h-4" />
                     </div>
                     {i < schedule.length - 1 && (
                       <div
-                        className="absolute left-[19px] top-14 bottom-[-2rem] w-0.5"
+                        className="absolute left-[15px] top-10 bottom-[-1.5rem] w-0.5"
                         style={{ backgroundColor: `${secondary}20` }}
                       />
                     )}
@@ -423,35 +411,31 @@ export const TemplateJoyBlossom = ({
                 );
               })}
             </div>
-          ) : (
-            <div className="text-center text-sm opacity-50">
-              Add events in the Schedule tab to display them here.
-            </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* ─── Story ─── */}
       {propStory && (
         <section
           id="story"
-          className="py-24 px-6 text-center relative overflow-hidden"
+          className="py-12 px-6 text-center relative overflow-hidden"
           style={{ background: `${secondary}08` }}
         >
           <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-            <div className="absolute top-10 left-10 text-8xl opacity-10" style={{ color: secondary }}>
+            <div className="absolute top-4 left-4 text-8xl opacity-10" style={{ color: secondary }}>
               &ldquo;
             </div>
-            <div className="absolute bottom-10 right-10 text-8xl opacity-10" style={{ color: secondary }}>
+            <div className="absolute bottom-4 right-4 text-8xl opacity-10" style={{ color: secondary }}>
               &rdquo;
             </div>
           </div>
           <div className="max-w-2xl mx-auto relative z-10">
-            <Flower2 className="w-7 h-7 mx-auto mb-5" style={{ color: accent }} />
+            <Flower2 className="w-7 h-7 mx-auto mb-4" style={{ color: accent }} />
             <p className="text-[10px] tracking-[0.3em] uppercase mb-3" style={{ color: secondary }}>
               Our Story
             </p>
-            <h3 className="text-4xl md:text-5xl font-bold tracking-tight mb-10">
+            <h3 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
               A Love Written in Time
             </h3>
             <p className="text-lg md:text-2xl leading-relaxed font-light" style={{ opacity: 0.85 }}>
@@ -463,8 +447,8 @@ export const TemplateJoyBlossom = ({
 
       {/* ─── Well Wishes ─── */}
       {showGuestbook && (
-        <section id="wishes" className="py-24 px-6">
-          <div className="max-w-2xl mx-auto text-center bg-white/60 backdrop-blur-sm rounded-4xl shadow-soft p-12 md:p-16 border border-white/50">
+        <section id="wishes" className="py-12 px-6">
+          <div className="max-w-2xl mx-auto text-center bg-white/60 backdrop-blur-sm rounded-4xl shadow-soft p-8 md:p-10 border border-white/50">
             <div className="relative inline-block mx-auto mb-6">
               <BookOpen className="w-10 h-10" style={{ color: accent }} />
               <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent/20 animate-pulse" />
@@ -473,13 +457,13 @@ export const TemplateJoyBlossom = ({
               Well Wishes
             </p>
             <h3 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Leave Us a Note</h3>
-            <p className="mb-10 opacity-75 max-w-sm mx-auto">
+            <p className="mb-6 opacity-75 max-w-sm mx-auto">
               {guestbookNote ||
                 'We would love to hear from you. Send us your warmest wishes!'}
             </p>
             <Button
               size="lg"
-              className="rounded-full px-10 text-sm tracking-[0.2em] uppercase shadow-md hover:shadow-lg transition-all"
+              className="rounded-full px-8 py-5 text-sm tracking-[0.2em] uppercase shadow-md hover:shadow-lg transition-all"
               style={{ backgroundColor: accent, color: '#fff' }}
               onClick={() => window.open(`/gift/${shareLink}`, '_blank')}
             >
@@ -492,12 +476,20 @@ export const TemplateJoyBlossom = ({
       {/* ─── Actions ─── */}
       {visibleActions.length > 0 && (
         <section
-          className="py-24 px-6 text-center"
+          className="py-12 px-6 text-center relative overflow-hidden"
           style={{ background: `linear-gradient(135deg, ${primary}, ${primary}dd)`, color: '#fff' }}
         >
-          <div className="max-w-4xl mx-auto">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 left-10 text-white">
+              <Flower2 className="w-32 h-32" />
+            </div>
+            <div className="absolute bottom-10 right-10 text-white rotate-12">
+              <Flower2 className="w-24 h-24" />
+            </div>
+          </div>
+          <div className="max-w-5xl mx-auto relative z-10">
             <h3 className="text-4xl md:text-5xl font-bold mb-4">Join the Celebration</h3>
-            <p className="font-light opacity-80 mb-12 max-w-xl mx-auto">
+            <p className="font-light opacity-80 mb-8 max-w-xl mx-auto">
               We can't wait to celebrate with you. Choose how you'd like to take part.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
@@ -505,12 +497,12 @@ export const TemplateJoyBlossom = ({
                 <button
                   key={i}
                   onClick={a.onClick}
-                  className="group flex flex-col items-center gap-3 py-8 px-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+                  className="group flex flex-col items-center gap-3 py-8 px-4 rounded-3xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/25 hover:border-white/40 transition-all duration-500 hover:scale-105 hover:-translate-y-1"
                 >
-                  <span className="text-accent group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-white group-hover:scale-110 transition-transform duration-300">
                     {a.icon}
                   </span>
-                  <span className="text-xs tracking-[0.1em] font-bold uppercase">
+                  <span className="text-sm tracking-[0.15em] font-bold uppercase">
                     {a.label}
                   </span>
                 </button>
@@ -522,9 +514,9 @@ export const TemplateJoyBlossom = ({
 
       {/* ─── FAQ ─── */}
       {faq.length > 0 && (
-        <section className="py-24 px-6">
+        <section className="py-12 px-6">
           <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-16">
+            <div className="text-center mb-8">
               <Flower2 className="w-6 h-6 mx-auto mb-4" style={{ color: accent }} />
               <p className="text-[10px] tracking-[0.3em] uppercase mb-3" style={{ color: secondary }}>
                 Good to know
@@ -557,16 +549,7 @@ export const TemplateJoyBlossom = ({
             </div>
           </div>
         </section>
-      )}
-
-      {/* ─── Footer ─── */}
-      <footer className="py-14 text-center border-t border-gray-200/30" style={{ background: '#faf0f5' }}>
-        <Flower2 className="w-6 h-6 mx-auto mb-4" style={{ color: accent }} />
-        <p className="text-xs tracking-[0.3em] uppercase opacity-50">
-          {names} · {propDate ? new Date(propDate).getFullYear() : ''}
-        </p>
-        <p className="text-[10px] opacity-30 mt-2">Made with love</p>
-      </footer>
-    </div>
-  );
-};
+       )}
+     </div>
+   );
+ };

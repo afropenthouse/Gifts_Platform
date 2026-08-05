@@ -6,7 +6,7 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
   Download, Save,
-  Type, Palette, ArrowLeft, Crown 
+  Type, Palette, ArrowLeft, Crown, Lock, X
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { useToast } from '../hooks/use-toast';
@@ -25,7 +25,7 @@ interface Template {
   id: string;
   name: string;
   description: string;
-  tier: 'free' | 'premium';
+  tier: 'free' | 'vip' | 'royal';
   previewColor: string;
   accentColor: string;
 }
@@ -50,6 +50,8 @@ interface DesignEditorProps {
   giftId?: number;
   isPremium?: boolean;
   initialTemplateId?: string;
+  onPremiumUpgrade?: () => void;
+  giftTier?: 'free' | 'vip' | 'royal';
 }
 
 const PRESET_THEMES = [
@@ -284,6 +286,8 @@ export const DesignEditor = ({
   giftId,
   isPremium = false,
   initialTemplateId,
+  onPremiumUpgrade,
+  giftTier = 'free',
 }: DesignEditorProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(initialTemplateId || null);
   const [view, setView] = useState<'grid' | 'edit'>('grid');
@@ -299,28 +303,30 @@ export const DesignEditor = ({
     fontFamily: initialData?.fontFamily || 'Georgia, serif',
   });
   const [activeTab, setActiveTab] = useState<'text' | 'style'>('text');
+  const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const handleTemplateClick = (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
-    if (template) {
-      if (template.tier === 'premium' && !isPremium) {
-        toast({ 
-          title: 'Premium Template', 
-          description: 'This template requires a premium subscription.', 
-          variant: 'destructive' 
-        });
-        return;
-      }
-      setSelectedTemplate(templateId);
-      setDesignData(prev => ({
-        ...prev,
-        primaryColor: template.previewColor,
-        secondaryColor: template.accentColor,
-      }));
-      setView('edit');
+    if (!template) return;
+
+    const isPremiumTemplate = template.tier === 'premium';
+    const canAccessPremium = giftTier === 'royal';
+
+    // Non-premium users can preview the design but cannot enter the editor.
+    if (isPremiumTemplate && !canAccessPremium && !isPremium) {
+      setPreviewTemplate(templateId);
+      return;
     }
+
+    setSelectedTemplate(templateId);
+    setDesignData(prev => ({
+      ...prev,
+      primaryColor: template.previewColor,
+      secondaryColor: template.accentColor,
+    }));
+    setView('edit');
   };
 
   const handleDownload = async () => {
@@ -350,6 +356,11 @@ export const DesignEditor = ({
   };
 
   const handleSave = () => {
+    const isPremiumTemplate = templates.find(t => t.id === selectedTemplate)?.tier === 'vip' || templates.find(t => t.id === selectedTemplate)?.tier === 'royal';
+    if (isPremiumTemplate && giftTier !== 'royal' && !isPremium) {
+      onPremiumUpgrade?.();
+      return;
+    }
     if (onSave) {
       const chosenTemplate = selectedTemplate || initialTemplateId || 'botanical-sprig';
       const templateIsAvailable = templates.some(template => template.id === chosenTemplate);
@@ -416,7 +427,7 @@ export const DesignEditor = ({
               <div className="relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 aspect-[3/4]">
                 {renderMiniPreview(template)}
                 
-                 {/* Overlay with template info */}
+                {/* Overlay with template info */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4">
                   <h3 className="text-white font-bold text-lg mb-1">{template.name}</h3>
                   <div className="flex items-center justify-between">
@@ -436,8 +447,8 @@ export const DesignEditor = ({
                   </div>
                 </div>
 
-                {/* Premium badge */}
-                {template.tier === 'premium' && (
+                {/* Premium badge — only shown when the event is NOT yet premium and template is premium */}
+                {template.tier !== 'free' && !isPremium && giftTier !== 'royal' && (
                   <div className="absolute top-3 right-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg z-10 flex items-center gap-1">
                     <Crown className="w-3 h-3" />
                     Premium
@@ -452,6 +463,47 @@ export const DesignEditor = ({
             </div>
           ))}
         </div>
+
+        {/* Preview modal for non-premium users */}
+        {previewTemplate && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-bold text-gray-900">
+                  {templates.find(t => t.id === previewTemplate)?.name || 'Template Preview'}
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setPreviewTemplate(null)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="p-4 overflow-auto max-h-[70vh] bg-gray-100 flex items-center justify-center">
+                <InvitationCardArtwork
+                  templateId={previewTemplate}
+                  coupleNames={(designData.coupleName1 && designData.coupleName2)
+                    ? `${designData.coupleName1} & ${designData.coupleName2}`
+                    : designData.title}
+                  date={designData.date}
+                  venue={designData.venue}
+                  note={designData.story}
+                  primaryColor={designData.primaryColor}
+                  accentColor={designData.secondaryColor}
+                />
+              </div>
+              <div className="p-4 border-t bg-yellow-50 flex gap-2">
+                <Button
+                  className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold"
+                  onClick={onPremiumUpgrade}
+                >
+               <Crown className="w-4 h-4 mr-1.5" />
+               Upgrade to Royal
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPreviewTemplate(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -489,6 +541,23 @@ export const DesignEditor = ({
           </div>
         </div>
 
+        {/* Premium locked banner */}
+        {!isPremium && giftTier !== 'royal' && (
+          <div className="p-4 border-b bg-yellow-50">
+            <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+              <Lock className="w-4 h-4 text-yellow-600" />
+              <span>You can preview this template, but editing and saving require a premium event.</span>
+            </div>
+            <Button
+              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold"
+              onClick={onPremiumUpgrade}
+            >
+              <Crown className="w-4 h-4 mr-1.5" />
+              Upgrade Event to VIP
+            </Button>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex border-b">
           <button
@@ -496,6 +565,7 @@ export const DesignEditor = ({
               activeTab === 'text' ? 'bg-gray-50 border-b-2 border-[#2E235C] text-[#2E235C]' : 'text-gray-500'
             }`}
             onClick={() => setActiveTab('text')}
+            disabled={!isPremium && giftTier !== 'royal'}
           >
             <Type className="w-4 h-4" />
             Text
@@ -505,6 +575,7 @@ export const DesignEditor = ({
               activeTab === 'style' ? 'bg-gray-50 border-b-2 border-[#2E235C] text-[#2E235C]' : 'text-gray-500'
             }`}
             onClick={() => setActiveTab('style')}
+            disabled={!isPremium && giftTier !== 'royal'}
           >
             <Palette className="w-4 h-4" />
             Style
@@ -512,7 +583,7 @@ export const DesignEditor = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${!isPremium && giftTier !== 'royal' ? 'pointer-events-none opacity-60' : ''}`}>
           {activeTab === 'text' && (
             <>
               <div>

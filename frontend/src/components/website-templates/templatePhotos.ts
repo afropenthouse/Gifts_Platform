@@ -9,6 +9,7 @@ export const TEMPLATE_PHOTOS = {
   goldLuxury: 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?q=80&w=1200&auto=format&fit=crop',
   sapphire: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?q=80&w=1200&auto=format&fit=crop',
   blush: 'https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=1200&auto=format&fit=crop',
+  aubade: 'https://images.unsplash.com/photo-1524250502761-1acbf7e30000?q=80&w=1200&auto=format&fit=crop',
 };
 
 export type TemplatePhotoKey = keyof typeof TEMPLATE_PHOTOS;

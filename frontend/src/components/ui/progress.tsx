@@ -5,15 +5,15 @@ import { cn } from "@/lib/utils";
 
 const Progress = React.forwardRef<
   React.ElementRef<typeof Root>,
-  React.ComponentPropsWithoutRef<typeof Root>
->(({ className, value, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof Root> & { indicatorClassName?: string }
+>(({ className, indicatorClassName, value, ...props }, ref) => (
   <Root
     ref={ref}
     className={cn("relative h-4 w-full overflow-hidden rounded-full bg-secondary", className)}
     {...props}
   >
     <Indicator
-      className="h-full w-full flex-1 bg-primary transition-all"
+      className={cn("h-full w-full flex-1 bg-primary transition-all", indicatorClassName)}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </Root>

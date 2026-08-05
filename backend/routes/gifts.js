@@ -12,16 +12,31 @@ const flutterwave = require('../utils/flutterwave');
 
 const PREMIUM_WEBSITE_TEMPLATES = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir'];
 
+const hasCommissionBenefit = (gift) => {
+  return gift && (gift.tier === 'vip' || gift.tier === 'royal');
+};
+
+const hasWebsiteBenefit = (gift) => {
+  return gift && gift.tier === 'royal';
+};
+
+const hasInvitationBenefit = (gift) => {
+  return gift && gift.tier === 'royal';
+};
+
 const getUnlockedWebsiteTemplates = async (gift) => {
   if (!gift) {
     return { hasTemplatePremium: false, unlockedTemplates: [], pendingTemplatePurchase: null };
   }
 
-  // Check for legacy premium payment (unlocks all templates)
-  const legacyPayment = await prisma.premiumPayment.findUnique({
-    where: { giftId: gift.id }
-  });
-  const hasTemplatePremium = !!legacyPayment && legacyPayment.status === 'success' && legacyPayment.amount >= 10000;
+  // Royal tier automatically unlocks all premium templates
+  if (hasWebsiteBenefit(gift)) {
+    return {
+      hasTemplatePremium: true,
+      unlockedTemplates: [...PREMIUM_WEBSITE_TEMPLATES],
+      pendingTemplatePurchase: null
+    };
+  }
 
   // Check for individual template purchases
   const templatePurchases = await prisma.templatePurchase.findMany({
@@ -35,8 +50,8 @@ const getUnlockedWebsiteTemplates = async (gift) => {
   });
 
   return {
-    hasTemplatePremium,
-    unlockedTemplates: hasTemplatePremium ? [...PREMIUM_WEBSITE_TEMPLATES] : unlockedTemplates,
+    hasTemplatePremium: false,
+    unlockedTemplates,
     pendingTemplatePurchase: pendingTemplatePurchase ? pendingTemplatePurchase.template : null
   };
 };
@@ -72,7 +87,7 @@ module.exports = () => {
 
   // Create gift
   router.post('/', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableRSVP, enableGuestNotes, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
+    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableRSVP, enableGuestNotes, enableCashGifts, enableWebsite, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
 
     try {
       let pictureUrl = null;
@@ -139,6 +154,7 @@ module.exports = () => {
           enableRSVP: enableRSVP === 'true' || enableRSVP === true,
           enableGuestNotes: enableGuestNotes === 'true' || enableGuestNotes === true,
           enableCashGifts: enableCashGifts === 'true' || enableCashGifts === true,
+          enableWebsite: enableWebsite === 'true' || enableWebsite === true,
           isSellingAsoebi: isSellingAsoebi === 'true' || isSellingAsoebi === true,
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
           asoebiPriceMen: asoebiPriceMen ? parseFloat(asoebiPriceMen) : null,
@@ -266,7 +282,7 @@ module.exports = () => {
 
   // Update gift
   router.put('/:id', auth(), upload.single('picture'), async (req, res) => {
-    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableRSVP, enableGuestNotes, enableCashGifts, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
+    const { type, title, description, story, date, deadline, address, details, customType, guestListMode, enableRSVP, enableGuestNotes, enableCashGifts, enableWebsite, isSellingAsoebi, asoebiPrice, asoebiPriceMen, asoebiPriceWomen, asoebiBrideMenPrice, asoebiBrideWomenPrice, asoebiGroomMenPrice, asoebiGroomWomenPrice, asoebiBrideDescription, asoebiGroomDescription, asoebiBrideMenDescription, asoebiBrideWomenDescription, asoebiGroomMenDescription, asoebiGroomWomenDescription, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItems } = req.body;
     const giftId = parseInt(req.params.id);
 
     try {
@@ -327,6 +343,7 @@ module.exports = () => {
           enableRSVP: enableRSVP === 'true' || enableRSVP === true,
           enableGuestNotes: enableGuestNotes === 'true' || enableGuestNotes === true,
           enableCashGifts: enableCashGifts === 'true' || enableCashGifts === true,
+          enableWebsite: enableWebsite === 'true' || enableWebsite === true,
           isSellingAsoebi: isSellingAsoebi === 'true' || isSellingAsoebi === true,
           asoebiPrice: asoebiPrice ? parseFloat(asoebiPrice) : null,
           asoebiPriceMen: asoebiPriceMen ? parseFloat(asoebiPriceMen) : null,
@@ -356,26 +373,26 @@ module.exports = () => {
          data: updateData,
        });
 
-       // Sync website slug if title changed
-       if (title && gift.title !== title) {
-         const existingWebsite = await prisma.website.findUnique({ where: { giftId } });
-         if (existingWebsite) {
-           const slugBase = (title || 'wedding').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-           let newSlug = slugBase;
-           const slugConflict = await prisma.website.findFirst({
-             where: { slug: { startsWith: slugBase }, id: { not: existingWebsite.id } }
-           });
-           if (slugConflict) {
-             newSlug = `${slugBase}-${crypto.randomBytes(4).toString('hex')}`;
-           }
-           await prisma.website.update({
-             where: { id: existingWebsite.id },
-             data: { slug: newSlug }
-           });
-         }
-       }
+        // Sync website slug if title changed
+        if (title && gift.title !== title) {
+          const existingWebsite = await prisma.website.findUnique({ where: { giftId } });
+          if (existingWebsite) {
+            const slugBase = (title || 'wedding').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            let newSlug = slugBase;
+            const slugConflict = await prisma.website.findFirst({
+              where: { slug: { startsWith: slugBase }, id: { not: existingWebsite.id } }
+            });
+            if (slugConflict) {
+              newSlug = `${slugBase}-${crypto.randomBytes(4).toString('hex')}`;
+            }
+            await prisma.website.update({
+              where: { id: existingWebsite.id },
+              data: { slug: newSlug }
+            });
+          }
+        }
 
-       // Handle Asoebi Items manually to preserve Sold history
+        // Handle Asoebi Items manually to preserve Sold history
       if (asoebiItemsParsed.length > 0 || (isSellingAsoebi === 'true' || isSellingAsoebi === true)) {
           const existingItems = await prisma.asoebiItem.findMany({ where: { giftId } });
           const incomingIds = asoebiItemsParsed.filter(i => i.id).map(i => parseInt(i.id));
@@ -423,7 +440,7 @@ module.exports = () => {
 
       const updatedGift = await prisma.gift.findUnique({
         where: { id: giftId },
-        include: { asoebiItems: true }
+        include: { asoebiItems: true, website: true }
       });
 
       const soldStats = await prisma.contribution.aggregate({
@@ -645,7 +662,7 @@ module.exports = () => {
               date: true,
               picture: true,
               shareLink: true,
-              isPremium: true,
+              tier: true,
               enableGuestNotes: true,
               wishlists: {
                 include: { items: true }
@@ -667,7 +684,7 @@ module.exports = () => {
                 date: true,
                 picture: true,
                 shareLink: true,
-                isPremium: true,
+                tier: true,
                 enableGuestNotes: true,
                 wishlists: {
                   include: { items: true }
@@ -719,7 +736,7 @@ module.exports = () => {
               date: true,
               picture: true,
               shareLink: true,
-              isPremium: true
+              tier: true
             }
           }
         }
@@ -754,7 +771,7 @@ module.exports = () => {
                 date: true,
                 picture: true,
                 shareLink: true,
-                isPremium: true
+                tier: true
               }
             }
           }
@@ -768,7 +785,7 @@ module.exports = () => {
         hasTemplatePremium,
         unlockedTemplates,
         pendingTemplatePurchase,
-        isEventPremium: gift.isPremium
+        isEventPremium: hasWebsiteBenefit(gift)
       });
     } catch (err) {
       console.error(err);
@@ -798,6 +815,7 @@ module.exports = () => {
             } 
           },
           asoebiItems: true,
+          website: true,
           wishlists: {
             include: { items: true }
           },
@@ -988,7 +1006,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
       res.json({
         ...enriched,
         ...premiumState,
-        isEventPremium: gift.isPremium
+        isEventPremium: hasWebsiteBenefit(gift)
       });
     } catch (err) {
       console.error(err);
@@ -997,12 +1015,13 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
   });
 
 
-  // Initialize premium upgrade payment
+  // Initialize tier upgrade payment
   router.post('/:id/premium/initialize', auth(), async (req, res) => {
     const giftId = parseInt(req.params.id);
-    const { type = 'event', template } = req.body; // 'event' (50k) or 'template' (10k per template)
+    const { type = 'event', template, tier = 'royal' } = req.body; // 'event' with tier 'vip' (25k) or 'royal' (50k), or 'template' (10k per template)
     const PREMIUM_TEMPLATES = PREMIUM_WEBSITE_TEMPLATES;
-    console.log('Premium initialize request body:', req.body);
+    const TIER_PRICES = { vip: 50000, royal: 100000 };
+    console.log('Tier initialize request body:', req.body);
     try {
       const gift = await prisma.gift.findUnique({ 
         where: { id: giftId },
@@ -1013,11 +1032,19 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         return res.status(404).json({ msg: 'Gift not found' });
       }
 
-      if (type === 'event' && gift.isPremium) {
-        return res.status(400).json({ msg: 'This gift is already premium' });
+      if (type === 'event') {
+        if (gift.tier === tier) {
+          return res.status(400).json({ msg: `This gift is already ${tier}` });
+        }
+        if (gift.tier === 'royal') {
+          return res.status(400).json({ msg: 'This gift is already Royal (highest tier)' });
+        }
+        if (tier === 'vip' && gift.tier === 'vip') {
+          return res.status(400).json({ msg: 'This gift is already VIP' });
+        }
       }
 
-      // Template unlocks are now per-template; a template name is required.
+      // Template unlocks are per-template; a template name is required.
       let templateKey = null;
       if (type === 'template') {
         templateKey = String(template || '').toLowerCase();
@@ -1025,16 +1052,12 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         if (!PREMIUM_TEMPLATES.includes(templateKey)) {
           return res.status(400).json({ msg: 'Invalid premium template' });
         }
-        // Already unlocked? (per-template, legacy single-payment, or full premium event)
+        // Already unlocked? (per-template, or full royal event)
         const existingTemplatePurchase = await prisma.templatePurchase.findUnique({
           where: { giftId_template: { giftId, template: templateKey } }
         });
-        if (gift.isPremium || (existingTemplatePurchase && existingTemplatePurchase.status === 'success')) {
+        if (gift.tier === 'royal' || (existingTemplatePurchase && existingTemplatePurchase.status === 'success')) {
           return res.status(400).json({ msg: 'This template is already unlocked' });
-        }
-        const legacyPayment = await prisma.premiumPayment.findUnique({ where: { giftId } });
-        if (legacyPayment && legacyPayment.status === 'success' && legacyPayment.amount >= 10000) {
-          return res.status(400).json({ msg: 'Premium templates are already unlocked for this event' });
         }
         // Auto-cancel any stale pending template purchase for this gift/template so the user can retry cleanly.
         await prisma.templatePurchase.updateMany({
@@ -1043,30 +1066,36 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         });
       }
 
-      // Check if there's already a successful payment for this type
+      // Check if there's already a successful payment for this tier
       const existingPayment = await prisma.premiumPayment.findUnique({
         where: { giftId }
       });
       
-      if (type === 'event' && existingPayment && existingPayment.status === 'success' && existingPayment.amount >= 50000) {
-        return res.status(400).json({ msg: 'This gift is already premium' });
+      if (type === 'event' && existingPayment && existingPayment.status === 'success') {
+        if (tier === 'royal' && existingPayment.tier === 'royal') {
+          return res.status(400).json({ msg: 'This gift is already Royal' });
+        }
+        if (tier === 'vip' && (existingPayment.tier === 'vip' || existingPayment.tier === 'royal')) {
+          return res.status(400).json({ msg: 'This gift is already VIP or higher' });
+        }
       }
 
-      const amount = type === 'template' ? 10000 : 50000; // 10k or 50k NGN
-      const tx_ref = `${type === 'template' ? `template-premium-${templateKey}` : 'premium'}-${giftId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const amount = type === 'template' ? 10000 : (TIER_PRICES[tier] || 50000);
+      const tx_ref = `${type === 'template' ? `template-premium-${templateKey}` : `${tier}-upgrade`}-${giftId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const redirectTarget = req.body.redirectTo || '/dashboard';
-      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}${redirectTarget}?giftId=${giftId}&reference=${tx_ref}&type=${type}${templateKey ? `&template=${templateKey}` : ''}`;
+      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}${redirectTarget}?giftId=${giftId}&reference=${tx_ref}&type=${type}${templateKey ? `&template=${templateKey}` : ''}${tier ? `&tier=${tier}` : ''}`;
 
       const metadata = {
         giftId,
         userId: req.user.id,
-        type: type === 'template' ? 'template_premium_upgrade' : 'premium_upgrade',
+        type: type === 'template' ? 'template_premium_upgrade' : 'tier_upgrade',
+        tier: tier || 'royal',
         template: templateKey || undefined,
         customizations: {
-          title: type === 'template' ? `Premium Template (${templateKey})` : 'Premium Upgrade',
+          title: type === 'template' ? `Premium Template (${templateKey})` : `${tier === 'vip' ? 'VIP' : 'Royal'} Upgrade`,
           description: type === 'template' 
             ? `Unlock the ${templateKey} premium wedding website template for ${gift.title || 'your gift'}`
-            : `Upgrade ${gift.title || 'your gift'} to premium`
+            : `Upgrade ${gift.title || 'your gift'} to ${tier === 'vip' ? 'VIP' : 'Royal'}`
         }
       };
 
@@ -1108,6 +1137,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
           update: {
             userId: req.user.id,
             amount,
+            tier: tier,
             transactionId: tx_ref,
             status: 'pending'
           },
@@ -1115,6 +1145,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
             userId: req.user.id,
             giftId,
             amount,
+            tier: tier,
             transactionId: tx_ref,
             status: 'pending'
           }
@@ -1128,7 +1159,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         provider: 'paystack',
       });
     } catch (err) {
-      console.error('Initialize premium payment error:', err?.message || err);
+      console.error('Initialize tier payment error:', err?.message || err);
       res.status(500).json({ msg: 'Failed to initialize payment', error: err?.message });
     }
   });
@@ -1161,12 +1192,24 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
     }
   });
 
-  // Verify premium upgrade payment
+  // Verify tier upgrade payment
   router.post('/:id/premium/verify', auth(), async (req, res) => {
     const giftId = parseInt(req.params.id);
     // Get reference from query params or request body
     const reference = req.query.reference || req.body.transactionId || req.body.txRef;
     const type = req.query.type || req.body.type || (String(reference).startsWith('template-premium') ? 'template' : 'event');
+    const tier = req.query.tier || req.body.tier || null;
+    
+    // Resolve tier from request or existing payment record
+    let resolvedTier = tier;
+    if (!resolvedTier && type === 'event') {
+      const existingPayment = await prisma.premiumPayment.findUnique({
+        where: { giftId },
+        select: { tier: true }
+      });
+      resolvedTier = existingPayment?.tier || 'royal';
+    }
+    if (!resolvedTier) resolvedTier = 'royal';
     const PREMIUM_TEMPLATES = PREMIUM_WEBSITE_TEMPLATES;
     if (!reference) {
       return res.status(400).json({ msg: 'Transaction reference is required' });
@@ -1205,7 +1248,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
           response = await flutterwave.verifyTransaction(reference);
           provider = 'flutterwave';
         } catch (fwErr) {
-          console.error('Premium payment verification failed:', psErr, fwErr);
+          console.error('Tier payment verification failed:', psErr, fwErr);
           return res.status(400).json({ msg: 'Payment verification failed' });
         }
       }
@@ -1236,7 +1279,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         return res.status(400).json({ msg: 'Payment not successful' });
       }
 
-      const amount = type === 'template' ? 10000 : 50000;
+      const amount = type === 'template' ? 10000 : (resolvedTier === 'vip' ? 50000 : 100000);
 
       if (type === 'template') {
         // Record the per-template unlock
@@ -1261,10 +1304,11 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         return res.json({ msg: `The ${templateKey.charAt(0).toUpperCase() + templateKey.slice(1)} template is now unlocked`, type, template: templateKey });
       }
 
-      // Event upgrade flow (unchanged) — mark gift premium
+      // Event upgrade flow — mark gift with tier
       const paymentUpdate = {
         userId: req.user.id,
         amount,
+        tier: resolvedTier,
         transactionId: reference,
         status: 'success'
       };
@@ -1277,14 +1321,14 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         }),
         prisma.gift.update({
           where: { id: giftId },
-          data: { isPremium: true }
+          data: { tier: resolvedTier }
         })
       ];
 
       await prisma.$transaction(operations);
 
       const updatedGift = await prisma.gift.findUnique({ where: { id: giftId } });
-      res.json({ msg: 'Premium upgrade successful', gift: updatedGift, type });
+      res.json({ msg: `${resolvedTier === 'vip' ? 'VIP' : 'Royal'} upgrade successful`, gift: updatedGift, type, tier: resolvedTier });
     } catch (err) {
       console.error('Verify premium payment error:', err?.message || err);
       res.status(500).json({ msg: 'Failed to verify payment', error: err?.message });
@@ -1295,8 +1339,8 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
   router.get('/premium/payments', auth(), async (req, res) => {
     try {
       const premiumGifts = await prisma.gift.findMany({
-        where: { userId: req.user.id, isPremium: true },
-        select: { id: true }
+        where: { userId: req.user.id, tier: { not: 'free' } },
+        select: { id: true, tier: true }
       });
 
       const existingPayments = await prisma.premiumPayment.findMany({
@@ -1312,15 +1356,17 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
             where: { giftId: gift.id },
             update: {
               userId: req.user.id,
-              amount: 50000,
+              amount: gift.tier === 'vip' ? 50000 : 100000,
+              tier: gift.tier,
               status: 'success'
             },
             create: {
               userId: req.user.id,
               giftId: gift.id,
-              amount: 50000,
+              amount: gift.tier === 'vip' ? 50000 : 100000,
+              tier: gift.tier,
               status: 'success',
-              transactionId: `legacy-premium-${gift.id}`
+              transactionId: `legacy-tier-${gift.tier}-${gift.id}`
             }
           });
         }
@@ -1416,11 +1462,11 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         }),
         prisma.gift.update({
           where: { id: payment.giftId },
-          data: { isPremium: true }
+          data: { tier: payment.tier }
         })
       ]);
 
-      console.log('✅ Premium payment verified via webhook:', updatedPayment.id);
+      console.log('✅ Tier payment verified via webhook:', updatedPayment.id);
 
       sendGiftReceivedEmail({
         recipientEmail: payment.gift.user.email,
@@ -1428,11 +1474,11 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         contributorName: payment.user?.name || 'Event Owner',
         amount: Number(payment.amount),
         gift: payment.gift,
-        message: 'Premium/VIP Upgrade activated',
+        message: `${payment.tier === 'vip' ? 'VIP' : 'Royal'} Upgrade activated`,
         isAsoebi: false,
         currency: 'NGN',
         baseAmount: Number(payment.amount),
-      }).catch(err => console.error('Background premium gift received email failed:', err));
+      }).catch(err => console.error('Background tier gift received email failed:', err));
 
       res.status(200).send('OK');
     } catch (err) {
@@ -1515,11 +1561,11 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         }),
         prisma.gift.update({
           where: { id: existingPayment.giftId },
-          data: { isPremium: true }
+          data: { tier: existingPayment.tier }
         })
       ]);
 
-      console.log('✅ Flutterwave premium payment verified via webhook:', updatedPayment.id);
+      console.log('✅ Flutterwave tier payment verified via webhook:', updatedPayment.id);
 
       sendGiftReceivedEmail({
         recipientEmail: existingPayment.gift.user.email,
@@ -1527,11 +1573,11 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         contributorName: existingPayment.user?.name || 'Event Owner',
         amount: Number(existingPayment.amount),
         gift: existingPayment.gift,
-        message: 'Premium/VIP Upgrade activated',
+        message: `${existingPayment.tier === 'vip' ? 'VIP' : 'Royal'} Upgrade activated`,
         isAsoebi: false,
         currency: 'NGN',
         baseAmount: Number(existingPayment.amount),
-      }).catch(err => console.error('Background premium gift received email failed:', err));
+      }).catch(err => console.error('Background tier gift received email failed:', err));
 
       res.status(200).send('OK');
     } catch (err) {

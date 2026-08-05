@@ -60,6 +60,7 @@ interface Gift {
   soldAsoebiGroomWomenQty?: number;
   asoebiItems?: AsoebiItem[];
   wishlists?: { shareLink: string; title?: string }[];
+  website?: { shareLink: string; slug?: string; published?: boolean };
 }
 
 interface AsoebiItem {
@@ -111,6 +112,14 @@ const getWishlistPath = (gift: Gift | null) => {
   return shareLink ? `/${shareLink.replace(/^\/+/, '')}` : null;
 };
 
+const getWebsitePath = (gift: Gift | null) => {
+  const website = gift?.website;
+  if (!website?.published) return null;
+  const linkId = website.slug || website.shareLink;
+  if (!linkId) return null;
+  return `/${linkId.replace(/^\/+/, '')}`;
+};
+
 const ShareGift: React.FC = () => {
   const { link, slug, id } = useParams<{ link?: string; slug?: string; id?: string }>();
   const linkParam = link ?? (slug && id ? `${slug}/${id}` : undefined);
@@ -142,6 +151,7 @@ const ShareGift: React.FC = () => {
   const [verifyMessage, setVerifyMessage] = useState('');
   const [showStoryModal, setShowStoryModal] = useState(false);
     const wishlistPath = getWishlistPath(gift);
+  const websitePath = getWebsitePath(gift);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteMessage, setNoteMessage] = useState('');
   const [noteName, setNoteName] = useState('');
@@ -1163,6 +1173,15 @@ const ShareGift: React.FC = () => {
                   className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
                 >
                   My Wishlist
+                </button>
+              )}
+
+              {websitePath && (
+                <button
+                  onClick={() => window.open(websitePath, '_blank', 'noopener,noreferrer')}
+                  className="text-base font-thin text-[#2E235C] underline decoration-[#2E235C]/50 underline-offset-4 transition-all"
+                >
+                  Visit Website
                 </button>
               )}
             </div>

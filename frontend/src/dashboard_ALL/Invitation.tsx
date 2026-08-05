@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Button } from '../components/ui/button';
 import { DesignEditor } from '../components/DesignEditor';
 import { useToast } from '../hooks/use-toast';
+import { Crown, CreditCard, CheckCircle } from 'lucide-react';
 
 interface Gift {
   id: number;
@@ -14,13 +15,13 @@ interface Gift {
   shareLink: string;
   enableGuestNotes?: boolean;
   wishlists?: { shareLink: string }[];
-  isPremium?: boolean;
+  tier?: 'free' | 'vip' | 'royal';
 }
 
 interface InvitationData {
   id?: number;
   template?: string;
-  tier?: 'free' | 'premium';
+  tier?: 'free' | 'vip' | 'royal';
   published?: boolean;
   venue?: string;
   coupleName1?: string;
@@ -37,14 +38,14 @@ interface InvitationData {
   gallery?: string[];
   showWellWishes?: boolean;
   enableWishlistButton?: boolean;
-  isPremium?: boolean;
+  tier?: 'free' | 'vip' | 'royal';
 }
 
 interface Template {
   id: string;
   name: string;
   description: string;
-  tier: 'free' | 'premium';
+  tier: 'free' | 'vip' | 'royal';
   previewColor: string;
   accentColor: string;
 }
@@ -55,7 +56,12 @@ const Invitation = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const { toast } = useToast();
+
+  const isRoyal = selectedGift?.tier === 'royal' || invitation?.tier === 'royal';
+  const isVip = selectedGift?.tier === 'vip' || invitation?.tier === 'vip';
+  const hasPremiumAccess = isRoyal;
 
 
 
@@ -74,26 +80,76 @@ const Invitation = () => {
     fetchTemplates();
   }, []);
 
-  useEffect(() => {
-    const fetchGifts = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const giftsData = Array.isArray(data) ? data : [];
-          setGifts(giftsData);
-          if (giftsData.length > 0 && !selectedGift) {
-            selectGift(giftsData[0]);
-          }
+  const loadGifts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const giftsData = Array.isArray(data) ? data : [];
+        setGifts(giftsData);
+        if (giftsData.length > 0 && !selectedGift) {
+          selectGift(giftsData[0]);
+        } else if (selectedGift) {
+          const refreshed = giftsData.find(g => g.id === selectedGift.id) || selectedGift;
+          setSelectedGift(refreshed);
         }
-      } catch (err) {
-        console.error('Error fetching gifts:', err);
+        return giftsData;
       }
-    };
-    fetchGifts();
+    } catch (err) {
+      console.error('Error fetching gifts:', err);
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    loadGifts();
+  }, []);
+
+  // Verify premium payment when redirected back from Paystack
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get('reference');
+    const giftId = params.get('giftId');
+    const type = params.get('type');
+    const tier = params.get('tier');
+
+    if (reference && giftId && (type === 'event' || type === 'template')) {
+      const verifyPayment = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          let verifyUrl = `${import.meta.env.VITE_BACKEND_URL}/api/gifts/${giftId}/premium/verify?reference=${encodeURIComponent(reference)}&type=${type}`;
+          const templateParam = params.get('template');
+          if (templateParam) verifyUrl += `&template=${encodeURIComponent(templateParam)}`;
+          if (tier) verifyUrl += `&tier=${encodeURIComponent(tier)}`;
+
+          const res = await fetch(verifyUrl, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+
+          // Clear URL params regardless of outcome
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+
+          if (res.ok) {
+            toast({ title: 'Success!', description: data.msg });
+            await loadGifts();
+          } else {
+            toast({ title: 'Error', description: data.msg || 'Payment verification failed', variant: 'destructive' });
+            await loadGifts();
+          }
+        } catch (err) {
+          console.error('Payment verification error:', err);
+          toast({ title: 'Error', description: 'Failed to verify payment', variant: 'destructive' });
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      };
+      verifyPayment();
+    }
   }, []);
 
   const fetchInvitation = async (giftId: number) => {
@@ -119,6 +175,41 @@ const Invitation = () => {
     fetchInvitation(gift.id);
   };
 
+   const handleUpgradeToPremium = async (tier: 'vip' | 'royal' = 'vip') => {
+     if (!selectedGift) return;
+     setIsProcessingPayment(true);
+     try {
+       const token = localStorage.getItem('token');
+       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${selectedGift.id}/premium/initialize`, {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           Authorization: `Bearer ${token}`,
+         },
+         body: JSON.stringify({ type: 'event', tier }),
+       });
+       const data = await res.json();
+       if (res.ok && data.authorization_url) {
+         window.location.href = data.authorization_url;
+       } else {
+         toast({
+           title: 'Error',
+           description: data.msg || 'Failed to initialize payment',
+           variant: 'destructive',
+         });
+         setIsProcessingPayment(false);
+       }
+     } catch (err) {
+       console.error('Premium upgrade error:', err);
+       toast({
+         title: 'Error',
+         description: 'Failed to initialize payment',
+         variant: 'destructive',
+       });
+       setIsProcessingPayment(false);
+     }
+   };
+
   const saveInvitationSettings = async (designData: any) => {
     if (!selectedGift) {
       toast({ title: 'No event selected', description: 'Please select an event first.', variant: 'destructive' });
@@ -133,13 +224,13 @@ const Invitation = () => {
         return;
       }
 
-      const hasPremiumAccess = selectedGift?.isPremium || invitation?.isPremium;
-      const coupleNames = [designData.coupleName1, designData.coupleName2].filter(Boolean).join(' & ');
-      
-      const body: any = {
-        template: designData.template || invitation?.template || 'botanical-sprig',
-        published: invitation?.published || false,
-        isPremium: hasPremiumAccess,
+       const hasPremiumAccess = isRoyal;
+       const coupleNames = [designData.coupleName1, designData.coupleName2].filter(Boolean).join(' & ');
+       
+       const body: any = {
+         template: designData.template || invitation?.template || 'botanical-sprig',
+         published: invitation?.published || false,
+         tier: isRoyal ? 'royal' : isVip ? 'vip' : 'free',
         primaryColor: designData.primaryColor,
         secondaryColor: designData.secondaryColor,
         theme: {
@@ -234,6 +325,58 @@ const Invitation = () => {
           <h2 className="text-xl font-semibold text-gray-900 tracking-tight">Invitation Designer</h2>
           <p className="text-sm text-gray-500">Create beautiful invitations like Canva</p>
         </div>
+        {selectedGift && (
+          isRoyal ? (
+            <div className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
+              <CheckCircle className="w-3.5 h-3.5" />
+              Royal access
+            </div>
+          ) : isVip ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
+                <CheckCircle className="w-3.5 h-3.5" />
+                VIP active
+              </div>
+              <Button
+                size="sm"
+                className="text-xs h-9 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold shadow-md"
+                onClick={() => handleUpgradeToPremium('royal')}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? (
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <Crown className="w-3.5 h-3.5" />
+                    Upgrade to Royal
+                  </div>
+                )}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              className="text-xs h-9 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold shadow-md"
+              onClick={() => handleUpgradeToPremium('vip')}
+              disabled={isProcessingPayment}
+            >
+              {isProcessingPayment ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3.5 h-3.5 border-2 border-yellow-900 border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                   <Crown className="w-3.5 h-3.5" />
+                   Upgrade Event to VIP
+                </div>
+              )}
+            </Button>
+          )
+        )}
       </div>
 
       {/* Event Selector */}
@@ -270,8 +413,10 @@ const Invitation = () => {
           initialData={getInitialData()}
           onSave={(data) => saveInvitationSettings(data)}
           giftId={selectedGift.id}
-          isPremium={selectedGift.isPremium || invitation?.isPremium}
+          isPremium={isRoyal}
           initialTemplateId={invitation?.template || 'botanical-sprig'}
+          onPremiumUpgrade={handleUpgradeToPremium}
+          giftTier={selectedGift?.tier}
         />
       ) : (
         <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg">

@@ -12,6 +12,7 @@ import InviteFriends from '../dashboard_ALL/InviteFriends';
 import Wishlists from '../dashboard_ALL/Wishlists';
 import Website from '../dashboard_ALL/Website';
 import Invitation from '../dashboard_ALL/Invitation';
+import TodoPlan from '../dashboard_ALL/TodoPlan';
 import { ExclusiveDeals } from '../dashboard_ALL/ExclusiveDeals';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
@@ -27,7 +28,7 @@ import {
   Star, TrendingDown, CheckCircle, AlertCircle, Wallet,
   CreditCard as CreditCardIcon, Smartphone, Globe as GlobeIcon,
   Link as LinkIcon, User, Mail, Phone, MapPin, Clock, FileDown,
-  Plus, Minus, Trash2, Crown, XCircle
+  Plus, Minus, Trash2, Crown, XCircle, ListTodo
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Badge } from '../components/ui/badge';
@@ -86,7 +87,9 @@ interface Gift {
   enableRSVP?: boolean;
   enableGuestNotes?: boolean;
   enableCashGifts?: boolean;
+  enableWebsite?: boolean;
   isSellingAsoebi?: boolean;
+  website?: { shareLink: string; slug?: string; published?: boolean };
   asoebiPrice?: number | string;
   asoebiPriceMen?: number | string;
   asoebiPriceWomen?: number | string;
@@ -107,7 +110,7 @@ interface Gift {
   asoebiBrideWomenQty?: number;
   asoebiGroomMenQty?: number;
   asoebiGroomWomenQty?: number;
-  isPremium?: boolean;
+  tier?: 'free' | 'vip' | 'royal';
 }
 
 interface Contribution {
@@ -211,6 +214,7 @@ const Dashboard: React.FC = () => {
   const [enableRSVP, setEnableRSVP] = useState(true);
   const [enableGuestNotes, setEnableGuestNotes] = useState(true);
   const [enableCashGifts, setEnableCashGifts] = useState(true);
+  const [enableWebsite, setEnableWebsite] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   // RSVP duplicate error state
@@ -239,9 +243,14 @@ const Dashboard: React.FC = () => {
   const [promptPhoneNumber, setPromptPhoneNumber] = useState('');
   const [isSubmittingPhone, setIsSubmittingPhone] = useState(false);
 
+  const [selectedSubscriptionEventId, setSelectedSubscriptionEventId] = useState<number | null>(null);
+  const [subscriptionTier, setSubscriptionTier] = useState<'vip' | 'royal'>('vip');
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  
   // Premium Upgrade State
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [selectedGiftForUpgrade, setSelectedGiftForUpgrade] = useState<Gift | null>(null);
+  const [upgradeTier, setUpgradeTier] = useState<'vip' | 'royal'>('vip');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [premiumPayments, setPremiumPayments] = useState<any[]>([]);
   const [isLoadingPayments, setIsLoadingPayments] = useState(false);
@@ -357,8 +366,9 @@ const Dashboard: React.FC = () => {
   const giftersCount = contributions.filter(c => !c.isAsoebi && Number(c.amount) > 0).length;
   const wishesCount = contributions.filter(c => Number(c.amount) === 0 && c.message && c.message.trim() !== '').length;
   const isMobile = useIsMobile();
-  const activeSubscriptionEvents = gifts.filter((gift) => gift.isPremium);
-  const upgradeableEvents = gifts.filter((gift) => !gift.isPremium);
+  const activeSubscriptionEvents = gifts.filter((gift) => gift.tier && gift.tier !== 'free');
+  const upgradeableEvents = gifts.filter((gift) => !gift.tier || gift.tier === 'free');
+  const vipUpgradeableEvents = gifts.filter((gift) => gift.tier === 'vip');
   const visibleUpgradeableEvents = upgradeableEvents.slice(0, 3);
   const hiddenUpgradeableCount = Math.max(0, upgradeableEvents.length - visibleUpgradeableEvents.length);
   const premiumPaymentHistory = premiumPayments;
@@ -372,11 +382,12 @@ const Dashboard: React.FC = () => {
   }, {} as Record<number, any[]>);
 
   const sidebarItems = [
+    { id: 'todo', label: 'Todo', icon: ListTodo, color: 'text-[#2E235C]', badge: null, action: undefined },
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null, action: undefined },
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length, action: undefined },
-    {id: 'wishlists', label: 'Wishlist', icon: Heart, color: 'text-red-500', badge: null, action: undefined},
     { id: 'rsvp', label: 'RSVP Manager', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests, action: undefined },
     { id: 'website', label: 'Website', icon: Globe, color: 'text-purple-600', badge: null, action: undefined },
+    {id: 'wishlists', label: 'Wishlist', icon: Heart, color: 'text-red-500', badge: null, action: undefined},
     { id: 'invitation', label: 'Invitation', icon: Mail, color: 'text-pink-600', badge: null, action: undefined },
     { id: 'asoebi', label: 'Asoebi Orders', icon: Package, color: 'text-purple-600', badge: null, action: undefined },
     { id: 'photobook', label: 'Photobook', icon: ImageIcon, color: 'text-pink-500', badge: null, action: undefined },
@@ -682,6 +693,7 @@ const Dashboard: React.FC = () => {
       const giftId = urlParams.get('giftId') || urlParams.get('gift_id');
       const paymentTypeParam = urlParams.get('type');
       const templateParam = urlParams.get('template');
+      const tierParam = urlParams.get('tier');
       
       const transactionIdentifier = reference || txRef || txId;
       
@@ -697,6 +709,7 @@ const Dashboard: React.FC = () => {
           verifyUrl.searchParams.set('reference', transactionIdentifier);
           if (paymentTypeParam) verifyUrl.searchParams.set('type', paymentTypeParam);
           if (templateParam) verifyUrl.searchParams.set('template', templateParam);
+          if (tierParam) verifyUrl.searchParams.set('tier', tierParam);
 
           const res = await fetch(verifyUrl.toString(), {
             headers: { Authorization: `Bearer ${token}` },
@@ -728,7 +741,7 @@ const Dashboard: React.FC = () => {
 
             const successMessage = paymentType === 'template'
               ? `Thank you! Your ${(responseData?.template || templateParam || 'premium').charAt(0).toUpperCase() + (responseData?.template || templateParam || 'premium').slice(1)} website template is now unlocked.`
-              : 'Thank you! Your event is now Supersaver - no more commission!';
+              : `Thank you! Your event is now ${tierParam === 'vip' ? 'VIP' : 'Royal'} - no more commission!`;
 
             setPremiumVerifyStatus('success');
             setPremiumVerifyMessage(successMessage);
@@ -984,6 +997,7 @@ const Dashboard: React.FC = () => {
     setEnableRSVP(gift.enableRSVP !== undefined ? gift.enableRSVP : true);
     setEnableGuestNotes(gift.enableGuestNotes !== undefined ? gift.enableGuestNotes : true);
     setEnableCashGifts(gift.enableCashGifts !== undefined ? gift.enableCashGifts : true);
+    setEnableWebsite(gift.enableWebsite !== undefined ? gift.enableWebsite : false);
     
     // Populate dynamic items
     const gItems = (gift as any).asoebiItems || [];
@@ -1110,6 +1124,7 @@ const Dashboard: React.FC = () => {
     formData.append('enableRSVP', enableRSVP.toString());
     formData.append('enableGuestNotes', enableGuestNotes.toString());
     formData.append('enableCashGifts', enableCashGifts.toString());
+    formData.append('enableWebsite', enableWebsite.toString());
     formData.append('isSellingAsoebi', isSellingAsoebi.toString());
     if (isSellingAsoebi) {
       if (asoebiItemsState.length > 0) {
@@ -1182,6 +1197,7 @@ const Dashboard: React.FC = () => {
         setEnableRSVP(true);
         setEnableGuestNotes(true);
         setEnableCashGifts(true);
+        setEnableWebsite(false);
         setIsSellingAsoebi(false);
         setAsoebiPrice('');
         setAsoebiPriceMen('');
@@ -1334,6 +1350,7 @@ const Dashboard: React.FC = () => {
     formData.append('enableRSVP', enableRSVP.toString());
     formData.append('enableGuestNotes', enableGuestNotes.toString());
     formData.append('enableCashGifts', enableCashGifts.toString());
+    formData.append('enableWebsite', enableWebsite.toString());
     formData.append('isSellingAsoebi', isSellingAsoebi.toString());
     if (isSellingAsoebi) {
       if (asoebiItemsState.length > 0) {
@@ -1406,6 +1423,7 @@ const Dashboard: React.FC = () => {
         setEnableRSVP(true);
         setEnableGuestNotes(true);
         setEnableCashGifts(true);
+        setEnableWebsite(false);
         setIsSellingAsoebi(false);
         setAsoebiPrice('');
         setAsoebiPriceMen('');
@@ -1654,8 +1672,9 @@ const Dashboard: React.FC = () => {
   };
 
   // Premium Upgrade Functions
-  const handleUpgradeToPremium = (gift: Gift) => {
+  const handleUpgradeToPremium = (gift: Gift, tier: 'vip' | 'royal' = 'vip') => {
     setSelectedGiftForUpgrade(gift);
+    setUpgradeTier(tier);
     setIsPremiumModalOpen(true);
   };
 
@@ -1672,6 +1691,7 @@ const Dashboard: React.FC = () => {
         },
         body: JSON.stringify({
           type: 'event',
+          tier: upgradeTier,
         }),
       });
       const data = await res.json();
@@ -1967,6 +1987,7 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                    <h1 className="text-2xl font-bold text-gray-900">
+                     {activeTab === 'todo' && 'My Plan'}
                      {activeTab === 'overview' && 'Dashboard Overview'}
                      {activeTab === 'gifts' && 'Events'}
                      {activeTab === 'withdraw' && 'Withdraw Funds'}
@@ -1983,6 +2004,7 @@ const Dashboard: React.FC = () => {
                      {activeTab === 'premium' && 'Subscription'}
                   </h1>
                    <p className="text-sm text-gray-600 mt-1">
+                     {activeTab === 'todo' && 'Track your wedding planning progress and tasks'}
                      {activeTab === 'overview' && 'Welcome back! Here is your dashboard summary'}
                      {activeTab === 'gifts' && 'Manage all your event links & cash gifts'}
                      {activeTab === 'withdraw' && 'Withdraw funds to your bank account'}
@@ -2037,6 +2059,14 @@ const Dashboard: React.FC = () => {
 
           {/* Content Area */}
           <div className="p-4 lg:p-8 pt-4">
+            {activeTab === 'todo' && (
+              <TodoPlan
+                gifts={gifts}
+                contributions={contributions}
+                guests={guests}
+                onOpenTab={setActiveTab}
+              />
+            )}
             {/* Overview Section */}
             {activeTab === 'overview' && (
               <div className="space-y-8">
@@ -2249,7 +2279,7 @@ const Dashboard: React.FC = () => {
     setPreselectedGiftId(gift.id);
     setActiveTab('wishlists');
   }}
-  onUpgradeToPremium={handleUpgradeToPremium}
+  onUpgradeToPremium={(gift, tier) => handleUpgradeToPremium(gift, tier)}
   deletingGiftId={deletingGiftId}
 />
               </div>
@@ -2486,7 +2516,7 @@ const Dashboard: React.FC = () => {
                           // Calculate commission and received amount
                           let commission = 0;
                           if (isContribution) {
-                             if (gift?.isPremium) {
+                              if (gift?.tier !== 'free') {
                                commission = 0;
                              } else if (transaction.commission !== undefined && transaction.commission !== null && transaction.commission > 0) {
                                 commission = transaction.commission;
@@ -3265,62 +3295,139 @@ const Dashboard: React.FC = () => {
               />
             )}
 
-            {/* Exclusive Deals Section */}
-            {activeTab === 'premium' && (
-              <div className="space-y-6">
-                {/* Premium Upgrade Card */}
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 text-white overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                      <div className="flex items-start space-x-4">
-                        <div className="p-3 bg-white/20 backdrop-blur rounded-xl">
-                          <Crown className="w-8 h-8 text-white" />
+             {/* Tiers Section */}
+             {activeTab === 'premium' && (
+               <div className="space-y-6">
+                 {/* Tier Cards */}
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Free Tier */}
+                    <Card className="border-2 border-[#2E235C]/20 shadow-lg bg-white overflow-hidden">
+                      <CardContent className="p-6">
+                        <div className="text-center mb-4">
+                          <div className="w-12 h-12 mx-auto mb-3 bg-[#2E235C]/10 rounded-full flex items-center justify-center">
+                            <Gift className="w-6 h-6 text-[#2E235C]" />
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-900">Free</h3>
+                          <p className="text-2xl font-extrabold text-gray-900 mt-1">₦0</p>
+                          <p className="text-sm text-gray-500">Basic event tools</p>
                         </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-white">Premium Upgrade</h3>
-                          <p className="text-purple-100 mt-1">Make your event Supersaver VIP and keep 100% of all gifts</p>
-                          <ul className="mt-4 space-y-2">
-                            <li className="flex items-center space-x-2 text-sm text-purple-50">
-                              <CheckCircle className="w-4 h-4 text-purple-200" />
-                              <span>0% commission on all cash gifts</span>
-                            </li>
-                            <li className="flex items-center space-x-2 text-sm text-purple-50">
-                              <CheckCircle className="w-4 h-4 text-purple-200" />
-                              <span>0% commission on all asoebi orders</span>
-                            </li>
-                            <li className="flex items-center space-x-2 text-sm text-purple-50">
-                              <CheckCircle className="w-4 h-4 text-purple-200" />
-                              <span>Lifetime Supersaver VIP for this event</span>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                      <div className="text-center md:text-right">
-                        <div className="text-4xl font-extrabold text-white mb-1">₦50,000</div>
-                        <p className="text-purple-100 text-sm mb-4">One-time payment per event</p>
-                        {upgradeableEvents.length > 0 ? (
-                          <Select onValueChange={(value) => {
-                            const gift = gifts.find(g => g.id === parseInt(value));
-                            if (gift) handleUpgradeToPremium(gift);
-                          }}>
-                            <SelectTrigger className="w-full md:w-[240px] bg-white/95 text-gray-900 border-0 hover:bg-white">
-                              <SelectValue placeholder="Select event to upgrade" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white text-gray-900">
-                              {upgradeableEvents.map((gift) => (
-                                <SelectItem key={gift.id} value={gift.id.toString()}>
-                                  {gift.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge className="bg-purple-400 text-white">All events are VIP</Badge>
+                        <ul className="space-y-2 mb-6">
+                          <li className="flex items-center space-x-2 text-sm text-gray-600">
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <span>Free website templates</span>
+                          </li>
+                          <li className="flex items-center space-x-2 text-sm text-gray-600">
+                            <XCircle className="w-4 h-4 text-red-400" />
+                            <span>No invitation templates</span>
+                          </li>
+                          <li className="flex items-center space-x-2 text-sm text-gray-600">
+                            <XCircle className="w-4 h-4 text-red-400" />
+                            <span>4% commission on cash gifts</span>
+                          </li>
+                          <li className="flex items-center space-x-2 text-sm text-gray-600">
+                            <XCircle className="w-4 h-4 text-red-400" />
+                            <span>₦500 commission per asoebi order</span>
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+
+                     {/* VIP Tier */}
+                     <Card className="border-2 border-[#2E235C] shadow-lg bg-gradient-to-b from-[#2E235C]/5 to-white overflow-hidden relative">
+                       <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#2E235C] to-[#392B74] text-white text-xs font-bold text-center py-1">
+                         MOST POPULAR
+                       </div>
+                       <CardContent className="p-6 pt-8">
+                         <div className="text-center mb-4">
+                           <div className="w-12 h-12 mx-auto mb-3 bg-[#2E235C]/10 rounded-full flex items-center justify-center">
+                             <Crown className="w-6 h-6 text-[#2E235C]" />
+                           </div>
+                            <h3 className="text-lg font-bold text-gray-900">VIP</h3>
+                            <p className="text-2xl font-extrabold text-gray-900 mt-1">₦50,000</p>
+                           <p className="text-sm text-gray-500">Free commission only</p>
+                         </div>
+                         <ul className="space-y-2 mb-6">
+                           <li className="flex items-center space-x-2 text-sm text-gray-600">
+                             <CheckCircle className="w-4 h-4 text-green-500" />
+                             <span>0% commission on all cash gifts</span>
+                           </li>
+                           <li className="flex items-center space-x-2 text-sm text-gray-600">
+                             <CheckCircle className="w-4 h-4 text-green-500" />
+                             <span>0% commission on all asoebi orders</span>
+                           </li>
+                           <li className="flex items-center space-x-2 text-sm text-gray-600">
+                             <CheckCircle className="w-4 h-4 text-green-500" />
+                             <span>Free website templates</span>
+                           </li>
+                           <li className="flex items-center space-x-2 text-sm text-gray-600">
+                             <XCircle className="w-4 h-4 text-red-400" />
+                             <span>No invitation templates</span>
+                           </li>
+                         </ul>
+                          {upgradeableEvents.length > 0 && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white font-bold"
+                              onClick={() => {
+                                setSubscriptionTier('vip');
+                                setIsSubscriptionModalOpen(true);
+                              }}
+                            >
+                               Select
+                            </Button>
+                          )}
+                       </CardContent>
+                     </Card>
+
+                   {/* Royal Tier */}
+                   <Card className="border-2 border-[#2E235C] shadow-lg bg-gradient-to-b from-[#2E235C]/5 to-white overflow-hidden relative">
+                     <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#2E235C] to-[#392B74] text-white text-xs font-bold text-center py-1">
+                       ULTIMATE
+                     </div>
+                     <CardContent className="p-6 pt-8">
+                       <div className="text-center mb-4">
+                         <div className="w-12 h-12 mx-auto mb-3 bg-[#2E235C]/10 rounded-full flex items-center justify-center">
+                           <Crown className="w-6 h-6 text-[#2E235C]" />
+                         </div>
+                          <h3 className="text-lg font-bold text-gray-900">Royal</h3>
+                          <p className="text-2xl font-extrabold text-gray-900 mt-1">₦100,000</p>
+                         <p className="text-sm text-gray-500">Full premium experience</p>
+                       </div>
+                       <ul className="space-y-2 mb-6">
+                         <li className="flex items-center space-x-2 text-sm text-gray-600">
+                           <CheckCircle className="w-4 h-4 text-green-500" />
+                           <span>0% commission on all cash gifts</span>
+                         </li>
+                         <li className="flex items-center space-x-2 text-sm text-gray-600">
+                           <CheckCircle className="w-4 h-4 text-green-500" />
+                           <span>0% commission on all asoebi orders</span>
+                         </li>
+                         <li className="flex items-center space-x-2 text-sm text-gray-600">
+                           <CheckCircle className="w-4 h-4 text-green-500" />
+                           <span>Premium website templates</span>
+                         </li>
+                         <li className="flex items-center space-x-2 text-sm text-gray-600">
+                           <CheckCircle className="w-4 h-4 text-green-500" />
+                           <span>Premium invitation templates</span>
+                         </li>
+                       </ul>
+                        {upgradeableEvents.length > 0 && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white font-bold"
+                            onClick={() => {
+                              setSubscriptionTier('royal');
+                              setIsSubscriptionModalOpen(true);
+                            }}
+                          >
+              Select
+                          </Button>
                         )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                     </CardContent>
+                   </Card>
+                 </div>
 
                 {/* Premium Websites Unlocks */}
                 <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50 to-white">
@@ -3375,14 +3482,14 @@ const Dashboard: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                {/* Active Subscription */}
+                {/* Active Subscriptions */}
                 <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50 to-white">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-3 mb-4">
                       <Crown className="w-10 h-10 text-[#2E235C]" />
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">Active subscriptions</h3>
-                        <p className="text-sm text-gray-600">Your current VIP events</p>
+                        <p className="text-sm text-gray-600">Your current VIP / Royal events</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
@@ -3395,13 +3502,15 @@ const Dashboard: React.FC = () => {
                                   <Crown className="w-4 h-4 text-[#2E235C] flex-shrink-0" />
                                   <span className="text-sm font-medium truncate">{gift.title}</span>
                                 </div>
-                                <Badge className="bg-[#2E235C] text-white">VIP active</Badge>
+                                <Badge className={gift.tier === 'royal' ? 'bg-purple-600 text-white' : 'bg-[#2E235C] text-white'}>
+                                  {gift.tier === 'royal' ? 'Royal active' : 'VIP active'}
+                                </Badge>
                               </div>
                             ))}
                           </div>
                         ) : (
                           <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
-                            No active subscription yet. Upgrade an event with Premium Upgrade above to make it VIP.
+                            No active subscription yet. Upgrade an event with the tiers above.
                           </div>
                         )}
                       </div>
@@ -3414,7 +3523,7 @@ const Dashboard: React.FC = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <Clock className="w-5 h-5 mr-2 text-[#2E235C]" />
-                      Payment History (Premium Upgrade &amp; Templates)
+                      Payment History (Tier Upgrades &amp; Templates)
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -3427,6 +3536,7 @@ const Dashboard: React.FC = () => {
                         {premiumPaymentHistory.map((payment: any) => {
                           const gift = gifts.find(g => g.id === payment.giftId);
                           const isTemplate = payment.paymentType === 'template';
+                          const tier = payment.tier || 'vip';
                           return (
                             <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
                               <div className="flex items-center space-x-3">
@@ -3441,7 +3551,7 @@ const Dashboard: React.FC = () => {
                                   <p className="font-medium text-gray-900">
                                     {isTemplate 
                                       ? `Template Unlock - ${payment.template ? payment.template.charAt(0).toUpperCase() + payment.template.slice(1) : gift?.title || 'Event'}` 
-                                      : `Premium Upgrade - ${gift?.title || 'Event'}`}
+                                      : `${tier.charAt(0).toUpperCase() + tier.slice(1)} Upgrade - ${gift?.title || 'Event'}`}
                                   </p>
                                   <p className="text-sm text-gray-500">
                                     {new Date(payment.createdAt).toLocaleDateString()}
@@ -3654,6 +3764,17 @@ const Dashboard: React.FC = () => {
                 />
                 <Label htmlFor="enableCashGifts" className="text-sm font-medium text-gray-900">
                   Allow guests to send cash gifts?
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="enableWebsite" 
+                  checked={enableWebsite}
+                  onCheckedChange={(checked) => setEnableWebsite(checked as boolean)}
+                />
+                <Label htmlFor="enableWebsite" className="text-sm font-medium text-gray-900">
+                  Include website?
                 </Label>
               </div>
 
@@ -4288,6 +4409,17 @@ const Dashboard: React.FC = () => {
                 />
                 <Label htmlFor="editEnableCashGifts" className="text-sm font-medium text-gray-900">
                   Allow guests to send cash gifts?
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2 border p-4 rounded-lg">
+                <Checkbox 
+                  id="editEnableWebsite" 
+                  checked={enableWebsite}
+                  onCheckedChange={(checked) => setEnableWebsite(checked as boolean)}
+                />
+                <Label htmlFor="editEnableWebsite" className="text-sm font-medium text-gray-900">
+                  Include website?
                 </Label>
               </div>
 
@@ -6385,23 +6517,84 @@ const Dashboard: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Subscription Event Selection Modal */}
+      <Dialog open={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen}>
+        <DialogContent className="w-[90vw] sm:w-full sm:max-w-[420px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4">
+            <DialogTitle className="text-xl font-bold text-gray-900">
+              Select {subscriptionTier === 'royal' ? 'Royal' : 'VIP'}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 mt-1">
+              Select the event you want to subscribe for ₦{subscriptionTier === 'royal' ? '100,000' : '50,000'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-4">
+            <Select value={selectedSubscriptionEventId ? String(selectedSubscriptionEventId) : undefined} onValueChange={(v) => setSelectedSubscriptionEventId(Number(v))}>
+              <SelectTrigger className="w-full bg-white text-gray-900 border border-[#2E235C] hover:bg-[#2E235C]/5">
+                <SelectValue placeholder="Select event" />
+              </SelectTrigger>
+              <SelectContent className="bg-white text-gray-900">
+                {upgradeableEvents.map((gift) => (
+                  <SelectItem key={gift.id} value={gift.id.toString()}>
+                    {gift.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsSubscriptionModalOpen(false);
+                setSelectedSubscriptionEventId(null);
+              }}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                const gift = upgradeableEvents.find(g => g.id === selectedSubscriptionEventId);
+                if (gift) {
+                  handleUpgradeToPremium(gift, subscriptionTier);
+                  setIsSubscriptionModalOpen(false);
+                  setSelectedSubscriptionEventId(null);
+                } else {
+                  toast({
+                    title: 'Please select an event',
+                    description: 'You need to select an event before subscribing.',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+              className="w-full sm:w-auto bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white font-bold"
+            >
+              Subscribe
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Premium Upgrade Modal */}
       <Dialog open={isPremiumModalOpen} onOpenChange={setIsPremiumModalOpen}>
         <DialogContent className="w-[90vw] sm:w-full sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-2 sticky top-0 bg-white z-10">
             <div className="flex items-center space-x-2">
-              <div className="p-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg">
+              <div className="p-2 rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600">
                 <Crown className="w-5 h-5 text-white" />
               </div>
               <DialogTitle className="text-2xl font-bold text-gray-900">
-                Upgrade & Save
+                {upgradeTier === 'royal' ? 'Upgrade to Royal' : 'Upgrade to VIP'}
               </DialogTitle>
             </div>
             <DialogDescription className="text-gray-600 mt-2">
-              Keep 100% of all Cash gifts and Asoebi sales
+              {upgradeTier === 'royal' 
+                ? 'Unlock premium templates and keep 100% of all cash gifts' 
+                : 'Keep 100% of all Cash gifts and Asoebi sales'}
             </DialogDescription>
-            <div className="bg-yellow-50 px-4 py-2 rounded-xl border border-yellow-200 mt-4">
-              <h4 className="font-semibold text-gray-900 mb-1">Supersaver Benefits</h4>
+            <div className={`px-4 py-2 rounded-xl border mt-4 ${upgradeTier === 'royal' ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-50 border-yellow-200'}`}>
+              <h4 className="font-semibold text-gray-900 mb-1">{upgradeTier === 'royal' ? 'Royal Benefits' : 'VIP Benefits'}</h4>
               <ul className="space-y-1 text-sm text-gray-600">
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
@@ -6413,11 +6606,11 @@ const Dashboard: React.FC = () => {
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span>Keep 100% of all Cash gifts and Asoebi sales</span>
+                  <span>{upgradeTier === 'royal' ? 'Premium website templates' : 'Free website templates'}</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span>Lifetime Supersaver for this event</span>
+                  <span>{upgradeTier === 'royal' ? 'Premium invitation templates' : 'No invitation templates'}</span>
                 </li>
               </ul>
             </div>
@@ -6425,7 +6618,7 @@ const Dashboard: React.FC = () => {
 
           <div className="p-6 pt-0">
             <div className="flex items-center justify-end py-0 mx-4">
-              <p className="text-lg font-bold text-gray-900">₦50,000</p>
+              <p className="text-lg font-bold text-gray-900">₦{upgradeTier === 'vip' ? '50,000' : '100,000'}</p>
             </div>
 
             <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-0">
@@ -6440,7 +6633,7 @@ const Dashboard: React.FC = () => {
               <Button
                 onClick={processPremiumUpgrade}
                 disabled={isProcessingPayment}
-                className="w-full sm:w-auto bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
+                className="w-full sm:w-auto text-white bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
               >
                 {isProcessingPayment ? (
                   <div className="flex items-center gap-2">

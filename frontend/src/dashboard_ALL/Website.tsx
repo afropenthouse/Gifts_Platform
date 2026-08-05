@@ -22,6 +22,11 @@ import { TemplatePearl } from '../components/website-templates/TemplatePearl';
 import { TemplateNoir } from '../components/website-templates/TemplateNoir';
 import { TemplateAmethyst } from '../components/website-templates/TemplateAmethyst';
 import { TemplateJoyBlossom } from '../components/website-templates/TemplateJoyBlossom';
+import { TemplateAubade } from '../components/website-templates/TemplateAubade';
+import { TemplateSolstice } from '../components/website-templates/TemplateSolstice';
+import { TemplateGardenia } from '../components/website-templates/TemplateGardenia';
+import { TemplateMeridian } from '../components/website-templates/TemplateMeridian';
+import { TemplateOpulence } from '../components/website-templates/TemplateOpulence';
 import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 
@@ -34,6 +39,7 @@ interface Gift {
   shareLink: string;
   enableGuestNotes?: boolean;
   wishlists?: { shareLink: string }[];
+  tier?: 'free' | 'vip' | 'royal';
 }
 
 interface WebsiteData {
@@ -74,7 +80,7 @@ const FONT_OPTIONS = [
   { value: 'Cormorant Garamond, serif', label: 'Cormorant' },
 ];
 
-const PREMIUM_TEMPLATE_KEYS = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir'];
+const PREMIUM_TEMPLATE_KEYS = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir', 'opulence'];
 
 const PREMIUM_TEMPLATE_OPTIONS = [
   { key: 'emerald', name: 'Emerald', desc: 'Photo-led, elegant & vibrant', gradient: 'from-emerald-950 via-emerald-700 to-amber-300', iconBg: 'bg-emerald-900', ring: 'border-emerald-700 bg-emerald-50 shadow-md', hover: 'hover:border-emerald-300', Icon: Heart },
@@ -241,6 +247,7 @@ const Website = () => {
   const isTemplateUnlocked = (template: string) => {
     if (!website) return false;
     if (website.hasTemplatePremium) return true;
+    if (selectedGift?.tier === 'royal') return true;
     return (website.unlockedTemplates || []).includes(template);
   };
 
@@ -290,6 +297,7 @@ const Website = () => {
   };
 
   const getPublicTemplate = () => {
+    if (selectedGift?.tier === 'royal') return selectedTemplate || 'nocturne';
     if (PREMIUM_TEMPLATE_KEYS.includes(selectedTemplate) && !isTemplateUnlocked(selectedTemplate)) {
       return 'nocturne';
     }
@@ -299,7 +307,7 @@ const Website = () => {
   const getPublicLink = () => {
     if (!website) return '';
     const linkId = website.slug || website.shareLink;
-    return `${window.location.origin}/wedding-website/${linkId}`;
+    return `${window.location.origin}/${linkId}`;
   };
 
   const copyShareLink = async () => {
@@ -323,34 +331,36 @@ const Website = () => {
     setPayingTemplate(null);
   }, [website?.pendingTemplatePurchase]);
 
-  // Check for payment verification on component mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const reference = params.get('reference');
-    const giftId = params.get('giftId');
-    const type = params.get('type');
-    const template = params.get('template');
+   // Check for payment verification on component mount
+   useEffect(() => {
+     const params = new URLSearchParams(window.location.search);
+     const reference = params.get('reference');
+     const giftId = params.get('giftId');
+     const type = params.get('type');
+     const template = params.get('template');
+     const tier = params.get('tier');
 
-    if (reference && giftId) {
-      const verifyPayment = async () => {
-        try {
-          const token = localStorage.getItem('token');
-          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${giftId}/premium/verify?reference=${encodeURIComponent(reference)}&type=${type || 'event'}${template ? `&template=${encodeURIComponent(template)}` : ''}`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          const data = await response.json();
-          if (response.ok) {
-            toast({ title: 'Success!', description: data.msg });
-            // Clear URL params
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.delete('reference');
-            newUrl.searchParams.delete('giftId');
-            newUrl.searchParams.delete('type');
-            newUrl.searchParams.delete('template');
-            window.history.replaceState({}, '', newUrl.toString());
+     if (reference && giftId) {
+       const verifyPayment = async () => {
+         try {
+           const token = localStorage.getItem('token');
+           const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${giftId}/premium/verify?reference=${encodeURIComponent(reference)}&type=${type || 'event'}${template ? `&template=${encodeURIComponent(template)}` : ''}${tier ? `&tier=${encodeURIComponent(tier)}` : ''}`, {
+             method: 'POST',
+             headers: {
+               Authorization: `Bearer ${token}`,
+             },
+           });
+           const data = await response.json();
+           if (response.ok) {
+             toast({ title: 'Success!', description: data.msg });
+             // Clear URL params
+             const newUrl = new URL(window.location.href);
+             newUrl.searchParams.delete('reference');
+             newUrl.searchParams.delete('giftId');
+             newUrl.searchParams.delete('type');
+             newUrl.searchParams.delete('template');
+             newUrl.searchParams.delete('tier');
+             window.history.replaceState({}, '', newUrl.toString());
             // If it's a template payment, select that template
             if (type === 'template' && template) {
               setSelectedTemplate(template);
@@ -527,9 +537,19 @@ const Website = () => {
                 return <TemplatePearl {...props} />;
               case 'noir':
                 return <TemplateNoir {...props} />;
-              case 'amethyst':
+            case 'amethyst':
                 return <TemplateAmethyst {...props} />;
-              case 'modern':
+              case 'aubade':
+                return <TemplateAubade {...props} />;
+              case 'solstice':
+                return <TemplateSolstice {...props} />;
+              case 'gardenia':
+                return <TemplateGardenia {...props} />;
+              case 'meridian':
+                return <TemplateMeridian {...props} />;
+              case 'opulence':
+                return <TemplateOpulence {...props} />;
+            case 'modern':
               default:
                 return <TemplateModern {...props} />;
             }
@@ -653,6 +673,10 @@ const Website = () => {
           { key: 'joy-blossom', name: 'Joy Blossom', desc: 'Festive, floral & joyful', gradient: 'from-pink-100 to-rose-100', dotGradient: 'from-pink-500 to-rose-500', premium: false },
           { key: 'nocturne', name: 'Nocturne', desc: 'Dark, moody & refined', gradient: 'from-slate-800 to-stone-800', dotGradient: 'from-orange-400 to-amber-400', premium: false },
           { key: 'rosette', name: 'Rosette', desc: 'Bold, romantic & vibrant', gradient: 'from-rose-100 to-red-100', dotGradient: 'from-rose-500 to-red-500', premium: false },
+          { key: 'aubade', name: 'Aubade', desc: 'Soft dawn romance & golden light', gradient: 'from-rose-200 via-amber-100 to-fuchsia-200', dotGradient: 'from-rose-400 to-amber-400', premium: false },
+          { key: 'solstice', name: 'Solstice', desc: 'Warm, colorful & sunlit', gradient: 'from-orange-200 via-white to-teal-200', dotGradient: 'from-orange-500 to-teal-500', premium: false },
+          { key: 'gardenia', name: 'Gardenia', desc: 'Botanical, calm & romantic', gradient: 'from-green-100 via-stone-50 to-rose-100', dotGradient: 'from-green-500 to-rose-400', premium: false },
+          { key: 'meridian', name: 'Meridian', desc: 'Modern, bold & editorial', gradient: 'from-slate-900 via-teal-700 to-yellow-300', dotGradient: 'from-yellow-300 to-teal-400', premium: false },
           { key: 'milk', name: 'Milk', desc: 'Pure, fine & timeless', gradient: 'from-stone-100 to-orange-50', dotGradient: 'from-stone-400 to-orange-300', premium: false },
           { key: 'emerald', name: 'Emerald', desc: 'Photo-led, elegant & vibrant', gradient: 'from-emerald-950 via-emerald-700 to-amber-300', iconBg: 'bg-emerald-900', ring: 'border-emerald-700 bg-emerald-50 shadow-md', hover: 'hover:border-emerald-300', Icon: Heart, premium: true },
           { key: 'sapphire', name: 'Sapphire', desc: 'Editorial, classic & timeless', gradient: 'from-blue-950 via-blue-700 to-sky-300', iconBg: 'bg-blue-900', ring: 'border-blue-700 bg-blue-50 shadow-md', hover: 'hover:border-blue-300', Icon: Crown, premium: true },
@@ -660,7 +684,8 @@ const Website = () => {
           {key: 'pearl', name: 'Pearl', desc: 'Minimal editorial elegance', gradient: 'from-stone-950 via-stone-300 to-white', iconBg: 'bg-stone-900', ring: 'border-stone-700 bg-stone-50 shadow-md', hover: 'hover:border-stone-300', Icon: Crown, premium: true},
           {key: 'noir', name: 'Noir', desc: 'Navy, gold & refined editorial', gradient: 'from-[#1a2332] via-[#2a3a52] to-[#c9a959]', iconBg: 'bg-[#1a2332]', ring: 'border-[#1a2332] bg-[#faf8f5] shadow-md', hover: 'hover:border-[#c9a959]', Icon: Crown, premium: true},
           {key: 'amethyst', name: 'Amethyst', desc: 'Airy purple & lavender elegance', gradient: 'from-purple-900 via-violet-800 to-fuchsia-700', iconBg: 'bg-purple-900', ring: 'border-purple-700 bg-purple-50 shadow-md', hover: 'hover:border-purple-300', Icon: Crown, premium: true},
-        ].map((tpl) => {
+          {key: 'opulence', name: 'Opulence', desc: 'Black tie, jewel-toned luxury', gradient: 'from-[#120c10] via-[#3a1725] to-[#d7b46a]', iconBg: 'bg-[#120c10]', ring: 'border-[#d7b46a] bg-[#fff7e6] shadow-md', hover: 'hover:border-[#d7b46a]', Icon: Crown, premium: true},
+          ].map((tpl) => {
           const isPremium = !!tpl.premium;
           const TplIcon = tpl.Icon;
           const isSelected = selectedTemplate === tpl.key;
@@ -719,9 +744,10 @@ const Website = () => {
                     e.stopPropagation();
                     openPreview(tpl.key);
                   }}
-                  className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 flex-shrink-0"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gray-50 border border-gray-200 text-gray-600 hover:text-[#2E235C] hover:border-[#2E235C]/30 hover:bg-white transition-all duration-200 flex-shrink-0"
                 >
-                  <Eye className="w-4 h-4" />
+                  <Eye className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider">Preview</span>
                 </button>
               </div>
             </div>

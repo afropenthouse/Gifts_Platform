@@ -25,6 +25,7 @@ model Gift {
   enableRSVP                  Boolean        @default(true)
   enableGuestNotes            Boolean        @default(true)
   enableCashGifts             Boolean        @default(true)
+  enableWebsite               Boolean        @default(false)
   isSellingAsoebi             Boolean        @default(false)
   asoebiPrice                 Decimal?       @db.Decimal(10, 2)
   address                     String?
@@ -62,14 +63,20 @@ model Gift {
   Moment                      Moment[]
   Vendor                      Vendor[]
   wishlists                   Wishlist[]
-  website                     Website?
-  invitation                  Invitation?
-   isPremium                   Boolean        @default(false)
-  premiumPayment              PremiumPayment?
-  templatePurchases           TemplatePurchase[]
+   website                     Website?
+   invitation                  Invitation?
+   tier                         GiftTier       @default(free)
+   premiumPayment              PremiumPayment?
+   templatePurchases           TemplatePurchase[]
 
   @@index([userId])
   @@index([createdAt])
+}
+
+enum GiftTier {
+  free
+  vip
+  royal
 }
 
 model PremiumPayment {
@@ -77,6 +84,7 @@ model PremiumPayment {
   userId      Int
   giftId      Int      @unique
   amount      Decimal  @db.Decimal(10, 2)
+  tier        GiftTier @default(royal)
   status      String   @default("pending")
   transactionId String? @unique
   createdAt   DateTime @default(now())
@@ -147,7 +155,7 @@ model Invitation {
   slug               String   @unique
   shareLink          String   @unique
   template           String   @default("elegant")
-  isPremium          Boolean  @default(false)
+  tier                GiftTier  @default(free)
   published          Boolean  @default(false)
   venue              String?
   coupleName1        String?

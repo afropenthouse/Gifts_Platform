@@ -366,7 +366,7 @@ module.exports = () => {
       if (existingContribution) {
         if (provider === 'flutterwave' && Number(existingContribution.amount) !== Number(amount)) {
           let updatedCommission;
-          if (gift.isPremium) {
+          if (gift.tier === 'vip' || gift.tier === 'royal') {
             updatedCommission = 0;
           } else {
             updatedCommission = existingContribution.isAsoebi
@@ -449,8 +449,8 @@ module.exports = () => {
       let amountReceived;
       let asoebiTotalQty = 0;
       
-      if (gift.isPremium) {
-        // No commission for premium events
+      if (gift.tier === 'vip' || gift.tier === 'royal') {
+        // No commission for vip/royal events
         commission = 0;
         amountReceived = amount;
       } else {
@@ -871,11 +871,11 @@ module.exports = () => {
             }),
             prisma.gift.update({
               where: { id: giftId },
-              data: { isPremium: true }
+              data: { tier: 'royal' }
             })
           ]);
 
-          console.log('✅ Premium payment verified via webhook:', updatedPayment.id);
+          console.log('✅ Royal payment verified via webhook:', updatedPayment.id);
 
           sendGiftReceivedEmail({
             recipientEmail: gift.user.email,
@@ -883,11 +883,11 @@ module.exports = () => {
             contributorName: gift.user.name || 'Event Owner',
             amount: 50000,
             gift: gift,
-            message: 'Premium/VIP Upgrade activated',
+            message: 'Royal Upgrade activated',
             isAsoebi: false,
             currency: 'NGN',
             baseAmount: 50000,
-          }).catch(err => console.error('Background premium gift received email failed:', err));
+          }).catch(err => console.error('Background royal gift received email failed:', err));
 
           return res.status(200).send('OK');
         }
@@ -958,7 +958,7 @@ module.exports = () => {
         let commission;
         let amountReceived;
         
-        if (gift.isPremium) {
+        if (gift.tier === 'vip' || gift.tier === 'royal') {
           commission = 0;
           amountReceived = amountInNaira;
         } else {
@@ -1290,7 +1290,7 @@ module.exports = () => {
 
       let commission;
       let amountReceived;
-      if (gift.isPremium) {
+      if (gift.tier === 'vip' || gift.tier === 'royal') {
         commission = 0;
         amountReceived = amountNum;
       } else {

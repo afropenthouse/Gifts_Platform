@@ -287,7 +287,7 @@ module.exports = () => {
 
       const totalContributionsAmount = Number(totalContributions._sum.amount || 0);
       const totalAsoebiAmount = Number(totalAsoebiContributions._sum.amount || 0);
-      const totalTransactions = totalContributionsAmount + totalAsoebiAmount + totalPremiumAmount;
+      const totalTransactions = totalContributionsAmount + totalAsoebiAmount;
       const totalPlatformRevenue = platformRevenue + totalPremiumAmount;
 
       res.json({
@@ -580,7 +580,14 @@ module.exports = () => {
       const premiumPayments = await prisma.premiumPayment.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        include: {
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          transactionId: true,
+          createdAt: true,
+          giftId: true,
+          tier: true,
           gift: {
             select: {
               id: true,
@@ -613,7 +620,8 @@ module.exports = () => {
         gift: payment.gift,
         user: payment.user,
         flow: 'inflow',
-        type: 'premium'
+        type: 'premium',
+        tier: payment.tier || 'royal',
       }));
 
       res.json(normalized);
@@ -1535,7 +1543,7 @@ module.exports = () => {
         return res.status(404).json({ msg: 'Gift not found' });
       }
 
-      if (gift.isPremium) {
+      if (gift.tier !== 'free') {
         return res.status(400).json({ msg: 'Gift is already premium' });
       }
 
@@ -1552,7 +1560,8 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Payment verification failed with Paystack' });
       }
 
-      const amount = 50000;
+      const amount = 100000;
+      const tier = 'royal';
 
       const [updatedPayment] = await prisma.$transaction([
         prisma.premiumPayment.upsert({
@@ -1560,6 +1569,7 @@ module.exports = () => {
           update: {
             userId: gift.userId,
             amount,
+            tier,
             transactionId: reference,
             status: 'success'
           },
@@ -1567,13 +1577,14 @@ module.exports = () => {
             userId: gift.userId,
             giftId,
             amount,
+            tier,
             transactionId: reference,
             status: 'success'
           }
         }),
         prisma.gift.update({
           where: { id: giftId },
-          data: { isPremium: true }
+          data: { tier }
         })
       ]);
 
@@ -1582,7 +1593,7 @@ module.exports = () => {
         data: { wallet: { increment: amount } }
       });
 
-      res.json({ msg: 'Premium payment verified and activated successfully', payment: updatedPayment });
+      res.json({ msg: 'Royal payment verified and activated successfully', payment: updatedPayment });
     } catch (err) {
       console.error('Admin premium verify error:', err);
       res.status(500).json({ msg: 'Server error verifying premium payment' });

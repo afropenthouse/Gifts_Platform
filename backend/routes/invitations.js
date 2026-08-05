@@ -128,7 +128,7 @@ module.exports = () => {
         id: invitation.id,
         title: invitation.gift?.title || 'My Invitation',
         template: invitation.template,
-        tier: invitation.isPremium ? 'premium' : 'free',
+        tier: invitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: invitation.primaryColor,
           secondaryColor: invitation.secondaryColor,
@@ -198,7 +198,7 @@ module.exports = () => {
         id: invitation.id,
         title: invitation.gift?.title || 'My Invitation',
         template: invitation.template,
-        tier: invitation.isPremium ? 'premium' : 'free',
+        tier: invitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: invitation.primaryColor,
           secondaryColor: invitation.secondaryColor,
@@ -232,12 +232,22 @@ module.exports = () => {
   // Create a new invitation
   router.post('/', auth(), async (req, res) => {
     try {
-      const { giftId, title, template, heroImage, heroTitle, heroSubtitle, theme, content, isPremium } = req.body;
+      const { giftId, title, template, heroImage, heroTitle, heroSubtitle, theme, content, tier: invitationTier } = req.body;
 
       // Check if template is premium and user has access
       const templateConfig = INVITATION_TEMPLATES.find(t => t.id === template);
-      if (templateConfig?.tier === 'premium' && !isPremium) {
-        return res.status(403).json({ msg: 'Premium template requires upgrade' });
+      let resolvedTier = invitationTier || 'free';
+      if (giftId) {
+        const gift = await prisma.gift.findUnique({
+          where: { id: parseInt(giftId) },
+          select: { tier: true }
+        });
+        if (gift) {
+          resolvedTier = gift.tier;
+        }
+      }
+      if (templateConfig?.tier === 'premium' && resolvedTier !== 'royal') {
+        return res.status(403).json({ msg: 'Premium template requires Royal upgrade' });
       }
 
       const shareLink = crypto.randomBytes(16).toString('hex');
@@ -254,7 +264,7 @@ module.exports = () => {
           slug,
           shareLink,
           template: template || 'botanical-sprig',
-          isPremium: isPremium || false,
+          tier: resolvedTier,
           published: false,
           venue: content?.eventLocation,
           coupleName1,
@@ -301,7 +311,7 @@ module.exports = () => {
         id: invitation.id,
         title: invitation.gift?.title || title || 'My Invitation',
         template: invitation.template,
-        tier: invitation.isPremium ? 'premium' : 'free',
+        tier: invitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: invitation.primaryColor,
           secondaryColor: invitation.secondaryColor,
@@ -336,7 +346,7 @@ module.exports = () => {
   router.put('/:id', auth(), async (req, res) => {
     try {
       const { id } = req.params;
-      const { giftId, title, template, heroImage, heroTitle, heroSubtitle, theme, content, isPremium } = req.body;
+      const { giftId, title, template, heroImage, heroTitle, heroSubtitle, theme, content, tier: invitationTier } = req.body;
 
       const existingInvitation = await prisma.invitation.findUnique({
         where: { id: parseInt(id) }
@@ -348,8 +358,18 @@ module.exports = () => {
 
       // Check if template is premium and user has access
       const templateConfig = INVITATION_TEMPLATES.find(t => t.id === template);
-      if (templateConfig?.tier === 'premium' && !isPremium && !existingInvitation.isPremium) {
-        return res.status(403).json({ msg: 'Premium template requires upgrade' });
+      let resolvedTier = invitationTier !== undefined ? invitationTier : existingInvitation.tier;
+      if (giftId && invitationTier === undefined) {
+        const gift = await prisma.gift.findUnique({
+          where: { id: parseInt(giftId) },
+          select: { tier: true }
+        });
+        if (gift) {
+          resolvedTier = gift.tier;
+        }
+      }
+      if (templateConfig?.tier === 'premium' && resolvedTier !== 'royal' && existingInvitation.tier !== 'royal') {
+        return res.status(403).json({ msg: 'Premium template requires Royal upgrade' });
       }
 
       const coupleNames = content?.coupleNames?.split(' & ') || [];
@@ -361,7 +381,7 @@ module.exports = () => {
         data: {
           giftId: giftId ? parseInt(giftId) : existingInvitation.giftId,
           template: template || existingInvitation.template,
-          isPremium: isPremium !== undefined ? isPremium : existingInvitation.isPremium,
+          tier: resolvedTier,
           venue: content?.eventLocation,
           coupleName1,
           coupleName2,
@@ -407,7 +427,7 @@ module.exports = () => {
         id: updatedInvitation.id,
         title: updatedInvitation.gift?.title || title || 'My Invitation',
         template: updatedInvitation.template,
-        tier: updatedInvitation.isPremium ? 'premium' : 'free',
+        tier: updatedInvitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: updatedInvitation.primaryColor,
           secondaryColor: updatedInvitation.secondaryColor,
@@ -473,7 +493,7 @@ module.exports = () => {
         id: updatedInvitation.id,
         title: updatedInvitation.gift?.title || 'My Invitation',
         template: updatedInvitation.template,
-        tier: updatedInvitation.isPremium ? 'premium' : 'free',
+        tier: updatedInvitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: updatedInvitation.primaryColor,
           secondaryColor: updatedInvitation.secondaryColor,

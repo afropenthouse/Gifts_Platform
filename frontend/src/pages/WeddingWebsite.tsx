@@ -14,6 +14,11 @@ import { TemplatePearl } from '../components/website-templates/TemplatePearl';
 import { TemplateNoir } from '../components/website-templates/TemplateNoir';
 import { TemplateAmethyst } from '../components/website-templates/TemplateAmethyst';
 import { TemplateJoyBlossom } from '../components/website-templates/TemplateJoyBlossom';
+import { TemplateAubade } from '../components/website-templates/TemplateAubade';
+import { TemplateSolstice } from '../components/website-templates/TemplateSolstice';
+import { TemplateGardenia } from '../components/website-templates/TemplateGardenia';
+import { TemplateMeridian } from '../components/website-templates/TemplateMeridian';
+import { TemplateOpulence } from '../components/website-templates/TemplateOpulence';
 import { Loader2 } from 'lucide-react';
 
 interface Website {
@@ -47,7 +52,7 @@ interface Website {
   };
 }
 
-const PREMIUM_TEMPLATE_KEYS = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir'];
+const PREMIUM_TEMPLATE_KEYS = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir', 'opulence'];
 
 const WeddingWebsite = () => {
   const { template, link, slug, id: shareLinkId } = useParams<{ template?: string; link?: string; slug?: string; id?: string }>();
@@ -203,6 +208,16 @@ const WeddingWebsite = () => {
       return <TemplateNoir {...props} />;
     case 'amethyst':
       return <TemplateAmethyst {...props} />;
+    case 'aubade':
+      return <TemplateAubade {...props} />;
+    case 'solstice':
+      return <TemplateSolstice {...props} />;
+    case 'gardenia':
+      return <TemplateGardenia {...props} />;
+    case 'meridian':
+      return <TemplateMeridian {...props} />;
+    case 'opulence':
+      return <TemplateOpulence {...props} />;
     case 'elegant':
     default:
       return <TemplateElegant {...props} />;

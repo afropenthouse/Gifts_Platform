@@ -151,7 +151,7 @@ const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'transactions', label: 'Transactions', icon: Gift },
-  { id: 'premium', label: 'Premium / VIP', icon: Crown },
+  { id: 'premium', label: 'Upgrade', icon: Crown },
   { id: 'guests', label: 'Guest Users', icon: Users },
   { id: 'events', label: 'Events', icon: CalendarDays },
   { id: 'moments', label: 'Photobook', icon: Camera },
@@ -191,7 +191,7 @@ const AdminDashboard = () => {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [useCustomDateRange, setUseCustomDateRange] = useState(false);
-  const [selectedTxnType, setSelectedTxnType] = useState<'all' | 'cash' | 'asoebi'>('all');
+  const [selectedTxnType, setSelectedTxnType] = useState<'all' | 'cash' | 'asoebi' | 'premium-vip' | 'premium-royal'>('all');
   const [selectedTxnFlow, setSelectedTxnFlow] = useState<'all' | 'inflow' | 'outflow'>('all');
   const [guestEmailFilter, setGuestEmailFilter] = useState<'all' | 'yes' | 'no'>('all');
   const [userSearch, setUserSearch] = useState('');
@@ -203,6 +203,7 @@ const AdminDashboard = () => {
   const [eventStatusFilter, setEventStatusFilter] = useState<'all' | 'active' | 'past'>('all');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all'); // Event type filter
   const [eventSortBy, setEventSortBy] = useState<string>('default'); // New sort state
+  const [selectedTierFilter, setSelectedTierFilter] = useState<'all' | 'vip' | 'royal'>('all'); // Tier filter for premium tab
   const [emailSourceFilter, setEmailSourceFilter] = useState<'all' | 'user' | 'guest'>('all');
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [sendingBulk, setSendingBulk] = useState(false);
@@ -321,7 +322,11 @@ const AdminDashboard = () => {
         }
         
         if (activeTab === 'transactions') {
-          if (selectedTxnType !== 'all') params.set('type', selectedTxnType);
+          if (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal') {
+            // These are handled client-side via premiumPayments, skip server-side type filter
+          } else if (selectedTxnType !== 'all') {
+            params.set('type', selectedTxnType);
+          }
           if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
         }
       }
@@ -729,10 +734,17 @@ const AdminDashboard = () => {
     if (activeTab === 'transactions') {
       fetchContributions(txnTimeFilter, true);
       fetchWithdrawals(txnTimeFilter);
+      fetchPremiumPayments(txnTimeFilter, true);
     } else if (activeTab === 'premium') {
       fetchPremiumPayments(txnTimeFilter, true);
     }
   }, [activeTab, fetchContributions, fetchWithdrawals, fetchPremiumPayments, txnTimeFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'transactions' && (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal')) {
+      fetchPremiumPayments(txnTimeFilter, true);
+    }
+  }, [activeTab, selectedTxnType, txnTimeFilter, fetchPremiumPayments]);
 
   useEffect(() => {
     if ((activeTab === 'transactions' || activeTab === 'premium') && useCustomDateRange && customStartDate && customEndDate) {
@@ -1181,28 +1193,56 @@ const AdminDashboard = () => {
     []
   );
 
-  const filteredContributions = (tab: AdminTab) => {
+    const filteredContributions = (tab: AdminTab) => {
     if (tab === 'transactions') {
       let rows: any[] = [];
 
       if (selectedTxnFlow === 'all' || selectedTxnFlow === 'inflow') {
-        let inflows = allContributions.filter((c) => c.amount > 0 && c.type !== 'premium');
-        if (selectedTxnType === 'asoebi') {
-          inflows = inflows.filter((c) => c.isAsoebi);
-        } else if (selectedTxnType === 'cash') {
-          inflows = inflows.filter((c) => !c.isAsoebi);
+        if (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal') {
+          const targetTier = selectedTxnType === 'premium-vip' ? 'vip' : 'royal';
+          const premiumInflows = (Array.isArray(premiumPayments) ? premiumPayments : [])
+            .filter((p) => {
+              const matchStatus = p.status === 'success';
+              const matchTier = p.tier === targetTier;
+              return matchStatus && matchTier;
+            });
+          const filtered = filterByEvent(premiumInflows);
+          
+          rows = rows.concat(
+            filtered.map((p) => ({ 
+              ...p, 
+              flow: 'inflow', 
+              personName: p.user?.name || p.user?.email || 'Event Owner' 
+            }))
+          );
+        } else {
+          let inflows = allContributions.filter((c) => c.amount > 0 && c.type !== 'premium');
+          if (selectedTxnType === 'asoebi') {
+            inflows = inflows.filter((c) => c.isAsoebi);
+          } else if (selectedTxnType === 'cash') {
+            inflows = inflows.filter((c) => !c.isAsoebi);
+          }
+          inflows = filterByEvent(inflows);
+          rows = rows.concat(
+            inflows.map((c) => ({ ...c, flow: 'inflow', personName: c.contributorName || 'Anonymous' }))
+          );
+
+          if (selectedTxnType === 'all') {
+            const allPremium = (Array.isArray(premiumPayments) ? premiumPayments : [])
+              .filter((p) => p.status === 'success');
+            const filtered = filterByEvent(allPremium);
+            rows = rows.concat(
+              filtered.map((p) => ({ ...p, flow: 'inflow', personName: p.user?.name || p.user?.email || 'Event Owner' }))
+            );
+          }
         }
-        inflows = filterByEvent(inflows);
-        rows = rows.concat(
-          inflows.map((c) => ({ ...c, flow: 'inflow', personName: c.contributorName || 'Anonymous' }))
-        );
       }
 
       if (selectedTxnFlow === 'all' || selectedTxnFlow === 'outflow') {
-        let outflows = allWithdrawals.filter((w) => Number(w.amount) > 0);
-        outflows = filterByEvent(outflows);
+        const outflows = allWithdrawals.filter((w) => Number(w.amount) > 0);
+        const filtered = filterByEvent(outflows);
         rows = rows.concat(
-          outflows.map((w) => ({
+          filtered.map((w) => ({
             ...w,
             flow: 'outflow',
             personName: w.user?.name || w.user?.email || 'Anonymous',
@@ -1217,7 +1257,15 @@ const AdminDashboard = () => {
     }
 
     if (tab === 'premium') {
-      return filterByEvent(premiumPayments);
+      let rows = filterByEvent(Array.isArray(premiumPayments) ? premiumPayments : []);
+      
+      if (selectedTierFilter !== 'all') {
+        rows = rows.filter((c) => c.tier === selectedTierFilter);
+      }
+      
+      const totalPremium = rows.reduce((sum, r) => sum + Number(r.amount), 0);
+      
+      return rows;
     }
 
     let rows = allContributions;
@@ -1963,7 +2011,7 @@ const AdminDashboard = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">VIP / Premium</CardTitle>
+               <CardTitle className="text-sm font-medium text-muted-foreground">Upgrade</CardTitle>
               <Crown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -2142,9 +2190,13 @@ const AdminDashboard = () => {
     );
   };
 
-  const renderContributions = (tab: AdminTab) => {
-    if (tab === 'premium') {
-      const rows = filterByEvent(premiumPayments);
+   const renderContributions = (tab: AdminTab) => {
+     if (tab === 'premium') {
+       let rows = filterByEvent(premiumPayments);
+
+       if (selectedTierFilter !== 'all') {
+         rows = rows.filter((c) => c.tier === selectedTierFilter);
+       }
 
       if (txnSearch) {
         const search = txnSearch.toLowerCase();
@@ -2164,32 +2216,56 @@ const AdminDashboard = () => {
         <>
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Premium / VIP Upgrades</h3>
-                  <p className="text-sm text-muted-foreground">Total: {rows.length} records • ₦{totalPremium.toLocaleString()}</p>
-                </div>
-              </div>
+               <div className="flex items-center justify-between mb-4">
+                 <div>
+                    <h3 className="text-lg font-semibold">Upgrade Payments</h3>
+                    <p className="text-sm text-muted-foreground">Total: {rows.length} records • ₦{totalPremium.toLocaleString()}</p>
+                 </div>
+                 <div className="flex items-center gap-2">
+                   <Select value={selectedTierFilter} onValueChange={(value) => setSelectedTierFilter(value as 'all' | 'vip' | 'royal')}>
+                     <SelectTrigger className="w-[140px]">
+                       <SelectValue placeholder="All Tiers" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="all">All Tiers</SelectItem>
+                       <SelectItem value="vip">VIP</SelectItem>
+                       <SelectItem value="royal">Royal</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
+               </div>
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Event Owner</TableHead>
-                    <TableHead>Event</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead>Event Owner</TableHead>
+                     <TableHead>Event</TableHead>
+                     <TableHead>Tier</TableHead>
+                     <TableHead>Amount</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead>Date</TableHead>
+                   </TableRow>
+                 </TableHeader>
                 <TableBody>
                   {rows.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">
                         {payment.contributorName || 'Anonymous'}
                       </TableCell>
-                      <TableCell>
-                        <p className="truncate max-w-[220px]">{payment.gift?.title || '-'}</p>
-                      </TableCell>
-                      <TableCell>
+                       <TableCell>
+                         <p className="truncate max-w-[220px]">{payment.gift?.title || '-'}</p>
+                       </TableCell>
+                       <TableCell>
+                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                           payment.tier === 'royal'
+                             ? 'bg-purple-100 text-purple-700'
+                             : payment.tier === 'vip'
+                             ? 'bg-yellow-100 text-yellow-700'
+                             : 'bg-gray-100 text-gray-700'
+                         }`}>
+                           {payment.tier === 'royal' ? 'Royal' : payment.tier === 'vip' ? 'VIP' : 'Free'}
+                         </span>
+                       </TableCell>
+                       <TableCell>
                         <span className="font-medium">₦{Number(payment.amount).toLocaleString()}</span>
                       </TableCell>
                       <TableCell>
@@ -2210,13 +2286,13 @@ const AdminDashboard = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {rows.length === 0 && (
-                    <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                      No premium payments found
-                    </TableCell>
-                    </TableRow>
-                  )}
+                   {rows.length === 0 && (
+                     <TableRow>
+                     <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                       No upgrade payments found
+                     </TableCell>
+                     </TableRow>
+                   )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -2238,11 +2314,9 @@ const AdminDashboard = () => {
       });
     }
 
-    const filteredTransactionAmount = metrics?.totalTransactions || (metrics?.totalContributions || 0) + (metrics?.totalAsoebiContributions || 0);
-    const filteredRevenue = metrics?.totalRevenue || 0;
-    const revenueRatio = filteredTransactionAmount > 0
-      ? (filteredRevenue / filteredTransactionAmount) * 100
-      : 0;
+    const filteredTransactionAmount = rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const filteredRevenue = rows.filter((r) => r.flow === 'inflow').reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const revenueRatio = filteredTransactionAmount > 0 ? (filteredRevenue / filteredTransactionAmount) * 100 : 0;
     const timeFilterLabelMap: Record<TimeFilter, string> = {
       all: 'All Time',
       '7days': 'Last 7 days',
@@ -2431,16 +2505,24 @@ const AdminDashboard = () => {
                            Withdrawal
                          </span>
                        ) : (
-                         <span
-                           className={`text-[10px] w-fit px-2 py-1 rounded-full ${
-                             contribution.type === 'premium'
-                               ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                               : contribution.isAsoebi
-                                 ? 'bg-black/5 text-black border border-black/10'
-                                 : 'bg-black/5 text-black border border-black/10'
-                           }`}
-                         >
-                           {contribution.type === 'premium' ? 'Premium/VIP' : contribution.isAsoebi ? 'Asoebi' : 'Cash Gift'}
+                           <span
+                             className={`text-[10px] w-fit px-2 py-1 rounded-full ${
+                               contribution.type === 'premium'
+                                 ? contribution.tier === 'royal'
+                                   ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                   : contribution.tier === 'vip'
+                                     ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                                     : 'bg-gray-100 text-gray-700 border border-gray-200'
+                                 : contribution.isAsoebi
+                                   ? 'bg-black/5 text-black border border-black/10'
+                                   : 'bg-black/5 text-black border border-black/10'
+                             }`}
+                           >
+                              {contribution.type === 'premium' 
+                                ? (contribution.tier === 'royal' ? 'Premium Royal' : contribution.tier === 'vip' ? 'Premium VIP' : 'Premium') 
+                                : contribution.isAsoebi 
+                                  ? 'Asoebi' 
+                                  : 'Cash Gift'}
                          </span>
                        )}
                      </TableCell>
@@ -3159,7 +3241,7 @@ const AdminDashboard = () => {
                 </Label>
                 <Select
                   value={selectedTxnType}
-                  onValueChange={(value) => setSelectedTxnType(value as 'all' | 'cash' | 'asoebi')}
+                  onValueChange={(value) => setSelectedTxnType(value as 'all' | 'cash' | 'asoebi' | 'premium-vip' | 'premium-royal')}
                 >
                   <SelectTrigger id="admin-txn-type" className="w-[160px]">
                     <SelectValue placeholder="All" />
@@ -3168,6 +3250,8 @@ const AdminDashboard = () => {
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="cash">Cash Gift</SelectItem>
                     <SelectItem value="asoebi">Asoebi</SelectItem>
+                    <SelectItem value="premium-vip">Premium VIP</SelectItem>
+                    <SelectItem value="premium-royal">Premium Royal</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

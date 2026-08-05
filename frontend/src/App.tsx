@@ -122,9 +122,9 @@ const App = () => {
           <Route path="/wishes/:slug/:id" element={<Wishes />} />
           <Route path="/wishlist/:slug/:id" element={<ShareWishlist />} />
           <Route path="/wishlist/:link" element={<ShareWishlist />} />
-           <Route path="/wedding-website/:slug" element={<WeddingWebsite />} />
-           <Route path="/wedding-website/:template?/:link" element={<WeddingWebsite />} />
-           <Route path="/wedding-website/:template/:slug/:id" element={<WeddingWebsite />} />
+           <Route path="/:slug" element={<WeddingWebsite />} />
+           <Route path="/:template/:link" element={<WeddingWebsite />} />
+           <Route path="/:template/:slug/:id" element={<WeddingWebsite />} />
           <Route path="/invitation/:template?/:link" element={<PublicInvitation />} />
           <Route path="/invitation/:template/:slug/:id" element={<PublicInvitation />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
