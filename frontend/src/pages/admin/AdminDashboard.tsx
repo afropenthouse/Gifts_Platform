@@ -163,8 +163,9 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [allContributions, setAllContributions] = useState<Contribution[]>([]);
   const [allWithdrawals, setAllWithdrawals] = useState<any[]>([]);
-  const [premiumPayments, setPremiumPayments] = useState<any[]>([]);
-  const [guests, setGuests] = useState<GuestRow[]>([]);
+   const [premiumPayments, setPremiumPayments] = useState<any[]>([]);
+   const [referralTransactions, setReferralTransactions] = useState<any[]>([]);
+   const [guests, setGuests] = useState<GuestRow[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [moments, setMoments] = useState<Moment[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
@@ -449,6 +450,50 @@ const AdminDashboard = () => {
     } finally {
       setLoadingContributions(false);
       fetchingContributions.current = false;
+    }
+  }, [navigate, selectedEventId, useCustomDateRange, customStartDate, customEndDate]);
+
+  const fetchReferralTransactions = useCallback(async (time: TimeFilter = 'all', skipFilters = false) => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const params = new URLSearchParams();
+
+      if (!skipFilters) {
+        if (useCustomDateRange && customStartDate && customEndDate) {
+          params.set('startDate', customStartDate);
+          params.set('endDate', customEndDate);
+        } else {
+          params.set('time', time);
+        }
+
+        if (selectedEventId !== 'all') params.set('eventId', String(selectedEventId));
+      }
+
+      const response = await fetch(`${baseUrl}/api/admin/referral-transactions?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+        return;
+      }
+
+      if (!response.ok) {
+        toast.error('Failed to fetch referral transactions');
+        return;
+      }
+
+      const data = await response.json();
+      setReferralTransactions(Array.isArray(data) ? data : []);
+    } catch (error) {
+      toast.error('Failed to fetch referral transactions');
     }
   }, [navigate, selectedEventId, useCustomDateRange, customStartDate, customEndDate]);
 
@@ -754,14 +799,20 @@ const AdminDashboard = () => {
       fetchWithdrawals('all');
       fetchPremiumPayments('all', true);
     }
-  }, [activeTab, fetchContributions, fetchWithdrawals, fetchPremiumPayments, useCustomDateRange, customStartDate, customEndDate]);
+   }, [activeTab, fetchContributions, fetchWithdrawals, fetchPremiumPayments, useCustomDateRange, customStartDate, customEndDate]);
 
-  useEffect(() => {
-    if (activeTab === 'events') {
-      fetchEvents();
-      fetchContributions('all', true, true);
-    }
-  }, [activeTab, fetchEvents, fetchContributions]);
+   useEffect(() => {
+     if (activeTab === 'transactions') {
+       fetchReferralTransactions(txnTimeFilter);
+     }
+   }, [activeTab, fetchReferralTransactions, txnTimeFilter, useCustomDateRange, customStartDate, customEndDate]);
+
+    useEffect(() => {
+       if (activeTab === 'events') {
+         fetchEvents();
+         fetchContributions('all', true, true);
+       }
+   }, [activeTab, fetchEvents, fetchContributions]);
 
   // Refetch events when filters change
   useEffect(() => {
@@ -2372,15 +2423,77 @@ const AdminDashboard = () => {
     const inflowSum = rows.filter((r) => r.flow === 'inflow').reduce((sum, r) => sum + Number(r.amount || 0), 0);
     const outflowSum = rows.filter((r) => r.flow === 'outflow').reduce((sum, r) => sum + Number(r.amount || 0), 0);
     const filteredTransactionAmount = selectedTxnFlow === 'outflow' ? outflowSum : inflowSum;
-    const filteredRevenue = rows
-      .filter((r) => r.flow === 'inflow')
-      .reduce((sum, r) => {
-        if (r.tier && (r.tier === 'vip' || r.tier === 'royal')) {
-          return sum + Number(r.amount || 0);
-        }
-        return sum + Number(r.commission || 0);
-      }, 0);
+    // Paystack fees (transfer fees + stamp duty) computed from the locally filtered
+    // withdrawals so the card responds to time / event / search filters.
+    const paystackFeeForAmount = (amount: number): number => {
+      let fee = 0;
+      if (amount <= 5000) fee += 10;
+      else if (amount <= 50000) fee += 25;
+      else fee += 50;
+      if (amount >= 10000) fee += 50;
+      return fee;
+    };
+
+    let feeWithdrawals = (allWithdrawals || []).filter((w) => Number(w.amount) > 0);
+    if (!useCustomDateRange) {
+      feeWithdrawals = filterByTime(feeWithdrawals, txnTimeFilter);
+    } else if (customStartDate && customEndDate) {
+      const start = new Date(customStartDate);
+      const end = new Date(customEndDate + 'T23:59:59');
+      feeWithdrawals = feeWithdrawals.filter((w) => {
+        const d = new Date(w.createdAt);
+        return d >= start && d <= end;
+      });
+    }
+    if (txnSearch) {
+      const search = txnSearch.toLowerCase();
+      feeWithdrawals = feeWithdrawals.filter((w) => {
+        const personName = (w.user?.name || w.user?.email || '').toLowerCase();
+        return personName.includes(search) || String(Number(w.amount)).includes(search);
+      });
+    }
+    const filteredPaystackFees = feeWithdrawals.reduce(
+      (sum, w) => sum + paystackFeeForAmount(Number(w.amount)), 0
+    );
+
+    // Referral revenue computed from the locally fetched & filtered referral transactions.
+    const referralTypeMap: Record<string, string[]> = {
+      all: ['asoebi_commission', 'cash_gift_commission'],
+      'cash-asoebi': ['asoebi_commission', 'cash_gift_commission'],
+      asoebi: ['asoebi_commission'],
+      cash: ['cash_gift_commission'],
+      'premium-vip': [],
+      'premium-royal': [],
+      'premium-all': [],
+    };
+    const allowedReferralTypes = referralTypeMap[selectedTxnType] || [];
+    let filteredReferrals = (referralTransactions || []).filter((r) =>
+      allowedReferralTypes.length === 0 ? false : allowedReferralTypes.includes(r.type)
+    );
+    if (!useCustomDateRange) {
+      filteredReferrals = filterByTime(filteredReferrals, txnTimeFilter);
+    } else if (customStartDate && customEndDate) {
+      const start = new Date(customStartDate);
+      const end = new Date(customEndDate + 'T23:59:59');
+      filteredReferrals = filteredReferrals.filter((r) => {
+        const d = new Date(r.createdAt);
+        return d >= start && d <= end;
+      });
+    }
+    if (txnSearch) {
+      const search = txnSearch.toLowerCase();
+      filteredReferrals = filteredReferrals.filter((r) => {
+        const referrerName = (r.referrer?.name || r.referrer?.email || '').toLowerCase();
+        const referredName = (r.referredUser?.name || r.referredUser?.email || '').toLowerCase();
+        const desc = (r.description || '').toLowerCase();
+        return referrerName.includes(search) || referredName.includes(search) || desc.includes(search) || String(Number(r.amount)).includes(search);
+      });
+    }
+    const filteredReferralRevenue = filteredReferrals.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+    const filteredRevenue = filteredTransactionAmount - filteredPaystackFees;
     const revenueRatio = filteredTransactionAmount > 0 ? (filteredRevenue / filteredTransactionAmount) * 100 : 0;
+    const filteredNetProfit = filteredRevenue - filteredReferralRevenue;
     const timeFilterLabelMap: Record<TimeFilter, string> = {
       all: 'All Time',
       '7days': 'Last 7 days',
@@ -2419,8 +2532,8 @@ const AdminDashboard = () => {
                     ₦{filteredRevenue.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    From commissions and fees
-                  </p>
+                     Total transactions minus Paystack fees
+                   </p>
                 </CardContent>
               </Card>
               <Card>
@@ -2447,7 +2560,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-black">
-                    ₦{(metrics?.estimatedPaystackFees || 0).toLocaleString()}
+                     ₦{filteredPaystackFees.toLocaleString()}
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
                     <p>Transfer Fees + Stamp Duty</p>
@@ -2461,7 +2574,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-black">
-                    ₦{(metrics?.referralRevenue || 0).toLocaleString()}
+                     ₦{filteredReferralRevenue.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Earnings from referral transactions
@@ -2474,12 +2587,12 @@ const AdminDashboard = () => {
                   <Wallet className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-black">
-                    ₦{(metrics?.netProfit || 0).toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Net revenue after fees
-                  </p>
+                   <div className="text-2xl font-bold text-black">
+                     ₦{filteredNetProfit.toLocaleString()}
+                   </div>
+                   <p className="text-xs text-muted-foreground mt-1">
+                     Platform Revenue minus referral earnings
+                   </p>
                 </CardContent>
               </Card>
             </div>
