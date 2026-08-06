@@ -492,7 +492,7 @@ export const DesignEditor = ({
               <div className="p-4 border-t bg-yellow-50 flex gap-2">
                 <Button
                   className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold"
-                  onClick={onPremiumUpgrade}
+                  onClick={() => onPremiumUpgrade?.()}
                 >
                <Crown className="w-4 h-4 mr-1.5" />
                Upgrade to Royal
@@ -550,7 +550,7 @@ export const DesignEditor = ({
             </div>
             <Button
               className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold"
-              onClick={onPremiumUpgrade}
+              onClick={() => onPremiumUpgrade?.()}
             >
               <Crown className="w-4 h-4 mr-1.5" />
               Upgrade Event to VIP

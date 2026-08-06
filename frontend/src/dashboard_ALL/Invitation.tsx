@@ -360,24 +360,44 @@ const Invitation = () => {
               </Button>
             </div>
           ) : (
-            <Button
-              size="sm"
-              className="text-xs h-9 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold shadow-md"
-              onClick={() => handleUpgradeToPremium('vip')}
-              disabled={isProcessingPayment}
-            >
-              {isProcessingPayment ? (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3.5 h-3.5 border-2 border-yellow-900 border-t-transparent rounded-full animate-spin" />
-                  Processing...
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                   <Crown className="w-3.5 h-3.5" />
-                   Upgrade Event to VIP
-                </div>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                className="text-xs h-9 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold shadow-md"
+                onClick={() => handleUpgradeToPremium('vip')}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? (
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3.5 h-3.5 border-2 border-yellow-900 border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                     <Crown className="w-3.5 h-3.5" />
+                     Upgrade to VIP
+                  </div>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                className="text-xs h-9 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold shadow-md"
+                onClick={() => handleUpgradeToPremium('royal')}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? (
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <Crown className="w-3.5 h-3.5" />
+                    Upgrade to Royal
+                  </div>
+                )}
+              </Button>
+            </div>
           )
         )}
       </div>

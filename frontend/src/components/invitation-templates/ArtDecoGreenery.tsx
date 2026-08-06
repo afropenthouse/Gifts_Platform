@@ -77,7 +77,7 @@ const ArtDecoFrame = ({
           [570, 770, 180],
           [30, 770, 270],
         ].map(([x, y, r]) => (
-          <g key={`corner-${x}`} transform={`translate(${x} ${y}) rotate(${r})`}>
+          <g key={`corner-${x}-${y}-${r}`} transform={`translate(${x} ${y}) rotate(${r})`}>
             <path d="M 0 0 L 40 0 L 60 20 L 60 60" />
             <path d="M 0 0 L 0 40 L 20 60 L 60 60" opacity="0.5" strokeWidth="1" />
             <circle cx="44" cy="44" r="4" fill={gold} opacity="0.6" />
