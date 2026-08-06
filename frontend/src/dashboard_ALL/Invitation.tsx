@@ -38,7 +38,6 @@ interface InvitationData {
   gallery?: string[];
   showWellWishes?: boolean;
   enableWishlistButton?: boolean;
-  tier?: 'free' | 'vip' | 'royal';
 }
 
 interface Template {
@@ -138,6 +137,10 @@ const Invitation = () => {
           if (res.ok) {
             toast({ title: 'Success!', description: data.msg });
             await loadGifts();
+            // Refresh invitation data after tier upgrade
+            if (selectedGift) {
+              await fetchInvitation(selectedGift.id);
+            }
           } else {
             toast({ title: 'Error', description: data.msg || 'Payment verification failed', variant: 'destructive' });
             await loadGifts();
@@ -230,7 +233,7 @@ const Invitation = () => {
        const body: any = {
          template: designData.template || invitation?.template || 'botanical-sprig',
          published: invitation?.published || false,
-         tier: isRoyal ? 'royal' : isVip ? 'vip' : 'free',
+         tier: selectedGift?.tier || 'free',
         primaryColor: designData.primaryColor,
         secondaryColor: designData.secondaryColor,
         theme: {

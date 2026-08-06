@@ -128,8 +128,8 @@ const FloralGeometricFrame = ({
         [520, 100, 90],
         [80, 700, -90],
         [520, 700, 180],
-      ].map(([x, y, rot]) => (
-        <g key={`corner-${x}`} transform={`translate(${x} ${y}) rotate(${rot})`}>
+      ].map(([x, y, rot], index) => (
+        <g key={`corner-${index}`} transform={`translate(${x} ${y}) rotate(${rot})`}>
           <use href="#leaf" x="10" y="-5" transform="scale(1.2)" />
           <use href="#leaf" x="-5" y="10" transform="rotate(40) scale(1)" />
           <use href="#rose" x="0" y="0" />
@@ -195,9 +195,9 @@ const FloralGeometricFrame = ({
           [320, 140, -10],
           [280, 660, -10],
           [320, 660, 10],
-        ].map(([x, y, rot]) => (
+        ].map(([x, y, rot], index) => (
           <path
-            key={`petal-${x}`}
+            key={`petal-${index}`}
             d={`M${x} ${y} C${x + 6} ${y - 10} ${x + 14} ${y - 5} ${x + 10} ${y + 3} C${x + 5} ${y + 10} ${x - 2} ${y + 6} ${x} ${y}Z`}
             fill={gold}
             transform={`rotate(${rot} ${x} ${y})`}
