@@ -805,7 +805,7 @@ module.exports = () => {
               return res.status(200).send('OK');
             }
 
-            const templateAmount = 10000;
+            const templateAmount = 30000;
             const [updatedPurchase] = await prisma.$transaction([
               prisma.templatePurchase.upsert({
                 where: { giftId_template: { giftId, template: templateKey } },

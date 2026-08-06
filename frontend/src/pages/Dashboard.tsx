@@ -3472,7 +3472,7 @@ ULTIMATE
                       </div>
                     ) : (
                       <div className="rounded-lg bg-white p-4 text-sm text-gray-600 border border-[#2E235C]/20 shadow-sm">
-                        No premium templates unlocked yet. Visit the Website tab to unlock beautiful premium website templates for ₦10,000 each.
+                         No premium templates unlocked yet. Visit the Website tab to unlock beautiful premium website templates for ₦30,000 each.
                       </div>
                     )}
                   </CardContent>

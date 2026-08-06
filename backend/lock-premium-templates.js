@@ -10,13 +10,13 @@ async function main() {
   const deletedTemplatePurchases = await prisma.templatePurchase.deleteMany({});
   console.log(`Deleted ${deletedTemplatePurchases.count} template purchase records`);
 
-  // 2. Also, update any PremiumPayment records with amount >= 10000 to status 'pending' (or lower amount)
+  // 2. Also, update any PremiumPayment records with amount >= 30000 to status 'pending' (or lower amount)
   // because getUnlockedWebsiteTemplates checks for those to unlock all templates
-  console.log('Updating premium payments that unlock templates (amount >= 10000)...');
+  console.log('Updating premium payments that unlock templates (amount >= 30000)...');
   const updatedPremiumPayments = await prisma.premiumPayment.updateMany({
     where: {
       amount: {
-        gte: 10000
+        gte: 30000
       }
     },
     data: {

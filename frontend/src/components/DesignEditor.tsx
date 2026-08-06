@@ -553,7 +553,7 @@ export const DesignEditor = ({
               onClick={() => onPremiumUpgrade?.()}
             >
               <Crown className="w-4 h-4 mr-1.5" />
-              Upgrade Event to VIP
+               Upgrade to Royal
             </Button>
           </div>
         )}

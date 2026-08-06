@@ -25,12 +25,12 @@ async function main() {
   });
   console.log('Deleted', deletedTemplatePurchases.count, 'template purchase records for this user');
 
-  // 3. Update premium payments >= 10000 for this user's gifts to 'pending' status
+  // 3. Update premium payments >= 30000 for this user's gifts to 'pending' status
   console.log('Updating premium payments for this user...');
   const updatedPremiumPayments = await prisma.premiumPayment.updateMany({
     where: {
       userId: user.id,
-      amount: { gte: 10000 }
+      amount: { gte: 30000 }
     },
     data: {
       status: 'pending'

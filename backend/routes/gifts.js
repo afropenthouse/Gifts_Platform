@@ -1080,7 +1080,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         }
       }
 
-      const amount = type === 'template' ? 10000 : (TIER_PRICES[tier] || 50000);
+      const amount = type === 'template' ? 30000 : (TIER_PRICES[tier] || 50000);
       const tx_ref = `${type === 'template' ? `template-premium-${templateKey}` : `${tier}-upgrade`}-${giftId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const redirectTarget = req.body.redirectTo || '/dashboard';
       const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}${redirectTarget}?giftId=${giftId}&reference=${tx_ref}&type=${type}${templateKey ? `&template=${templateKey}` : ''}${tier ? `&tier=${tier}` : ''}`;
@@ -1279,7 +1279,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         return res.status(400).json({ msg: 'Payment not successful' });
       }
 
-      const amount = type === 'template' ? 10000 : (resolvedTier === 'vip' ? 50000 : 100000);
+      const amount = type === 'template' ? 30000 : (resolvedTier === 'vip' ? 50000 : 100000);
 
       if (type === 'template') {
         // Record the per-template unlock

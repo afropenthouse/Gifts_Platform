@@ -665,7 +665,7 @@ const Website = () => {
             <Card className="border-gray-200/80 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium">All Templates</CardTitle>
-                <p className="text-xs text-gray-500">Free templates are ready to use. Premium templates unlock with a one-time ₦10,000 payment each.</p>
+                 <p className="text-xs text-gray-500">Free templates are ready to use. Premium templates unlock with a one-time ₦30,000 payment each.</p>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1105,7 +1105,7 @@ const Website = () => {
               </div>
 
               <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-gray-900">₦10,000</div>
+                 <div className="text-3xl font-bold text-gray-900">₦30,000</div>
                 <div className="text-sm text-gray-500">One-time payment</div>
               </div>
 
