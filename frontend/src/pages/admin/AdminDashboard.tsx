@@ -788,6 +788,12 @@ const AdminDashboard = () => {
   }, [activeTab, fetchContributions, fetchWithdrawals, fetchPremiumPayments, txnTimeFilter]);
 
   useEffect(() => {
+    if (activeTab === 'transactions') {
+      fetchWithdrawals(txnTimeFilter);
+    }
+  }, [activeTab, selectedEventId, fetchWithdrawals, txnTimeFilter]);
+
+  useEffect(() => {
     if (activeTab === 'transactions' && (selectedTxnType === 'premium-vip' || selectedTxnType === 'premium-royal' || selectedTxnType === 'premium-all')) {
       fetchPremiumPayments(txnTimeFilter, true);
     }
@@ -1203,17 +1209,27 @@ const AdminDashboard = () => {
   };
 
   const filterByEvent = useCallback(
-    (items: Contribution[]) => {
+    (items: any[]) => {
       if (selectedEventId === 'all') {
         return items;
       }
-      return items.filter((item) => item.gift && item.gift.id === selectedEventId);
+      return items.filter((item) => {
+        // For contributions and premium payments, check gift.id
+        if (item.gift && item.gift.id === selectedEventId) {
+          return true;
+        }
+        // For withdrawals, filter by userId through event owner
+        if (item.user && events.find(e => e.id === selectedEventId && e.user.id === item.user.id)) {
+          return true;
+        }
+        return false;
+      });
     },
-    [selectedEventId]
+    [selectedEventId, events]
   );
 
   const filterByTime = useCallback(
-    (items: Contribution[], timeFilter: TimeFilter) => {
+    (items: any[], timeFilter: TimeFilter) => {
       if (timeFilter === 'all') {
         return items;
       }
@@ -2445,6 +2461,7 @@ const AdminDashboard = () => {
         return d >= start && d <= end;
       });
     }
+    feeWithdrawals = filterByEvent(feeWithdrawals);
     if (txnSearch) {
       const search = txnSearch.toLowerCase();
       feeWithdrawals = feeWithdrawals.filter((w) => {
@@ -2491,9 +2508,11 @@ const AdminDashboard = () => {
     }
     const filteredReferralRevenue = filteredReferrals.reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-    const filteredRevenue = filteredTransactionAmount - filteredPaystackFees;
+    const filteredCommission = rows.filter((r) => r.flow === 'inflow' && r.type !== 'premium' && typeof r.commission !== 'undefined').reduce((sum, r) => sum + Number(r.commission || 0), 0);
+    const filteredPremiumAmount = rows.filter((r) => r.flow === 'inflow' && r.type === 'premium').reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const filteredRevenue = filteredCommission + filteredPremiumAmount;
     const revenueRatio = filteredTransactionAmount > 0 ? (filteredRevenue / filteredTransactionAmount) * 100 : 0;
-    const filteredNetProfit = filteredRevenue - filteredReferralRevenue;
+    const filteredNetProfit = filteredRevenue - filteredPaystackFees - filteredReferralRevenue;
     const timeFilterLabelMap: Record<TimeFilter, string> = {
       all: 'All Time',
       '7days': 'Last 7 days',
@@ -2532,7 +2551,7 @@ const AdminDashboard = () => {
                     ₦{filteredRevenue.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                     Total transactions minus Paystack fees
+                      4% cash commission + ₦500 asoebi + premium upgrades
                    </p>
                 </CardContent>
               </Card>
@@ -2591,7 +2610,7 @@ const AdminDashboard = () => {
                      ₦{filteredNetProfit.toLocaleString()}
                    </div>
                    <p className="text-xs text-muted-foreground mt-1">
-                     Platform Revenue minus referral earnings
+                      Platform Revenue minus Paystack fees and referral earnings
                    </p>
                 </CardContent>
               </Card>
