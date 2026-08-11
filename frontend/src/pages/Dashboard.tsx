@@ -2451,32 +2451,51 @@ const Dashboard: React.FC = () => {
 
                   {/* Withdrawal Info */}
                   <Card className="border-0 shadow-lg">
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Withdrawal Info</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Processing Time</p>
-                          <p className="font-medium text-sm">Instant</p>
+                    <CardContent className="p-6 space-y-5">
+                      <h3 className="text-lg font-semibold text-gray-900">Withdrawal Info</h3>
+
+                      <div className="rounded-xl border border-[#2E235C]/15 bg-gradient-to-r from-[#2E235C]/5 to-white p-4">
+                        <p className="text-sm font-semibold text-gray-900 mb-1">
+                          Keep 100% of all Cash Gifts
+                        </p>
+                        <p className="text-xs text-gray-600 mb-3">
+                          Upgrade and keep 100% of all your cash gifts and asoebi sales
+                        </p>
+                        <div className="flex justify-center">
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold shadow-md"
+                            onClick={() => setActiveTab('premium')}
+                          >
+                            Upgrade & Save
+                          </Button>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Minimum Amount</p>
-                          <p className="font-medium text-sm">₦100</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Processing Time</span>
+                          <span className="font-medium text-gray-900">Instant</span>
                         </div>
-                        <div className="pt-2 border-t border-gray-100">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Minimum Amount</span>
+                          <span className="font-medium text-gray-900">₦100</span>
+                        </div>
+                        <div className="pt-3 border-t border-gray-100">
                           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Platform Fee</p>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-[11px]">
-                              <span className="text-gray-600">Asoebi Fee</span>
-                              <span className="font-medium text-gray-900">₦500 per order</span>
+                          <div className="space-y-2">
+                            <div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Asoebi Fee</span>
+                                <span className="font-medium text-gray-900">₦2,000 per order</span>
+                              </div>
+                              <p className="text-[10px] text-gray-500 mt-0.5 text-right font-semibold">(from 11th Aug 2026)</p>
                             </div>
-                            <div className="flex justify-between text-[11px]">
+                            <div className="flex justify-between text-sm">
                               <span className="text-gray-600">Cash Gift</span>
                               <span className="font-medium text-gray-900">4% of gift amount</span>
                             </div>
                           </div>
-                          <p className="text-[10px] text-gray-400 mt-2 leading-tight italic">
-                            This helps the platform cover transaction fees
-                          </p>
                         </div>
                       </div>
                     </CardContent>
@@ -3300,130 +3319,85 @@ const Dashboard: React.FC = () => {
                <div className="space-y-6">
                  {/* Tier Cards */}
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-{/* Free Tier */}
-                     <Card className="border-2 border-[#2E235C]/20 shadow-lg bg-white overflow-hidden">
-                       <CardContent className="p-6">
-                         <div className="text-center mb-4">
-                           <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${isSubscriptionModalOpen ? 'bg-amber-400/25' : 'bg-amber-300/15'}`}>
-                               <Gift className="w-6 h-6 text-amber-500" />
-                             </div>
-                           <h3 className="text-lg font-bold text-gray-900">Free</h3>
-                         </div>
-                        <ul className="space-y-2 mb-6">
-                          <li className="flex items-center space-x-2 text-sm text-gray-600">
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                            <span>Free website templates</span>
-                          </li>
-                          <li className="flex items-center space-x-2 text-sm text-gray-600">
-                            <XCircle className="w-4 h-4 text-red-400" />
-                            <span>No invitation templates</span>
-                          </li>
-                          <li className="flex items-center space-x-2 text-sm text-gray-600">
-                            <XCircle className="w-4 h-4 text-red-400" />
-                            <span>4% commission on cash gifts</span>
-                          </li>
-                          <li className="flex items-start space-x-2 text-sm text-gray-600">
-                            <XCircle className="w-4 h-4 text-red-400 mt-0.5" />
-                            <span>₦500 commission per asoebi order</span>
-                          </li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-
-                     {/* VIP Tier */}
-                     <Card className="border-2 border-[#2E235C] shadow-lg bg-gradient-to-b from-[#2E235C]/5 to-white overflow-hidden relative">
-                       <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#2E235C] to-[#392B74] text-white text-xs font-bold text-center py-1">
-                         MOST POPULAR
+                   {/* Free Tier */}
+                   <Card className="border-2 border-[#2E235C]/20 shadow-lg bg-white overflow-hidden">
+                     <CardContent className="p-6">
+                       <div className="text-center mb-5">
+                         <h3 className="text-lg font-bold text-gray-900">Free</h3>
                        </div>
-                       <CardContent className="p-6 pt-8">
-                        <div className="text-center mb-4">
-                             <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${isSubscriptionModalOpen ? 'bg-yellow-400/30' : 'bg-amber-300/20'}`}>
-                                 <Crown className="w-6 h-6 text-yellow-500" />
-                               </div>
-                             <h3 className="text-lg font-bold text-gray-900">VIP</h3>
-                             <p className="text-2xl font-extrabold text-gray-900 mt-1">₦50,000</p>
-                           </div>
-                         <ul className="space-y-2 mb-6">
-                           <li className="flex items-center space-x-2 text-sm text-gray-600">
-                             <CheckCircle className="w-4 h-4 text-green-500" />
-                             <span>0% commission on all cash gifts</span>
-                           </li>
-                           <li className="flex items-center space-x-2 text-sm text-gray-600">
-                             <CheckCircle className="w-4 h-4 text-green-500" />
-                             <span>0% commission on all asoebi orders</span>
-                           </li>
-                           <li className="flex items-center space-x-2 text-sm text-gray-600">
-                             <CheckCircle className="w-4 h-4 text-green-500" />
-                             <span>Free website templates</span>
-                           </li>
-                           <li className="flex items-center space-x-2 text-sm text-gray-600">
-                             <XCircle className="w-4 h-4 text-red-400" />
-                             <span>No invitation templates</span>
-                           </li>
-                         </ul>
-                          {upgradeableEvents.length > 0 && (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white font-bold"
-                              onClick={() => {
-                                setSubscriptionTier('vip');
-                                setIsSubscriptionModalOpen(true);
-                              }}
-                            >
-                               Select
-                            </Button>
-                          )}
-                       </CardContent>
-                     </Card>
-
-                   {/* Royal Tier */}
-                   <Card className="border-2 border-[#2E235C] shadow-lg bg-gradient-to-b from-[#2E235C]/5 to-white overflow-hidden relative">
-                     <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#2E235C] to-[#392B74] text-white text-xs font-bold text-center py-1">
-ULTIMATE
-                        </div>
-                      <CardContent className="p-6 pt-8">
-                        <div className="text-center mb-4">
-                          <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${isSubscriptionModalOpen ? 'bg-yellow-500/30' : 'bg-amber-400/20'}`}>
-                              <Crown className="w-6 h-6 text-yellow-600" />
-                            </div>
-                          <h3 className="text-lg font-bold text-gray-900">Royal</h3>
-                          <p className="text-2xl font-extrabold text-gray-900 mt-1">₦100,000</p>
-                          </div>
-                       <ul className="space-y-2 mb-6">
-                         <li className="flex items-center space-x-2 text-sm text-gray-600">
-                           <CheckCircle className="w-4 h-4 text-green-500" />
-                           <span>0% commission on all cash gifts</span>
-                         </li>
-                         <li className="flex items-center space-x-2 text-sm text-gray-600">
-                           <CheckCircle className="w-4 h-4 text-green-500" />
-                           <span>0% commission on all asoebi orders</span>
-                         </li>
-                         <li className="flex items-center space-x-2 text-sm text-gray-600">
-                           <CheckCircle className="w-4 h-4 text-green-500" />
-                           <span>Premium website templates</span>
-                         </li>
-                         <li className="flex items-center space-x-2 text-sm text-gray-600">
-                           <CheckCircle className="w-4 h-4 text-green-500" />
-                           <span>Premium invitation templates</span>
-                         </li>
+                       <ul className="space-y-3 mb-6">
+                         <li className="text-sm text-gray-600">Free website templates</li>
+                         <li className="text-sm text-gray-400">No invitation templates</li>
+                         <li className="text-sm text-gray-400">4% commission on cash gifts</li>
+                         <li className="text-sm text-gray-400">₦500 commission per asoebi order</li>
                        </ul>
-                        {upgradeableEvents.length > 0 && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white font-bold"
-                            onClick={() => {
-                              setSubscriptionTier('royal');
-                              setIsSubscriptionModalOpen(true);
-                            }}
-                          >
-              Select
-                          </Button>
-                        )}
                      </CardContent>
                    </Card>
-                 </div>
+
+                    {/* VIP Tier */}
+                    <Card className="border-2 border-[#2E235C] shadow-lg bg-gradient-to-b from-[#2E235C]/5 to-white overflow-hidden relative">
+                      <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#2E235C] to-[#392B74] text-white text-xs font-bold text-center py-1">
+                        MOST POPULAR
+                      </div>
+                      <CardContent className="p-6 pt-8">
+                       <div className="text-center mb-5">
+                            <h3 className="text-lg font-bold text-gray-900">VIP</h3>
+                            <p className="text-2xl font-extrabold text-gray-900 mt-1">₦50,000</p>
+                          </div>
+                        <ul className="space-y-3 mb-6">
+                          <li className="text-sm text-gray-600">0% commission on all cash gifts</li>
+                          <li className="text-sm text-gray-600">0% commission on all asoebi orders</li>
+                          <li className="text-sm text-gray-600">Free website templates</li>
+                          <li className="text-sm text-gray-400">No invitation templates</li>
+                        </ul>
+                         {upgradeableEvents.length > 0 && (
+                           <Button
+                             variant="default"
+                             size="sm"
+                             className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white font-bold"
+                             onClick={() => {
+                               setSubscriptionTier('vip');
+                               setIsSubscriptionModalOpen(true);
+                             }}
+                           >
+                              Select
+                           </Button>
+                         )}
+                       </CardContent>
+                    </Card>
+
+                  {/* Royal Tier */}
+                  <Card className="border-2 border-[#2E235C] shadow-lg bg-gradient-to-b from-[#2E235C]/5 to-white overflow-hidden relative">
+                    <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#2E235C] to-[#392B74] text-white text-xs font-bold text-center py-1">
+                      ULTIMATE
+                    </div>
+                     <CardContent className="p-6 pt-8">
+                       <div className="text-center mb-5">
+                         <h3 className="text-lg font-bold text-gray-900">Royal</h3>
+                         <p className="text-2xl font-extrabold text-gray-900 mt-1">₦100,000</p>
+                       </div>
+                        <ul className="space-y-3 mb-6">
+                          <li className="text-sm text-gray-600">0% commission on all cash gifts</li>
+                          <li className="text-sm text-gray-600">0% commission on all asoebi orders</li>
+                          <li className="text-sm text-gray-600">Premium website templates</li>
+                          <li className="text-sm text-gray-600">Premium invitation templates</li>
+                        </ul>
+                         {upgradeableEvents.length > 0 && (
+                           <Button
+                             variant="default"
+                             size="sm"
+                             className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white font-bold"
+                             onClick={() => {
+                               setSubscriptionTier('royal');
+                               setIsSubscriptionModalOpen(true);
+                             }}
+                           >
+                Select
+                           </Button>
+                         )}
+                      </CardContent>
+                    </Card>
+                  </div>
 
                 {/* Premium Websites Unlocks */}
                 <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50 to-white">

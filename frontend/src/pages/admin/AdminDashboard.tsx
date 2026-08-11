@@ -2550,9 +2550,9 @@ const AdminDashboard = () => {
                   <div className="text-2xl font-bold">
                     ₦{filteredRevenue.toLocaleString()}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                      4% cash commission + ₦500 asoebi + premium upgrades
-                   </p>
+                   <p className="text-xs text-muted-foreground mt-1">
+                       4% cash commission + ₦500 asoebi (₦2,000 from 11 Aug 2026) + premium upgrades
+                    </p>
                 </CardContent>
               </Card>
               <Card>

@@ -61,6 +61,7 @@ interface Gift {
   asoebiItems?: AsoebiItem[];
   wishlists?: { shareLink: string; title?: string }[];
   website?: { shareLink: string; slug?: string; published?: boolean };
+  createdAt?: string;
 }
 
 interface AsoebiItem {
@@ -128,6 +129,15 @@ const ShareGift: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [gift, setGift] = useState<Gift | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isSpecialAsoebiEvent = (dateStr?: string) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const threshold = new Date(2026, 7, 11);
+    return d >= threshold;
+  };
+
+  const asoebiPlatformFee = isSpecialAsoebiEvent(gift?.createdAt) ? '₦2,000' : '₦500';
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('NGN');
   const [currencySearch, setCurrencySearch] = useState('');
@@ -2143,7 +2153,7 @@ const ShareGift: React.FC = () => {
                             Total: ₦{(Number(gift?.asoebiPrice || 0) * asoebiQuantity).toLocaleString()}
                         </p>
                         <p className="text-sm text-gray-600 mt-1">
-                            Platform fees: ₦500 per item
+                            Platform fees: {asoebiPlatformFee} per item
                         </p>
                     </div>
                 )}
@@ -2377,7 +2387,7 @@ const ShareGift: React.FC = () => {
                                 (asoebiFamily === 'bride' ? Number(gift?.asoebiBrideWomenPrice || 0) : asoebiFamily === 'groom' ? Number(gift?.asoebiGroomWomenPrice || 0) : Number(gift?.asoebiPriceWomen || 0))
                                 : Number(gift?.asoebiPrice || 0)) * asoebiQuantity).toLocaleString()}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">Platform fees: ₦500 per item</p>
+                      <p className="text-sm text-gray-600 mt-1">Platform fees: {asoebiPlatformFee} per item</p>
                   </div>
                 )}
               </div>

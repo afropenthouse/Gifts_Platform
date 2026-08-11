@@ -5,6 +5,15 @@ const paystack = require('../utils/paystack');
 const flutterwave = require('../utils/flutterwave');
 const { sendContributorThankYouEmail, sendGiftReceivedEmail } = require('../utils/emailService');
 
+const getAsoebiCommission = (gift, quantity) => {
+  const created = new Date(gift.createdAt);
+  const threshold = new Date(2026, 7, 11);
+  if (created >= threshold) {
+    return 2000 * quantity;
+  }
+  return 500 * quantity;
+};
+
 module.exports = () => {
   const router = express.Router();
 
@@ -370,7 +379,7 @@ module.exports = () => {
             updatedCommission = 0;
           } else {
             updatedCommission = existingContribution.isAsoebi
-              ? 500 * Number(existingContribution.asoebiQuantity || 0)
+              ? getAsoebiCommission(gift, Number(existingContribution.asoebiQuantity || 0))
               : Number(amount) * 0.04;
           }
           const updatedAmountReceived = Number(amount) - updatedCommission;
@@ -471,7 +480,7 @@ module.exports = () => {
           const finalQty = quantity > 0 ? quantity : 1;
           
           asoebiTotalQty = finalQty;
-          commission = 500 * finalQty;
+          commission = getAsoebiCommission(gift, finalQty);
           amountReceived = amount - commission;
           if (amountReceived < 0) amountReceived = 0; // Safety check
           
@@ -972,7 +981,7 @@ module.exports = () => {
               (asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0) +
               (asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0);
             const quantity = qtySum > 0 ? qtySum : 1;
-            commission = 500 * quantity;
+            commission = getAsoebiCommission(gift, quantity);
             amountReceived = amountInNaira - commission;
             if (amountReceived < 0) amountReceived = 0; // Safety check
           } else {
