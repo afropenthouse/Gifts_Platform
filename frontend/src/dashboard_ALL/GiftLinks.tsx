@@ -9,9 +9,10 @@ import { QRCodeSVG } from 'qrcode.react';
 
 interface CountdownTimerProps {
   targetDate: string;
+  variant?: 'desktop' | 'mobile';
 }
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate }) => {
+const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate, variant = 'desktop' }) => {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -37,16 +38,28 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate }) => {
     return () => clearInterval(timer);
   }, [targetDate]);
 
+  if (variant === 'mobile') {
+    if (isExpired) {
+      return <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Event passed</span>;
+    }
+    if (!timeLeft) return null;
+    return (
+      <span className="text-[11px] font-semibold text-gray-700">
+        {timeLeft.days} days, {timeLeft.hours} hours remaining
+      </span>
+    );
+  }
+
   if (isExpired) {
     return (
-      <span className="absolute top-5 right-4 z-20 text-[11px] font-bold text-gray-500 uppercase tracking-wide">Event passed</span>
+      <span className="absolute top-5 right-4 z-20 hidden md:block text-[11px] font-bold text-gray-500 uppercase tracking-wide">Event passed</span>
     );
   }
 
   if (!timeLeft) return null;
 
   return (
-    <span className="absolute top-5 right-4 z-20 text-[11px] font-semibold text-gray-800 whitespace-nowrap bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-md border border-gray-200 shadow-sm">
+    <span className="absolute top-5 right-4 z-20 hidden md:block text-[11px] font-semibold text-gray-800 whitespace-nowrap bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-md border border-gray-200 shadow-sm">
       {timeLeft.days} days, {timeLeft.hours} hours remaining
     </span>
   );
@@ -186,6 +199,8 @@ export const GiftLinks = ({
               <Card key={gift.id} className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-0 shadow-lg bg-gradient-to-r from-white to-gray-50 overflow-hidden relative">
                 <div className="absolute top-0 left-0 w-1 h-full bg-black group-hover:w-1.5 transition-all duration-300"></div>
                 
+                {gift.date && <CountdownTimer targetDate={gift.date} variant="desktop" />}
+                
                 {/* Upgrade / Premium Badge at Top Right */}
                 <div className="absolute top-20 right-4 z-10">
                   {gift.tier === 'royal' || gift.tier === 'vip' ? (
@@ -252,8 +267,13 @@ export const GiftLinks = ({
                                </div>
                              )}
                            </div>
-                            <h3 className="font-bold text-base text-gray-900 text-center line-clamp-2">{gift.title}</h3>
-                          </div>
+                             <h3 className="font-bold text-base text-gray-900 text-center line-clamp-2">{gift.title}</h3>
+                             {gift.date && (
+                               <div className="md:hidden mt-1">
+                                 <CountdownTimer targetDate={gift.date} variant="mobile" />
+                               </div>
+                             )}
+                           </div>
 
                       {/* QR Code and Download button removed as requested */}
                     </div>
@@ -508,9 +528,7 @@ export const GiftLinks = ({
 
                          <div className="flex-1" />
 
-                         <div className="flex items-center gap-3">
-                           {gift.date && <CountdownTimer targetDate={gift.date} />}
-                           <div className="flex gap-2">
+                         <div className="flex gap-2">
                            <Button
                             variant="ghost"
                             size="sm"
@@ -532,12 +550,11 @@ export const GiftLinks = ({
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
-                        </div>
-                      </div>
-                    </div>
+                         </div>
+                       </div>
+                     </div>
                    </div>
-                 </div>
-               </CardContent>
+                 </CardContent>
               </Card>
             );
           })}
