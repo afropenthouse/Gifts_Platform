@@ -4,6 +4,8 @@ const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
 const multer = require('multer');
 const { uploadImage } = require('../utils/cloudinary');
+const fs = require('fs');
+const path = require('path');
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -29,6 +31,17 @@ function slugify(text) {
     .replace(/\-\-+/g, '-')
     .replace(/^-+/, '')
     .replace(/-+$/, '');
+}
+
+function readCuratedWishlist() {
+  try {
+    const dataFile = path.join(__dirname, '../data/curated-wishlist.json');
+    const data = fs.readFileSync(dataFile, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error('Error reading curated wishlist:', err);
+    return [];
+  }
 }
 
 module.exports = () => {

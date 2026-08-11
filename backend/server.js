@@ -127,6 +127,7 @@ app.use('/api/admin', require('./routes/admin')());
 app.use('/api/utils', require('./routes/utils')());
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/wishlists', require('./routes/wishlists')());
+app.use('/api/curated-wishlist', require('./routes/curated-wishlist')());
 app.use('/api/websites', require('./routes/websites')());
 app.use('/api/invitations', require('./routes/invitations')());
 

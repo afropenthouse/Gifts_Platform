@@ -51,10 +51,17 @@ interface WishlistsProps {
   onPreselectedGiftIdUsed?: () => void;
 }
 
+const cleanCuratedMarker = (description?: string) => {
+  if (!description) return '';
+  return description.replace(/^__CURATED:\d+__\s*/, '');
+};
+
 const Wishlists: React.FC<WishlistsProps> = ({ onTabChange, preselectedGiftId, onPreselectedGiftIdUsed }) => {
   const [wishlists, setWishlists] = useState<Wishlist[]>([]);
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [loading, setLoading] = useState(true);
+  const [curatedItems, setCuratedItems] = useState<any[]>([]);
+  const [curatedLoading, setCuratedLoading] = useState(true);
   const { toast } = useToast();
 
   // Modal states
@@ -64,6 +71,8 @@ const Wishlists: React.FC<WishlistsProps> = ({ onTabChange, preselectedGiftId, o
   const [isEditItemOpen, setIsEditItemOpen] = useState(false);
   const [isDeleteWishlistOpen, setIsDeleteWishlistOpen] = useState(false);
   const [isDeleteItemOpen, setIsDeleteItemOpen] = useState(false);
+  const [isAddCuratedOpen, setIsAddCuratedOpen] = useState(false);
+  const [selectedCuratedItem, setSelectedCuratedItem] = useState<any>(null);
 
   // Current selected items
   const [selectedWishlist, setSelectedWishlist] = useState<Wishlist | null>(null);
@@ -118,9 +127,75 @@ const Wishlists: React.FC<WishlistsProps> = ({ onTabChange, preselectedGiftId, o
     }
   };
 
+  const fetchCuratedItems = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/curated-wishlist`);
+      if (res.ok) {
+        const data = await res.json();
+        setCuratedItems(data);
+      }
+    } catch (err) {
+      console.error('Error fetching curated items:', err);
+    } finally {
+      setCuratedLoading(false);
+    }
+  };
+
+  const addCuratedItemToWishlist = async (wishlistId: number) => {
+    if (!selectedCuratedItem) return;
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('name', selectedCuratedItem.name);
+      formData.append('price', String(selectedCuratedItem.goal || 0));
+      formData.append('quantity', '1');
+      formData.append('description', `__CURATED:${selectedCuratedItem.id}__ ${selectedCuratedItem.description || ''}`);
+      if (selectedCuratedItem.imageUrl) {
+        formData.append('imageUrl', selectedCuratedItem.imageUrl);
+      }
+      formData.append('isCashGiftAllowed', 'true');
+
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/wishlists/${wishlistId}/items`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const newItem = await res.json();
+        setWishlists(wishlists.map(w => {
+          if (w.id === wishlistId) {
+            return { ...w, items: [...w.items, newItem] };
+          }
+          return w;
+        }));
+        toast({
+          title: 'Item added',
+          description: `${selectedCuratedItem.name} has been added to your wishlist.`,
+        });
+        setIsAddCuratedOpen(false);
+        setSelectedCuratedItem(null);
+      } else {
+        toast({
+          title: 'Failed to add item',
+          description: 'Please try again.',
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('Error adding curated item:', err);
+      toast({
+        title: 'Failed to add item',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   useEffect(() => {
     fetchWishlists();
     fetchGifts();
+    fetchCuratedItems();
   }, []);
 
   // When preselectedGiftId changes and create modal is open, select it
@@ -394,7 +469,7 @@ const Wishlists: React.FC<WishlistsProps> = ({ onTabChange, preselectedGiftId, o
     setItemQuantity(item.quantity.toString());
     setItemImageUrl(item.imageUrl || '');
     setItemImageFile(null);
-    setItemDescription(item.description || '');
+    setItemDescription(cleanCuratedMarker(item.description || ''));
     setItemIsCashGiftAllowed((item as any).isCashGiftAllowed || false);
     setIsEditItemOpen(true);
   };
@@ -525,6 +600,61 @@ const Wishlists: React.FC<WishlistsProps> = ({ onTabChange, preselectedGiftId, o
           </DialogContent>
         </Dialog>
       </div>
+
+      {curatedItems.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900">Curated Suggestions</h3>
+            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">BeThere Picks</span>
+          </div>
+          <p className="text-sm text-gray-500">Add these curated items directly to any of your wishlists.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {curatedItems.map((item) => (
+              <Card key={item.id} className="border-0 shadow-md overflow-hidden">
+                <div className="h-40 bg-gray-100">
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-4xl">
+                      {item.emoji || '🎁'}
+                    </div>
+                  )}
+                </div>
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-3">
+                    {!item.imageUrl && <span className="text-3xl">{item.emoji || '🎁'}</span>}
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">{item.name}</h4>
+                      {item.description && (
+                        <p className="text-xs text-gray-500 mb-2 line-clamp-2">{cleanCuratedMarker(item.description)}</p>
+                      )}
+                      <p className="text-sm font-bold text-[#2E235C] mb-3">
+                        {new Intl.NumberFormat('en-NG', {
+                          style: 'currency',
+                          currency: 'NGN',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }).format(item.goal || 0)}
+                      </p>
+                      <Button
+                        size="sm"
+                        className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90"
+                        onClick={() => {
+                          setSelectedCuratedItem(item);
+                          setIsAddCuratedOpen(true);
+                        }}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add to Wishlist
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {wishlists.length === 0 ? (
         <Card className="border-0 shadow-lg">
@@ -675,7 +805,7 @@ const Wishlists: React.FC<WishlistsProps> = ({ onTabChange, preselectedGiftId, o
                           </p>
                           {item.description && (
                             <p className="text-xs text-gray-500 line-clamp-2">
-                              {item.description}
+                              {cleanCuratedMarker(item.description)}
                             </p>
                           )}
                           {item.productUrl && (
@@ -701,6 +831,31 @@ const Wishlists: React.FC<WishlistsProps> = ({ onTabChange, preselectedGiftId, o
       )}
 
       {/* Modals */}
+      <Dialog open={isAddCuratedOpen} onOpenChange={setIsAddCuratedOpen}>
+        <DialogContent className="max-w-md" onInteractOutside={(e) => { e.preventDefault(); }}>
+          <DialogHeader>
+            <DialogTitle>Add "{selectedCuratedItem?.name}" to Wishlist</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {wishlists.length === 0 ? (
+              <p className="text-sm text-gray-500">You don't have any wishlists yet. Create one first.</p>
+            ) : (
+              wishlists.map((wishlist) => (
+                <Button
+                  key={wishlist.id}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => addCuratedItemToWishlist(wishlist.id)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {wishlist.title}
+                </Button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isEditWishlistOpen} onOpenChange={setIsEditWishlistOpen}>
         <DialogContent className="max-w-md h-[80vh] overflow-y-auto">
           <DialogHeader>

@@ -23,6 +23,11 @@ interface WishlistItem {
   imageUrl?: string;
   description?: string;
   isCashGiftAllowed: boolean;
+  isCurated?: boolean;
+  emoji?: string;
+  goal?: number;
+  raised?: number;
+  contributorCount?: number;
 }
 
 interface Wishlist {
@@ -40,6 +45,17 @@ type CurrencyOption = {
   code: string;
   country: string;
 };
+
+interface CuratedItem {
+  id: number;
+  emoji: string;
+  name: string;
+  goal: number;
+  raised: number;
+  contributorCount: number;
+  description: string;
+  imageUrl?: string;
+}
 
 const currencyOptions: CurrencyOption[] = [
   { code: "NGN", country: "Nigeria" },
@@ -69,13 +85,57 @@ const currencyOptions: CurrencyOption[] = [
   { code: "CNY", country: "China" },
 ];
 
+const parseCuratedId = (description?: string) => {
+  if (!description) return null;
+  const match = description.match(/^__CURATED:(\d+)__/);
+  return match ? parseInt(match[1]) : null;
+};
+
+const cleanDescription = (description?: string) => {
+  if (!description) return '';
+  return description.replace(/^__CURATED:\d+__\s*/, '');
+};
+
+const enrichItems = (items: WishlistItem[], curated: CuratedItem[]) => {
+  return items.map(item => {
+    const curatedId = parseCuratedId(item.description);
+    if (curatedId) {
+      const curatedData = curated.find(c => c.id === curatedId);
+      if (curatedData) {
+        return {
+          ...item,
+          isCurated: true,
+          curatedId,
+          emoji: curatedData.emoji,
+          goal: curatedData.goal,
+          raised: curatedData.raised,
+          contributorCount: curatedData.contributorCount,
+          imageUrl: item.imageUrl || curatedData.imageUrl,
+          description: curatedData.description,
+        };
+      }
+    }
+    return item;
+  });
+};
+
 const ShareWishlist: React.FC = () => {
   const { slug, id } = useParams<{ slug?: string; id?: string }>();
   const linkParam = slug && id ? `${slug}/${id}` : undefined;
   const [wishlist, setWishlist] = useState<Wishlist | null>(null);
   const [loading, setLoading] = useState(true);
+  const [curatedItems, setCuratedItems] = useState<CuratedItem[]>([]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   // Cash gift state
   const [showAmountModal, setShowAmountModal] = useState(false);
@@ -100,7 +160,7 @@ const ShareWishlist: React.FC = () => {
     const reference = searchParams.get('reference');
     const status = searchParams.get('status');
     
-    if (!wishlist?.gift?.shareLink || (!txId && !txRef && !reference)) return;
+    if (!txId && !txRef && !reference) return;
 
     setShowVerifyModal(true);
     setVerifyStatus('checking');
@@ -109,19 +169,22 @@ const ShareWishlist: React.FC = () => {
     const verify = async () => {
       try {
         const transactionIdentifier = reference || txRef || txId;
-        const res = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${wishlist.gift.shareLink}/verify-payment`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              transactionId: transactionIdentifier,
-              reference: transactionIdentifier,
-              txRef: txRef,
-              status: status 
-            }),
-          }
-        );
+        
+        const isCurated = searchParams.get('curated') === 'true';
+        const verifyUrl = isCurated
+          ? `${import.meta.env.VITE_BACKEND_URL}/api/curated-wishlist/verify-payment`
+          : `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${wishlist?.gift?.shareLink}/verify-payment`;
+
+        const res = await fetch(verifyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            transactionId: transactionIdentifier,
+            reference: transactionIdentifier,
+            txRef: txRef,
+            status: status 
+          }),
+        });
         const data = await res.json();
         if (!res.ok) {
           setVerifyStatus('error');
@@ -130,6 +193,37 @@ const ShareWishlist: React.FC = () => {
         }
         setVerifyStatus('success');
         setVerifyMessage('Thank you! Your payment was successful.');
+
+        if (isCurated) {
+          const curatedRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/curated-wishlist`);
+          if (curatedRes.ok) {
+            const curatedData = await curatedRes.json();
+            setCuratedItems(curatedData);
+            setWishlist(prev => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                items: enrichItems(prev.items, curatedData),
+              };
+            });
+          }
+        } else {
+          setWishlist(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              items: prev.items.map(item => {
+                if (data.contribution?.wishlistItemId === item.id) {
+                  return {
+                    ...item,
+                    purchased: item.purchased + 1,
+                  };
+                }
+                return item;
+              }),
+            };
+          });
+        }
       } catch (err) {
         console.error(err);
         setVerifyStatus('error');
@@ -183,10 +277,7 @@ const ShareWishlist: React.FC = () => {
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!wishlist?.gift?.shareLink) {
-      alert('Invalid wishlist. Please try again.');
-      return;
-    }
+    if (!selectedItem) return;
 
     if (!isAnonymous && !contributorName.trim()) {
       alert('Please enter your name or choose to give anonymously');
@@ -207,27 +298,41 @@ const ShareWishlist: React.FC = () => {
 
     try {
       const name = isAnonymous ? 'Anonymous Contributor' : contributorName;
-      const message = selectedItem 
-        ? `Cash gift for wishlist item: ${selectedItem.name}` 
-        : 'Cash gift for wishlist';
+      const curatedId = selectedItem.curatedId || parseCuratedId(selectedItem.description);
+      const isCurated = !!curatedId;
+      const message = isCurated
+        ? `Contribution to: ${selectedItem.name}`
+        : `Cash gift for wishlist item: ${selectedItem.name}`;
 
-      // Initialize payment
-      const initRes = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${wishlist.gift.shareLink}/initialize-payment`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+      const apiUrl = isCurated
+        ? `${import.meta.env.VITE_BACKEND_URL}/api/curated-wishlist/initialize-payment`
+        : `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${wishlist.gift.shareLink}/initialize-payment`;
+
+      const body = isCurated
+        ? {
             contributorName: name,
             contributorEmail: contributorEmail,
             amount: parseFloat(amount),
             currency: currency,
             message: message,
-            wishlistItemId: selectedItem?.id,
-            wishlistShareLink: wishlist.shareLink
-          }),
-        }
-      );
+            itemId: curatedId,
+            wishlistShareLink: wishlist.shareLink,
+          }
+        : {
+            contributorName: name,
+            contributorEmail: contributorEmail,
+            amount: parseFloat(amount),
+            currency: currency,
+            message: message,
+            wishlistItemId: selectedItem.id,
+            wishlistShareLink: wishlist.shareLink,
+          };
+
+      const initRes = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
 
       const initData = await initRes.json();
       if (!initRes.ok) {
@@ -251,10 +356,19 @@ const ShareWishlist: React.FC = () => {
     const fetchWishlist = async () => {
       if (!linkParam) return;
       try {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/wishlists/public/${linkParam}`);
-        if (!res.ok) throw new Error('Wishlist not found');
-        const data = await res.json();
-        setWishlist(data);
+        const [wishlistRes, curatedRes] = await Promise.all([
+          fetch(`${import.meta.env.VITE_BACKEND_URL}/api/wishlists/public/${linkParam}`),
+          fetch(`${import.meta.env.VITE_BACKEND_URL}/api/curated-wishlist`),
+        ]);
+
+        if (!wishlistRes.ok) throw new Error('Wishlist not found');
+        const wishlistData = await wishlistRes.json();
+        const curatedData = curatedRes.ok ? await curatedRes.json() : [];
+
+        setCuratedItems(curatedData);
+
+        const enrichedItems = enrichItems(wishlistData.items, curatedData);
+        setWishlist({ ...wishlistData, items: enrichedItems });
       } catch (err) {
         console.error(err);
       } finally {
@@ -314,11 +428,86 @@ const ShareWishlist: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {wishlist.items.map((item) => {
-            const remaining = item.quantity - item.purchased;
-            const isFullyPurchased = remaining <= 0;
+            const isCurated = item.isCurated;
+            const remaining = isCurated ? (item.goal || 0) - (item.raised || 0) : item.quantity - item.purchased;
+            const isFullyFunded = isCurated ? remaining <= 0 : remaining <= 0;
+            
+            if (isCurated) {
+              const progress = item.goal ? Math.min(((item.raised || 0) / item.goal) * 100, 100) : 0;
+              
+              return (
+                <Card key={item.id} className="border-0 shadow-lg overflow-hidden">
+                  <div className="h-48 bg-gray-100">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl">
+                        {item.emoji || '🎁'}
+                      </div>
+                    )}
+                  </div>
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      {!item.imageUrl && <span className="text-4xl">{item.emoji || '🎁'}</span>}
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.name}</h3>
+                         {item.description && (
+                           <p className="text-sm text-gray-500 mb-3">{cleanDescription(item.description)}</p>
+                         )}
+                        <p className="text-xl font-bold text-[#2E235C] mb-3">
+                          {formatCurrency(item.goal || 0)}
+                        </p>
+
+                        <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                          <div
+                            className="bg-[#2E235C] h-3 rounded-full transition-all duration-500"
+                            style={{ width: `${progress}%` }}
+                          ></div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm mb-4">
+                          <span className="text-gray-600">
+                            {formatCurrency(item.raised || 0)} raised
+                          </span>
+                          <span className="text-gray-500">
+                            {progress.toFixed(1)}% funded
+                          </span>
+                        </div>
+
+                        {item.contributorCount !== undefined && (
+                          <p className="text-xs text-gray-500 mb-4">
+                            {item.contributorCount} contributor{item.contributorCount !== 1 ? 's' : ''}
+                          </p>
+                        )}
+
+                        {!isFullyFunded && (
+                          <Button
+                            className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90"
+                            onClick={() => {
+                              setSelectedItem(item);
+                              setAmount('');
+                              setShowAmountModal(true);
+                            }}
+                          >
+                            <Gift className="w-4 h-4 mr-2" />
+                            Fund this goal
+                          </Button>
+                        )}
+
+                        {isFullyFunded && (
+                          <div className="w-full text-center py-3 bg-green-50 text-green-700 rounded-md font-medium text-sm">
+                            Fully funded! Thank you for your generosity.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
             
             return (
-              <Card key={item.id} className={`overflow-hidden ${isFullyPurchased ? 'opacity-60' : ''}`}>
+              <Card key={item.id} className={`overflow-hidden ${isFullyFunded ? 'opacity-60' : ''}`}>
                 <div className="h-48 bg-gray-100 flex items-center justify-center">
                   {item.imageUrl ? (
                     <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
@@ -332,7 +521,7 @@ const ShareWishlist: React.FC = () => {
                     <p className="text-purple-600 font-bold mb-2">₦{item.price.toLocaleString()}</p>
                   )}
                   <div className="flex items-center gap-2 mb-2">
-                    {isFullyPurchased ? (
+                    {isFullyFunded ? (
                       <span className="flex items-center gap-1 text-green-600 font-medium">
                         <CheckCircle className="w-4 h-4" /> Fully purchased
                       </span>
@@ -341,9 +530,9 @@ const ShareWishlist: React.FC = () => {
                     )}
                   </div>
                   {item.description && (
-                    <p className="text-sm text-gray-500 mb-4">{item.description}</p>
+                    <p className="text-sm text-gray-500 mb-4">{cleanDescription(item.description)}</p>
                   )}
-                  {item.productUrl && !isFullyPurchased && (
+                  {item.productUrl && !isFullyFunded && (
                     <Button
                       className="w-full mt-4 bg-[#2E235C] text-white hover:bg-[#2E235C]/90"
                       onClick={() => {
@@ -354,7 +543,7 @@ const ShareWishlist: React.FC = () => {
                       Order
                     </Button>
                   )}
-                  {!isFullyPurchased && (
+                  {!isFullyFunded && (
                     <Button
                       className="w-full mt-4 bg-[#2E235C] text-white hover:bg-[#2E235C]/90"
                       onClick={() => {

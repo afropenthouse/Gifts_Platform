@@ -7,6 +7,51 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
 
+interface CountdownTimerProps {
+  targetDate: string;
+}
+
+const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate }) => {
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = new Date(targetDate).getTime() - new Date().getTime();
+      if (difference <= 0) {
+        setTimeLeft(null);
+        setIsExpired(true);
+        return;
+      }
+      setIsExpired(false);
+      setTimeLeft({
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      });
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  if (isExpired) {
+    return (
+      <span className="absolute top-5 right-4 z-20 text-[11px] font-bold text-gray-500 uppercase tracking-wide">Event passed</span>
+    );
+  }
+
+  if (!timeLeft) return null;
+
+  return (
+    <span className="absolute top-5 right-4 z-20 text-[11px] font-semibold text-gray-800 whitespace-nowrap bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-md border border-gray-200 shadow-sm">
+      {timeLeft.days} days, {timeLeft.hours} hours remaining
+    </span>
+  );
+};
+
 interface Gift {
   id: number;
   type: string;
@@ -142,7 +187,7 @@ export const GiftLinks = ({
                 <div className="absolute top-0 left-0 w-1 h-full bg-black group-hover:w-1.5 transition-all duration-300"></div>
                 
                 {/* Upgrade / Premium Badge at Top Right */}
-                <div className="absolute top-4 right-4 z-10">
+                <div className="absolute top-20 right-4 z-10">
                   {gift.tier === 'royal' || gift.tier === 'vip' ? (
                     <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-md">
                       <Crown className="w-3 h-3" />
@@ -191,24 +236,24 @@ export const GiftLinks = ({
                     {/* Left Section - Visual Assets */}
                     <div className="flex flex-col md:flex-row gap-4 flex-shrink-0 items-center md:items-start">
                       {/* Picture with Enhanced Styling */}
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="relative">
-                          {gift.picture ? (
-                            <div className="w-24 h-24 rounded-xl overflow-hidden shadow-md group-hover:shadow-lg transition-shadow">
-                              <img
-                                src={gift.picture}
-                                alt={gift.title || gift.type}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-24 h-24 bg-black via-red-100/20 to-red-50 rounded-xl flex items-center justify-center shadow-md">
-                              <Gift className="w-10 h-10 text-black" />
-                            </div>
-                          )}
-                        </div>
-                        <h3 className="font-bold text-base text-gray-900 text-center line-clamp-2">{gift.title}</h3>
-                      </div>
+                         <div className="flex flex-col items-center gap-3">
+                           <div className="relative">
+                             {gift.picture ? (
+                               <div className="w-24 h-24 rounded-xl overflow-hidden shadow-md group-hover:shadow-lg transition-shadow">
+                                 <img
+                                   src={gift.picture}
+                                   alt={gift.title || gift.type}
+                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                 />
+                               </div>
+                             ) : (
+                               <div className="w-24 h-24 bg-black via-red-100/20 to-red-50 rounded-xl flex items-center justify-center shadow-md">
+                                 <Gift className="w-10 h-10 text-black" />
+                               </div>
+                             )}
+                           </div>
+                            <h3 className="font-bold text-base text-gray-900 text-center line-clamp-2">{gift.title}</h3>
+                          </div>
 
                       {/* QR Code and Download button removed as requested */}
                     </div>
@@ -459,12 +504,14 @@ export const GiftLinks = ({
                             <Download className="w-3.5 h-3.5 mr-1" />
                             Download QR
                           </Button>
-                        </div>
+                         </div>
 
-                        <div className="flex-1" />
+                         <div className="flex-1" />
 
-                        <div className="flex gap-2">
-                          <Button
+                         <div className="flex items-center gap-3">
+                           {gift.date && <CountdownTimer targetDate={gift.date} />}
+                           <div className="flex gap-2">
+                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => onEditGift(gift)}
@@ -488,8 +535,9 @@ export const GiftLinks = ({
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
+                   </div>
+                 </div>
+               </CardContent>
               </Card>
             );
           })}
