@@ -35,7 +35,83 @@ const formatEventDate = (date) => {
   });
 };
 
-const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }) => {
+const QRCode = require('qrcode');
+
+const sendCheckInEmail = async ({ recipient, guestName, gift, checkInToken }) => {
+  if (!emailEnabled) {
+    console.warn('Check-in email skipped: email configuration is missing');
+    return { delivered: false, skipped: true };
+  }
+
+  if (!recipient || !checkInToken) {
+    return { delivered: false, reason: 'No recipient or check-in token provided' };
+  }
+
+  const heading = formatEventHeading(gift);
+  const eventDate = formatEventDate(gift?.date);
+  const accent = '#2E235C';
+  const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const checkInUrl = `${baseUrl}/checkin/${checkInToken}`;
+
+  let qrCodeDataUrl;
+  try {
+    qrCodeDataUrl = await QRCode.toDataURL(checkInUrl, {
+      width: 200,
+      margin: 2,
+      color: { dark: '#2E235C', light: '#ffffff' },
+    });
+  } catch (err) {
+    console.error('Failed to generate QR code:', err);
+    return { delivered: false, error: 'QR code generation failed' };
+  }
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="font-size: 24px; font-weight: bold; color: ${accent}; margin: 0 0 8px 0;">You're on the list!</h1>
+        <p style="margin: 0; color: #6b7280; font-size: 16px;">${heading}</p>
+        ${eventDate ? `<p style="margin: 4px 0 0; color: #6b7280; font-size: 14px;">${eventDate}</p>` : ''}
+      </div>
+
+      <div style="text-align: center; margin-bottom: 32px;">
+        <p style="font-size: 16px; margin-bottom: 24px;">Hi ${guestName || 'there'},</p>
+        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+          Thank you for RSVPing. We have saved your spot. Use the QR code below to check in at the event.
+        </p>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; padding: 16px; background: #ffffff; border: 2px dashed #e5e7eb; border-radius: 16px;">
+          <img src="${qrCodeDataUrl}" alt="Check-in QR Code" style="display: block; width: 200px; height: 200px;" />
+        </div>
+        <p style="margin-top: 16px; font-size: 14px; color: #4b5563;">
+          Show this code at the entrance to check in.
+        </p>
+      </div>
+
+      <div style="text-align: center; margin-top: 40px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
+        <p style="margin: 0; font-size: 14px; color: #6b7280;">
+          If you have any questions, just reply to this email.
+        </p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendRequired({
+      from: mailFrom,
+      to: recipient,
+      subject: `Your Check-in QR Code for ${heading}`,
+      html,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error('Failed to send check-in email:', error?.message || error);
+    return { delivered: false, error: error?.message || 'Unknown error' };
+  }
+};
+
+const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl, checkInToken }) => {
   if (!emailEnabled) {
     console.warn('RSVP email skipped: email configuration is missing');
     return { delivered: false, skipped: true };
@@ -53,7 +129,26 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
     ? `Thank you for letting us know you will attend. We cannot wait to celebrate with you${eventDate ? ` on <b>${eventDate}</b>` : ''}.`
     : 'Thank you for letting us know. If your plans change, reply to this email and we will update your RSVP.';
   const googleMapsUrl = eventAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` : null;
-  
+
+  let checkInQrBlock = '';
+  if (attending && checkInToken) {
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const checkInUrl = `${baseUrl}/checkin/${checkInToken}`;
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&bgcolor=ffffff&color=000000&data=${encodeURIComponent(checkInUrl)}`;
+
+    checkInQrBlock = `
+      <div style="text-align: center; margin-top: 28px; padding-top: 24px; border-top: 1px solid #f3f4f6;">
+        <p style="margin: 0 0 12px; font-size: 14px; color: #374151; font-weight: 600;">Event Check-In</p>
+        <div style="display: inline-block; padding: 12px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px;">
+          <img src="${qrImageUrl}" alt="Check-in QR Code" width="160" height="160" style="display: block; width: 160px; height: 160px;" />
+        </div>
+          <p style="margin-top: 12px; font-size: 13px; color: #4b5563;">
+            Show this QR code to event staff at the entrance for check-in.
+          </p>
+      </div>
+    `;
+  }
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
       
@@ -78,7 +173,7 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
 
       ${attending ? `
       <div style="text-align: center; margin: 8px 0 24px;">
-        <p style="margin: 0 0 12px 0; font-size: 14px; color: #374151; font-weight: 600;">Next steps</p>
+        <p style="margin: 0 0 12px; font-size: 14px; color: #374151; font-weight: 600;">Next steps</p>
         <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
           <tr>
             <td align="center" style="padding-bottom: 12px;">
@@ -99,6 +194,8 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl }
         </table>
       </div>
       ` : ''}
+
+      ${checkInQrBlock}
 
       <div style="text-align: center; margin-top: 40px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
         <p style="margin: 0; font-size: 14px; color: #6b7280;">
@@ -1055,5 +1152,6 @@ module.exports = {
   sendWalletOtpEmail,
   sendVendorPaymentReminderEmail,
   sendTemplatedEmail,
-  sendWelcomeEmail
+  sendWelcomeEmail,
+  sendCheckInEmail
 };

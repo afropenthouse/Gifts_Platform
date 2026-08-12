@@ -315,12 +315,16 @@ model Guest {
   asoebi          Boolean     @default(false)
   asoebiPaid      Boolean     @default(false)
   asoebiSelection String?
+  checkInToken    String?     @unique
+  checkedIn       Boolean     @default(false)
+  checkedInAt     DateTime?
   gift            Gift?       @relation(fields: [giftId], references: [id], onDelete: Cascade)
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([giftId])
   @@index([giftId, firstName, lastName])
+  @@index([checkInToken])
 }
 
 model Withdrawal {

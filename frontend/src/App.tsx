@@ -35,6 +35,11 @@ import Wishes from "./pages/Wishes";
 import ShareWishlist from "./pages/ShareWishlist";
 import WeddingWebsite from "./pages/WeddingWebsite";
 import PublicInvitation from "./pages/PublicInvitation";
+import PublicCheckIn from "./pages/PublicCheckIn";
+import CheckInPage from "./pages/CheckIn";
+import CheckInOptions from "./pages/CheckInOptions";
+import CheckInScan from "./pages/CheckInScan";
+import CheckInManual from "./pages/CheckInManual";
 
 const queryClient = new QueryClient();
 const GOOGLE_TAG_ID = "AW-18055751654";
@@ -132,6 +137,11 @@ const App = () => {
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/checkin/:token" element={<CheckInPage />} />
+          <Route path="/checkin-options/:eventId" element={<CheckInOptions />} />
+          <Route path="/checkin-scan/:eventId" element={<CheckInScan />} />
+          <Route path="/checkin-manual/:eventId" element={<CheckInManual />} />
+          <Route path="/checkin-event/:eventId" element={<PublicCheckIn />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <LoginModal open={loginModalOpen} onClose={closeModals} />

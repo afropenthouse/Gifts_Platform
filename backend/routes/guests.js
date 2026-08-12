@@ -2,6 +2,7 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
 const { sendRsvpEmail, sendOwnerNotificationEmail, sendReminderEmail } = require('../utils/emailService');
+const crypto = require('crypto');
 
 module.exports = () => {
   const router = express.Router();
@@ -251,21 +252,39 @@ module.exports = () => {
       const guestName = `${guest.firstName} ${guest.lastName}`.trim();
       const eventUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/gift/${shareLink}` : null;
 
-      // Send emails in background without blocking response
-      sendRsvpEmail({
-        recipient: guest.email,
-        guestName,
-        attending: Boolean(attending),
-        gift,
-        eventUrl,
-      }).catch(err => console.error('Background RSVP email failed:', err));
+      const isAttendingYes = Boolean(attending);
+
+      if (isAttendingYes) {
+        const checkInToken = crypto.randomBytes(32).toString('hex');
+        await prisma.guest.update({
+          where: { id: guest.id },
+          data: { checkInToken },
+        });
+
+        sendRsvpEmail({
+          recipient: guest.email,
+          guestName,
+          attending: isAttendingYes,
+          gift,
+          eventUrl,
+          checkInToken,
+        }).catch(err => console.error('Background RSVP email failed:', err));
+      } else {
+        sendRsvpEmail({
+          recipient: guest.email,
+          guestName,
+          attending: isAttendingYes,
+          gift,
+          eventUrl,
+        }).catch(err => console.error('Background RSVP email failed:', err));
+      }
 
       sendOwnerNotificationEmail({
         ownerEmail: gift.user.email,
         ownerName: gift.user.name,
         guestName,
         guestEmail: guest.email,
-        attending: Boolean(attending),
+        attending: isAttendingYes,
         gift,
       }).catch(err => console.error('Background owner notification failed:', err));
 
@@ -417,6 +436,165 @@ module.exports = () => {
       }
 
       res.json({ msg: 'Guest found', exists: true, guest: existingGuest });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  router.post('/checkin/:token', async (req, res) => {
+    const { token } = req.params;
+
+    try {
+      const guest = await prisma.guest.findFirst({
+        where: { checkInToken: token },
+        include: { gift: true },
+      });
+
+      if (!guest) {
+        return res.status(404).json({ msg: 'Invalid check-in code' });
+      }
+
+      if (guest.checkedIn) {
+        return res.status(200).json({ msg: 'Already checked in', guest, alreadyCheckedIn: true });
+      }
+
+      const updatedGuest = await prisma.guest.update({
+        where: { id: guest.id },
+        data: {
+          checkedIn: true,
+          checkedInAt: new Date(),
+        },
+      });
+
+      res.json({ msg: 'Checked in successfully', guest: updatedGuest, alreadyCheckedIn: false });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  router.post('/checkin-manual/:id', auth(), async (req, res) => {
+    const guestId = parseInt(req.params.id);
+
+    try {
+      const guest = await prisma.guest.findUnique({
+        where: { id: guestId },
+        include: { gift: true },
+      });
+
+      if (!guest || guest.userId !== req.user.id) {
+        return res.status(404).json({ msg: 'Guest not found' });
+      }
+
+      if (guest.checkedIn) {
+        return res.status(200).json({ msg: 'Already checked in', alreadyCheckedIn: true });
+      }
+
+      const updatedGuest = await prisma.guest.update({
+        where: { id: guestId },
+        data: {
+          checkedIn: true,
+          checkedInAt: new Date(),
+        },
+      });
+
+      res.json({ msg: 'Checked in successfully', guest: updatedGuest, alreadyCheckedIn: false });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  router.get('/checkin-stats/:giftId', auth(), async (req, res) => {
+    const giftId = parseInt(req.params.giftId);
+
+    try {
+      const gift = await prisma.gift.findUnique({
+        where: { id: giftId },
+      });
+
+      if (!gift || gift.userId !== req.user.id) {
+        return res.status(404).json({ msg: 'Gift not found' });
+      }
+
+      const guests = await prisma.guest.findMany({
+        where: { giftId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          attending: true,
+          checkedIn: true,
+          checkedInAt: true,
+          checkInToken: true,
+        },
+      });
+
+      const totalInvited = guests.length;
+      const totalCheckedIn = guests.filter(g => g.checkedIn).length;
+      const totalAttending = guests.filter(g => g.attending === 'yes').length;
+      const checkInRate = totalInvited > 0 ? Math.round((totalCheckedIn / totalInvited) * 100) : 0;
+
+      const guestList = guests.map(g => ({
+        id: g.id,
+        name: `${g.firstName} ${g.lastName}`,
+        email: g.email,
+        attending: g.attending,
+        checkedIn: g.checkedIn,
+        checkedInAt: g.checkedInAt,
+      }));
+
+      res.json({
+        giftId,
+        totalInvited,
+        totalAttending,
+        totalCheckedIn,
+        checkInRate,
+        guests: guestList,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
+  router.get('/checkin-event/:eventId', async (req, res) => {
+    const eventId = parseInt(req.params.eventId);
+
+    try {
+      const gift = await prisma.gift.findUnique({
+        where: { id: eventId },
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          date: true,
+          details: true,
+        },
+      });
+
+      if (!gift) {
+        return res.status(404).json({ msg: 'Event not found' });
+      }
+
+      const guests = await prisma.guest.findMany({
+        where: { giftId: eventId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          allowed: true,
+          attending: true,
+          checkedIn: true,
+          checkedInAt: true,
+        },
+        orderBy: { lastName: 'asc' },
+      });
+
+      res.json({ gift, guests });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: 'Server error' });

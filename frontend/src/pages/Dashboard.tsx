@@ -13,6 +13,7 @@ import Wishlists from '../dashboard_ALL/Wishlists';
 import Website from '../dashboard_ALL/Website';
 import Invitation from '../dashboard_ALL/Invitation';
 import TodoPlan from '../dashboard_ALL/TodoPlan';
+import CheckIn from '../dashboard_ALL/CheckIn';
 import { ExclusiveDeals } from '../dashboard_ALL/ExclusiveDeals';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Navbar from '../components/Navbar';
@@ -28,7 +29,7 @@ import {
   Star, TrendingDown, CheckCircle, AlertCircle, Wallet,
   CreditCard as CreditCardIcon, Smartphone, Globe as GlobeIcon,
   Link as LinkIcon, User, Mail, Phone, MapPin, Clock, FileDown,
-  Plus, Minus, Trash2, Crown, XCircle, ListTodo
+  Plus, Minus, Trash2, Crown, XCircle, ListTodo, ScanLine
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Badge } from '../components/ui/badge';
@@ -185,7 +186,7 @@ const Dashboard: React.FC = () => {
     resetTour,
   } = useGuidedTour('dashboard');
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string, asoebi?: boolean, asoebiPaid?: boolean, asoebiSelection?: string}>>([]);
+  const [guests, setGuests] = useState<Array<{id: number, firstName: string, lastName: string, email?: string, phone?: string, allowed: number, attending: string, giftId?: number, tableSitting?: string, asoebi?: boolean, asoebiPaid?: boolean, asoebiSelection?: string, checkedIn?: boolean, checkedInAt?: string, checkInToken?: string}>>([]);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<number | null>(null);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<{id: number, firstName: string, lastName: string, allowed: number, attending: string, tableSitting?: string, giftId?: number} | null>(null);
@@ -230,6 +231,8 @@ const Dashboard: React.FC = () => {
     };
   const [deletingGiftId, setDeletingGiftId] = useState<number | null>(null);
   const [deletingGuestId, setDeletingGuestId] = useState<number | null>(null);
+  const [isQuickCheckInOpen, setIsQuickCheckInOpen] = useState(false);
+  const [quickCheckInQuery, setQuickCheckInQuery] = useState('');
   const [guestSearch, setGuestSearch] = useState('');
   const [attendingFilter, setAttendingFilter] = useState('all');
   const [asoebiFilter, setAsoebiFilter] = useState('all');
@@ -362,6 +365,7 @@ const Dashboard: React.FC = () => {
   const [warningMessage, setWarningMessage] = useState('');
 
   const totalAllowedGuests = guests.reduce((sum, g) => sum + g.allowed, 0);
+  const totalCheckedInGuests = guests.filter(g => g.checkedIn).length;
   const asoebiOrdersCount = contributions.filter(c => c.isAsoebi && Number(c.amount) > 0).length;
   const giftersCount = contributions.filter(c => !c.isAsoebi && Number(c.amount) > 0).length;
   const wishesCount = contributions.filter(c => Number(c.amount) === 0 && c.message && c.message.trim() !== '').length;
@@ -386,6 +390,7 @@ const Dashboard: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: Home, color: 'text-blue-500', badge: null, action: undefined },
     { id: 'gifts', label: 'My Events', icon: Gift, color: 'text-purple-500', badge: gifts.length, action: undefined },
     { id: 'rsvp', label: 'RSVP Manager', icon: Users, color: 'text-[#2E235C]', badge: totalAllowedGuests, action: undefined },
+    { id: 'checkin', label: 'Check-In', icon: ScanLine, color: 'text-emerald-600', badge: null, action: undefined },
     { id: 'website', label: 'Website', icon: Globe, color: 'text-purple-600', badge: null, action: undefined },
     {id: 'wishlists', label: 'Wishlist', icon: Heart, color: 'text-red-500', badge: null, action: undefined},
     { id: 'invitation', label: 'Invitation', icon: Mail, color: 'text-pink-600', badge: null, action: undefined },
@@ -2044,6 +2049,10 @@ const Dashboard: React.FC = () => {
                             <CheckCircle className="w-4 h-4 mr-2" />
                             Total Attending: {totalAttending}
                           </Button>
+                          <Button variant="outline" size="sm" className="w-auto">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Total Checked-In: {totalCheckedInGuests}
+                          </Button>
                           <Button variant="outline" size="sm" className="w-auto" onClick={() => window.open('mailto:support@bethereexperience.com')}>
                             <HelpCircle className="w-4 h-4 mr-2" />
                             Help
@@ -2896,13 +2905,13 @@ const Dashboard: React.FC = () => {
                               <div className="text-xs text-gray-500">Total including invitee</div>
                             </TableHead>
                             <TableHead className="font-semibold">Asoebi</TableHead>
-                            <TableHead className="font-semibold">Table seating</TableHead>
-                            <TableHead className="font-semibold">Actions</TableHead>
+                             <TableHead className="font-semibold">Table seating</TableHead>
+                             <TableHead className="font-semibold">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredGuests.map((guest, index) => (
-                            <TableRow key={guest.id} className="hover:bg-gray-50/50">
+                           {filteredGuests.map((guest, index) => (
+                             <TableRow key={guest.id} className={guest.checkedIn ? 'bg-green-100/80 hover:bg-green-100/90' : 'hover:bg-gray-50/50'}>
                               <TableCell className="font-medium text-gray-600">{index + 1}</TableCell>
                               <TableCell>
                                 <span className="font-medium">{guest.lastName}</span>
@@ -3174,7 +3183,7 @@ const Dashboard: React.FC = () => {
                                       </SelectContent>
                                     </Select>
                                   );
-                                })()}
+                                }                              )()}
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1">
@@ -3281,6 +3290,11 @@ const Dashboard: React.FC = () => {
             </div>
             )}
 
+            {/* Check-In Section */}
+            {activeTab === 'checkin' && (
+              <CheckIn gifts={gifts} guests={guests} user={user} onNavigateToSubscription={() => setActiveTab('premium')} />
+            )}
+
             {/* Wedding Expense Manager Section */}
             {activeTab === 'vendors' && (
               <VendorPaymentTracker />
@@ -3344,12 +3358,13 @@ const Dashboard: React.FC = () => {
                             <h3 className="text-lg font-bold text-gray-900">VIP</h3>
                             <p className="text-2xl font-extrabold text-gray-900 mt-1">₦50,000</p>
                           </div>
-                        <ul className="space-y-3 mb-6">
-                          <li className="text-sm text-gray-600">0% commission on all cash gifts</li>
-                          <li className="text-sm text-gray-600">0% commission on all asoebi orders</li>
-                          <li className="text-sm text-gray-600">Free website templates</li>
-                          <li className="text-sm text-gray-400">No invitation templates</li>
-                        </ul>
+                         <ul className="space-y-3 mb-6">
+                           <li className="text-sm text-gray-600">0% commission on all cash gifts</li>
+                           <li className="text-sm text-gray-600">0% commission on all asoebi orders</li>
+                           <li className="text-sm text-gray-600">Free website templates</li>
+                           <li className="text-sm text-gray-600">Event check-in</li>
+                           <li className="text-sm text-gray-400">No invitation templates</li>
+                         </ul>
                          {upgradeableEvents.length > 0 && (
                            <Button
                              variant="default"
@@ -3376,12 +3391,13 @@ const Dashboard: React.FC = () => {
                          <h3 className="text-lg font-bold text-gray-900">Royal</h3>
                          <p className="text-2xl font-extrabold text-gray-900 mt-1">₦100,000</p>
                        </div>
-                        <ul className="space-y-3 mb-6">
-                          <li className="text-sm text-gray-600">0% commission on all cash gifts</li>
-                          <li className="text-sm text-gray-600">0% commission on all asoebi orders</li>
-                          <li className="text-sm text-gray-600">Premium website templates</li>
-                          <li className="text-sm text-gray-600">Premium invitation templates</li>
-                        </ul>
+                         <ul className="space-y-3 mb-6">
+                           <li className="text-sm text-gray-600">0% commission on all cash gifts</li>
+                           <li className="text-sm text-gray-600">0% commission on all asoebi orders</li>
+                           <li className="text-sm text-gray-600">Premium website templates</li>
+                           <li className="text-sm text-gray-600">Premium invitation templates</li>
+                           <li className="text-sm text-gray-600">Event check-in</li>
+                         </ul>
                          {upgradeableEvents.length > 0 && (
                            <Button
                              variant="default"
@@ -5957,6 +5973,101 @@ const Dashboard: React.FC = () => {
         </Button>
       </div>
     </form>
+  </DialogContent>
+</Dialog>
+
+{/* Quick Check-In Modal */}
+<Dialog open={isQuickCheckInOpen} onOpenChange={setIsQuickCheckInOpen}>
+  <DialogContent className="max-w-md w-full">
+    <DialogHeader>
+      <DialogTitle>Quick Check-In</DialogTitle>
+      <p className="text-sm text-gray-600">Search and Check-In guests for the selected event</p>
+    </DialogHeader>
+    <div className="space-y-4">
+      <Input
+        placeholder="Search by name..."
+        value={quickCheckInQuery}
+        onChange={(e) => setQuickCheckInQuery(e.target.value)}
+        className="h-10"
+      />
+      <div className="max-h-64 overflow-y-auto space-y-2">
+        {(() => {
+          const eventGuests = selectedEventForRSVP
+            ? guests.filter(g => g.giftId === selectedEventForRSVP)
+            : [];
+          const q = quickCheckInQuery.trim().toLowerCase();
+          const filtered = q
+            ? eventGuests.filter(g => `${g.firstName} ${g.lastName}`.toLowerCase().includes(q) || g.email?.toLowerCase().includes(q))
+            : eventGuests;
+
+          if (filtered.length === 0) {
+            return <p className="text-sm text-gray-500 text-center py-6">No guests found</p>;
+          }
+
+          return filtered.map(guest => (
+            <div
+              key={guest.id}
+              className={`flex items-center justify-between p-3 rounded-lg border ${
+                guest.checkedIn ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
+              }`}
+            >
+              <div>
+                <p className="font-medium text-sm text-gray-900">
+                  {guest.firstName} {guest.lastName}
+                </p>
+                <p className="text-xs text-gray-500">{guest.email || 'No email'}</p>
+              </div>
+              {guest.checkedIn ? (
+                <div className="flex flex-col items-end">
+                  <span className="inline-flex items-center text-green-700 text-xs font-medium">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Checked-In
+                  </span>
+                  {guest.checkedInAt && (
+                    <span className="text-xs text-gray-500 mt-0.5">
+                      {new Date(guest.checkedInAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    const token = localStorage.getItem('token');
+                    try {
+                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/guests/checkin-manual/${guest.id}`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setGuests(guests.map(g =>
+                          g.id === guest.id ? { ...g, checkedIn: true, checkedInAt: new Date().toISOString() } : g
+                        ));
+                        const partySize = guest.allowed - 1;
+                        if (partySize > 0) {
+                          toast({
+                            title: `Checked-In ${guest.firstName} ${guest.lastName} + ${partySize} other${partySize > 1 ? 's' : ''}`,
+                          });
+                        } else {
+                          toast({ title: 'Checked-In successfully' });
+                        }
+                      } else {
+                        toast({ title: data.msg || 'Check-In failed', variant: 'destructive' });
+                      }
+                    } catch (err) {
+                      toast({ title: 'Check-In failed', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  Check-In
+                </Button>
+              )}
+            </div>
+          ));
+        })()}
+      </div>
+    </div>
   </DialogContent>
 </Dialog>
 
