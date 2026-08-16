@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { CheckCircle2, XCircle, Search, Users } from 'lucide-react';
+import { CheckCircle2, XCircle, Search, Users, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
 
@@ -34,12 +34,19 @@ const CheckInManual = () => {
   const [gift, setGift] = useState<Gift | null>(null);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [needsLogin, setNeedsLogin] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+  const authToken = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
 
   useEffect(() => {
+    if (!authToken) {
+      setNeedsLogin(true);
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       if (!eventId) return;
       setLoading(true);
@@ -58,27 +65,18 @@ const CheckInManual = () => {
     };
 
     fetchData();
-  }, [eventId, backendUrl]);
+  }, [eventId, backendUrl, authToken]);
 
   const handleCheckIn = async (guestId: number) => {
     const guest = guests.find(g => g.id === guestId);
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const res = await fetch(
-        token
-          ? `${backendUrl}/api/guests/checkin-manual/${guestId}`
-          : `${backendUrl}/api/guests/checkin/${guestId}`,
-        {
-          method: 'POST',
-          headers,
-        }
-      );
+      const res = await fetch(`${backendUrl}/api/guests/checkin-manual/${guestId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
       const data = await res.json();
       if (res.ok) {
         if (data.alreadyCheckedIn) {
@@ -125,6 +123,31 @@ const CheckInManual = () => {
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.groomName} & ${gift.details.brideName}`
     : gift?.title || 'Event Check-In';
+
+  if (needsLogin) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900">Login Required</h2>
+              <p className="text-gray-600">Please login to access the event scanner.</p>
+              <Button
+                onClick={() => {
+                  localStorage.setItem('checkin-redirect', window.location.pathname);
+                  window.dispatchEvent(new Event('open-login-modal'));
+                }}
+                className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90"
+              >
+                Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -179,7 +202,10 @@ const CheckInManual = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-center text-gray-600 py-8">Loading...</p>
+              <div className="text-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" style={{ color: PRIMARY }} />
+                <p className="text-gray-600">Loading...</p>
+              </div>
             ) : filteredGuests.length === 0 ? (
               <p className="text-center text-gray-600 py-8">No guests found</p>
             ) : (

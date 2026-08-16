@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { CheckCircle2, XCircle, Search, Users } from 'lucide-react';
+import { CheckCircle2, XCircle, Search, Users, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
 
@@ -25,25 +25,49 @@ interface Gift {
   details?: any;
 }
 
+const PRIMARY = '#2E235C';
+
 const PublicCheckIn = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [gift, setGift] = useState<Gift | null>(null);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [needsLogin, setNeedsLogin] = useState(false);
+  const [scannerToken, setScannerToken] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const authToken = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
 
   useEffect(() => {
+    if (!authToken) {
+      setNeedsLogin(true);
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       if (!eventId) return;
       setLoading(true);
       try {
-        const res = await fetch(`${backendUrl}/api/guests/checkin-event/${eventId}`);
-        if (res.ok) {
-          const data = await res.json();
+        const [eventRes, scannerRes] = await Promise.all([
+          fetch(`${backendUrl}/api/guests/checkin-event/${eventId}`),
+          fetch(`${backendUrl}/api/guests/checkin-scanner-token/${eventId}`, {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }),
+        ]);
+
+        if (eventRes.ok) {
+          const data = await eventRes.json();
           setGift(data.gift);
           setGuests(data.guests || []);
+        }
+
+        if (scannerRes.ok) {
+          const data = await scannerRes.json();
+          setScannerToken(data.scannerToken);
+        } else {
+          toast({ title: 'Failed to load scanner', variant: 'destructive' });
         }
       } catch (err) {
         console.error(err);
@@ -53,12 +77,16 @@ const PublicCheckIn = () => {
     };
 
     fetchData();
-  }, [eventId, backendUrl]);
+  }, [eventId, backendUrl, toast, authToken]);
 
   const handleCheckIn = async (guestId: number) => {
     try {
-      const res = await fetch(`${backendUrl}/api/guests/checkin/${guestId}`, {
+      const res = await fetch(`${backendUrl}/api/guests/checkin-manual/${guestId}`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
       });
       const data = await res.json();
       if (res.ok) {
@@ -96,12 +124,37 @@ const PublicCheckIn = () => {
     ? `${gift.details.groomName} & ${gift.details.brideName}`
     : gift?.title || 'Event Check-In';
 
+  if (needsLogin) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900">Login Required</h2>
+              <p className="text-gray-600">Please login to access the event scanner.</p>
+              <Button
+                onClick={() => {
+                  localStorage.setItem('checkin-redirect', window.location.pathname);
+                  window.dispatchEvent(new Event('open-login-modal'));
+                }}
+                className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90"
+              >
+                Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{heading}</h1>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: PRIMARY }}>{heading}</h1>
           {gift?.date && (
             <p className="text-gray-600 mt-2">
               {new Date(gift.date).toLocaleDateString('en-US', {
@@ -133,7 +186,10 @@ const PublicCheckIn = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-center text-gray-600 py-8">Loading...</p>
+              <div className="text-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" style={{ color: PRIMARY }} />
+                <p className="text-gray-600">Loading...</p>
+              </div>
             ) : filteredGuests.length === 0 ? (
               <p className="text-center text-gray-600 py-8">No guests found</p>
             ) : (

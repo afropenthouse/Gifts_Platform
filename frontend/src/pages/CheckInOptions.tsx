@@ -22,10 +22,18 @@ const CheckInOptions = () => {
   const navigate = useNavigate();
   const [gift, setGift] = useState<Gift | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsLogin, setNeedsLogin] = useState(false);
   const { toast } = useToast();
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const authToken = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
 
   useEffect(() => {
+    if (!authToken) {
+      setNeedsLogin(true);
+      setLoading(false);
+      return;
+    }
+
     const fetchEvent = async () => {
       if (!eventId) return;
       setLoading(true);
@@ -46,11 +54,36 @@ const CheckInOptions = () => {
     };
 
     fetchEvent();
-  }, [eventId, backendUrl, toast]);
+  }, [eventId, backendUrl, toast, authToken]);
 
   const heading = gift?.type === 'wedding' && gift?.details?.groomName && gift?.details?.brideName
     ? `${gift.details.groomName} & ${gift.details.brideName}`
     : gift?.title || 'Event Check-In';
+
+  if (needsLogin) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900">Login Required</h2>
+              <p className="text-gray-600">Please login to access the event scanner.</p>
+              <Button
+                onClick={() => {
+                  localStorage.setItem('checkin-redirect', window.location.pathname);
+                  window.dispatchEvent(new Event('open-login-modal'));
+                }}
+                className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90"
+              >
+                Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

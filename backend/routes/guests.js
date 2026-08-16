@@ -3,6 +3,7 @@ const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
 const { sendRsvpEmail, sendOwnerNotificationEmail, sendReminderEmail } = require('../utils/emailService');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 module.exports = () => {
   const router = express.Router();
@@ -254,12 +255,17 @@ module.exports = () => {
 
       const isAttendingYes = Boolean(attending);
 
+      const isPremiumEvent = gift.tier && gift.tier !== 'free';
+
       if (isAttendingYes) {
-        const checkInToken = crypto.randomBytes(32).toString('hex');
-        await prisma.guest.update({
-          where: { id: guest.id },
-          data: { checkInToken },
-        });
+        let checkInToken;
+        if (isPremiumEvent) {
+          checkInToken = crypto.randomBytes(32).toString('hex');
+          await prisma.guest.update({
+            where: { id: guest.id },
+            data: { checkInToken },
+          });
+        }
 
         sendRsvpEmail({
           recipient: guest.email,
@@ -442,8 +448,47 @@ module.exports = () => {
     }
   });
 
+  router.post('/checkin-scanner-token/:giftId', auth(), async (req, res) => {
+    const giftId = parseInt(req.params.giftId);
+
+    try {
+      const gift = await prisma.gift.findFirst({
+        where: { id: giftId, userId: req.user.id },
+      });
+
+      if (!gift) {
+        return res.status(404).json({ msg: 'Event not found' });
+      }
+
+      const scannerToken = jwt.sign(
+        { giftId, type: 'checkin-scanner' },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      res.json({ scannerToken });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: 'Server error' });
+    }
+  });
+
   router.post('/checkin/:token', async (req, res) => {
     const { token } = req.params;
+    const scannerToken = req.header('X-Scanner-Token');
+
+    if (!scannerToken) {
+      return res.status(401).json({ msg: 'Scanner authorization required' });
+    }
+
+    try {
+      const decoded = jwt.verify(scannerToken, process.env.JWT_SECRET);
+      if (decoded.type !== 'checkin-scanner') {
+        return res.status(401).json({ msg: 'Invalid scanner token' });
+      }
+    } catch (err) {
+      return res.status(401).json({ msg: 'Invalid scanner token' });
+    }
 
     try {
       const guest = await prisma.guest.findFirst({

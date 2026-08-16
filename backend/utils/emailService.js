@@ -131,7 +131,7 @@ const sendRsvpEmail = async ({ recipient, guestName, attending, gift, eventUrl, 
   const googleMapsUrl = eventAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` : null;
 
   let checkInQrBlock = '';
-  if (attending && checkInToken) {
+  if (attending && checkInToken && gift?.tier && gift.tier !== 'free') {
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const checkInUrl = `${baseUrl}/checkin/${checkInToken}`;
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&bgcolor=ffffff&color=000000&data=${encodeURIComponent(checkInUrl)}`;

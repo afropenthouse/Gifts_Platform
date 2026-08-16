@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { ScanLine, CheckCircle2 } from 'lucide-react';
+import { ScanLine, CheckCircle2, Loader2 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import Navbar from '../components/Navbar';
 import { useToast } from '../hooks/use-toast';
@@ -16,13 +16,47 @@ const CheckInScan = () => {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState('');
   const [checkedInCount, setCheckedInCount] = useState(0);
+  const [needsLogin, setNeedsLogin] = useState(false);
+  const [scannerToken, setScannerToken] = useState('');
+  const [loadingScanner, setLoadingScanner] = useState(true);
   const { toast } = useToast();
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const authToken = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+
+  useEffect(() => {
+    if (!authToken) {
+      setNeedsLogin(true);
+      setLoadingScanner(false);
+      return;
+    }
+
+    const fetchScannerToken = async () => {
+      if (!eventId) return;
+      try {
+        const res = await fetch(`${backendUrl}/api/guests/checkin-scanner-token/${eventId}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setScannerToken(data.scannerToken);
+        } else {
+          toast({ title: 'Failed to load scanner', variant: 'destructive' });
+        }
+      } catch (err) {
+        console.error(err);
+        toast({ title: 'Failed to load scanner', variant: 'destructive' });
+      } finally {
+        setLoadingScanner(false);
+      }
+    };
+
+    fetchScannerToken();
+  }, [eventId, backendUrl, toast, authToken]);
 
   const handleScan = useCallback(async (decodedText: string) => {
     try {
       const url = new URL(decodedText);
-      
+
       if (url.origin !== window.location.origin) {
         toast({ title: 'Invalid QR code: not from this app', variant: 'destructive' });
         return;
@@ -36,6 +70,9 @@ const CheckInScan = () => {
 
       const res = await fetch(`${backendUrl}/api/guests/checkin/${token}`, {
         method: 'POST',
+        headers: {
+          'X-Scanner-Token': scannerToken,
+        },
       });
       const data = await res.json();
       if (res.ok) {
@@ -51,9 +88,10 @@ const CheckInScan = () => {
     } catch (err) {
       toast({ title: 'Check-In failed', variant: 'destructive' });
     }
-  }, [backendUrl, toast]);
+  }, [backendUrl, toast, scannerToken]);
 
   useEffect(() => {
+    if (needsLogin || !scannerToken) return;
     let html5QrCode: Html5Qrcode | null = null;
 
     const start = async () => {
@@ -90,7 +128,46 @@ const CheckInScan = () => {
         html5QrCode.stop().catch(() => {});
       }
     };
-  }, [handleScan, scanning]);
+  }, [handleScan, needsLogin, scannerToken]);
+
+  if (needsLogin) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900">Login Required</h2>
+              <p className="text-gray-600">Please login to access the event scanner.</p>
+              <Button
+                onClick={() => {
+                  localStorage.setItem('checkin-redirect', window.location.pathname);
+                  window.dispatchEvent(new Event('open-login-modal'));
+                }}
+                className="w-full bg-[#2E235C] text-white hover:bg-[#2E235C]/90"
+              >
+                Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadingScanner) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+          <div className="text-center space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto" style={{ color: PRIMARY }} />
+            <p className="text-gray-600">Loading scanner...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
