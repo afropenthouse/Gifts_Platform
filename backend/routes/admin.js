@@ -591,6 +591,8 @@ module.exports = () => {
         where.giftId = parseInt(eventId, 10);
       }
 
+      where.status = { not: 'pending' };
+
       const premiumPayments = await prisma.premiumPayment.findMany({
         where,
         orderBy: { createdAt: 'desc' },
