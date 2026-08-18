@@ -27,6 +27,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -125,7 +126,7 @@ export const TemplateSolstice = ({
           </section>
         )}
         <section className="mt-16 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {actionItems.map((item) => {
+          {actionItems.filter(item => item.label !== 'Photobook' || (data?.tier && data.tier !== 'free')).map((item) => {
             const Icon = item.icon;
             return (
               <button key={item.label} onClick={() => window.open(item.url, '_blank')} className="rounded-2xl bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md">

@@ -26,6 +26,7 @@ interface TemplateProps {
       secondaryColor?: string;
       fontFamily?: string;
     };
+    tier?: 'free' | 'vip' | 'royal';
   };
 }
 
@@ -222,6 +223,7 @@ return (
               <Gift className="w-8 h-8" />
               <span className="text-xs tracking-[0.1em]">Cash Gifts</span>
             </button>
+            {data?.tier && data.tier !== 'free' && (
             <button
               onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
               className="flex flex-col items-center gap-5 py-12 border transition-colors hover:bg-white/5"
@@ -230,6 +232,7 @@ return (
               <Camera className="w-8 h-8" />
               <span className="text-xs tracking-[0.1em]">Photobook</span>
             </button>
+            )}
           </div>
         </div>
       </section>

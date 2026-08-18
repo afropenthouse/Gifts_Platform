@@ -28,6 +28,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -283,6 +284,7 @@ export const TemplateNocturne = ({
                   </div>
                    <span className="text-sm tracking-[0.08em] text-yellow-100">Cash Gifts</span>
                 </button>
+                {data?.tier && data.tier !== 'free' && (
                 <button
                   onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
                   className="group flex flex-col items-center gap-5 py-10 rounded-2xl border border-orange-500/20 bg-white/5 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400 focus-visible:outline-offset-2"
@@ -292,6 +294,7 @@ export const TemplateNocturne = ({
                   </div>
                    <span className="text-sm tracking-[0.08em] text-orange-100">Photobook</span>
                 </button>
+                )}
               </div>
             </div>
           </section>

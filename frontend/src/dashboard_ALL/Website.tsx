@@ -513,6 +513,7 @@ const Website = () => {
           secondaryColor: websiteData.secondaryColor,
           fontFamily: websiteData.fontFamily,
         },
+        tier: selectedGift?.tier,
       },
     };
 

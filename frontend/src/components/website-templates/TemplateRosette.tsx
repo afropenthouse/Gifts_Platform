@@ -26,6 +26,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -187,7 +188,7 @@ export const TemplateRosette = ({
 
         <section className="mx-auto mt-20 max-w-6xl">
           <div className="grid gap-4 md:grid-cols-3">
-            {actionLinks.map((item, index) => {
+            {actionLinks.filter(item => item.label !== 'Photobook' || (data?.tier && data.tier !== 'free')).map((item, index) => {
               const Icon = item.icon;
               const bg = index % 2 === 0 ? primaryColor : secondaryColor;
               return (

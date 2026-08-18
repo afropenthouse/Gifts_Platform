@@ -27,6 +27,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -236,7 +237,7 @@ export const TemplateAubade = ({
           <p className="text-stone-500 mb-10">We would love to have you with us</p>
 
           <div className="grid grid-cols-2 gap-3">
-            {actions.map(({ key, label, icon: Icon, href, color }) => (
+            {actions.filter(a => a.key !== 'photobook' || (data?.tier && data.tier !== 'free')).map(({ key, label, icon: Icon, href, color }) => (
               <button
                 key={key}
                 onClick={() => window.open(href, '_blank')}

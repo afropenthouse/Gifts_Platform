@@ -24,6 +24,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       fontFamily?: string;
     };
@@ -59,7 +60,7 @@ export const TemplatePearl = ({
     { label: 'RSVP', icon: Users, enabled: true, url: `/gift/${shareLink}` },
     { label: 'Buy Asoebi', icon: ShoppingBag, enabled: true, url: `/gift/${shareLink}` },
     { label: 'Cash Gifts', icon: Gift, enabled: true, url: `/gift/${shareLink}` },
-    { label: 'Photobook', icon: Camera, enabled: true, url: `/qr-gift/${shareLink}` },
+    { label: 'Photobook', icon: Camera, enabled: data?.tier && data.tier !== 'free', url: `/qr-gift/${shareLink}` },
     { label: 'Wishlists', icon: Heart, enabled: !!(enableWishlistButton && wishlists?.[0]?.shareLink), url: wishlists?.[0]?.shareLink ? `/${wishlists[0].shareLink}` : `/gift/${shareLink}` },
     { label: 'Well Wishes', icon: MessageSquareHeart, enabled: !!showWellWishes, url: `/gift/${shareLink}#wishes` },
   ];

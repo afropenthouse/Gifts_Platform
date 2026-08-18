@@ -30,6 +30,7 @@ interface TemplateProps {
       secondaryColor?: string;
       fontFamily?: string;
     };
+    tier?: 'free' | 'vip' | 'royal';
   };
 }
 
@@ -234,6 +235,7 @@ export const TemplateElegant = ({
               <Gift className="w-7 h-7" />
               <span className="text-sm tracking-wide">Cash Gifts</span>
             </button>
+            {data?.tier && data.tier !== 'free' && (
             <button
               onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
               className="flex flex-col items-center gap-4 py-8 text-white hover:bg-white/10 transition-colors"
@@ -241,6 +243,7 @@ export const TemplateElegant = ({
               <Camera className="w-7 h-7" />
               <span className="text-sm tracking-wide">Photobook</span>
             </button>
+            )}
           </div>
         </div>
       </section>

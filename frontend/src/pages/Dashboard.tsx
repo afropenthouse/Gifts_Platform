@@ -29,7 +29,7 @@ import {
   Star, TrendingDown, CheckCircle, AlertCircle, Wallet,
   CreditCard as CreditCardIcon, Smartphone, Globe as GlobeIcon,
   Link as LinkIcon, User, Mail, Phone, MapPin, Clock, FileDown,
-  Plus, Minus, Trash2, Crown, XCircle, ListTodo, ScanLine
+  Plus, Minus, Trash2, Crown, Lock, XCircle, ListTodo, ScanLine
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Badge } from '../components/ui/badge';
@@ -384,6 +384,8 @@ const Dashboard: React.FC = () => {
     acc[p.giftId].push(p);
     return acc;
   }, {} as Record<number, any[]>);
+
+  const hasPremiumEvent = activeSubscriptionEvents.length > 0;
 
   const sidebarItems = [
     { id: 'todo', label: 'Todo', icon: ListTodo, color: 'text-[#2E235C]', badge: null, action: undefined },
@@ -3317,7 +3319,28 @@ const Dashboard: React.FC = () => {
 
             {/* Photobook Section */}
             {activeTab === 'photobook' && (
-              <Photobook gifts={gifts} onTabChange={setActiveTab} />
+              !hasPremiumEvent ? (
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="p-8 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Lock className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Photobook is a VIP feature</h3>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                      Upgrade your event to VIP or Royal to unlock the Photobook feature and let guests share pictures from your events.
+                    </p>
+                    <Button
+                      className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white"
+                      onClick={() => setActiveTab('premium')}
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      Upgrade Now
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Photobook gifts={gifts} onTabChange={setActiveTab} />
+              )
             )}
 
             {/* Wishlists Section */}

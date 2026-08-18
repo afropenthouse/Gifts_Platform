@@ -26,6 +26,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -97,7 +98,7 @@ export const TemplateMeridian = ({
         {story && <section className="border-l-4 pl-7" style={{ borderColor: secondaryColor }}><h2 className="mb-5 text-3xl font-black">Our Story</h2><p className="max-w-4xl text-lg leading-9 text-[#506064]">{story}</p></section>}
         {gallery.length > 0 && <section className="mt-16"><h2 className="mb-6 text-3xl font-black">Gallery</h2><GalleryLightbox images={gallery} imageClassName="h-72 w-full object-cover object-top" /></section>}
         <section className="mt-16 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {actions.map((item) => {
+          {actions.filter(item => item.label !== 'Photobook' || (data?.tier && data.tier !== 'free')).map((item) => {
             const Icon = item.icon;
             return <button key={item.label} onClick={() => window.open(item.url, '_blank')} className="bg-white p-6 text-left transition hover:bg-[#182326] hover:text-white"><Icon className="mb-8 h-7 w-7" style={{ color: secondaryColor }} /><span className="text-sm font-black uppercase tracking-[0.16em]">{item.label}</span></button>;
           })}

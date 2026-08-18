@@ -26,6 +26,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -104,7 +105,7 @@ export const TemplateOpulence = ({
         {story && <section className="grid gap-8 md:grid-cols-[.6fr_1.4fr]"><h2 className="text-4xl font-semibold">Our Story</h2><p className="text-xl leading-10 text-[#fff7e6]/70">{story}</p></section>}
         {gallery.length > 0 && <section className="mt-20"><h2 className="mb-8 text-4xl font-semibold">Gallery</h2><GalleryLightbox images={gallery} imageClassName="h-80 w-full object-cover object-top" /></section>}
         <section className="mt-20 grid gap-px bg-[#d7b46a]/25 sm:grid-cols-2 lg:grid-cols-4">
-          {actions.map((item) => {
+          {actions.filter(item => item.label !== 'Photobook' || (data?.tier && data.tier !== 'free')).map((item) => {
             const Icon = item.icon;
             return <button key={item.label} onClick={() => window.open(item.url, '_blank')} className="bg-[#120c10] p-8 text-left transition hover:bg-[#1f151b]"><Icon className="mb-10 h-8 w-8" style={{ color: secondaryColor }} /><span className="text-sm uppercase tracking-[0.18em]">{item.label}</span></button>;
           })}

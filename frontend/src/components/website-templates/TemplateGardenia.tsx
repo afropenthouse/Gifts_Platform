@@ -26,6 +26,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -102,7 +103,7 @@ export const TemplateGardenia = ({
         )}
         {gallery.length > 0 && <section className="pb-14"><GalleryLightbox images={gallery} imageClassName="h-72 w-full object-cover object-top" /></section>}
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {actions.map((item) => {
+          {actions.filter(item => item.label !== 'Photobook' || (data?.tier && data.tier !== 'free')).map((item) => {
             const Icon = item.icon;
             return <button key={item.label} onClick={() => window.open(item.url, '_blank')} className="border border-[#d8cfc0] bg-white/70 p-6 text-center transition hover:bg-white"><Icon className="mx-auto mb-5 h-6 w-6" style={{ color: primaryColor }} /><span className="text-xs uppercase tracking-[0.18em]">{item.label}</span></button>;
           })}

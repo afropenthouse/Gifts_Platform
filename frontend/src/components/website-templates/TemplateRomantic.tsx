@@ -26,6 +26,7 @@ interface TemplateProps {
       secondaryColor?: string;
       fontFamily?: string;
     };
+    tier?: 'free' | 'vip' | 'royal';
   };
 }
 
@@ -224,6 +225,7 @@ export const TemplateRomantic = ({
               <Gift className="w-7 h-7" />
               <span className="text-xs tracking-[0.08em] font-medium">Cash Gifts</span>
             </button>
+            {data?.tier && data.tier !== 'free' && (
             <button
               onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
               className="flex flex-col items-center gap-4 py-10 rounded-full border-2 hover:bg-gray-50 transition-colors"
@@ -232,6 +234,7 @@ export const TemplateRomantic = ({
               <Camera className="w-7 h-7" />
               <span className="text-xs tracking-[0.08em] font-medium">Photobook</span>
             </button>
+            )}
           </div>
         </div>
       </section>

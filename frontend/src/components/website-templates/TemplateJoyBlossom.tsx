@@ -40,6 +40,7 @@ interface JoyTemplateProps {
   data?: {
     coupleNames?: string;
     theme?: { primaryColor?: string; secondaryColor?: string; accentColor?: string; fontFamily?: string; };
+    tier?: 'free' | 'vip' | 'royal';
     [key: string]: any;
   };
 }
@@ -238,7 +239,7 @@ export const TemplateJoyBlossom = ({
     if (i === 0) return showRSVP;
     if (i === 1) return showAsoebi;
     if (i === 2) return showCashGift;
-    if (i === 3) return true; // Photobook always visible
+    if (i === 3) return data?.tier && data.tier !== 'free'; // Photobook VIP-only
     if (i === 4) return showWishlist;
     if (i === 5) return showGuestbook;
     return true;

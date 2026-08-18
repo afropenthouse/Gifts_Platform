@@ -29,6 +29,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -227,6 +228,7 @@ export const TemplateMilk = ({
                 <Gift className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
                 <span className="text-[10px] tracking-[0.1em] font-medium text-stone-600">Cash Gifts</span>
               </button>
+              {data?.tier && data.tier !== 'free' && (
               <button
                 onClick={() => window.open(`/qr-gift/${shareLink}`, '_blank')}
                 className="flex flex-col items-center gap-4 py-10 bg-white hover:bg-stone-50 transition-colors duration-500 group"
@@ -234,6 +236,7 @@ export const TemplateMilk = ({
                 <Camera className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
                 <span className="text-[10px] tracking-[0.1em] font-medium text-stone-600">Photobook</span>
               </button>
+              )}
             </div>
           </section>
 

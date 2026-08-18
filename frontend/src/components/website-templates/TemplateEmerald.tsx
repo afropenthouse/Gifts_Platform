@@ -26,6 +26,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -140,7 +141,7 @@ export const TemplateEmerald = ({
 
         <section className="mx-auto mt-24 max-w-7xl border-t border-[#d6b76a]/25 pt-12">
           <div className="grid gap-3 md:grid-cols-3">
-            {actions.map((item, index) => {
+            {actions.filter(item => item.label !== 'Photobook' || (data?.tier && data.tier !== 'free')).map((item, index) => {
               const Icon = item.icon;
               return (
                 <button key={item.label} onClick={() => window.open(item.url, '_blank')} className={`border border-[#d6b76a]/25 bg-white/[0.04] p-8 text-left transition hover:-translate-y-1 hover:bg-white/[0.08] ${index === 0 ? 'md:col-span-2' : ''}`}>

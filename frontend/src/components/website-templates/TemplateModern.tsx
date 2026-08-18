@@ -27,6 +27,7 @@ interface TemplateProps {
     story?: string;
     ceremony?: string;
     reception?: string;
+    tier?: 'free' | 'vip' | 'royal';
     theme?: {
       primaryColor?: string;
       secondaryColor?: string;
@@ -147,7 +148,7 @@ export const TemplateModern = ({
 
         <section className="mx-auto mt-20 max-w-6xl">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {actions.map((item) => {
+            {actions.filter(item => item.label !== 'Photobook' || (data?.tier && data.tier !== 'free')).map((item) => {
               const Icon = item.icon;
               return (
                 <button key={item.label} onClick={() => window.open(item.url, '_blank')} className="border border-[#ded8c8] bg-white p-7 text-left transition hover:bg-[#f0eadc]">

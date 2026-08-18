@@ -164,6 +164,7 @@ const WeddingWebsite = () => {
         secondaryColor: website.secondaryColor,
         fontFamily: website.fontFamily,
       },
+      tier: (website.gift as any)?.tier,
     },
   };
 
