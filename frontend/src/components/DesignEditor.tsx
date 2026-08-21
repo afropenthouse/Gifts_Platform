@@ -25,7 +25,7 @@ interface Template {
   id: string;
   name: string;
   description: string;
-  tier: 'free' | 'vip' | 'royal';
+  tier: 'free' | 'vip';
   previewColor: string;
   accentColor: string;
 }
@@ -51,7 +51,7 @@ interface DesignEditorProps {
   isPremium?: boolean;
   initialTemplateId?: string;
   onPremiumUpgrade?: () => void;
-  giftTier?: 'free' | 'vip' | 'royal';
+  giftTier?: 'free' | 'vip';
 }
 
 const PRESET_THEMES = [
@@ -311,8 +311,8 @@ export const DesignEditor = ({
     const template = templates.find(t => t.id === templateId);
     if (!template) return;
 
-    const isPremiumTemplate = template.tier === 'premium';
-    const canAccessPremium = giftTier === 'royal';
+    const isPremiumTemplate = template.tier !== 'free';
+    const canAccessPremium = giftTier === 'vip';
 
     // Non-premium users can preview the design but cannot enter the editor.
     if (isPremiumTemplate && !canAccessPremium && !isPremium) {
@@ -356,8 +356,8 @@ export const DesignEditor = ({
   };
 
   const handleSave = () => {
-    const isPremiumTemplate = templates.find(t => t.id === selectedTemplate)?.tier === 'vip' || templates.find(t => t.id === selectedTemplate)?.tier === 'royal';
-    if (isPremiumTemplate && giftTier !== 'royal' && !isPremium) {
+    const isPremiumTemplate = templates.find(t => t.id === selectedTemplate)?.tier === 'vip';
+    if (isPremiumTemplate && giftTier !== 'vip' && !isPremium) {
       onPremiumUpgrade?.();
       return;
     }
@@ -448,7 +448,7 @@ export const DesignEditor = ({
                 </div>
 
                 {/* Premium badge — only shown when the event is NOT yet premium and template is premium */}
-                {template.tier !== 'free' && !isPremium && giftTier !== 'royal' && (
+                {template.tier !== 'free' && !isPremium && giftTier !== 'vip' && (
                   <div className="absolute top-3 right-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg z-10 flex items-center gap-1">
                     <Crown className="w-3 h-3" />
                     Premium
@@ -495,7 +495,7 @@ export const DesignEditor = ({
                   onClick={() => onPremiumUpgrade?.()}
                 >
                <Crown className="w-4 h-4 mr-1.5" />
-               Upgrade to Royal
+               Upgrade to VIP
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setPreviewTemplate(null)}>
                   Close
@@ -542,7 +542,7 @@ export const DesignEditor = ({
         </div>
 
         {/* Premium locked banner */}
-        {!isPremium && giftTier !== 'royal' && (
+        {!isPremium && giftTier !== 'vip' && (
           <div className="p-4 border-b bg-yellow-50">
             <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
               <Lock className="w-4 h-4 text-yellow-600" />
@@ -553,7 +553,7 @@ export const DesignEditor = ({
               onClick={() => onPremiumUpgrade?.()}
             >
               <Crown className="w-4 h-4 mr-1.5" />
-               Upgrade to Royal
+               Upgrade to VIP
             </Button>
           </div>
         )}
@@ -565,7 +565,7 @@ export const DesignEditor = ({
               activeTab === 'text' ? 'bg-gray-50 border-b-2 border-[#2E235C] text-[#2E235C]' : 'text-gray-500'
             }`}
             onClick={() => setActiveTab('text')}
-            disabled={!isPremium && giftTier !== 'royal'}
+            disabled={!isPremium && giftTier !== 'vip'}
           >
             <Type className="w-4 h-4" />
             Text
@@ -575,7 +575,7 @@ export const DesignEditor = ({
               activeTab === 'style' ? 'bg-gray-50 border-b-2 border-[#2E235C] text-[#2E235C]' : 'text-gray-500'
             }`}
             onClick={() => setActiveTab('style')}
-            disabled={!isPremium && giftTier !== 'royal'}
+            disabled={!isPremium && giftTier !== 'vip'}
           >
             <Palette className="w-4 h-4" />
             Style
@@ -583,7 +583,7 @@ export const DesignEditor = ({
         </div>
 
         {/* Content */}
-        <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${!isPremium && giftTier !== 'royal' ? 'pointer-events-none opacity-60' : ''}`}>
+        <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${!isPremium && giftTier !== 'vip' ? 'pointer-events-none opacity-60' : ''}`}>
           {activeTab === 'text' && (
             <>
               <div>

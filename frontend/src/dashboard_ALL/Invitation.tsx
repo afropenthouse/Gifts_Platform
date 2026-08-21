@@ -15,13 +15,13 @@ interface Gift {
   shareLink: string;
   enableGuestNotes?: boolean;
   wishlists?: { shareLink: string }[];
-  tier?: 'free' | 'vip' | 'royal';
+  tier?: 'free' | 'vip';
 }
 
 interface InvitationData {
   id?: number;
   template?: string;
-  tier?: 'free' | 'vip' | 'royal';
+  tier?: 'free' | 'vip';
   published?: boolean;
   venue?: string;
   coupleName1?: string;
@@ -44,7 +44,7 @@ interface Template {
   id: string;
   name: string;
   description: string;
-  tier: 'free' | 'vip' | 'royal';
+  tier: 'free' | 'vip';
   previewColor: string;
   accentColor: string;
 }
@@ -58,9 +58,8 @@ const Invitation = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const { toast } = useToast();
 
-  const isRoyal = selectedGift?.tier === 'royal' || invitation?.tier === 'royal';
   const isVip = selectedGift?.tier === 'vip' || invitation?.tier === 'vip';
-  const hasPremiumAccess = isRoyal;
+  const hasPremiumAccess = isVip;
 
 
 
@@ -178,7 +177,7 @@ const Invitation = () => {
     fetchInvitation(gift.id);
   };
 
-   const handleUpgradeToPremium = async (tier: 'vip' | 'royal' = 'royal') => {
+   const handleUpgradeToPremium = async (tier: 'vip' = 'vip') => {
      if (!selectedGift) return;
      setIsProcessingPayment(true);
      try {
@@ -227,7 +226,7 @@ const Invitation = () => {
         return;
       }
 
-       const hasPremiumAccess = isRoyal;
+       const hasPremiumAccess = isVip;
        const coupleNames = [designData.coupleName1, designData.coupleName2].filter(Boolean).join(' & ');
        
        const body: any = {
@@ -329,52 +328,77 @@ const Invitation = () => {
           <p className="text-sm text-gray-500">Create beautiful invitations like Canva</p>
         </div>
         {selectedGift && (
-          isRoyal ? (
-            <div className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
+          // isRoyal ? (
+          //   <div className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
+          //     <CheckCircle className="w-3.5 h-3.5" />
+          //     Royal access
+          //   </div>
+          // ) : isVip ? (
+          //   <div className="flex items-center gap-2">
+          //     <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
+          //       <CheckCircle className="w-3.5 h-3.5" />
+          //       VIP active
+          //     </div>
+          //     <Button
+          //       size="sm"
+          //       className="text-xs h-9 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold shadow-md"
+          //       onClick={() => handleUpgradeToPremium('royal')}
+          //       disabled={isProcessingPayment}
+          //     >
+          //       {isProcessingPayment ? (
+          //         <div className="flex items-center gap-1.5">
+          //           <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          //           Processing...
+          //         </div>
+          //       ) : (
+          //         <div className="flex items-center gap-1.5">
+          //           <Crown className="w-3.5 h-3.5" />
+          //           Upgrade to Royal
+          //         </div>
+          //       )}
+          //     </Button>
+          //   </div>
+          // ) : (
+          //   <Button
+          //     size="sm"
+          //     className="text-xs h-9 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold shadow-md"
+          //     onClick={() => handleUpgradeToPremium('royal')}
+          //     disabled={isProcessingPayment}
+          //   >
+          //     {isProcessingPayment ? (
+          //       <div className="flex items-center gap-1.5">
+          //         <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          //         Processing...
+          //       </div>
+          //     ) : (
+          //       <div className="flex items-center gap-1.5">
+          //         <Crown className="w-3.5 h-3.5" />
+          //         Upgrade to Royal
+          //       </div>
+          //     )}
+          //   </Button>
+          // )
+          isVip ? (
+            <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
               <CheckCircle className="w-3.5 h-3.5" />
-              Royal access
-            </div>
-          ) : isVip ? (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
-                <CheckCircle className="w-3.5 h-3.5" />
-                VIP active
-              </div>
-              <Button
-                size="sm"
-                className="text-xs h-9 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold shadow-md"
-                onClick={() => handleUpgradeToPremium('royal')}
-                disabled={isProcessingPayment}
-              >
-                {isProcessingPayment ? (
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Processing...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5">
-                    <Crown className="w-3.5 h-3.5" />
-                    Upgrade to Royal
-                  </div>
-                )}
-              </Button>
+              VIP active
             </div>
           ) : (
             <Button
               size="sm"
-              className="text-xs h-9 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold shadow-md"
-              onClick={() => handleUpgradeToPremium('royal')}
+              className="text-xs h-9 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold shadow-md"
+              onClick={() => handleUpgradeToPremium()}
               disabled={isProcessingPayment}
             >
               {isProcessingPayment ? (
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 border-2 border-yellow-900 border-t-transparent rounded-full animate-spin" />
                   Processing...
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
                   <Crown className="w-3.5 h-3.5" />
-                  Upgrade to Royal
+                  Upgrade to VIP
                 </div>
               )}
             </Button>
@@ -416,7 +440,7 @@ const Invitation = () => {
           initialData={getInitialData()}
           onSave={(data) => saveInvitationSettings(data)}
           giftId={selectedGift.id}
-          isPremium={isRoyal}
+          isPremium={isVip}
           initialTemplateId={invitation?.template || 'botanical-sprig'}
           onPremiumUpgrade={handleUpgradeToPremium}
           giftTier={selectedGift?.tier}

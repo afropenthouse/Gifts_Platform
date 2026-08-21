@@ -20,7 +20,7 @@ interface GiftItem {
   enableRSVP?: boolean;
   enableCashGifts?: boolean;
   enableWebsite?: boolean;
-  tier?: 'free' | 'vip' | 'royal';
+  tier?: 'free' | 'vip' | 'royal'; // royal @deprecated — only VIP offered going forward
   website?: { published?: boolean };
   invitation?: boolean;
   wishlists?: any[];

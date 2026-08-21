@@ -80,7 +80,7 @@ interface Gift {
   isSellingAsoebi?: boolean;
   asoebiPrice?: number | string;
   enableGuestNotes?: boolean;
-  tier?: 'free' | 'vip' | 'royal';
+  tier?: 'free' | 'vip' | 'royal'; // royal @deprecated — only VIP offered going forward
 }
 
 interface Contribution {
@@ -103,7 +103,8 @@ interface GiftLinksProps {
   onRSVP: (gift: Gift) => void;
   onSetReminder: (gift: Gift) => void;
   onCreateWishlistForGift: (gift: Gift) => void;
-  onUpgradeToPremium?: (gift: Gift, tier?: 'vip' | 'royal') => void;
+  // onUpgradeToPremium?: (gift: Gift, tier?: 'vip' | 'royal') => void; // royal @deprecated
+  onUpgradeToPremium?: (gift: Gift, tier?: 'vip' /* | 'royal' */) => void;
   deletingGiftId?: number | null;
 }
 
@@ -206,7 +207,8 @@ export const GiftLinks = ({
                   {gift.tier === 'royal' || gift.tier === 'vip' ? (
                     <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-md">
                       <Crown className="w-3 h-3" />
-                      {gift.tier === 'royal' ? 'Royal' : 'VIP'}
+                      {/* {gift.tier === 'royal' ? 'Royal' : 'VIP'} // royal @deprecated — normalize to VIP display */}
+                      VIP
                     </div>
                   ) : upgradeMenuOpenId === gift.id ? (
                     <div data-upgrade-menu className="flex flex-col gap-0.5 items-end bg-white rounded-lg shadow-xl border border-gray-200 p-1 min-w-[120px]">
@@ -221,6 +223,7 @@ export const GiftLinks = ({
                         <Crown className="w-3 h-3" />
                         VIP
                       </button>
+                      {/* Royal upgrade option — @deprecated, only VIP now
                       <button
                         type="button"
                         className="flex items-center gap-1.5 text-xs font-semibold text-yellow-900 hover:bg-yellow-50 rounded px-2 py-1.5 transition-colors w-full text-left"
@@ -232,6 +235,7 @@ export const GiftLinks = ({
                         <Crown className="w-3 h-3" />
                         Royal
                       </button>
+                      */}
                     </div>
                   ) : (
                     <Button

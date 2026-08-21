@@ -47,7 +47,8 @@ const CheckIn: React.FC<CheckInProps> = ({ gifts, guests, user, onNavigateToSubs
   };
 
   const selectedGift = gifts.find(g => g.id.toString() === selectedEventId);
-  const isVipOrRoyal = selectedGift && (selectedGift.tier === 'vip' || selectedGift.tier === 'royal');
+  // const isVipOrRoyal = selectedGift && (selectedGift.tier === 'vip' || selectedGift.tier === 'royal'); // royal @deprecated
+  const isVipOrRoyal = selectedGift && (selectedGift.tier === 'vip' || selectedGift.tier === 'royal'); // renamed semantics; check for both, but UI now promotes only VIP
 
   const fetchStats = useCallback(async (giftId: number) => {
     setLoading(true);
@@ -126,7 +127,8 @@ const CheckIn: React.FC<CheckInProps> = ({ gifts, guests, user, onNavigateToSubs
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Event Check-In is a VIP feature</h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Upgrade this event to VIP or Royal to unlock the Event Check-In feature and track attendance at your event.
+              {/* Upgrade this event to VIP or Royal to unlock the Event Check-In feature and track attendance at your event. // royal @deprecated */}
+              Upgrade this event to VIP to unlock the Event Check-In feature and track attendance at your event.
             </p>
             <Button
               className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white"

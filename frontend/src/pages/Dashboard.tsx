@@ -111,7 +111,7 @@ interface Gift {
   asoebiBrideWomenQty?: number;
   asoebiGroomMenQty?: number;
   asoebiGroomWomenQty?: number;
-  tier?: 'free' | 'vip' | 'royal';
+  tier?: 'free' | 'vip';
 }
 
 interface Contribution {
@@ -247,13 +247,15 @@ const Dashboard: React.FC = () => {
   const [isSubmittingPhone, setIsSubmittingPhone] = useState(false);
 
   const [selectedSubscriptionEventId, setSelectedSubscriptionEventId] = useState<number | null>(null);
-  const [subscriptionTier, setSubscriptionTier] = useState<'vip' | 'royal'>('vip');
+  // const [subscriptionTier, setSubscriptionTier] = useState<'vip' | 'royal'>('vip'); // royal @deprecated
+  const [subscriptionTier, setSubscriptionTier] = useState<'vip' /* | 'royal' */>('vip');
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   
   // Premium Upgrade State
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [selectedGiftForUpgrade, setSelectedGiftForUpgrade] = useState<Gift | null>(null);
-  const [upgradeTier, setUpgradeTier] = useState<'vip' | 'royal'>('vip');
+  // const [upgradeTier, setUpgradeTier] = useState<'vip' | 'royal'>('vip'); // royal @deprecated
+  const [upgradeTier, setUpgradeTier] = useState<'vip' /* | 'royal' */>('vip');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [premiumPayments, setPremiumPayments] = useState<any[]>([]);
   const [isLoadingPayments, setIsLoadingPayments] = useState(false);
@@ -372,7 +374,9 @@ const Dashboard: React.FC = () => {
   const isMobile = useIsMobile();
   const activeSubscriptionEvents = gifts.filter((gift) => gift.tier && gift.tier !== 'free');
   const upgradeableEvents = gifts.filter((gift) => !gift.tier || gift.tier === 'free');
-  const vipUpgradeableEvents = gifts.filter((gift) => gift.tier === 'vip');
+  // const vipUpgradeableEvents = gifts.filter((gift) => gift.tier === 'vip'); // royal @deprecated — no higher tier anymore
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const vipUpgradeableEvents = gifts.filter((gift) => gift.tier === 'vip'); // kept for records; no longer used for upgrade flow
   const visibleUpgradeableEvents = upgradeableEvents.slice(0, 3);
   const hiddenUpgradeableCount = Math.max(0, upgradeableEvents.length - visibleUpgradeableEvents.length);
   const premiumPaymentHistory = premiumPayments;
@@ -748,7 +752,8 @@ const Dashboard: React.FC = () => {
 
             const successMessage = paymentType === 'template'
               ? `Thank you! Your ${(responseData?.template || templateParam || 'premium').charAt(0).toUpperCase() + (responseData?.template || templateParam || 'premium').slice(1)} website template is now unlocked.`
-              : `Thank you! Your event is now ${tierParam === 'vip' ? 'VIP' : 'Royal'} - no more commission!`;
+              // : `Thank you! Your event is now ${tierParam === 'vip' ? 'VIP' : 'Royal'} - no more commission!`; // royal @deprecated
+              : `Thank you! Your event is now VIP - no more commission!`;
 
             setPremiumVerifyStatus('success');
             setPremiumVerifyMessage(successMessage);
@@ -1679,7 +1684,8 @@ const Dashboard: React.FC = () => {
   };
 
   // Premium Upgrade Functions
-  const handleUpgradeToPremium = (gift: Gift, tier: 'vip' | 'royal' = 'vip') => {
+  // const handleUpgradeToPremium = (gift: Gift, tier: 'vip' | 'royal' = 'vip') => { // royal @deprecated
+  const handleUpgradeToPremium = (gift: Gift, tier: 'vip' /* | 'royal' */ = 'vip') => {
     setSelectedGiftForUpgrade(gift);
     setUpgradeTier(tier);
     setIsPremiumModalOpen(true);
@@ -3327,7 +3333,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Photobook is a VIP feature</h3>
                     <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                      Upgrade your event to VIP or Royal to unlock the Photobook feature and let guests share pictures from your events.
+                      Upgrade your event to VIP to unlock the Photobook feature and let guests share pictures from your events.
                     </p>
                     <Button
                       className="bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90 text-white"
@@ -3355,7 +3361,8 @@ const Dashboard: React.FC = () => {
              {activeTab === 'premium' && (
                <div className="space-y-6">
                  {/* Tier Cards */}
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> // royal @deprecated — was 3 cols, now 2 */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    {/* Free Tier */}
                    <Card className="border-2 border-[#2E235C]/20 shadow-lg bg-white overflow-hidden">
                      <CardContent className="p-6">
@@ -3384,9 +3391,12 @@ const Dashboard: React.FC = () => {
                          <ul className="space-y-3 mb-6">
                            <li className="text-sm text-gray-600">0% commission on all cash gifts</li>
                            <li className="text-sm text-gray-600">0% commission on all asoebi orders</li>
-                           <li className="text-sm text-gray-600">Free website templates</li>
+                           {/* <li className="text-sm text-gray-600">Free website templates</li> // royal @deprecated — VIP now gets premium templates
                            <li className="text-sm text-gray-600">Event check-in</li>
-                           <li className="text-sm text-gray-400">No invitation templates</li>
+                           <li className="text-sm text-gray-400">No invitation templates</li> */}
+                           <li className="text-sm text-gray-600">Premium website templates</li>
+                           <li className="text-sm text-gray-600">Premium invitation templates</li>
+                           <li className="text-sm text-gray-600">Event check-in</li>
                          </ul>
                          {upgradeableEvents.length > 0 && (
                            <Button
@@ -3404,8 +3414,8 @@ const Dashboard: React.FC = () => {
                        </CardContent>
                     </Card>
 
-                  {/* Royal Tier */}
-                  <Card className="border-2 border-[#2E235C] shadow-lg bg-gradient-to-b from-[#2E235C]/5 to-white overflow-hidden relative">
+                  {/* Royal Tier — @deprecated, only VIP offered */}
+                  {/* <Card className="border-2 border-[#2E235C] shadow-lg bg-gradient-to-b from-[#2E235C]/5 to-white overflow-hidden relative">
                     <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#2E235C] to-[#392B74] text-white text-xs font-bold text-center py-1">
                       ULTIMATE
                     </div>
@@ -3435,7 +3445,7 @@ const Dashboard: React.FC = () => {
                            </Button>
                          )}
                       </CardContent>
-                    </Card>
+                    </Card> */}
                   </div>
 
                 {/* Premium Websites Unlocks */}
@@ -3498,7 +3508,8 @@ const Dashboard: React.FC = () => {
                       <Crown className="w-10 h-10 text-yellow-600" />
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">Active subscriptions</h3>
-                        <p className="text-sm text-gray-600">Your current VIP / Royal events</p>
+                        {/* <p className="text-sm text-gray-600">Your current VIP / Royal events</p> // royal @deprecated */}
+                        <p className="text-sm text-gray-600">Your current VIP events</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
@@ -3511,8 +3522,11 @@ const Dashboard: React.FC = () => {
                                   <Crown className="w-4 h-4 text-[#2E235C] flex-shrink-0" />
                                   <span className="text-sm font-medium truncate">{gift.title}</span>
                                 </div>
-                                <Badge className={gift.tier === 'royal' ? 'bg-purple-600 text-white' : 'bg-[#2E235C] text-white'}>
+                                {/* <Badge className={gift.tier === 'royal' ? 'bg-purple-600 text-white' : 'bg-[#2E235C] text-white'}>
                                   {gift.tier === 'royal' ? 'Royal active' : 'VIP active'}
+                                </Badge> // royal @deprecated — all premium shown as VIP active */}
+                                <Badge className="bg-[#2E235C] text-white">
+                                  VIP active
                                 </Badge>
                               </div>
                             ))}
@@ -6626,10 +6640,12 @@ const Dashboard: React.FC = () => {
         <DialogContent className="w-[90vw] sm:w-full sm:max-w-[420px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-4">
             <DialogTitle className="text-xl font-bold text-gray-900">
-              Select {subscriptionTier === 'royal' ? 'Royal' : 'VIP'}
+              {/* Select {subscriptionTier === 'royal' ? 'Royal' : 'VIP'} // royal @deprecated — only VIP */}
+              Select VIP
             </DialogTitle>
             <DialogDescription className="text-gray-600 mt-1">
-              Select the event you want to subscribe for ₦{subscriptionTier === 'royal' ? '100,000' : '50,000'}
+              {/* Select the event you want to subscribe for ₦{subscriptionTier === 'royal' ? '100,000' : '50,000'} // royal @deprecated */}
+              Select the event you want to subscribe for ₦50,000
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-4">
@@ -6689,16 +6705,19 @@ const Dashboard: React.FC = () => {
                 <Crown className="w-5 h-5 text-white" />
               </div>
               <DialogTitle className="text-2xl font-bold text-gray-900">
-                {upgradeTier === 'royal' ? 'Upgrade to Royal' : 'Upgrade to VIP'}
+                {/* {upgradeTier === 'royal' ? 'Upgrade to Royal' : 'Upgrade to VIP'} // royal @deprecated */}
+                Upgrade to VIP
               </DialogTitle>
             </div>
             <DialogDescription className="text-gray-600 mt-2">
-              {upgradeTier === 'royal' 
+              {/* {upgradeTier === 'royal' 
                 ? 'Unlock premium templates and keep 100% of all cash gifts' 
-                : 'Keep 100% of all Cash gifts and Asoebi sales'}
+                : 'Keep 100% of all Cash gifts and Asoebi sales'} // royal @deprecated */}
+              Unlock premium templates and keep 100% of all cash gifts and Asoebi sales
             </DialogDescription>
-            <div className={`px-4 py-2 rounded-xl border mt-4 ${upgradeTier === 'royal' ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-50 border-yellow-200'}`}>
-              <h4 className="font-semibold text-gray-900 mb-1">{upgradeTier === 'royal' ? 'Royal Benefits' : 'VIP Benefits'}</h4>
+            <div className={`px-4 py-2 rounded-xl border mt-4 bg-yellow-50 border-yellow-200`}>
+              {/* <h4 className="font-semibold text-gray-900 mb-1">{upgradeTier === 'royal' ? 'Royal Benefits' : 'VIP Benefits'}</h4> // royal @deprecated */}
+              <h4 className="font-semibold text-gray-900 mb-1">VIP Benefits</h4>
               <ul className="space-y-1 text-sm text-gray-600">
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
@@ -6710,11 +6729,13 @@ const Dashboard: React.FC = () => {
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span>{upgradeTier === 'royal' ? 'Premium website templates' : 'Free website templates'}</span>
+                  {/* <span>{upgradeTier === 'royal' ? 'Premium website templates' : 'Free website templates'}</span> // royal @deprecated */}
+                  <span>Premium website templates</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span>{upgradeTier === 'royal' ? 'Premium invitation templates' : 'No invitation templates'}</span>
+                  {/* <span>{upgradeTier === 'royal' ? 'Premium invitation templates' : 'No invitation templates'}</span> // royal @deprecated */}
+                  <span>Premium invitation templates</span>
                 </li>
               </ul>
             </div>
@@ -6722,7 +6743,8 @@ const Dashboard: React.FC = () => {
 
           <div className="p-6 pt-0">
             <div className="flex items-center justify-end py-0 mx-4">
-              <p className="text-lg font-bold text-gray-900">₦{upgradeTier === 'vip' ? '50,000' : '100,000'}</p>
+              {/* <p className="text-lg font-bold text-gray-900">₦{upgradeTier === 'vip' ? '50,000' : '100,000'}</p> // royal @deprecated */}
+              <p className="text-lg font-bold text-gray-900">₦50,000</p>
             </div>
 
             <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-0">

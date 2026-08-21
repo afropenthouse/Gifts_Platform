@@ -76,7 +76,7 @@ model Gift {
 enum GiftTier {
   free
   vip
-  royal
+  // royal // @deprecated — Only VIP available; kept for existing data records
 }
 
 model PremiumPayment {
@@ -84,7 +84,7 @@ model PremiumPayment {
   userId      Int
   giftId      Int      @unique
   amount      Decimal  @db.Decimal(10, 2)
-  tier        GiftTier @default(royal)
+  tier        GiftTier @default(vip) // previously royal; now only VIP tier offered
   status      String   @default("pending")
   transactionId String? @unique
   createdAt   DateTime @default(now())

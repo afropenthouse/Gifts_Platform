@@ -90,8 +90,7 @@ module.exports = () => {
         ...(type === 'asoebi' ? { isAsoebi: true } : {}),
         ...(type === 'cash' ? { isAsoebi: false } : {}),
         ...(type === 'cash-asoebi' ? {} : {}),
-        ...(type === 'premium-vip' || type === 'premium-royal' || type === 'premium-all' ? { AND: [{ NOT: { id: -1 } }] } : {}),
-        ...(parsedEventId ? { giftId: parsedEventId } : {}),
+        ...(type === 'vip' ? { AND: [{ NOT: { id: -1 } }] } : {}),        ...(parsedEventId ? { giftId: parsedEventId } : {}),
         ...dateFilter,
       };
 
@@ -288,8 +287,7 @@ module.exports = () => {
           _sum: { amount: true },
           where: {
             status: 'success',
-            ...(type === 'premium-vip' ? { tier: 'vip' } : {}),
-            ...(type === 'premium-royal' ? { tier: 'royal' } : {}),
+            ...(type === 'vip' ? {} : {}),
             ...(eventOwnerId ? { userId: eventOwnerId } : {}),
             ...dateFilter
           }
@@ -637,7 +635,8 @@ module.exports = () => {
         user: payment.user,
         flow: 'inflow',
         type: 'premium',
-        tier: payment.tier || 'royal',
+        // tier: payment.tier || 'royal', // royal @deprecated — default vip now
+        tier: payment.tier || 'vip',
       }));
 
       res.json(normalized);
@@ -1576,8 +1575,10 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Payment verification failed with Paystack' });
       }
 
-      const amount = 100000;
-      const tier = 'royal';
+      // const amount = 100000; // royal @deprecated — only VIP offered now
+      const amount = 50000;
+      // const tier = 'royal'; // royal @deprecated
+      const tier = 'vip';
 
       const [updatedPayment] = await prisma.$transaction([
         prisma.premiumPayment.upsert({
@@ -1609,7 +1610,8 @@ module.exports = () => {
         data: { wallet: { increment: amount } }
       });
 
-      res.json({ msg: 'Royal payment verified and activated successfully', payment: updatedPayment });
+      // res.json({ msg: 'Royal payment verified and activated successfully', payment: updatedPayment }); // royal @deprecated
+      res.json({ msg: 'VIP payment verified and activated successfully', payment: updatedPayment });
     } catch (err) {
       console.error('Admin premium verify error:', err);
       res.status(500).json({ msg: 'Server error verifying premium payment' });

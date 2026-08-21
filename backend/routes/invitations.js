@@ -128,7 +128,8 @@ module.exports = () => {
         id: invitation.id,
         title: invitation.gift?.title || 'My Invitation',
         template: invitation.template,
-        tier: invitation.tier === 'royal' ? 'premium' : 'free',
+        // tier: invitation.tier === 'royal' ? 'premium' : 'free', // royal @deprecated
+        tier: invitation.tier === 'vip' || invitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: invitation.primaryColor,
           secondaryColor: invitation.secondaryColor,
@@ -198,7 +199,8 @@ module.exports = () => {
         id: invitation.id,
         title: invitation.gift?.title || 'My Invitation',
         template: invitation.template,
-        tier: invitation.tier === 'royal' ? 'premium' : 'free',
+        // tier: invitation.tier === 'royal' ? 'premium' : 'free', // royal @deprecated
+        tier: invitation.tier === 'vip' || invitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: invitation.primaryColor,
           secondaryColor: invitation.secondaryColor,
@@ -246,8 +248,11 @@ module.exports = () => {
           resolvedTier = gift.tier;
         }
       }
-      if (templateConfig?.tier === 'premium' && resolvedTier !== 'royal') {
-        return res.status(403).json({ msg: 'Premium template requires Royal upgrade' });
+      // if (templateConfig?.tier === 'premium' && resolvedTier !== 'royal') {
+      //   return res.status(403).json({ msg: 'Premium template requires Royal upgrade' });
+      // } // royal @deprecated — VIP now grants premium template access
+      if (templateConfig?.tier === 'premium' && resolvedTier !== 'vip' && resolvedTier !== 'royal') {
+        return res.status(403).json({ msg: 'Premium template requires VIP upgrade' });
       }
 
       const shareLink = crypto.randomBytes(16).toString('hex');
@@ -311,7 +316,8 @@ module.exports = () => {
         id: invitation.id,
         title: invitation.gift?.title || title || 'My Invitation',
         template: invitation.template,
-        tier: invitation.tier === 'royal' ? 'premium' : 'free',
+        // tier: invitation.tier === 'royal' ? 'premium' : 'free', // royal @deprecated
+        tier: invitation.tier === 'vip' || invitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: invitation.primaryColor,
           secondaryColor: invitation.secondaryColor,
@@ -368,8 +374,11 @@ module.exports = () => {
           resolvedTier = gift.tier;
         }
       }
-      if (templateConfig?.tier === 'premium' && resolvedTier !== 'royal' && existingInvitation.tier !== 'royal') {
-        return res.status(403).json({ msg: 'Premium template requires Royal upgrade' });
+      // if (templateConfig?.tier === 'premium' && resolvedTier !== 'royal' && existingInvitation.tier !== 'royal') {
+      //   return res.status(403).json({ msg: 'Premium template requires Royal upgrade' });
+      // } // royal @deprecated — VIP now grants premium template access
+      if (templateConfig?.tier === 'premium' && resolvedTier !== 'vip' && resolvedTier !== 'royal' && existingInvitation.tier !== 'vip' && existingInvitation.tier !== 'royal') {
+        return res.status(403).json({ msg: 'Premium template requires VIP upgrade' });
       }
 
       const coupleNames = content?.coupleNames?.split(' & ') || [];
@@ -427,7 +436,8 @@ module.exports = () => {
         id: updatedInvitation.id,
         title: updatedInvitation.gift?.title || title || 'My Invitation',
         template: updatedInvitation.template,
-        tier: updatedInvitation.tier === 'royal' ? 'premium' : 'free',
+        // tier: updatedInvitation.tier === 'royal' ? 'premium' : 'free', // royal @deprecated
+        tier: updatedInvitation.tier === 'vip' || updatedInvitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: updatedInvitation.primaryColor,
           secondaryColor: updatedInvitation.secondaryColor,
@@ -493,7 +503,8 @@ module.exports = () => {
         id: updatedInvitation.id,
         title: updatedInvitation.gift?.title || 'My Invitation',
         template: updatedInvitation.template,
-        tier: updatedInvitation.tier === 'royal' ? 'premium' : 'free',
+        // tier: updatedInvitation.tier === 'royal' ? 'premium' : 'free', // royal @deprecated
+        tier: updatedInvitation.tier === 'vip' || updatedInvitation.tier === 'royal' ? 'premium' : 'free',
         theme: {
           primaryColor: updatedInvitation.primaryColor,
           secondaryColor: updatedInvitation.secondaryColor,

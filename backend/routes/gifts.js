@@ -13,15 +13,17 @@ const flutterwave = require('../utils/flutterwave');
 const PREMIUM_WEBSITE_TEMPLATES = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir'];
 
 const hasCommissionBenefit = (gift) => {
-  return gift && (gift.tier === 'vip' || gift.tier === 'royal');
+  return gift && (gift.tier === 'vip' /* || gift.tier === 'royal' */); // royal @deprecated — only VIP offered
 };
 
 const hasWebsiteBenefit = (gift) => {
-  return gift && gift.tier === 'royal';
+  // return gift && gift.tier === 'royal'; // royal @deprecated
+  return gift && gift.tier === 'vip'; // VIP now unlocks premium website templates too
 };
 
 const hasInvitationBenefit = (gift) => {
-  return gift && gift.tier === 'royal';
+  // return gift && gift.tier === 'royal'; // royal @deprecated
+  return gift && gift.tier === 'vip'; // VIP now unlocks premium invitation templates too
 };
 
 const getUnlockedWebsiteTemplates = async (gift) => {
@@ -29,7 +31,8 @@ const getUnlockedWebsiteTemplates = async (gift) => {
     return { hasTemplatePremium: false, unlockedTemplates: [], pendingTemplatePurchase: null };
   }
 
-  // Royal tier automatically unlocks all premium templates
+  // Royal tier automatically unlocks all premium templates — @deprecated
+  // VIP tier now automatically unlocks all premium templates
   if (hasWebsiteBenefit(gift)) {
     return {
       hasTemplatePremium: true,
@@ -1018,9 +1021,10 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
   // Initialize tier upgrade payment
   router.post('/:id/premium/initialize', auth(), async (req, res) => {
     const giftId = parseInt(req.params.id);
-    const { type = 'event', template, tier = 'royal' } = req.body; // 'event' with tier 'vip' (25k) or 'royal' (50k), or 'template' (10k per template)
+    const { type = 'event', template, tier = 'vip' } = req.body; // 'event' with tier 'vip' only (royal @deprecated), or 'template' (30k per template)
     const PREMIUM_TEMPLATES = PREMIUM_WEBSITE_TEMPLATES;
-    const TIER_PRICES = { vip: 50000, royal: 100000 };
+    // const TIER_PRICES = { vip: 50000, royal: 100000 }; // royal @deprecated
+    const TIER_PRICES = { vip: 50000 }; // Only VIP tier now
     console.log('Tier initialize request body:', req.body);
     try {
       const gift = await prisma.gift.findUnique({ 
@@ -1033,13 +1037,15 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
       }
 
       if (type === 'event') {
-        if (gift.tier === tier) {
-          return res.status(400).json({ msg: `This gift is already ${tier}` });
+        // Normalize tier to vip; royal deprecated
+        const effectiveTier = tier === 'vip' ? 'vip' : 'vip';
+        if (gift.tier === effectiveTier) {
+          return res.status(400).json({ msg: `This gift is already VIP` });
         }
-        if (gift.tier === 'royal') {
-          return res.status(400).json({ msg: 'This gift is already Royal (highest tier)' });
-        }
-        if (tier === 'vip' && gift.tier === 'vip') {
+        // if (gift.tier === 'royal') {
+        //   return res.status(400).json({ msg: 'This gift is already Royal (highest tier)' });
+        // } // royal @deprecated
+        if (gift.tier === 'vip') {
           return res.status(400).json({ msg: 'This gift is already VIP' });
         }
       }
@@ -1052,11 +1058,11 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         if (!PREMIUM_TEMPLATES.includes(templateKey)) {
           return res.status(400).json({ msg: 'Invalid premium template' });
         }
-        // Already unlocked? (per-template, or full royal event)
+        // Already unlocked? (per-template, or full royal event — royal @deprecated; VIP now auto-unlocks)
         const existingTemplatePurchase = await prisma.templatePurchase.findUnique({
           where: { giftId_template: { giftId, template: templateKey } }
         });
-        if (gift.tier === 'royal' || (existingTemplatePurchase && existingTemplatePurchase.status === 'success')) {
+        if (gift.tier === 'vip' /* || gift.tier === 'royal' */ || (existingTemplatePurchase && existingTemplatePurchase.status === 'success')) {
           return res.status(400).json({ msg: 'This template is already unlocked' });
         }
         // Auto-cancel any stale pending template purchase for this gift/template so the user can retry cleanly.
@@ -1072,30 +1078,32 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
       });
       
       if (type === 'event' && existingPayment && existingPayment.status === 'success') {
-        if (tier === 'royal' && existingPayment.tier === 'royal') {
-          return res.status(400).json({ msg: 'This gift is already Royal' });
-        }
-        if (tier === 'vip' && (existingPayment.tier === 'vip' || existingPayment.tier === 'royal')) {
+        // if (tier === 'royal' && existingPayment.tier === 'royal') {
+        //   return res.status(400).json({ msg: 'This gift is already Royal' });
+        // } // royal @deprecated
+        if (existingPayment.tier === 'vip' /* || existingPayment.tier === 'royal' */) {
           return res.status(400).json({ msg: 'This gift is already VIP or higher' });
         }
       }
 
-      const amount = type === 'template' ? 30000 : (TIER_PRICES[tier] || 50000);
-      const tx_ref = `${type === 'template' ? `template-premium-${templateKey}` : `${tier}-upgrade`}-${giftId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      // Normalize tier to vip for event upgrades; royal @deprecated
+      const normalizedTier = type === 'event' ? 'vip' : tier;
+      const amount = type === 'template' ? 30000 : (TIER_PRICES[normalizedTier] || 50000);
+      const tx_ref = `${type === 'template' ? `template-premium-${templateKey}` : `vip-upgrade`}-${giftId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const redirectTarget = req.body.redirectTo || '/dashboard';
-      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}${redirectTarget}?giftId=${giftId}&reference=${tx_ref}&type=${type}${templateKey ? `&template=${templateKey}` : ''}${tier ? `&tier=${tier}` : ''}`;
+      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}${redirectTarget}?giftId=${giftId}&reference=${tx_ref}&type=${type}${templateKey ? `&template=${templateKey}` : ''}&tier=${normalizedTier}`;
 
       const metadata = {
         giftId,
         userId: req.user.id,
         type: type === 'template' ? 'template_premium_upgrade' : 'tier_upgrade',
-        tier: tier || 'royal',
+        tier: normalizedTier, // previously tier || 'royal'; now only VIP
         template: templateKey || undefined,
         customizations: {
-          title: type === 'template' ? `Premium Template (${templateKey})` : `${tier === 'vip' ? 'VIP' : 'Royal'} Upgrade`,
+          title: type === 'template' ? `Premium Template (${templateKey})` : `VIP Upgrade`,
           description: type === 'template' 
             ? `Unlock the ${templateKey} premium wedding website template for ${gift.title || 'your gift'}`
-            : `Upgrade ${gift.title || 'your gift'} to ${tier === 'vip' ? 'VIP' : 'Royal'}`
+            : `Upgrade ${gift.title || 'your gift'} to VIP`
         }
       };
 
@@ -1137,7 +1145,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
           update: {
             userId: req.user.id,
             amount,
-            tier: tier,
+            tier: normalizedTier, // previously tier; now normalized to vip
             transactionId: tx_ref,
             status: 'pending'
           },
@@ -1145,7 +1153,7 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
             userId: req.user.id,
             giftId,
             amount,
-            tier: tier,
+            tier: normalizedTier, // previously tier; now normalized to vip
             transactionId: tx_ref,
             status: 'pending'
           }
@@ -1200,16 +1208,16 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
     const type = req.query.type || req.body.type || (String(reference).startsWith('template-premium') ? 'template' : 'event');
     const tier = req.query.tier || req.body.tier || null;
     
-    // Resolve tier from request or existing payment record
+    // Resolve tier from request or existing payment record — normalize to vip; royal @deprecated
     let resolvedTier = tier;
     if (!resolvedTier && type === 'event') {
       const existingPayment = await prisma.premiumPayment.findUnique({
         where: { giftId },
         select: { tier: true }
       });
-      resolvedTier = existingPayment?.tier || 'royal';
+      resolvedTier = existingPayment?.tier /* || 'royal' */ || 'vip'; // royal @deprecated — default vip
     }
-    if (!resolvedTier) resolvedTier = 'royal';
+    if (!resolvedTier) resolvedTier = 'vip'; // previously 'royal'; now vip default
     const PREMIUM_TEMPLATES = PREMIUM_WEBSITE_TEMPLATES;
     if (!reference) {
       return res.status(400).json({ msg: 'Transaction reference is required' });
@@ -1279,7 +1287,8 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
         return res.status(400).json({ msg: 'Payment not successful' });
       }
 
-      const amount = type === 'template' ? 30000 : (resolvedTier === 'vip' ? 50000 : 100000);
+      // const amount = type === 'template' ? 30000 : (resolvedTier === 'vip' ? 50000 : 100000); // royal @deprecated
+      const amount = type === 'template' ? 30000 : 50000; // Only VIP tier amount now
 
       if (type === 'template') {
         // Record the per-template unlock
@@ -1328,7 +1337,8 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
       await prisma.$transaction(operations);
 
       const updatedGift = await prisma.gift.findUnique({ where: { id: giftId } });
-      res.json({ msg: `${resolvedTier === 'vip' ? 'VIP' : 'Royal'} upgrade successful`, gift: updatedGift, type, tier: resolvedTier });
+      // res.json({ msg: `${resolvedTier === 'vip' ? 'VIP' : 'Royal'} upgrade successful`, gift: updatedGift, type, tier: resolvedTier }); // royal @deprecated
+      res.json({ msg: `VIP upgrade successful`, gift: updatedGift, type, tier: 'vip' });
     } catch (err) {
       console.error('Verify premium payment error:', err?.message || err);
       res.status(500).json({ msg: 'Failed to verify payment', error: err?.message });
@@ -1356,14 +1366,16 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
             where: { giftId: gift.id },
             update: {
               userId: req.user.id,
-              amount: gift.tier === 'vip' ? 50000 : 100000,
+              // amount: gift.tier === 'vip' ? 50000 : 100000, // royal @deprecated
+              amount: 50000, // Only VIP amount now
               tier: gift.tier,
               status: 'success'
             },
             create: {
               userId: req.user.id,
               giftId: gift.id,
-              amount: gift.tier === 'vip' ? 50000 : 100000,
+              // amount: gift.tier === 'vip' ? 50000 : 100000, // royal @deprecated
+              amount: 50000, // Only VIP amount now
               tier: gift.tier,
               status: 'success',
               transactionId: `legacy-tier-${gift.tier}-${gift.id}`

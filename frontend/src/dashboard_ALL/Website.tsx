@@ -39,7 +39,7 @@ interface Gift {
   shareLink: string;
   enableGuestNotes?: boolean;
   wishlists?: { shareLink: string }[];
-  tier?: 'free' | 'vip' | 'royal';
+  tier?: 'free' | 'vip' | 'royal'; // royal @deprecated — only VIP offered going forward
 }
 
 interface WebsiteData {
@@ -247,7 +247,8 @@ const Website = () => {
   const isTemplateUnlocked = (template: string) => {
     if (!website) return false;
     if (website.hasTemplatePremium) return true;
-    if (selectedGift?.tier === 'royal') return true;
+    // if (selectedGift?.tier === 'royal') return true; // royal @deprecated
+    if (selectedGift?.tier === 'vip' || selectedGift?.tier === 'royal') return true;
     return (website.unlockedTemplates || []).includes(template);
   };
 
@@ -297,7 +298,8 @@ const Website = () => {
   };
 
   const getPublicTemplate = () => {
-    if (selectedGift?.tier === 'royal') return selectedTemplate || 'nocturne';
+    // if (selectedGift?.tier === 'royal') return selectedTemplate || 'nocturne'; // royal @deprecated
+    if (selectedGift?.tier === 'vip' || selectedGift?.tier === 'royal') return selectedTemplate || 'nocturne';
     if (PREMIUM_TEMPLATE_KEYS.includes(selectedTemplate) && !isTemplateUnlocked(selectedTemplate)) {
       return 'nocturne';
     }
