@@ -5,13 +5,11 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import Navbar from '../components/Navbar';
 import confetti from 'canvas-confetti';
 import { useToast } from '../hooks/use-toast';
 import { Gift as GiftIcon, Camera } from 'lucide-react';
-import { openFlutterwaveCheckout, loadFlutterwaveScript } from '../lib/flutterwave';
+// Flutterwave is parked for now. Cash gifts use Paystack with NGN only.
 
 interface Gift {
   id: string;
@@ -31,42 +29,6 @@ interface Gift {
   wishlists?: { shareLink: string; title?: string }[];
 }
 
-type CurrencyOption = {
-  code: string;
-  country: string;
-};
-
-const currencyOptions: CurrencyOption[] = [
-  { code: "NGN", country: "Nigeria" },
-  { code: "USD", country: "United States" },
-  { code: "GBP", country: "United Kingdom" },
-  { code: "EUR", country: "Eurozone" },
-  { code: "CAD", country: "Canada" },
-  { code: "AUD", country: "Australia" },
-  { code: "ZAR", country: "South Africa" },
-  { code: "KES", country: "Kenya" },
-  { code: "GHS", country: "Ghana" },
-  { code: "UGX", country: "Uganda" },
-  { code: "TZS", country: "Tanzania" },
-  { code: "RWF", country: "Rwanda" },
-  { code: "XOF", country: "West African CFA" },
-  { code: "XAF", country: "Central African CFA" },
-  { code: "ZMW", country: "Zambia" },
-  { code: "MWK", country: "Malawi" },
-  { code: "BWP", country: "Botswana" },
-  { code: "AED", country: "United Arab Emirates" },
-  { code: "SAR", country: "Saudi Arabia" },
-  { code: "QAR", country: "Qatar" },
-  { code: "INR", country: "India" },
-  { code: "SGD", country: "Singapore" },
-  { code: "NZD", country: "New Zealand" },
-  { code: "CHF", country: "Switzerland" },
-  { code: "JPY", country: "Japan" },
-  { code: "CNY", country: "China" },
-];
-
-const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
-
 const getWishlistPath = (gift: Gift | null) => {
   const shareLink = gift?.wishlists?.[0]?.shareLink;
   return shareLink ? `/${shareLink.replace(/^\/+/, '')}` : null;
@@ -85,9 +47,6 @@ const QRGift: React.FC = () => {
   const [gift, setGift] = useState<Gift | null>(null);
   const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('NGN');
-  const [currencySearch, setCurrencySearch] = useState('');
-  const [isCurrencyPopoverOpen, setIsCurrencyPopoverOpen] = useState(false);
   const [contributorName, setContributorName] = useState('');
   const [contributorEmail, setContributorEmail] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -121,7 +80,6 @@ const QRGift: React.FC = () => {
       script.src = 'https://js.paystack.co/v1/inline.js';
       document.head.appendChild(script);
     }
-    loadFlutterwaveScript().catch(() => null);
   }, []);
 
   // Handle redirect back from payment providers: verify payment
@@ -165,17 +123,9 @@ const QRGift: React.FC = () => {
         setVerifyStatus('success');
 
         const contribution = data?.contribution;
-        const currency = contribution?.currency || 'NGN';
+        const currency = 'NGN';
         const amount = contribution?.amount;
-        const baseAmount = contribution?.asoebiItemsDetails?.paymentMeta?.baseAmount || contribution?.asoebiItemsDetails?.paymentMeta?.amount;
-
-        if (currency && currency !== 'NGN' && baseAmount) {
-          const symbols: Record<string, string> = { USD: '$', CAD: 'CA$', GBP: '£', EUR: '€' };
-          const symbol = symbols[currency] || currency;
-          setVerifyMessage(`Thank you! Your gift of ${symbol}${Number(baseAmount).toLocaleString()} ${currency} (₦${Number(amount).toLocaleString()}) was successful.`);
-        } else {
-          setVerifyMessage(`Thank you! Your gift of ₦${Number(amount || 0).toLocaleString()} was successful.`);
-        }
+        setVerifyMessage(`Thank you! Your gift of ₦${Number(amount || 0).toLocaleString()} was successful.`);
       } catch (err) {
         console.error(err);
         setVerifyStatus('error');
@@ -231,9 +181,9 @@ const QRGift: React.FC = () => {
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = currency === 'NGN' ? 1000 : 10;
+    const minAmount = 1000;
     if (!amount || parseFloat(amount) < minAmount) {
-      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
+      alert(`Please enter an amount of at least ₦${minAmount.toLocaleString()}`);
       return;
     }
 
@@ -280,7 +230,7 @@ const QRGift: React.FC = () => {
             contributorName: name,
             contributorEmail: email,
             amount: parseFloat(amount),
-            currency: currency,
+            currency: 'NGN',
             message: isAnonymous ? 'Anonymous contribution' : `Gifts from ${name}`,
           }),
         }
@@ -292,171 +242,82 @@ const QRGift: React.FC = () => {
         throw new Error(msg);
       }
 
-      if (currency === 'NGN') {
-        const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
-        if (!publicKey) {
-          alert('Payment is unavailable: missing Paystack public key.');
-          setProcessingPayment(false);
-          return;
-        }
+      const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+      if (!publicKey) {
+        alert('Payment is unavailable: missing Paystack public key.');
+        setProcessingPayment(false);
+        return;
+      }
 
-        const reference = initData?.data?.reference;
-        if (!reference) {
-          alert('Payment initialization failed: missing reference');
-          setProcessingPayment(false);
-          return;
-        }
+      const reference = initData?.data?.reference;
+      if (!reference) {
+        alert('Payment initialization failed: missing reference');
+        setProcessingPayment(false);
+        return;
+      }
 
-        const config = {
-          key: publicKey,
-          email: email,
-          amount: parseFloat(amount) * 100,
-          currency: 'NGN',
-          ref: reference,
-          channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
-          callback: async (paymentData: any) => {
-            try {
-              if (paymentData.status === 'success') {
-                const verifyRes = await fetch(
-                  `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/verify-payment`,
-                  {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      transactionId: paymentData.reference,
-                      reference: paymentData.reference,
-                      txRef: paymentData.reference,
-                      status: paymentData.status,
-                    }),
-                  }
-                );
-                const verifyData = await verifyRes.json();
-                if (verifyRes.ok) {
-                  setShowVerifyModal(true);
-                  setVerifyStatus('success');
-                  setVerifyMessage('Thank you! Your gift was successful.');
-                  setShowNameModal(false);
-                  setAmount('');
-                  setContributorName('');
-                  setContributorEmail('');
-                  setIsAnonymous(false);
-                } else {
-                  setShowVerifyModal(true);
-                  setVerifyStatus('error');
-                  setVerifyMessage(verifyData?.msg || 'Payment verification failed');
+      const config = {
+        key: publicKey,
+        email: email,
+        amount: parseFloat(amount) * 100,
+        currency: 'NGN',
+        ref: reference,
+        channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
+        callback: async (paymentData: any) => {
+          try {
+            if (paymentData.status === 'success') {
+              const verifyRes = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/verify-payment`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    transactionId: paymentData.reference,
+                    reference: paymentData.reference,
+                    txRef: paymentData.reference,
+                    status: paymentData.status,
+                  }),
                 }
+              );
+              const verifyData = await verifyRes.json();
+              if (verifyRes.ok) {
+                setShowVerifyModal(true);
+                setVerifyStatus('success');
+                setVerifyMessage('Thank you! Your gift was successful.');
+                setShowNameModal(false);
+                setAmount('');
+                setContributorName('');
+                setContributorEmail('');
+                setIsAnonymous(false);
               } else {
                 setShowVerifyModal(true);
                 setVerifyStatus('error');
-                setVerifyMessage('Payment was not completed.');
+                setVerifyMessage(verifyData?.msg || 'Payment verification failed');
               }
-            } catch (err) {
-              console.error('Verification error:', err);
+            } else {
               setShowVerifyModal(true);
               setVerifyStatus('error');
-              setVerifyMessage('Failed to verify payment.');
-            } finally {
-              setProcessingPayment(false);
+              setVerifyMessage('Payment was not completed.');
             }
-          },
-          onClose: () => {
+          } catch (err) {
+            console.error('Verification error:', err);
+            setShowVerifyModal(true);
+            setVerifyStatus('error');
+            setVerifyMessage('Failed to verify payment.');
+          } finally {
             setProcessingPayment(false);
-          },
-        };
-
-        if (window.PaystackPop) {
-          window.PaystackPop.setup(config).openIframe();
-        } else {
-          alert('Paystack is not loaded. Please refresh the page and try again.');
+          }
+        },
+        onClose: () => {
           setProcessingPayment(false);
-        }
+        },
+      };
+
+      if (window.PaystackPop) {
+        window.PaystackPop.setup(config).openIframe();
       } else {
-        const publicKey = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY;
-        if (!publicKey) {
-          alert('Payment is unavailable: missing Flutterwave public key.');
-          setProcessingPayment(false);
-          return;
-        }
-
-        const txRef = initData?.data?.tx_ref;
-        if (!txRef) {
-          alert('Payment initialization failed: missing transaction reference');
-          setProcessingPayment(false);
-          return;
-        }
-
-        try {
-          await openFlutterwaveCheckout({
-            public_key: publicKey,
-            tx_ref: txRef,
-            amount: Number(amount),
-            currency: currency,
-            customer: {
-              email: email,
-              name: name,
-            },
-            customizations: {
-              title: gift?.title || 'Cash Gift',
-              description: `Gift to ${gift?.title || 'celebrant'}`,
-            },
-            callback: (data: any) => {
-              const status = String(data?.status || '').toLowerCase();
-              if (status === 'successful' || status === 'success') {
-                fetch(
-                  `${import.meta.env.VITE_BACKEND_URL}/api/contributions/${linkParam}/verify-payment`,
-                  {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      transactionId: data.transaction_id,
-                      reference: data.tx_ref,
-                      txRef: data.tx_ref,
-                      status: data.status,
-                    }),
-                  }
-                )
-                  .then((verifyRes) => verifyRes.json())
-                  .then((verifyData) => {
-                    if (verifyRes.ok) {
-                      setShowVerifyModal(true);
-                      setVerifyStatus('success');
-                      setVerifyMessage('Thank you! Your gift was successful.');
-                      setShowNameModal(false);
-                      setAmount('');
-                      setContributorName('');
-                      setContributorEmail('');
-                      setIsAnonymous(false);
-                    } else {
-                      setShowVerifyModal(true);
-                      setVerifyStatus('error');
-                      setVerifyMessage(verifyData?.msg || 'Payment verification failed');
-                    }
-                  })
-                  .catch((err) => {
-                    console.error('Verification error:', err);
-                    setShowVerifyModal(true);
-                    setVerifyStatus('error');
-                    setVerifyMessage('Failed to verify payment.');
-                  })
-                  .finally(() => {
-                    setProcessingPayment(false);
-                  });
-              } else {
-                setShowVerifyModal(true);
-                setVerifyStatus('error');
-                setVerifyMessage('Payment was not completed.');
-                setProcessingPayment(false);
-              }
-            },
-            onclose: () => {
-              setProcessingPayment(false);
-            },
-          });
-        } catch (err) {
-          console.error('Flutterwave checkout error:', err);
-          alert('Payment initialization failed');
-          setProcessingPayment(false);
-        }
+        alert('Paystack is not loaded. Please refresh the page and try again.');
+        setProcessingPayment(false);
       }
     } catch (err: any) {
       console.error(err);
@@ -752,11 +613,7 @@ const QRGift: React.FC = () => {
 
       {/* Amount Modal */}
       <Dialog open={showAmountModal} onOpenChange={setShowAmountModal}>
-        <DialogContent className="max-w-md" onInteractOutside={(e) => {
-          const target = e.target as HTMLElement;
-          if (target && target.closest('[data-currency-popover="true"]')) return;
-          e.preventDefault();
-        }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{gift.title}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
@@ -766,67 +623,27 @@ const QRGift: React.FC = () => {
 
           <form onSubmit={handleAmountSubmit} className="space-y-4">
             <div>
-              <Label className="text-sm font-medium">Gift Amount</Label>
+              <Label className="text-sm font-medium">Gift Amount (₦)</Label>
               <div className="flex gap-2 mt-2">
-                <Popover open={isCurrencyPopoverOpen} onOpenChange={setIsCurrencyPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={isCurrencyPopoverOpen}
-                      className="w-28 justify-between px-2"
-                    >
-                      {(() => {
-                        const meta = getCurrencyMeta(currency);
-                        return meta ? meta.code : "Currency";
-                      })()}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent portalled={false} data-currency-popover="true" className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain" side="bottom" align="start" sideOffset={4}>
-                    <Command>
-                      <CommandInput
-                        placeholder="Search currency or country..."
-                        value={currencySearch}
-                        onValueChange={setCurrencySearch}
-                        className="h-9"
-                      />
-                      <CommandList className="max-h-none flex-1 overflow-y-auto touch-pan-y overscroll-contain scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" style={{ WebkitOverflowScrolling: 'touch' }}>
-                        <CommandEmpty>No currency found.</CommandEmpty>
-                        <CommandGroup>
-                          {currencyOptions.map((c) => (
-                            <CommandItem
-                              key={c.code}
-                              value={`${c.code} ${c.country}`}
-                              onSelect={() => {
-                                setCurrency(c.code);
-                                setIsCurrencyPopoverOpen(false);
-                              }}
-                              className="text-xs cursor-pointer hover:bg-gray-100"
-                            >
-                              <span>{c.code} - {c.country}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Button type="button" variant="outline" className="w-28 justify-center" tabIndex={-1}>
+                  NGN
+                </Button>
                 <Input
                   id="amount"
                   type="number"
                   step="0.01"
-                  min={currency === 'NGN' ? '1000' : '10'}
+                  min="1000"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={currency === 'NGN' ? '1000' : '10'}
+                  placeholder="1000"
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {(() => {
-                  const minAmount = currency === 'NGN' ? 1000 : 10;
-                  return `Minimum ${currency} ${minAmount}`;
+                  const minAmount = 1000;
+                  return `Minimum ₦${minAmount.toLocaleString()}`;
                 })()}
               </p>
             </div>
@@ -895,7 +712,7 @@ const QRGift: React.FC = () => {
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              💳 Powered by Flutterwave
+              Powered by Paystack (NGN)
             </p>
           </form>
         </DialogContent>

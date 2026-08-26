@@ -2,16 +2,15 @@ const express = require('express');
 const axios = require('axios');
 const prisma = require('../prismaClient');
 const paystack = require('../utils/paystack');
-const flutterwave = require('../utils/flutterwave');
 const { sendContributorThankYouEmail, sendGiftReceivedEmail } = require('../utils/emailService');
 
-const getAsoebiCommission = (gift, quantity) => {
+const getAsoebiCommission = (gift) => {
   const created = new Date(gift.createdAt);
   const threshold = new Date(2026, 7, 11);
   if (created >= threshold) {
-    return 2000 * quantity;
+    return 2000;
   }
-  return 500 * quantity;
+  return 500;
 };
 
 module.exports = () => {
@@ -20,7 +19,7 @@ module.exports = () => {
   // Initialize payment
   router.post('/:link(*)/initialize-payment', async (req, res) => {
     const { contributorName, contributorEmail, amount, message, isAsoebi, guestId, asoebiQuantity, asoebiType, asoebiSelection,
-      asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, currency: currencyRaw, wishlistItemId, wishlistShareLink } = req.body;
+      asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, wishlistItemId, wishlistShareLink } = req.body;
 
     try {
       const gift = await prisma.gift.findUnique({ 
@@ -30,8 +29,7 @@ module.exports = () => {
       
       if (!gift) return res.status(404).json({ msg: 'Gift not found' });
 
-      // Construct metadata
-      const currency = String(currencyRaw || 'NGN').toUpperCase();
+      const currency = 'NGN';
       const metadata = {
         giftId: gift.id,
         giftLink: req.params.link,
@@ -64,12 +62,8 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Invalid amount' });
       }
 
-      // Enforce minimum amount of 1000 Naira
-      if (currency === 'NGN' && parsedAmount < 1000) {
+      if (parsedAmount < 1000) {
         return res.status(400).json({ msg: 'Minimum amount is ₦1000' });
-      }
-      if (currency !== 'NGN' && parsedAmount < 10) {
-        return res.status(400).json({ msg: `Minimum amount is ${currency} 10` });
       }
 
       const tx_ref = `gift-${gift.id}-${Date.now()}`;
@@ -77,97 +71,52 @@ module.exports = () => {
         ? `${process.env.FRONTEND_URL || 'http://localhost:5173'}/wishlist/${wishlistShareLink.replace('wishlist/', '')}`
         : `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`;
 
-      // Route all NGN contributions through Paystack; keep other currencies on Flutterwave.
-      if (currency === 'NGN') {
-        const psPayload = {
-          reference: tx_ref,
-          amount: parsedAmount,
-          currency,
-          callback_url: redirectUrl,
-          email: contributorEmail,
-          metadata: {
-            ...metadata,
-            provider: 'paystack',
-            reference: tx_ref,
-            originalCurrency: currency,
-            originalAmount: parsedAmount,
-          },
-        };
-
-        const psResponse = await paystack.initializePayment(psPayload);
-        if (!psResponse?.status) {
-          return res.status(400).json({
-            msg: 'Paystack initialization failed',
-            error: psResponse?.message || 'Unknown error',
-          });
-        }
-
-        return res.json({
-          status: psResponse.status,
-          data: {
-            ...psResponse.data,
-            authorization_url: psResponse?.data?.authorization_url,
-            provider: 'paystack',
-          },
-        });
-      }
-
-      const fwPayload = {
-        tx_ref,
+      const psPayload = {
+        reference: tx_ref,
         amount: parsedAmount,
         currency,
-        redirect_url: redirectUrl,
-        customer: {
-          email: contributorEmail,
-          name: contributorName || 'Anonymous',
-        },
-        meta: {
+        callback_url: redirectUrl,
+        email: contributorEmail,
+        metadata: {
           ...metadata,
-          provider: 'flutterwave',
-          tx_ref,
+          provider: 'paystack',
+          reference: tx_ref,
           originalCurrency: currency,
-          originalAmount: parsedAmount
-        },
-        customizations: {
-          title: metadata?.customizations?.title,
-          description: metadata?.customizations?.description,
+          originalAmount: parsedAmount,
         },
       };
 
-      const fwResponse = await flutterwave.initializePayment(fwPayload);
-
-      if (!fwResponse?.status) {
+      const psResponse = await paystack.initializePayment(psPayload);
+      if (!psResponse?.status) {
         return res.status(400).json({
-          msg: 'Flutterwave initialization failed',
-          error: fwResponse?.message || 'Unknown error',
+          msg: 'Paystack initialization failed',
+          error: psResponse?.message || 'Unknown error',
         });
       }
 
-      const authorization_url = fwResponse?.data?.link;
       return res.json({
-        status: fwResponse.status,
+        status: psResponse.status,
         data: {
-          ...fwResponse.data,
-          authorization_url,
-          provider: 'flutterwave',
+          ...psResponse.data,
+          authorization_url: psResponse?.data?.authorization_url,
+          provider: 'paystack',
         },
       });
     } catch (err) {
       console.error('Initialize payment error:', err?.message || err);
-      const fwError = err?.response?.data || err?.data || err?.message || err;
-      console.error('Initialize payment error details:', fwError);
+      const psError = err?.response?.data || err?.data || err?.message || err;
+      console.error('Initialize payment error details:', psError);
       
-      // Log the payload for debugging
       console.error('Payment payload:', {
         tx_ref: `gift-${req.params.link}-${Date.now()}`,
         amount: parseFloat(amount),
-        currency: String(req.body?.currency || 'NGN').toUpperCase(),
+        currency: 'NGN',
         redirect_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/gift/${req.params.link}`,
       });
       
       const errorPayload = {
         msg: 'Failed to initialize payment',
-        error: typeof fwError === 'object' ? JSON.stringify(fwError) : String(fwError),
+        error: typeof psError === 'object' ? JSON.stringify(psError) : String(psError),
       };
       res.status(500).json(errorPayload);
     }
@@ -182,174 +131,37 @@ module.exports = () => {
       console.log('Link:', req.params.link);
       console.log('Request body:', { transactionId, txRef, status });
       
-      let provider = 'flutterwave';
-      let response;
-
-      try {
-        console.log('Attempting Flutterwave verification with transactionId:', transactionId);
-        response = await flutterwave.verifyTransaction(transactionId);
-      } catch (flutterwaveErr) {
-        try {
-          console.log('Flutterwave verification failed, attempting Paystack verification with transactionId:', transactionId);
-          provider = 'paystack';
-          response = await paystack.verifyTransaction(transactionId);
-          if (!response?.status || response?.data?.status !== 'success') {
-            throw new Error('Paystack verification did not return success');
-          }
-        } catch (paystackErr) {
-          if (txRef && txRef !== transactionId) {
-            try {
-              console.log('Retrying Flutterwave verification with txRef:', txRef);
-              provider = 'flutterwave';
-              try {
-                response = await flutterwave.verifyTransaction(txRef);
-              } catch (flutterwaveErr2) {
-                console.log('Retrying Paystack verification with txRef:', txRef);
-                provider = 'paystack';
-                try {
-                  response = await paystack.verifyTransaction(txRef);
-                  if (!response?.status || response?.data?.status !== 'success') {
-                    throw new Error('Paystack verification did not return success');
-                  }
-                } catch (paystackErr2) {
-                  console.error('❌ Payment verification failed:', paystackErr2?.message || paystackErr2);
-                  return res.status(400).json({
-                    msg: 'Payment verification failed',
-                    error: paystackErr2?.message || 'Could not verify transaction',
-                  });
-                }
-              }
-            } catch (retryErr) {
-              console.error('❌ Payment verification failed:', retryErr?.message || retryErr);
-              return res.status(400).json({
-                msg: 'Payment verification failed',
-                error: retryErr?.message || 'Could not verify transaction',
-              });
-            }
-          } else {
-            console.error('❌ Payment verification failed:', paystackErr?.message || paystackErr);
-            return res.status(400).json({
-              msg: 'Payment verification failed',
-              error: paystackErr?.message || 'Could not verify transaction',
-            });
-          }
-        }
+      const reference = transactionId || txRef;
+      if (!reference) {
+        return res.status(400).json({ msg: 'Transaction reference is required' });
       }
 
-      const isPaystackSuccess =
-        provider === 'paystack' && !!response?.status && response?.data?.status === 'success';
-      const flutterwaveDataStatus = String(response?.data?.status || '').toLowerCase();
-      const isFlutterwaveSuccess =
-        provider === 'flutterwave' && response?.status === 'success' && (
-          flutterwaveDataStatus === 'successful' ||
-          flutterwaveDataStatus === 'success' ||
-          flutterwaveDataStatus === 'completed'
-        );
+      console.log('Verifying Paystack transaction with reference:', reference);
+      const response = await paystack.verifyTransaction(reference);
 
-      if (!isPaystackSuccess && !isFlutterwaveSuccess) {
-        console.error('❌ Payment verification failed - not successful');
+      if (!response?.status || response?.data?.status !== 'success') {
+        console.error('❌ Payment verification failed');
         return res.status(400).json({
           msg: 'Payment verification failed',
-          details: `Provider: ${provider}, Status: ${response?.status}, Data Status: ${response?.data?.status}`
+          details: `Status: ${response?.status}, Data Status: ${response?.data?.status}`
         });
       }
 
-      const meta = provider === 'paystack' ? (response.data.metadata || {}) : (response.data.meta || {});
-      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, wishlistItemId, currency: metaCurrency } = meta;
+      const meta = response.data.metadata || {};
+      const { giftId: giftIdRaw, giftLink, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, wishlistItemId } = meta;
       const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
-      const txCurrency = String(provider === 'paystack' ? (response.data.currency || metaCurrency || 'NGN') : (response?.data?.currency || metaCurrency || 'NGN')).toUpperCase();
-      const convertToNgn = async (fromCurrency, fromAmount) => {
-        const from = String(fromCurrency || '').toUpperCase();
-        const amountValue = Number(fromAmount);
-        if (!from) throw new Error('Missing transaction currency');
-        if (!Number.isFinite(amountValue) || amountValue <= 0) throw new Error('Invalid transaction amount');
-        if (from === 'NGN') return { ngn: amountValue, rate: 1, date: null, source: 'na' };
+      const txCurrency = 'NGN';
+      const amount = parseFloat((response.data.amount / 100).toFixed(2));
+      const emailCurrency = 'NGN';
+      const emailBaseAmount = amount;
 
-        const rateKey = `FX_BUY_RATE_${from}`;
-        const rate = Number(process.env[rateKey]);
-        if (!Number.isFinite(rate) || rate <= 0) {
-          throw new Error(`Missing FX rate for ${from}. Set ${rateKey} in .env`);
-        }
-
-        return {
-          ngn: parseFloat((amountValue * rate).toFixed(2)),
-          rate,
-          date: null,
-          source: 'env_fixed'
-        };
-      };
-
-      let amount;
-      let paymentMeta = null;
-      if (provider === 'paystack') {
-        amount = parseFloat((response.data.amount / 100).toFixed(2));
-      } else {
-        const txCurrency = String(response?.data?.currency || meta?.currency || '').toUpperCase();
-        const chargedAmount = Number(response?.data?.charged_amount ?? 0);
-        const baseAmount = Number(response?.data?.amount ?? 0);
-        const rawAmount = Number.isFinite(baseAmount) && baseAmount > 0 ? baseAmount : chargedAmount;
-
-        if (txCurrency === 'NGN') {
-          amount = rawAmount;
-        } else {
-          const settledCurrency = String(response?.data?.settlement_currency || response?.data?.settled_currency || '').toUpperCase();
-          const settledAmount = Number(response?.data?.amount_settled ?? 0);
-
-          if (
-            Number.isFinite(settledAmount) &&
-            settledAmount > 0 &&
-            settledCurrency === 'NGN'
-          ) {
-            amount = settledAmount;
-            paymentMeta = {
-              provider: 'flutterwave',
-              currency: txCurrency,
-              amount: rawAmount,
-              ngnAmount: amount,
-              ngnSource: 'flutterwave_settlement',
-              settlementCurrency: settledCurrency,
-              amountSettled: settledAmount,
-            };
-          } else {
-            try {
-              const fx = await convertToNgn(txCurrency, rawAmount, response?.data?.created_at);
-              amount = fx.ngn;
-              paymentMeta = {
-                provider: 'flutterwave',
-                currency: txCurrency,
-                amount: rawAmount,
-                ngnAmount: amount,
-                ngnSource: 'fx',
-                fxRate: fx.rate,
-                fxDate: fx.date,
-                fxSource: fx.source,
-              };
-            } catch (fxErr) {
-              console.error('❌ FX conversion failed:', fxErr?.message || fxErr);
-              return res.status(400).json({
-                msg: 'FX conversion failed. Could not convert payment to NGN for recording.',
-                error: fxErr?.message || 'FX conversion failed',
-              });
-            }
-          }
-        }
-      }
-
-      const emailCurrency = provider === 'paystack'
-        ? String(response?.data?.currency || meta?.currency || 'NGN').toUpperCase()
-        : txCurrency;
-      const emailBaseAmount = provider === 'paystack'
-        ? Number(response?.data?.amount / 100)
-        : (paymentMeta?.amount || rawAmount);
-
-      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, emailCurrency, emailBaseAmount, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiItemsDetails });
+      console.log('Extracted data:', { giftId, contributorName, contributorEmail, amount, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiItemsDetails });
 
       if (!giftId) {
         console.error('❌ No giftId in transaction meta');
         return res.status(400).json({ msg: 'Invalid transaction data - missing gift ID' });
       }
 
-      // Get gift with user info (for wallet update and emails)
       const gift = await prisma.gift.findUnique({
         where: { id: giftId },
         include: { user: true }
@@ -361,11 +173,8 @@ module.exports = () => {
       }
 
       const transactionIdCandidates =
-        provider === 'paystack'
-          ? [response?.data?.id?.toString?.(), response?.data?.reference].filter(Boolean)
-          : [response?.data?.id?.toString?.(), response?.data?.tx_ref].filter(Boolean);
+        [response?.data?.id?.toString?.(), response?.data?.reference].filter(Boolean);
 
-      // Check if contribution already exists
       const existingContribution = await prisma.contribution.findFirst({
         where: {
           OR: transactionIdCandidates.map((id) => ({ transactionId: id })),
@@ -373,79 +182,6 @@ module.exports = () => {
       });
 
       if (existingContribution) {
-        if (provider === 'flutterwave' && Number(existingContribution.amount) !== Number(amount)) {
-          let updatedCommission;
-          if (gift.tier === 'vip' || gift.tier === 'royal') {
-            updatedCommission = 0;
-          } else {
-            updatedCommission = existingContribution.isAsoebi
-              ? getAsoebiCommission(gift, Number(existingContribution.asoebiQuantity || 0))
-              : Number(amount) * 0.04;
-          }
-          const updatedAmountReceived = Number(amount) - updatedCommission;
-          const previousAmountReceived = Number(existingContribution.amount) - Number(existingContribution.commission || 0);
-          const walletDelta = updatedAmountReceived - previousAmountReceived;
-
-          await prisma.$transaction(async (tx) => {
-            await tx.contribution.update({
-              where: { id: existingContribution.id },
-              data: {
-                amount: Number(amount),
-                currency: txCurrency,
-                commission: updatedCommission,
-                ...(existingContribution.isAsoebi ? {} : (paymentMeta ? { asoebiItemsDetails: { paymentMeta } } : {})),
-              },
-            });
-
-            if (walletDelta !== 0) {
-              await tx.user.update({
-                where: { id: gift.userId },
-                data: { wallet: { increment: walletDelta } },
-              });
-            }
-
-            if (gift.user.referredById && !existingContribution.isAsoebi) {
-              const fxRewardDelta = Number(amount) * 0.01 - Number(existingContribution.amount) * 0.01;
-              if (fxRewardDelta !== 0) {
-                const existingFxAdjustment = await tx.referralTransaction.findFirst({
-                  where: {
-                    referrerId: gift.user.referredById,
-                    referredUserId: gift.user.id,
-                    type: 'cash_gift_commission',
-                    description: `FX adjustment for contribution ${existingContribution.id}`,
-                  },
-                });
-
-                if (!existingFxAdjustment) {
-                  await tx.user.update({
-                    where: { id: gift.user.referredById },
-                    data: { wallet: { increment: fxRewardDelta } },
-                  });
-
-                  await tx.referralTransaction.create({
-                    data: {
-                      referrerId: gift.user.referredById,
-                      referredUserId: gift.user.id,
-                      amount: fxRewardDelta,
-                      type: 'cash_gift_commission',
-                      description: `FX adjustment for contribution ${existingContribution.id}`,
-                    },
-                  });
-                }
-              }
-            }
-          });
-
-          const refreshedContribution = await prisma.contribution.findUnique({
-            where: { id: existingContribution.id },
-          });
-
-          return res.json({ 
-            msg: 'Payment already processed', 
-            contribution: refreshedContribution || existingContribution,
-          });
-        }
-
         console.log('⚠️  Contribution already exists:', existingContribution.id);
         return res.json({ 
           msg: 'Payment already processed', 
@@ -480,7 +216,7 @@ module.exports = () => {
           const finalQty = quantity > 0 ? quantity : 1;
           
           asoebiTotalQty = finalQty;
-          commission = getAsoebiCommission(gift, finalQty);
+          commission = getAsoebiCommission(gift);
           amountReceived = amount - commission;
           if (amountReceived < 0) amountReceived = 0; // Safety check
           
@@ -515,7 +251,7 @@ module.exports = () => {
           asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
           asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
           asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
-          asoebiItemsDetails: isAsoebi ? (asoebiItemsDetails || undefined) : (paymentMeta ? { paymentMeta } : undefined),
+          asoebiItemsDetails: isAsoebi ? (asoebiItemsDetails || undefined) : undefined,
           message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
           transactionId: transactionIdCandidates[0] || undefined,
           status: 'completed',
@@ -981,7 +717,7 @@ module.exports = () => {
               (asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0) +
               (asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0);
             const quantity = qtySum > 0 ? qtySum : 1;
-            commission = getAsoebiCommission(gift, quantity);
+            commission = getAsoebiCommission(gift);
             amountReceived = amountInNaira - commission;
             if (amountReceived < 0) amountReceived = 0; // Safety check
           } else {
@@ -1183,188 +919,6 @@ module.exports = () => {
       res.status(200).send('OK');
     } catch (err) {
       console.log('=== WEBHOOK ERROR ===');
-      console.error('Error message:', err?.message || err);
-      console.error('Full error:', err);
-      res.status(500).send('Server error');
-    }
-  });
-
-  // Webhook for Flutterwave
-  router.post('/webhook/flutterwave', async (req, res) => {
-    try {
-      console.log('=== FLUTTERWAVE WEBHOOK RECEIVED ===');
-      console.log('Headers:', JSON.stringify(req.headers, null, 2));
-      console.log('Body:', JSON.stringify(req.body, null, 2));
-
-      const secret = process.env.FLW_SECRET_KEY;
-      const signature = req.headers['verif-hash'];
-
-      if (!secret) {
-        console.error('FLW_SECRET_KEY not set');
-        return res.status(500).send('Server error');
-      }
-
-      const payloadBuffer = req.rawBody;
-      if (!payloadBuffer) {
-        console.error('❌ Webhook Error: rawBody is missing. Check server.js middleware.');
-        return res.status(500).send('Internal Server Error: Missing Raw Body');
-      }
-
-      if (!flutterwave.verifyWebhookSignature(payloadBuffer, signature, secret)) {
-        console.error('❌ Invalid Flutterwave webhook signature');
-        return res.status(401).send('Unauthorized');
-      }
-
-      console.log('✓ Flutterwave webhook signature verified successfully');
-
-      const event = req.body;
-      console.log('=== FLUTTERWAVE WEBHOOK EVENT ===');
-      console.log('Event type:', event.event);
-      console.log('Event data:', JSON.stringify(event.data, null, 2));
-
-      const successfulEvents = new Set([
-        'charge.completed',
-        'card.charge.completed',
-        'account.charge.completed',
-        'mobilemoney.charge.completed',
-        'transfer.completed',
-        'transfer successful',
-        'successful'
-      ]);
-
-      if (!successfulEvents.has(event.event)) {
-        console.log('Ignoring non-successful event:', event.event);
-        return res.status(200).send('OK');
-      }
-
-      const data = event.data || {};
-      const txRef = data.tx_ref || data.reference;
-      const transactionIdCandidates = [
-        data.id?.toString?.(),
-        txRef
-      ].filter(Boolean);
-
-      const existingContribution = await prisma.contribution.findFirst({
-        where: {
-          OR: transactionIdCandidates.map((id) => ({ transactionId: id })),
-        },
-      });
-
-      if (existingContribution) {
-        console.log('Contribution already exists:', existingContribution.id);
-        return res.status(200).send('OK');
-      }
-
-      const meta = data.meta || {};
-      const { giftId: giftIdRaw, contributorName, contributorEmail, message: contributorMessage, isAsoebi, guestId, asoebiType, asoebiSelection, asoebiQuantity, asoebiQtyMen, asoebiQtyWomen, asoebiBrideMenQty, asoebiBrideWomenQty, asoebiGroomMenQty, asoebiGroomWomenQty, asoebiItemsDetails, wishlistItemId } = meta;
-      const giftId = giftIdRaw ? parseInt(giftIdRaw, 10) : null;
-
-      if (!giftId) {
-        console.error('No giftId in Flutterwave webhook meta');
-        return res.status(200).send('OK');
-      }
-
-      const gift = await prisma.gift.findUnique({
-        where: { id: giftId },
-        include: { user: true }
-      });
-
-      if (!gift) {
-        console.error('Gift not found:', giftId);
-        return res.status(200).send('OK');
-      }
-
-      const txCurrency = String(data.currency || meta.currency || 'NGN').toUpperCase();
-      const chargedAmount = Number(data.charged_amount ?? 0);
-      const baseAmount = Number(data.amount ?? 0);
-      const rawAmount = Number.isFinite(baseAmount) && baseAmount > 0 ? baseAmount : chargedAmount;
-
-      let amount = rawAmount;
-      let currency = txCurrency;
-
-      if (txCurrency !== 'NGN') {
-        const settledCurrency = String(data.settlement_currency || data.settled_currency || '').toUpperCase();
-        const settledAmount = Number(data.amount_settled ?? 0);
-
-        if (Number.isFinite(settledAmount) && settledAmount > 0 && settledCurrency === 'NGN') {
-          amount = settledAmount;
-        }
-      }
-
-      const amountNum = Number(amount);
-      if (!Number.isFinite(amountNum) || amountNum <= 0) {
-        console.error('Invalid amount in Flutterwave webhook:', amount);
-        return res.status(200).send('OK');
-      }
-
-      let commission;
-      let amountReceived;
-      if (gift.tier === 'vip' || gift.tier === 'royal') {
-        commission = 0;
-        amountReceived = amountNum;
-      } else {
-        commission = amountNum * 0.04;
-        amountReceived = amountNum * 0.96;
-      }
-
-      const contribution = await prisma.contribution.create({
-        data: {
-          giftId,
-          wishlistItemId: wishlistItemId ? parseInt(wishlistItemId, 10) : null,
-          contributorName: contributorName || 'Anonymous',
-          contributorEmail: contributorEmail || '',
-          amount: amountNum,
-          currency: currency,
-          commission,
-          isAsoebi: !!isAsoebi,
-          asoebiQuantity: isAsoebi ? (parseInt(asoebiQuantity || '0', 10) || 1) : 0,
-          asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0,
-          asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0,
-          asoebiBrideMenQty: asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0,
-          asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
-          asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
-          asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
-          asoebiItemsDetails: asoebiItemsDetails || undefined,
-          message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
-          transactionId: transactionIdCandidates[0] || undefined,
-          status: 'completed',
-        },
-      });
-
-      console.log('✅ Flutterwave webhook contribution created:', contribution.id);
-
-      await prisma.user.update({
-        where: { id: gift.userId },
-        data: { wallet: { increment: amountReceived } },
-      });
-
-      sendGiftReceivedEmail({
-        recipientEmail: gift.user.email,
-        recipientName: gift.user.name,
-        contributorName: contributorName || 'Anonymous',
-        amount: amountNum,
-        gift: gift,
-        message: contributorMessage || '',
-        isAsoebi,
-        currency: txCurrency,
-        baseAmount: baseAmount,
-      }).catch(err => console.error('Background gift received email failed:', err));
-
-      if (contributorEmail) {
-        sendContributorThankYouEmail({
-          recipientEmail: contributorEmail,
-          contributorName: contributorName || 'Anonymous',
-          amount: amountNum,
-          gift: gift,
-          isAsoebi,
-          currency: txCurrency,
-          baseAmount: baseAmount,
-        }).catch(err => console.error('Background contributor thank you email failed:', err));
-      }
-
-      res.status(200).send('OK');
-    } catch (err) {
-      console.log('=== FLUTTERWAVE WEBHOOK ERROR ===');
       console.error('Error message:', err?.message || err);
       console.error('Full error:', err);
       res.status(500).send('Server error');

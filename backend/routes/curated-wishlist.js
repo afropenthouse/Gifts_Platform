@@ -1,7 +1,6 @@
 const express = require('express');
 const prisma = require('../prismaClient');
 const paystack = require('../utils/paystack');
-const flutterwave = require('../utils/flutterwave');
 const fs = require('fs');
 const path = require('path');
 
@@ -64,7 +63,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/initialize-payment', async (req, res) => {
-  const { contributorName, contributorEmail, amount, message, currency: currencyRaw, itemId, wishlistShareLink } = req.body;
+  const { contributorName, contributorEmail, amount, message, itemId, wishlistShareLink } = req.body;
 
   try {
     const gift = await getBethereGift();
@@ -75,18 +74,15 @@ router.post('/initialize-payment', async (req, res) => {
       return res.status(404).json({ msg: 'Item not found' });
     }
 
-    const currency = String(currencyRaw || 'NGN').toUpperCase();
+    const currency = 'NGN';
     const parsedAmount = Number(amount);
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       return res.status(400).json({ msg: 'Invalid amount' });
     }
 
-    if (currency === 'NGN' && parsedAmount < 1000) {
+    if (parsedAmount < 1000) {
       return res.status(400).json({ msg: 'Minimum amount is ₦1000' });
-    }
-    if (currency !== 'NGN' && parsedAmount < 10) {
-      return res.status(400).json({ msg: `Minimum amount is ${currency} 10` });
     }
 
     const tx_ref = `curated-${item.id}-${Date.now()}`;
@@ -109,78 +105,35 @@ router.post('/initialize-payment', async (req, res) => {
       }
     };
 
-    if (currency === 'NGN') {
-      const psPayload = {
-        reference: tx_ref,
-        amount: parsedAmount,
-        currency,
-        callback_url: redirectUrl,
-        email: contributorEmail,
-        metadata: {
-          ...metadata,
-          provider: 'paystack',
-          reference: tx_ref,
-          originalCurrency: currency,
-          originalAmount: parsedAmount,
-        },
-      };
-
-      const psResponse = await paystack.initializePayment(psPayload);
-      if (!psResponse?.status) {
-        return res.status(400).json({
-          msg: 'Paystack initialization failed',
-          error: psResponse?.message || 'Unknown error',
-        });
-      }
-
-      return res.json({
-        status: psResponse.status,
-        data: {
-          ...psResponse.data,
-          authorization_url: psResponse?.data?.authorization_url,
-          provider: 'paystack',
-        },
-      });
-    }
-
-    const fwPayload = {
-      tx_ref,
+    const psPayload = {
+      reference: tx_ref,
       amount: parsedAmount,
       currency,
-      redirect_url: redirectUrl,
-      customer: {
-        email: contributorEmail,
-        name: contributorName || 'Anonymous',
-      },
-      meta: {
+      callback_url: redirectUrl,
+      email: contributorEmail,
+      metadata: {
         ...metadata,
-        provider: 'flutterwave',
-        tx_ref,
+        provider: 'paystack',
+        reference: tx_ref,
         originalCurrency: currency,
-        originalAmount: parsedAmount
-      },
-      customizations: {
-        title: metadata?.customizations?.title,
-        description: metadata?.customizations?.description,
+        originalAmount: parsedAmount,
       },
     };
 
-    const fwResponse = await flutterwave.initializePayment(fwPayload);
-
-    if (!fwResponse?.status) {
+    const psResponse = await paystack.initializePayment(psPayload);
+    if (!psResponse?.status) {
       return res.status(400).json({
-        msg: 'Flutterwave initialization failed',
-        error: fwResponse?.message || 'Unknown error',
+        msg: 'Paystack initialization failed',
+        error: psResponse?.message || 'Unknown error',
       });
     }
 
-    const authorization_url = fwResponse?.data?.link;
     return res.json({
-      status: fwResponse.status,
+      status: psResponse.status,
       data: {
-        ...fwResponse.data,
-        authorization_url,
-        provider: 'flutterwave',
+        ...psResponse.data,
+        authorization_url: psResponse?.data?.authorization_url,
+        provider: 'paystack',
       },
     });
   } catch (err) {
@@ -196,81 +149,34 @@ router.post('/verify-payment', async (req, res) => {
     console.log('\n=== VERIFY CURATED PAYMENT START ===');
     console.log('Transaction ID:', transactionId, 'TxRef:', txRef, 'Status:', status);
 
-    let provider = 'flutterwave';
+    const reference = transactionId || txRef;
     let response;
 
     try {
-      console.log('Attempting Flutterwave verification with transactionId:', transactionId);
-      response = await flutterwave.verifyTransaction(transactionId);
-    } catch (flutterwaveErr) {
-      try {
-        console.log('Flutterwave failed, attempting Paystack verification');
-        provider = 'paystack';
-        response = await paystack.verifyTransaction(transactionId);
-        if (!response?.status || response?.data?.status !== 'success') {
-          throw new Error('Paystack verification did not return success');
-        }
-      } catch (paystackErr) {
-        if (txRef && txRef !== transactionId) {
-          try {
-            console.log('Retrying Flutterwave with txRef:', txRef);
-            provider = 'flutterwave';
-            response = await flutterwave.verifyTransaction(txRef);
-          } catch (flutterwaveErr2) {
-            try {
-              console.log('Retrying Paystack with txRef:', txRef);
-              provider = 'paystack';
-              response = await paystack.verifyTransaction(txRef);
-              if (!response?.status || response?.data?.status !== 'success') {
-                throw new Error('Paystack verification did not return success');
-              }
-            } catch (paystackErr2) {
-              console.error('Payment verification failed:', paystackErr2?.message || paystackErr2);
-              return res.status(400).json({
-                msg: 'Payment verification failed',
-                error: paystackErr2?.message || 'Could not verify transaction',
-              });
-            }
-          }
-        } else {
-          console.error('Payment verification failed:', paystackErr?.message || paystackErr);
-          return res.status(400).json({
-            msg: 'Payment verification failed',
-            error: paystackErr?.message || 'Could not verify transaction',
-          });
-        }
-      }
-    }
-
-    const isPaystackSuccess = provider === 'paystack' && !!response?.status && response?.data?.status === 'success';
-    const flutterwaveDataStatus = String(response?.data?.status || '').toLowerCase();
-    const isFlutterwaveSuccess = provider === 'flutterwave' && response?.status === 'success' && (
-      flutterwaveDataStatus === 'successful' || flutterwaveDataStatus === 'success' || flutterwaveDataStatus === 'completed'
-    );
-
-    if (!isPaystackSuccess && !isFlutterwaveSuccess) {
-      console.error('Payment verification failed - not successful');
+      response = await paystack.verifyTransaction(reference);
+    } catch (err) {
+      console.error('Payment verification failed:', err?.message || err);
       return res.status(400).json({
         msg: 'Payment verification failed',
-        details: `Provider: ${provider}, Status: ${response?.status}, Data Status: ${response?.data?.status}`
+        error: err?.message || 'Could not verify transaction',
       });
     }
 
-    const meta = provider === 'paystack' ? (response.data.metadata || {}) : (response.data.meta || {});
-    const { contributorName, contributorEmail, message: contributorMessage, currency: metaCurrency, itemId } = meta;
-    const txCurrency = String(provider === 'paystack' ? (response.data.currency || metaCurrency || 'NGN') : (response?.data?.currency || metaCurrency || 'NGN')).toUpperCase();
+    const isSuccess = !!response?.status && response?.data?.status === 'success';
 
-    let amount;
-    if (provider === 'paystack') {
-      amount = parseFloat((response.data.amount / 100).toFixed(2));
-    } else {
-      const rawAmount = Number(response?.data?.amount ?? 0);
-      amount = rawAmount;
+    if (!isSuccess) {
+      console.error('Payment verification failed - not successful');
+      return res.status(400).json({
+        msg: 'Payment verification failed',
+        details: `Status: ${response?.status}, Data Status: ${response?.data?.status}`
+      });
     }
 
-    const transactionIdCandidates = provider === 'paystack'
-      ? [response?.data?.id?.toString?.(), response?.data?.reference].filter(Boolean)
-      : [response?.data?.id?.toString?.(), response?.data?.tx_ref].filter(Boolean);
+    const meta = response.data.metadata || {};
+    const { contributorName, contributorEmail, message: contributorMessage, itemId } = meta;
+
+    const amount = parseFloat((response.data.amount / 100).toFixed(2));
+    const transactionIdCandidates = [response?.data?.id?.toString?.(), response?.data?.reference].filter(Boolean);
 
     const existingContribution = await prisma.contribution.findFirst({
       where: {
@@ -291,7 +197,7 @@ router.post('/verify-payment', async (req, res) => {
         contributorName: contributorName || 'Anonymous',
         contributorEmail: contributorEmail || '',
         amount,
-        currency: txCurrency,
+        currency: 'NGN',
         message: contributorMessage || '',
         transactionId: transactionIdCandidates[0] || undefined,
         status: 'completed',

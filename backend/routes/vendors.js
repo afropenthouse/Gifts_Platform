@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const auth = require('../middleware/auth');
 const prisma = require('../prismaClient');
-const { resolveAccount, getBanks, initializePayment } = require('../utils/flutterwave');
+const { resolveAccount, getBanks, initializePayment } = require('../utils/paystack');
 const { sendEmail, mailFrom } = require('../utils/email');
 const { sendWalletOtpEmail } = require('../utils/emailService');
 

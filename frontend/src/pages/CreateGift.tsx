@@ -222,7 +222,7 @@ const CreateGift: React.FC = () => {
         {isSellingAsoebi && (
           <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
             <div className="bg-amber-50 text-amber-800 text-sm p-3 rounded-md border border-amber-200 mb-4">
-              <strong>Note:</strong> We charge ₦1,000 per Asoebi sold.
+              <strong>Note:</strong> We charge ₦500 for older Asoebi events and ₦2,000 for events created from 11 Aug 2026. This is per order, not per item.
             </div>
             
             {type === 'wedding' ? (

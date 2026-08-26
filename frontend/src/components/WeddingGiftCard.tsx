@@ -5,9 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { openFlutterwaveCheckout, loadFlutterwaveScript } from "@/lib/flutterwave";
+// Flutterwave is parked for now. Cash gifts use Paystack with NGN only.
 
 // Utility function to check if image is portrait
 const isPortrait = (src: string): Promise<boolean> => {
@@ -37,42 +35,6 @@ declare global {
   }
 }
 
-type CurrencyOption = {
-  code: string;
-  country: string;
-};
-
-const currencyOptions: CurrencyOption[] = [
-  { code: "NGN", country: "Nigeria" },
-  { code: "USD", country: "United States" },
-  { code: "GBP", country: "United Kingdom" },
-  { code: "EUR", country: "Eurozone" },
-  { code: "CAD", country: "Canada" },
-  { code: "AUD", country: "Australia" },
-  { code: "ZAR", country: "South Africa" },
-  { code: "KES", country: "Kenya" },
-  { code: "GHS", country: "Ghana" },
-  { code: "UGX", country: "Uganda" },
-  { code: "TZS", country: "Tanzania" },
-  { code: "RWF", country: "Rwanda" },
-  { code: "XOF", country: "West African CFA" },
-  { code: "XAF", country: "Central African CFA" },
-  { code: "ZMW", country: "Zambia" },
-  { code: "MWK", country: "Malawi" },
-  { code: "BWP", country: "Botswana" },
-  { code: "AED", country: "United Arab Emirates" },
-  { code: "SAR", country: "Saudi Arabia" },
-  { code: "QAR", country: "Qatar" },
-  { code: "INR", country: "India" },
-  { code: "SGD", country: "Singapore" },
-  { code: "NZD", country: "New Zealand" },
-  { code: "CHF", country: "Switzerland" },
-  { code: "JPY", country: "Japan" },
-  { code: "CNY", country: "China" },
-];
-
-const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
-
 const WeddingGiftCard = ({
   groomName,
   brideName,
@@ -87,11 +49,8 @@ const WeddingGiftCard = ({
   const [contributorName, setContributorName] = useState('');
   const [contributorEmail, setContributorEmail] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('NGN');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [currencySearch, setCurrencySearch] = useState('');
-  const [isCurrencyPopoverOpen, setIsCurrencyPopoverOpen] = useState(false);
 
   const heading =
     title ||
@@ -106,7 +65,6 @@ const WeddingGiftCard = ({
       script.src = 'https://js.paystack.co/v1/inline.js';
       document.head.appendChild(script);
     }
-    loadFlutterwaveScript().catch(() => null);
   }, []);
 
   const handleSendGiftClick = (e?: React.MouseEvent) => {
@@ -124,9 +82,9 @@ const WeddingGiftCard = ({
     console.log('Type of amount:', typeof amount);
     console.log('Parsed amount:', parseFloat(amount));
 
-    const minAmount = currency === 'NGN' ? 1000 : 10;
+    const minAmount = 1000;
     if (!amount || parseFloat(amount) < minAmount) {
-      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
+      alert(`Please enter an amount of at least ₦${minAmount.toLocaleString()}`);
       return;
     }
 
@@ -152,99 +110,63 @@ const WeddingGiftCard = ({
     try {
       const name = isAnonymous ? 'Anonymous' : contributorName;
 
-      if (currency === 'NGN') {
-        const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
-        if (!publicKey) {
-          alert('Payment is unavailable: missing Paystack public key.');
-          setProcessingPayment(false);
-          return;
-        }
-
-        console.log('=== Payment Configuration Debug ===');
-        console.log('Original amount string:', amount);
-        console.log('Type of amount:', typeof amount);
-        console.log('Parsed amount:', parseFloat(amount));
-        console.log('Amount in kobo:', parseFloat(amount) * 100);
-
-        const finalAmount = parseFloat(amount) * 100;
-        console.log('Final amount being sent to Paystack:', finalAmount);
-
-        const config = {
-          key: publicKey,
-          email: contributorEmail,
-          amount: finalAmount,
-          currency: 'NGN',
-          ref: `demo-gift-${Date.now()}`,
-          channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
-          defaultChannel: 'bank_transfer',
-          callback: function (data: any) {
-            console.log('Payment callback:', data);
-            if (data.status === 'success') {
-              alert(`Thank you! Your gift of ${currency} ${amount} to ${heading} was successful.`);
-              setIsNameModalOpen(false);
-              setAmount('');
-              setContributorName('');
-              setContributorEmail('');
-              setIsAnonymous(false);
-            } else {
-              alert('Payment was not completed. Please try again.');
-            }
-            setProcessingPayment(false);
-          },
-          onClose: function () {
-            console.log('Payment modal closed');
-            setProcessingPayment(false);
-          },
-        };
-
-        if (window.PaystackPop) {
-          window.PaystackPop.setup(config).openIframe();
-        } else {
-          alert('Paystack is not loaded. Please refresh the page and try again.');
-          setProcessingPayment(false);
-        }
-      } else {
-        const publicKey = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY;
-        if (!publicKey) {
-          alert('Payment is unavailable: missing Flutterwave public key.');
-          setProcessingPayment(false);
-          return;
-        }
-
-        await openFlutterwaveCheckout({
-          public_key: publicKey,
-          tx_ref: `demo-gift-${Date.now()}`,
-          amount: Number(amount),
-          currency,
-          redirect_url: window.location.href,
-          customer: {
-            email: contributorEmail,
-            name,
-          },
-          customizations: {
-            title: heading,
-            description: "Cash gift",
-          },
-          callback: (data: any) => {
-            console.log('Payment callback:', data);
-            const status = String(data?.status || '').toLowerCase();
-            if (status === 'successful' || status === 'success') {
-              alert(`Thank you! Your gift of ${currency} ${amount} to ${heading} was successful.`);
-              setIsNameModalOpen(false);
-              setAmount('');
-              setContributorName('');
-              setContributorEmail('');
-              setIsAnonymous(false);
-            } else {
-              alert('Payment was not completed. Please try again.');
-            }
-            setProcessingPayment(false);
-          },
-          onclose: () => {
-            setProcessingPayment(false);
-          },
-        });
+      const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+      if (!publicKey) {
+        alert('Payment is unavailable: missing Paystack public key.');
+        setProcessingPayment(false);
+        return;
       }
+
+      console.log('=== Payment Configuration Debug ===');
+      console.log('Original amount string:', amount);
+      console.log('Type of amount:', typeof amount);
+      console.log('Parsed amount:', parseFloat(amount));
+      console.log('Amount in kobo:', parseFloat(amount) * 100);
+
+      const finalAmount = parseFloat(amount) * 100;
+      console.log('Final amount being sent to Paystack:', finalAmount);
+
+      const config = {
+        key: publicKey,
+        email: contributorEmail,
+        amount: finalAmount,
+        currency: 'NGN',
+        ref: `demo-gift-${Date.now()}`,
+        channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
+        defaultChannel: 'bank_transfer',
+        callback: function (data: any) {
+          console.log('Payment callback:', data);
+          if (data.status === 'success') {
+            alert(`Thank you! Your gift of ₦${amount} to ${heading} was successful.`);
+            setIsNameModalOpen(false);
+            setAmount('');
+            setContributorName('');
+            setContributorEmail('');
+            setIsAnonymous(false);
+          } else {
+            alert('Payment was not completed. Please try again.');
+          }
+          setProcessingPayment(false);
+        },
+        onClose: function () {
+          console.log('Payment modal closed');
+          setProcessingPayment(false);
+        },
+      };
+
+      if (window.PaystackPop) {
+        window.PaystackPop.setup(config).openIframe();
+      } else {
+        alert('Paystack is not loaded. Please refresh the page and try again.');
+        setProcessingPayment(false);
+      }
+      /*
+      Flutterwave is intentionally disabled for now. Keep this section archived
+      until non-NGN checkout is restored.
+      if (currency !== 'NGN') {
+        // Previously opened Flutterwave checkout here.
+      }
+      */
     } catch (err: any) {
       console.error(err);
       alert('Payment initialization failed');
@@ -353,70 +275,29 @@ const WeddingGiftCard = ({
 
           <form onSubmit={handleAmountSubmit} className="space-y-4">
             <div>
-              <Label className="text-sm font-medium">Gift Amount</Label>
+              <Label className="text-sm font-medium">Gift Amount (₦)</Label>
               <div className="flex gap-2 mt-2">
-                <Popover open={isCurrencyPopoverOpen} onOpenChange={setIsCurrencyPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={isCurrencyPopoverOpen}
-                      className="w-28 justify-between px-2"
-                    >
-                      {(() => {
-                        const meta = getCurrencyMeta(currency);
-                        return meta ? meta.code : "Currency";
-                      })()}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent portalled={false} className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain" side="bottom" align="start" sideOffset={4}>
-                    <Command>
-                      <CommandInput
-                        placeholder="Search currency or country..."
-                        value={currencySearch}
-                        onValueChange={setCurrencySearch}
-                        className="h-9"
-                      />
-                      <CommandList className="max-h-none flex-1 overflow-y-auto touch-pan-y overscroll-contain scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" style={{ WebkitOverflowScrolling: 'touch' }}>
-                        <CommandEmpty>No currency found.</CommandEmpty>
-                        <CommandGroup>
-                          {currencyOptions.map((c) => (
-                            <CommandItem
-                              key={c.code}
-                              value={`${c.code} ${c.country}`}
-                              onSelect={() => {
-                                setCurrency(c.code);
-                                setIsCurrencyPopoverOpen(false);
-                              }}
-                              className="text-xs cursor-pointer hover:bg-gray-100"
-                            >
-                              <span>{c.code} - {c.country}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Button type="button" variant="outline" className="w-28 justify-center" tabIndex={-1}>
+                  NGN
+                </Button>
                 <Input
                   id="amount"
                   type="text"
-                  min={currency === 'NGN' ? '1000' : '10'}
+                  min="1000"
                   value={amount}
                   onChange={(e) => {
-                    // Only allow numbers and decimal point
                     const value = e.target.value.replace(/[^0-9.]/g, '');
                     setAmount(value);
                   }}
-                  placeholder={currency === 'NGN' ? '1000' : '10'}
+                  placeholder="1000"
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {(() => {
-                  const minAmount = currency === 'NGN' ? 1000 : 10;
-                  return `Minimum ${currency} ${minAmount}`;
+                  const minAmount = 1000;
+                  return `Minimum ₦${minAmount.toLocaleString()}`;
                 })()}
               </p>
             </div>
@@ -427,7 +308,7 @@ const WeddingGiftCard = ({
               className="w-full"
             >
               {(() => {
-                return `Send Gift ${currency} ${amount || '0'}`;
+                  return `Send Gift ₦${amount || '0'}`;
               })()}
             </Button>
           </form>
@@ -480,7 +361,7 @@ const WeddingGiftCard = ({
             <div className="text-center p-3 bg-muted rounded-lg">
               <p className="text-sm font-medium">
                 {(() => {
-                  return `Gift Amount: ${currency} ${amount}`;
+                  return `Gift Amount: ₦${amount}`;
                 })()}
               </p>
             </div>
@@ -495,7 +376,7 @@ const WeddingGiftCard = ({
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              💳 Powered by Paystack (NGN) and Flutterwave (other currencies)
+              Powered by Paystack (NGN)
             </p>
           </form>
         </DialogContent>

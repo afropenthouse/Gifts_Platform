@@ -97,7 +97,7 @@ All features are available free for users to create memorable wedding experience
 #### STEP 3: SET UP GIFT COLLECTION
 1. Generate unique QR codes for your wedding gifts
 2. Create shareable gift links for guests
-3. Set up payment methods (Flutterwave, Paystack)
+3. Set up payment methods (Paystack)
 4. Configure gift tracking and notifications
 
 #### STEP 4: MANAGE VENDOR PAYMENTS
@@ -155,8 +155,7 @@ All features are available free for users to create memorable wedding experience
 ### INTEGRATIONS
 
 #### PAYMENT GATEWAYS
-- Flutterwave (Primary payment processor for Africa)
-- Paystack (Alternative payment option)
+- Paystack (Payment processor for Nigeria - Naira only)
 
 #### SOCIAL INTEGRATION
 - Share gift links via WhatsApp

@@ -2350,23 +2350,9 @@ const Dashboard: React.FC = () => {
                                   </div>
                                 </TableCell>
                                  <TableCell>
-                                   {contribution.currency && contribution.currency !== 'NGN' ? (
-                                     <div className="flex flex-col">
-                                       <span className="font-bold text-green-600">
-                                         {contribution.currency === 'USD' && '$'}
-                                         {contribution.currency === 'CAD' && 'CA$'}
-                                         {contribution.currency === 'GBP' && '£'}
-                                         {contribution.currency === 'EUR' && '€'}
-                                         {!['USD', 'CAD', 'GBP', 'EUR'].includes(contribution.currency) && contribution.currency}
-                                         {(Number(contribution.asoebiItemsDetails?.paymentMeta?.baseAmount || contribution.asoebiItemsDetails?.paymentMeta?.amount || 0)).toLocaleString()}
-                                       </span>
-                                       <span className="text-[10px] text-muted-foreground">
-                                         ₦{Number(contribution.amount).toLocaleString()}
-                                       </span>
-                                     </div>
-                                   ) : (
-                                     <span className="font-bold text-green-600">₦{(typeof contribution.amount === 'number' ? contribution.amount : parseFloat(String(contribution.amount))).toFixed(2)}</span>
-                                   )}
+                                   <span className="font-bold text-green-600">
+                                     ₦{(typeof contribution.amount === 'number' ? contribution.amount : parseFloat(String(contribution.amount))).toFixed(2)}
+                                   </span>
                                  </TableCell>
                                 <TableCell className="max-w-xs">
                                   <p className="truncate">{contribution.message || '-'}</p>
@@ -2557,10 +2543,9 @@ const Dashboard: React.FC = () => {
                              } else if (transaction.commission !== undefined && transaction.commission !== null && transaction.commission > 0) {
                                 commission = transaction.commission;
                              } else if (transaction.isAsoebi) {
-                                const qty = (transaction.asoebiQuantity && Number(transaction.asoebiQuantity) > 0) 
-                                  ? Number(transaction.asoebiQuantity) 
-                                  : 1;
-                                commission = 500 * qty;
+                                const created = gift?.createdAt ? new Date(gift.createdAt) : null;
+                                const threshold = new Date(2026, 7, 11);
+                                commission = created && created >= threshold ? 2000 : 500;
                              } else {
                                 commission = amount * 0.04;
                              }
@@ -3373,7 +3358,7 @@ const Dashboard: React.FC = () => {
                          <li className="text-sm text-gray-600">Free website templates</li>
                          <li className="text-sm text-gray-400">No invitation templates</li>
                          <li className="text-sm text-gray-400">4% commission on cash gifts</li>
-                         <li className="text-sm text-gray-400">₦500 commission per asoebi order</li>
+                         <li className="text-sm text-gray-400">₦500 for older asoebi events, ₦2,000 from 11 Aug 2026, per order</li>
                        </ul>
                      </CardContent>
                    </Card>

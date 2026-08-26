@@ -8,7 +8,6 @@ const { uploadImage } = require('../utils/cloudinary');
 const { sendReminderEmail, sendRsvpCancellationEmail } = require('../utils/emailService');
 const { sendRemindersForGift } = require('../utils/reminderService');
 const paystack = require('../utils/paystack');
-const flutterwave = require('../utils/flutterwave');
 
 const PREMIUM_WEBSITE_TEMPLATES = ['emerald', 'sapphire', 'ruby', 'pearl', 'amethyst', 'noir'];
 
@@ -1247,23 +1246,15 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
       }
 
       let response;
-      let provider = 'paystack';
 
       try {
         response = await paystack.verifyTransaction(reference);
       } catch (psErr) {
-        try {
-          response = await flutterwave.verifyTransaction(reference);
-          provider = 'flutterwave';
-        } catch (fwErr) {
-          console.error('Tier payment verification failed:', psErr, fwErr);
-          return res.status(400).json({ msg: 'Payment verification failed' });
-        }
+        console.error('Tier payment verification failed:', psErr);
+        return res.status(400).json({ msg: 'Payment verification failed' });
       }
 
-      const isSuccess = provider === 'paystack' 
-        ? !!response?.status && response?.data?.status === 'success'
-        : !!response?.status && ['successful', 'success', 'completed'].includes(String(response?.data?.status).toLowerCase());
+      const isSuccess = !!response?.status && response?.data?.status === 'success';
 
       if (!isSuccess) {
         if (type === 'template' && templateKey) {
@@ -1495,105 +1486,6 @@ const slugBase = gift.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/
       res.status(200).send('OK');
     } catch (err) {
       console.log('=== PAYSTACK PREMIUM WEBHOOK ERROR ===');
-      console.error('Error:', err?.message || err);
-      res.status(500).send('Server error');
-    }
-  });
-
-  // Webhook for Flutterwave premium payments
-  router.post('/premium/webhook/flutterwave', async (req, res) => {
-    try {
-      console.log('=== FLUTTERWAVE PREMIUM WEBHOOK RECEIVED ===');
-      const secret = process.env.FLW_SECRET_KEY;
-      const signature = req.headers['verif-hash'];
-      const payloadBuffer = req.rawBody;
-
-      if (!secret) {
-        console.error('FLW_SECRET_KEY not set');
-        return res.status(500).send('Server error');
-      }
-
-      if (!payloadBuffer) {
-        console.error('❌ Webhook Error: rawBody is missing.');
-        return res.status(500).send('Internal Server Error: Missing Raw Body');
-      }
-
-      if (!flutterwave.verifyWebhookSignature(payloadBuffer, signature, secret)) {
-        console.error('❌ Invalid Flutterwave premium webhook signature');
-        return res.status(401).send('Unauthorized');
-      }
-
-      console.log('✓ Flutterwave premium webhook signature verified');
-
-      const event = req.body;
-      console.log('Event type:', event.event);
-      console.log('Event data:', JSON.stringify(event.data, null, 2));
-
-      const successfulEvents = new Set([
-        'charge.completed',
-        'card.charge.completed',
-        'account.charge.completed',
-        'mobilemoney.charge.completed',
-        'successful'
-      ]);
-
-      if (!successfulEvents.has(event.event)) {
-        console.log('Ignoring non-successful event:', event.event);
-        return res.status(200).send('OK');
-      }
-
-      const data = event.data || {};
-      const txRef = data.tx_ref || data.reference;
-      const transactionIdCandidates = [
-        data.id?.toString?.(),
-        txRef
-      ].filter(Boolean);
-
-      const existingPayment = await prisma.premiumPayment.findFirst({
-        where: {
-          OR: transactionIdCandidates.map((id) => ({ transactionId: id })),
-        },
-        include: { gift: { include: { user: true } } }
-      });
-
-      if (!existingPayment) {
-        console.error('No premium payment found for candidates:', transactionIdCandidates);
-        return res.status(200).send('OK');
-      }
-
-      if (existingPayment.status === 'success') {
-        console.log('Premium payment already processed:', existingPayment.id);
-        return res.status(200).send('OK');
-      }
-
-      const [updatedPayment] = await prisma.$transaction([
-        prisma.premiumPayment.update({
-          where: { id: existingPayment.id },
-          data: { status: 'success', transactionId: transactionIdCandidates[0] || existingPayment.transactionId }
-        }),
-        prisma.gift.update({
-          where: { id: existingPayment.giftId },
-          data: { tier: existingPayment.tier }
-        })
-      ]);
-
-      console.log('✅ Flutterwave tier payment verified via webhook:', updatedPayment.id);
-
-      sendGiftReceivedEmail({
-        recipientEmail: existingPayment.gift.user.email,
-        recipientName: existingPayment.gift.user.name,
-        contributorName: existingPayment.user?.name || 'Event Owner',
-        amount: Number(existingPayment.amount),
-        gift: existingPayment.gift,
-        message: `${existingPayment.tier === 'vip' ? 'VIP' : 'Royal'} Upgrade activated`,
-        isAsoebi: false,
-        currency: 'NGN',
-        baseAmount: Number(existingPayment.amount),
-      }).catch(err => console.error('Background tier gift received email failed:', err));
-
-      res.status(200).send('OK');
-    } catch (err) {
-      console.log('=== FLUTTERWAVE PREMIUM WEBHOOK ERROR ===');
       console.error('Error:', err?.message || err);
       res.status(500).send('Server error');
     }

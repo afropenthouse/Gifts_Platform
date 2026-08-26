@@ -4,9 +4,6 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import Navbar from '../components/Navbar';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -73,41 +70,6 @@ interface AsoebiItem {
   category?: string;
 }
 
-type CurrencyOption = {
-  code: string;
-  country: string;
-};
-
-const currencyOptions: CurrencyOption[] = [
-  { code: "NGN", country: "Nigeria" },
-  { code: "USD", country: "United States" },
-  { code: "GBP", country: "United Kingdom" },
-  { code: "EUR", country: "Eurozone" },
-  { code: "CAD", country: "Canada" },
-  { code: "AUD", country: "Australia" },
-  { code: "ZAR", country: "South Africa" },
-  { code: "KES", country: "Kenya" },
-  { code: "GHS", country: "Ghana" },
-  { code: "UGX", country: "Uganda" },
-  { code: "TZS", country: "Tanzania" },
-  { code: "RWF", country: "Rwanda" },
-  { code: "XOF", country: "West African CFA" },
-  { code: "XAF", country: "Central African CFA" },
-  { code: "ZMW", country: "Zambia" },
-  { code: "MWK", country: "Malawi" },
-  { code: "BWP", country: "Botswana" },
-  { code: "AED", country: "United Arab Emirates" },
-  { code: "SAR", country: "Saudi Arabia" },
-  { code: "QAR", country: "Qatar" },
-  { code: "INR", country: "India" },
-  { code: "SGD", country: "Singapore" },
-  { code: "NZD", country: "New Zealand" },
-  { code: "CHF", country: "Switzerland" },
-  { code: "JPY", country: "Japan" },
-  { code: "CNY", country: "China" },
-];
-
-const getCurrencyMeta = (code: string) => currencyOptions.find((c) => c.code === code);
 const getWishlistPath = (gift: Gift | null) => {
   const shareLink = gift?.wishlists?.[0]?.shareLink;
   return shareLink ? `/${shareLink.replace(/^\/+/, '')}` : null;
@@ -139,9 +101,6 @@ const ShareGift: React.FC = () => {
 
   const asoebiPlatformFee = isSpecialAsoebiEvent(gift?.createdAt) ? '₦2,000' : '₦500';
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('NGN');
-  const [currencySearch, setCurrencySearch] = useState('');
-  const [isCurrencyPopoverOpen, setIsCurrencyPopoverOpen] = useState(false);
   const [contributorName, setContributorName] = useState('');
   const [contributorEmail, setContributorEmail] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -872,9 +831,9 @@ const ShareGift: React.FC = () => {
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = currency === 'NGN' ? 1000 : 10;
+    const minAmount = 1000;
     if (!amount || parseFloat(amount) < minAmount) {
-      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
+      alert(`Please enter an amount of at least ₦${minAmount.toLocaleString()}`);
       return;
     }
 
@@ -921,7 +880,7 @@ const ShareGift: React.FC = () => {
             contributorName: name,
             contributorEmail: email,
             amount: parseFloat(amount),
-            currency: currency,
+            currency: 'NGN',
             message: isAnonymous ? 'Anonymous contribution' : `Gifts from ${name}`,
           }),
         }
@@ -1306,11 +1265,7 @@ const ShareGift: React.FC = () => {
       </Dialog>
 
       <Dialog open={showAmountModal} onOpenChange={setShowAmountModal}>
-        <DialogContent className="max-w-md" onInteractOutside={(e) => {
-          const target = e.target as HTMLElement;
-          if (target && target.closest('[data-currency-popover="true"]')) return;
-          e.preventDefault();
-        }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-playfair text-center">{heading}</DialogTitle>
             <div className="text-center text-muted-foreground text-sm mt-1 font-playfair">
@@ -1320,69 +1275,27 @@ const ShareGift: React.FC = () => {
 
           <form onSubmit={handleAmountSubmit} className="space-y-4">
             <div>
-              <Label className="text-sm font-medium">Select currency</Label>
+              <Label className="text-sm font-medium">Gift Amount (₦)</Label>
               <div className="flex gap-2 mt-2">
-                <Popover open={isCurrencyPopoverOpen} onOpenChange={setIsCurrencyPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={isCurrencyPopoverOpen}
-                      className="w-28 justify-between px-2"
-                    >
-                      {(() => {
-                        const meta = getCurrencyMeta(currency);
-                        return meta ? meta.code : "Select currency";
-                      })()}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent portalled={false} data-currency-popover="true" className="w-56 p-0 h-[40vh] overflow-hidden touch-pan-y overscroll-contain z-50" side="bottom" align="start" sideOffset={4}>
-                    <Command>
-                      <div className="shrink-0 bg-white p-1 border-b">
-                        <CommandInput
-                          placeholder="Search currency or country..."
-                          value={currencySearch}
-                          onValueChange={setCurrencySearch}
-                          className="h-9"
-                        />
-                      </div>
-                      <CommandList className="max-h-none flex-1 overflow-y-auto touch-pan-y overscroll-contain scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" style={{ WebkitOverflowScrolling: 'touch' }}>
-                        <CommandEmpty>No currency found.</CommandEmpty>
-                        <CommandGroup>
-                          {currencyOptions.map((c) => (
-                            <CommandItem
-                              key={c.code}
-                              value={`${c.code} ${c.country}`}
-                              onSelect={() => {
-                                setCurrency(c.code);
-                                setIsCurrencyPopoverOpen(false);
-                              }}
-                              className="text-xs cursor-pointer hover:bg-gray-100"
-                            >
-                              <span>{c.code} - {c.country}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Button type="button" variant="outline" className="w-28 justify-center" tabIndex={-1}>
+                  NGN
+                </Button>
                 <Input
                   id="amount"
                   type="number"
                   step="0.01"
-                  min={currency === 'NGN' ? '1000' : '10'}
+                  min="1000"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={currency === 'NGN' ? '1000' : '10'}
+                  placeholder="1000"
                   className="flex-1 text-lg"
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {(() => {
-                  const minAmount = currency === 'NGN' ? 1000 : 10;
-                  return `Minimum ${currency} ${minAmount}`;
+                  const minAmount = 1000;
+                  return `Minimum ₦${minAmount.toLocaleString()}`;
                 })()}
               </p>
             </div>
@@ -1443,7 +1356,7 @@ const ShareGift: React.FC = () => {
 
             {/* <div className="text-center p-3 bg-muted rounded-lg">
               <p className="text-sm font-medium">
-                Gift Amount: {currency === 'NGN' ? '₦' : currency === 'USD' ? '$' : currency === 'CAD' ? 'C$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AUD' ? 'A$' : currency === 'ZAR' ? 'R' : currency === 'KES' ? 'KSh' : currency === 'GHS' ? '₵' : currency === 'UGX' ? 'USh' : 'TSh'}{amount}
+                Gift Amount: ₦{amount}
               </p>
             </div> */}
 
@@ -1457,7 +1370,7 @@ const ShareGift: React.FC = () => {
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              💳 Powered by Flutterwave
+              Powered by Paystack (NGN)
             </p>
           </form>
         </DialogContent>
@@ -2153,7 +2066,7 @@ const ShareGift: React.FC = () => {
                             Total: ₦{(Number(gift?.asoebiPrice || 0) * asoebiQuantity).toLocaleString()}
                         </p>
                         <p className="text-sm text-gray-600 mt-1">
-                            Platform fees: {asoebiPlatformFee} per item
+                            Platform fee: {asoebiPlatformFee} per order
                         </p>
                     </div>
                 )}
@@ -2387,7 +2300,7 @@ const ShareGift: React.FC = () => {
                                 (asoebiFamily === 'bride' ? Number(gift?.asoebiBrideWomenPrice || 0) : asoebiFamily === 'groom' ? Number(gift?.asoebiGroomWomenPrice || 0) : Number(gift?.asoebiPriceWomen || 0))
                                 : Number(gift?.asoebiPrice || 0)) * asoebiQuantity).toLocaleString()}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">Platform fees: {asoebiPlatformFee} per item</p>
+                      <p className="text-sm text-gray-600 mt-1">Platform fee: {asoebiPlatformFee} per order</p>
                   </div>
                 )}
               </div>
@@ -2412,7 +2325,7 @@ const ShareGift: React.FC = () => {
               </div>
               
               <p className="text-xs text-center text-muted-foreground mt-4">
-                💳 Powered by Flutterwave
+                Powered by Paystack (NGN)
               </p>
             </form>
           )}

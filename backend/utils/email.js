@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+// Email provider: Postmark. Nodemailer/SMTP is intentionally parked for now.
 const POSTMARK_SERVER_TOKEN = process.env.POSTMARK_SERVER_TOKEN;
 const POSTMARK_MESSAGE_STREAM = process.env.POSTMARK_MESSAGE_STREAM || 'outbound';
 const mailFromRaw = process.env.MAIL_FROM || 'BeThere <support@bethereexperience.com>';

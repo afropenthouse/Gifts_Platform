@@ -2543,7 +2543,7 @@ const AdminDashboard = () => {
                     ₦{filteredRevenue.toLocaleString()}
                   </div>
                    <p className="text-xs text-muted-foreground mt-1">
-                       4% cash commission + ₦500 asoebi (₦2,000 from 11 Aug 2026) + premium upgrades
+                       4% cash commission + ₦500 asoebi orders (₦2,000 from 11 Aug 2026) + premium upgrades
                     </p>
                 </CardContent>
               </Card>
@@ -2648,25 +2648,9 @@ const AdminDashboard = () => {
                      <TableCell className="font-medium">
                        {contribution.personName || 'Anonymous'}
                      </TableCell>
-                      <TableCell>
-                        {contribution.currency && contribution.currency !== 'NGN' ? (
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {contribution.currency === 'USD' && '$'}
-                              {contribution.currency === 'CAD' && 'CA$'}
-                              {contribution.currency === 'GBP' && '£'}
-                              {contribution.currency === 'EUR' && '€'}
-                              {!['USD', 'CAD', 'GBP', 'EUR'].includes(contribution.currency) && contribution.currency}
-                              {(Number(contribution.asoebiItemsDetails?.paymentMeta?.baseAmount || contribution.asoebiItemsDetails?.paymentMeta?.amount || 0)).toLocaleString()}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
-                              ₦{Number(contribution.amount).toLocaleString()}
-                            </span>
-                          </div>
-                        ) : (
-                          <span>₦{Number(contribution.amount).toLocaleString()}</span>
-                        )}
-                      </TableCell>
+                       <TableCell>
+                         <span>?{Number(contribution.amount).toLocaleString()}</span>
+                       </TableCell>
                      <TableCell>
                       {contribution.flow === 'outflow' ? (
                         <span

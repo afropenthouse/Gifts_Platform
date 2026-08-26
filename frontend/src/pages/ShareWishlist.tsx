@@ -6,9 +6,6 @@ import { Card, CardContent } from '../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import Navbar from '../components/Navbar';
 import { Heart, ShoppingBag, ExternalLink, CheckCircle, Gift, ChevronLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -41,11 +38,6 @@ interface Wishlist {
   gift: { shareLink: string; id: number; title?: string; type?: string };
 }
 
-type CurrencyOption = {
-  code: string;
-  country: string;
-};
-
 interface CuratedItem {
   id: number;
   emoji: string;
@@ -56,34 +48,6 @@ interface CuratedItem {
   description: string;
   imageUrl?: string;
 }
-
-const currencyOptions: CurrencyOption[] = [
-  { code: "NGN", country: "Nigeria" },
-  { code: "USD", country: "United States" },
-  { code: "GBP", country: "United Kingdom" },
-  { code: "EUR", country: "Eurozone" },
-  { code: "CAD", country: "Canada" },
-  { code: "AUD", country: "Australia" },
-  { code: "ZAR", country: "South Africa" },
-  { code: "KES", country: "Kenya" },
-  { code: "GHS", country: "Ghana" },
-  { code: "UGX", country: "Uganda" },
-  { code: "TZS", country: "Tanzania" },
-  { code: "RWF", country: "Rwanda" },
-  { code: "XOF", country: "West African CFA" },
-  { code: "XAF", country: "Central African CFA" },
-  { code: "MWK", country: "Malawi" },
-  { code: "BWP", country: "Botswana" },
-  { code: "AED", country: "United Arab Emirates" },
-  { code: "SAR", country: "Saudi Arabia" },
-  { code: "QAR", country: "Qatar" },
-  { code: "INR", country: "India" },
-  { code: "SGD", country: "Singapore" },
-  { code: "NZD", country: "New Zealand" },
-  { code: "CHF", country: "Switzerland" },
-  { code: "JPY", country: "Japan" },
-  { code: "CNY", country: "China" },
-];
 
 const parseCuratedId = (description?: string) => {
   if (!description) return null;
@@ -141,9 +105,6 @@ const ShareWishlist: React.FC = () => {
   const [showAmountModal, setShowAmountModal] = useState(false);
   const [showNameModal, setShowNameModal] = useState(false);
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('NGN');
-  const [currencySearch, setCurrencySearch] = useState('');
-  const [isCurrencyPopoverOpen, setIsCurrencyPopoverOpen] = useState(false);
   const [contributorName, setContributorName] = useState('');
   const [contributorEmail, setContributorEmail] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -264,9 +225,9 @@ const ShareWishlist: React.FC = () => {
   const handleAmountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const minAmount = currency === 'NGN' ? 1000 : 10;
+    const minAmount = 1000;
     if (!amount || parseFloat(amount) < minAmount) {
-      alert(`Please enter an amount of at least ${currency} ${minAmount}`);
+      alert(`Please enter an amount of at least ₦${minAmount.toLocaleString()}`);
       return;
     }
 
@@ -313,7 +274,7 @@ const ShareWishlist: React.FC = () => {
             contributorName: name,
             contributorEmail: contributorEmail,
             amount: parseFloat(amount),
-            currency: currency,
+            currency: 'NGN',
             message: message,
             itemId: curatedId,
             wishlistShareLink: wishlist.shareLink,
@@ -322,7 +283,7 @@ const ShareWishlist: React.FC = () => {
             contributorName: name,
             contributorEmail: contributorEmail,
             amount: parseFloat(amount),
-            currency: currency,
+            currency: 'NGN',
             message: message,
             wishlistItemId: selectedItem.id,
             wishlistShareLink: wishlist.shareLink,
@@ -578,56 +539,26 @@ const ShareWishlist: React.FC = () => {
             </DialogHeader>
 
             <form onSubmit={handleAmountSubmit} className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Popover open={isCurrencyPopoverOpen} onOpenChange={setIsCurrencyPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-[140px] justify-start">
-                      {currency}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0">
-                    <Command>
-                      <CommandInput
-                        placeholder="Search currency..."
-                        value={currencySearch}
-                        onValueChange={setCurrencySearch}
-                      />
-                      <CommandEmpty>No currency found.</CommandEmpty>
-                      <CommandGroup className="max-h-[300px] overflow-y-auto">
-                        {currencyOptions
-                          .filter((option) =>
-                            option.country.toLowerCase().includes(currencySearch.toLowerCase()) ||
-                            option.code.toLowerCase().includes(currencySearch.toLowerCase())
-                          )
-                          .map((option) => (
-                            <CommandItem
-                              key={option.code}
-                              value={option.code}
-                              onSelect={(value) => {
-                                setCurrency(value);
-                                setIsCurrencyPopoverOpen(false);
-                              }}
-                            >
-                              {option.code} - {option.country}
-                            </CommandItem>
-                          ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <div className="flex-1">
+              <div>
+                <Label className="text-sm font-medium">Gift Amount (₦)</Label>
+                <div className="flex gap-2 mt-2">
+                  <Button type="button" variant="outline" className="w-28 justify-center" tabIndex={-1}>
+                    NGN
+                  </Button>
                   <Input
                     type="number"
+                    min="1000"
                     placeholder="Enter amount"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    className="flex-1"
                     required
                   />
                 </div>
               </div>
 
               <div className="text-center text-sm text-gray-500">
-                {currency === 'NGN' ? 'Minimum amount: ₦1,000' : `Minimum amount: ${currency} 10`}
+                Minimum amount: ₦1,000
               </div>
 
               <Button
