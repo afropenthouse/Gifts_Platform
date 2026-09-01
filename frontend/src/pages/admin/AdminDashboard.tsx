@@ -2649,7 +2649,7 @@ const AdminDashboard = () => {
                        {contribution.personName || 'Anonymous'}
                      </TableCell>
                        <TableCell>
-                         <span>?{Number(contribution.amount).toLocaleString()}</span>
+                          <span>₦{Number(contribution.amount).toLocaleString()}</span>
                        </TableCell>
                      <TableCell>
                       {contribution.flow === 'outflow' ? (

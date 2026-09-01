@@ -56,6 +56,7 @@ import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Toaster } from '../components/ui/toaster';
 import GuidedTour from '../components/ui/guided-tour';
+import UpgradePictureModal from '../components/UpgradePictureModal';
 import { useGuidedTour } from '../hooks/use-guided-tour';
 
 declare global {
@@ -131,7 +132,7 @@ interface Contribution {
 const Dashboard: React.FC = () => {
   // Success Modal State for withdrawal
   const [showWithdrawSuccess, setShowWithdrawSuccess] = useState(false);
-  const { user, loading, updateUser } = useAuth();
+  const { user, loading, updateUser, openLoginModal } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [gifts, setGifts] = useState<Gift[]>([]);
@@ -1689,6 +1690,17 @@ const Dashboard: React.FC = () => {
     setSelectedGiftForUpgrade(gift);
     setUpgradeTier(tier);
     setIsPremiumModalOpen(true);
+  };
+
+  // Upgrade Picture Modal handler
+  const handlePictureModalUpgrade = () => {
+    const freeGift = gifts.find((g) => g.tier !== 'vip' && g.tier !== 'royal');
+    const target = freeGift || gifts[0];
+    if (target) {
+      handleUpgradeToPremium(target, 'vip');
+    } else {
+      openLoginModal();
+    }
   };
 
   const processPremiumUpgrade = async () => {
@@ -6898,12 +6910,16 @@ const Dashboard: React.FC = () => {
             action: () => setActiveTab('withdraw'),
           },
         ]}
-        isOpen={isTourOpen}
-        onComplete={completeTour}
-        onSkip={skipTour}
-      />
-    </div>
-  );
-};
+         isOpen={isTourOpen}
+         onComplete={completeTour}
+         onSkip={skipTour}
+       />
+
+       {/* UpgradePictureModal — uncomment when ready to display
+      <UpgradePictureModal onUpgrade={handlePictureModalUpgrade} />
+      */}
+     </div>
+   );
+ };
 
 export default Dashboard;
