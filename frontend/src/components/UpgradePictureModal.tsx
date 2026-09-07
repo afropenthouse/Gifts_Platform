@@ -20,7 +20,7 @@ interface UpgradePictureModalProps {
 const UpgradePictureModal: React.FC<UpgradePictureModalProps> = ({
   imageSrc = PLACEHOLDER_SVG,
   title = 'Upgrade Your Experience',
-  description = 'Unlock premium features and make your event unforgettable.',
+  description = '',
   upgradeLabel = 'Upgrade Now',
   onUpgrade,
 }: UpgradePictureModalProps) => {

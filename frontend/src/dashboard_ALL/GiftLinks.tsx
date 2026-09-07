@@ -124,23 +124,6 @@ export const GiftLinks = ({
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [giftToDelete, setGiftToDelete] = useState<Gift | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [upgradeMenuOpenId, setUpgradeMenuOpenId] = useState<number | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (upgradeMenuOpenId !== null) {
-        const target = event.target as HTMLElement;
-        if (!target.closest('[data-upgrade-menu]')) {
-          setUpgradeMenuOpenId(null);
-        }
-      }
-    };
-
-    if (upgradeMenuOpenId !== null) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [upgradeMenuOpenId]);
 
   const handleDeleteConfirm = () => {
     if (giftToDelete && deleteConfirmText.trim().toLowerCase() === 'delete') {
@@ -207,42 +190,14 @@ export const GiftLinks = ({
                   {gift.tier === 'royal' || gift.tier === 'vip' ? (
                     <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-md">
                       <Crown className="w-3 h-3" />
-                      {/* {gift.tier === 'royal' ? 'Royal' : 'VIP'} // royal @deprecated — normalize to VIP display */}
                       VIP
-                    </div>
-                  ) : upgradeMenuOpenId === gift.id ? (
-                    <div data-upgrade-menu className="flex flex-col gap-0.5 items-end bg-white rounded-lg shadow-xl border border-gray-200 p-1 min-w-[120px]">
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 text-xs font-semibold text-yellow-900 hover:bg-yellow-50 rounded px-2 py-1.5 transition-colors w-full text-left"
-                        onClick={() => {
-                          onUpgradeToPremium?.(gift, 'vip');
-                          setUpgradeMenuOpenId(null);
-                        }}
-                      >
-                        <Crown className="w-3 h-3" />
-                        VIP
-                      </button>
-                      {/* Royal upgrade option — @deprecated, only VIP now
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 text-xs font-semibold text-yellow-900 hover:bg-yellow-50 rounded px-2 py-1.5 transition-colors w-full text-left"
-                        onClick={() => {
-                          onUpgradeToPremium?.(gift, 'royal');
-                          setUpgradeMenuOpenId(null);
-                        }}
-                      >
-                        <Crown className="w-3 h-3" />
-                        Royal
-                      </button>
-                      */}
                     </div>
                   ) : (
                     <Button
                       variant="default"
                       size="sm"
                       className="text-xs h-8 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold shadow-md"
-                      onClick={() => setUpgradeMenuOpenId(gift.id)}
+                      onClick={() => onUpgradeToPremium?.(gift, 'vip')}
                     >
                       <Crown className="w-3.5 h-3.5 mr-1" />
                       Upgrade

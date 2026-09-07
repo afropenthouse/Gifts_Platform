@@ -2480,7 +2480,14 @@ const Dashboard: React.FC = () => {
                           <Button
                             size="sm"
                             className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-bold shadow-md"
-                            onClick={() => setActiveTab('premium')}
+                            onClick={() => {
+                              const target = gifts.find((g) => !g.tier || g.tier === 'free') || gifts[0];
+                              if (target) {
+                                handleUpgradeToPremium(target, 'vip');
+                              } else {
+                                openLoginModal();
+                              }
+                            }}
                           >
                             Upgrade & Save
                           </Button>
@@ -3388,12 +3395,11 @@ const Dashboard: React.FC = () => {
                          <ul className="space-y-3 mb-6">
                            <li className="text-sm text-gray-600">0% commission on all cash gifts</li>
                            <li className="text-sm text-gray-600">0% commission on all asoebi orders</li>
-                           {/* <li className="text-sm text-gray-600">Free website templates</li> // royal @deprecated — VIP now gets premium templates
-                           <li className="text-sm text-gray-600">Event check-in</li>
-                           <li className="text-sm text-gray-400">No invitation templates</li> */}
                            <li className="text-sm text-gray-600">Premium website templates</li>
                            <li className="text-sm text-gray-600">Premium invitation templates</li>
                            <li className="text-sm text-gray-600">Event check-in</li>
+                           <li className="text-sm text-gray-600">Photobook</li>
+                           <li className="text-sm text-gray-600">Personalized event planner (on request)</li>
                          </ul>
                          {upgradeableEvents.length > 0 && (
                            <Button
@@ -6726,13 +6732,23 @@ const Dashboard: React.FC = () => {
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  {/* <span>{upgradeTier === 'royal' ? 'Premium website templates' : 'Free website templates'}</span> // royal @deprecated */}
                   <span>Premium website templates</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  {/* <span>{upgradeTier === 'royal' ? 'Premium invitation templates' : 'No invitation templates'}</span> // royal @deprecated */}
                   <span>Premium invitation templates</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Event check-in</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Photobook</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Personalized event planner (on request)</span>
                 </li>
               </ul>
             </div>
@@ -6915,9 +6931,9 @@ const Dashboard: React.FC = () => {
          onSkip={skipTour}
        />
 
-       {/* UpgradePictureModal — uncomment when ready to display
-      <UpgradePictureModal onUpgrade={handlePictureModalUpgrade} />
-      */}
+        {/* UpgradePictureModal — uncomment when ready to display
+       <UpgradePictureModal onUpgrade={handlePictureModalUpgrade} />
+       */}
      </div>
    );
  };
