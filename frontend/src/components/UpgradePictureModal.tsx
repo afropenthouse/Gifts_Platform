@@ -35,12 +35,22 @@ const UpgradePictureModal: React.FC<UpgradePictureModalProps> = ({
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideCount, setSlideCount] = useState(0);
+  const [isLarge, setIsLarge] = useState(false);
 
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY) === 'true') return;
     const timer = setTimeout(() => setOpen(true), OPEN_DELAY_MS);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => setIsLarge(window.innerWidth >= 1024);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const images = isLarge ? ['/large1.jpeg', '/large2.jpeg'] : ['/upload1.jpeg', '/upload2.jpeg'];
 
   useEffect(() => {
     if (!carouselApi || !open) return;
@@ -92,7 +102,7 @@ const UpgradePictureModal: React.FC<UpgradePictureModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-4">
-      <div className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-xl rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden">
+      <div className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-5xl rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden">
         <button
           type="button"
           onClick={close}
@@ -109,7 +119,7 @@ const UpgradePictureModal: React.FC<UpgradePictureModalProps> = ({
             className="w-full"
           >
             <CarouselContent className="-ml-0">
-              {IMAGES.map((src, idx) => (
+              {images.map((src, idx) => (
                 <CarouselItem key={idx} className="pl-0">
                   <div className="relative w-full aspect-[3/4] sm:aspect-[4/5] md:aspect-auto md:h-[360px] lg:h-[300px] overflow-hidden rounded-t-2xl">
                     <img
