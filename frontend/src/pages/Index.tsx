@@ -16,6 +16,37 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <div
+        className="relative overflow-hidden py-1.5 sm:py-2 border-b"
+        style={{
+          background:
+            'linear-gradient(90deg, #2E235C 0%, #392B74 35%, #5B3FA3 65%, #2E235C 100%)',
+        }}
+      >
+        <div className="flex whitespace-nowrap animate-marquee-slow">
+          <div className="flex shrink-0 min-w-[100vw] items-center justify-center">
+            <div
+              className="flex items-center gap-2.5 text-[12px] sm:text-[13px] font-semibold tracking-wide text-white"
+            >
+              <span>Get a free honeymoon to the Maldives</span>
+              <span className="hidden sm:inline text-white/90 font-normal">
+                - Create and upgrade your event & stand a chance to win
+              </span>
+            </div>
+          </div>
+          <div className="flex shrink-0 min-w-[100vw] items-center justify-center">
+            <div
+              className="flex items-center gap-2.5 text-[12px] sm:text-[13px] font-semibold tracking-wide text-white"
+            >
+              <span>Get a free honeymoon to the Maldives</span>
+              <span className="hidden sm:inline text-white/90 font-normal">
+                - Create and upgrade your event & stand a chance to win
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Navbar />
       <HeroSection />
 

@@ -6931,9 +6931,7 @@ const Dashboard: React.FC = () => {
          onSkip={skipTour}
        />
 
-        {/* UpgradePictureModal — uncomment when ready to display
-       <UpgradePictureModal onUpgrade={handlePictureModalUpgrade} />
-       */}
+        <UpgradePictureModal onUpgrade={handlePictureModalUpgrade} />
      </div>
    );
  };
