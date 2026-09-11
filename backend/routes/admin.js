@@ -483,7 +483,7 @@ module.exports = () => {
 
   // Get All Contributions
   router.get('/contributions', adminAuth, async (req, res) => {
-    const { type, time, eventId, includePremium } = req.query;
+    const { type, time, eventId, includePremium, startDate, endDate } = req.query;
 
     try {
       const now = new Date();
@@ -497,7 +497,12 @@ module.exports = () => {
         contributionsWhere.isAsoebi = false;
       }
 
-      if (time && time !== 'all') {
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        contributionsWhere.createdAt = { gte: start, lte: end };
+      } else if (time && time !== 'all') {
         const filterDate = new Date();
         switch (time) {
           case '7days':
@@ -557,13 +562,18 @@ module.exports = () => {
 
   // Get Premium/VIP Payments
   router.get('/premium-payments', adminAuth, async (req, res) => {
-    const { time, eventId } = req.query;
+    const { time, eventId, startDate, endDate } = req.query;
 
     try {
       const now = new Date();
       const where = {};
 
-      if (time && time !== 'all') {
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt = { gte: start, lte: end };
+      } else if (time && time !== 'all') {
         const filterDate = new Date();
         switch (time) {
           case '7days':
@@ -648,7 +658,7 @@ module.exports = () => {
 
   // Get All Withdrawals (outflows)
   router.get('/withdrawals', adminAuth, async (req, res) => {
-    const { type, time, eventId, status } = req.query;
+    const { type, time, eventId, status, startDate, endDate } = req.query;
 
     try {
       const where = {};
@@ -657,7 +667,12 @@ module.exports = () => {
         where.status = status;
       }
 
-      if (time && time !== 'all') {
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt = { gte: start, lte: end };
+      } else if (time && time !== 'all') {
         const now = new Date();
         const filterDate = new Date();
 

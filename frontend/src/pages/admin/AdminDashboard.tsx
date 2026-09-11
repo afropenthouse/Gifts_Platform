@@ -180,6 +180,7 @@ const AdminDashboard = () => {
   
   // Refs to prevent infinite loops and redundant fetches
   const fetchingContributions = React.useRef(false);
+  const fetchingPremiumPayments = React.useRef(false);
   const fetchingEvents = React.useRef(false);
   const fetchingGuests = React.useRef(false);
   const contributionsLength = React.useRef(0);
@@ -298,7 +299,7 @@ const AdminDashboard = () => {
   }, [activeTab, navigate, overviewTimeFilter, selectedEventId, selectedTxnType, txnTimeFilter, useCustomDateRange, customStartDate, customEndDate]);
 
   const fetchContributions = useCallback(async (time: TimeFilter = 'all', force = false, skipFilters = false) => {
-    if (!force && (fetchingContributions.current || (contributionsLength.current > 0 && !force))) {
+    if (fetchingContributions.current) {
       return;
     }
 
@@ -405,6 +406,10 @@ const AdminDashboard = () => {
   }, [navigate, selectedEventId, useCustomDateRange, customStartDate, customEndDate]);
 
   const fetchPremiumPayments = useCallback(async (time: TimeFilter = 'all', skipFilters = false) => {
+    if (fetchingPremiumPayments.current) {
+      return;
+    }
+
     const token = localStorage.getItem('adminToken');
     if (!token) {
       navigate('/admin/login');
@@ -413,8 +418,7 @@ const AdminDashboard = () => {
 
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-      setLoadingContributions(true);
-      fetchingContributions.current = true;
+      fetchingPremiumPayments.current = true;
       const params = new URLSearchParams();
 
       if (!skipFilters) {
@@ -448,8 +452,7 @@ const AdminDashboard = () => {
     } catch (error) {
       toast.error('Failed to fetch premium payments');
     } finally {
-      setLoadingContributions(false);
-      fetchingContributions.current = false;
+      fetchingPremiumPayments.current = false;
     }
   }, [navigate, selectedEventId, useCustomDateRange, customStartDate, customEndDate]);
 
