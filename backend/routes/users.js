@@ -1,9 +1,39 @@
 const express = require('express');
 const crypto = require('crypto');
 const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 const prisma = require('../prismaClient');
 const { initiateTransfer, resolveAccount, getBanks, createTransferRecipient, verifyBVNMatch } = require('../utils/paystack');
 const { sendWithdrawalOtpEmail } = require('../utils/emailService');
+
+const OTP_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const OTP_RATE_LIMIT_MAX = 3;
+const WITHDRAWAL_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const WITHDRAWAL_RATE_LIMIT_MAX = 2;
+
+const otpRateLimitStore = new Map();
+const withdrawalRateLimitStore = new Map();
+
+function rateLimitKey(req, suffix) {
+  return `${req.user?.id || req.ip}:${suffix}`;
+}
+
+function checkRateLimit(store, key, windowMs, max) {
+  const now = Date.now();
+  const entry = store.get(key);
+  if (!entry || now - entry.windowStart > windowMs) {
+    store.set(key, { windowStart: now, count: 1 });
+    return { allowed: true, remaining: max - 1 };
+  }
+
+  if (entry.count >= max) {
+    const retryAfter = Math.ceil((windowMs - (now - entry.windowStart)) / 1000);
+    return { allowed: false, remaining: 0, retryAfter };
+  }
+
+  entry.count += 1;
+  return { allowed: true, remaining: max - entry.count };
+}
 
 module.exports = () => {
   const router = express.Router();
@@ -11,15 +41,28 @@ module.exports = () => {
   // Send withdrawal OTP
   router.post('/send-otp', auth(), async (req, res) => {
     try {
+      const rateLimitKeyVal = rateLimitKey(req, 'otp');
+      const rateCheck = checkRateLimit(otpRateLimitStore, rateLimitKeyVal, OTP_RATE_LIMIT_WINDOW_MS, OTP_RATE_LIMIT_MAX);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ msg: `Too many OTP requests. Please try again in ${rateCheck.retryAfter} seconds.` });
+      }
+
       const { amount, bvn, bank_code, account_number } = req.body;
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       if (!user) {
         return res.status(404).json({ msg: 'User not found' });
       }
 
-      // 1M Naira security check before sending OTP
       const withdrawAmount = parseFloat(amount);
-      if (!isNaN(withdrawAmount) && withdrawAmount >= 1000000) {
+      if (isNaN(withdrawAmount) || withdrawAmount < 100) {
+        return res.status(400).json({ msg: 'Minimum withdrawal amount is ₦100' });
+      }
+
+      if (withdrawAmount > Number(user.wallet)) {
+        return res.status(400).json({ msg: 'Insufficient wallet balance for this withdrawal' });
+      }
+
+      if (withdrawAmount >= 1000000) {
         if (!bvn) {
           return res.status(400).json({ msg: 'BVN is required for withdrawals of ₦1,000,000 and above' });
         }
@@ -27,7 +70,6 @@ module.exports = () => {
           return res.status(400).json({ msg: 'Invalid BVN. Must be 11 digits.' });
         }
 
-        // Verify BVN matches account number before sending OTP
         try {
           console.log(`🛡️ [SECURITY-OTP] Verifying BVN match for ${user.email} (Amount: ₦${withdrawAmount})`);
           const matchRes = await verifyBVNMatch({
@@ -36,39 +78,67 @@ module.exports = () => {
             bank_code
           });
 
-          if (matchRes.status && matchRes.data) {
-             console.log(`✅ [SECURITY-OTP] BVN match API called successfully for ${user.email}`);
-          } else {
-             console.log(`❌ [SECURITY-OTP] BVN match failed for ${user.email}`);
-             return res.status(400).json({ msg: 'Identity verification failed. BVN does not match the provided bank account.' });
+          const matchData = matchRes?.data || {};
+          const isBlacklisted = Boolean(matchData.is_blacklisted);
+          const hasMatch = Boolean(matchData.account_number) || Boolean(matchData.account_name);
+
+          if (!matchRes?.status || isBlacklisted || !hasMatch) {
+            console.log(`❌ [SECURITY-OTP] BVN check failed for ${user.email}: blacklisted=${isBlacklisted}, hasMatch=${hasMatch}`);
+            return res.status(400).json({ msg: 'Identity verification failed. BVN does not match the provided bank account or is blacklisted.' });
           }
+
+          console.log(`✅ [SECURITY-OTP] BVN match verified for ${user.email}`);
         } catch (error) {
           console.error('❌ [SECURITY-OTP] BVN verification error:', error?.data?.message || error.message);
           const errorMessage = error?.data?.message || 'BVN verification failed';
-          return res.status(400).json({ 
-            msg: `Security Check Failed: ${errorMessage}. Please ensure your BVN matches your bank account.` 
+          return res.status(400).json({
+            msg: `Security Check Failed: ${errorMessage}. Please ensure your BVN matches your bank account.`
           });
         }
       }
 
-      // Generate 6-digit OTP
       const otp = crypto.randomInt(100000, 999999).toString();
-      const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const expires = new Date(Date.now() + 10 * 60 * 1000);
 
-      // Store in verificationToken fields as a workaround for schema migration issues
+      const payloadHash = crypto
+        .createHash('sha256')
+        .update(JSON.stringify({ amount: withdrawAmount, bank_code, account_number, bvn: bvn || '' }))
+        .digest('hex');
+
       await prisma.user.update({
         where: { id: req.user.id },
         data: {
           verificationToken: otp,
-          verificationTokenExpires: expires
-        }
+          verificationTokenExpires: expires,
+        },
       });
 
-      // Send email
+      await prisma.withdrawal.updateMany({
+        where: { userId: req.user.id, status: 'pending' },
+        data: { status: 'expired', reversed: true, reversalReason: 'Superseded by new OTP request' },
+      });
+
+      await prisma.withdrawal.create({
+        data: {
+          userId: req.user.id,
+          amount: withdrawAmount,
+          currency: 'NGN',
+          bankCode: bank_code,
+          accountNumber: account_number,
+          bvn: bvn || undefined,
+          status: 'pending',
+          sourceType: 'wallet',
+          otpHash: payloadHash,
+          otpExpires: expires,
+          otpAttempts: 0,
+          lastOtpSentAt: new Date(),
+        },
+      });
+
       await sendWithdrawalOtpEmail({
         recipientEmail: user.email,
         recipientName: user.name,
-        otp
+        otp,
       });
 
       res.json({ msg: 'OTP sent to your email' });
@@ -105,30 +175,33 @@ module.exports = () => {
     res.json(user);
   });
 
-  // Recalculate wallet based on actual contributions
-  router.post('/recalculate-wallet', auth(), async (req, res) => {
+  // Recalculate wallet based on actual contributions (admin-only)
+  router.post('/recalculate-wallet', auth(), adminAuth, async (req, res) => {
     try {
-      // Get all gifts for this user
+      const targetUserId = req.body.userId || req.user.id;
+      const user = await prisma.user.findUnique({ where: { id: targetUserId } });
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
+
       const gifts = await prisma.gift.findMany({
-        where: { userId: req.user.id },
+        where: { userId: targetUserId },
         select: { id: true }
       });
 
       const giftIds = gifts.map(g => g.id);
 
-      // Sum all contributions for user's gifts
       const contributionsSum = await prisma.contribution.aggregate({
-        where: { 
+        where: {
           giftId: { in: giftIds },
           status: 'completed'
         },
         _sum: { amount: true, commission: true }
       });
 
-      // Sum all withdrawals for user
       const withdrawalsSum = await prisma.withdrawal.aggregate({
-        where: { 
-          userId: req.user.id,
+        where: {
+          userId: targetUserId,
           status: { in: ['completed', 'pending'] }
         },
         _sum: { amount: true }
@@ -136,28 +209,26 @@ module.exports = () => {
 
       const vendorFundingSum = await prisma.vendorPaymentFunding.aggregate({
         where: {
-          userId: req.user.id,
+          userId: targetUserId,
           method: 'wallet',
           status: 'funded',
         },
         _sum: { amount: true }
       });
 
-      // Sum referral rewards
       const referralSum = await prisma.referralTransaction.aggregate({
-        where: { referrerId: req.user.id },
+        where: { referrerId: targetUserId },
         _sum: { amount: true }
       });
 
       const totalIn = (parseFloat(contributionsSum._sum.amount) || 0) - (parseFloat(contributionsSum._sum.commission) || 0) + (parseFloat(referralSum._sum.amount) || 0);
       const totalOut = (parseFloat(withdrawalsSum._sum.amount) || 0) + (parseFloat(vendorFundingSum._sum.amount) || 0);
       const correctWalletBalance = totalIn - totalOut;
-      
-      const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
 
-      // Update user's wallet
+      const currentUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+
       const updatedUser = await prisma.user.update({
-        where: { id: req.user.id },
+        where: { id: targetUserId },
         data: { wallet: correctWalletBalance }
       });
 
@@ -197,6 +268,16 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Minimum withdrawal amount is ₦100' });
       }
 
+      if (withdrawAmount > Number(user.wallet)) {
+        return res.status(400).json({ msg: 'Insufficient balance' });
+      }
+
+      const rateLimitKeyVal = rateLimitKey(req, 'withdraw');
+      const rateCheck = checkRateLimit(withdrawalRateLimitStore, rateLimitKeyVal, WITHDRAWAL_RATE_LIMIT_WINDOW_MS, WITHDRAWAL_RATE_LIMIT_MAX);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ msg: `Too many withdrawal requests. Please try again in ${rateCheck.retryAfter} seconds.` });
+      }
+
       // 1M Naira security check
       if (withdrawAmount >= 1000000) {
         if (!bvn) {
@@ -206,7 +287,6 @@ module.exports = () => {
           return res.status(400).json({ msg: 'Invalid BVN. Must be 11 digits.' });
         }
 
-        // Verify BVN matches account number (Fraud Prevention)
         try {
           console.log(`🛡️ [SECURITY] Verifying BVN match for ${user.email} (Amount: ₦${withdrawAmount})`);
           const matchRes = await verifyBVNMatch({
@@ -215,34 +295,25 @@ module.exports = () => {
             bank_code
           });
 
-          // Paystack BVN Match API returns data.is_blacklisted and data.account_number etc.
-          // We must check if matchRes.data.is_blacklisted is false and it's a successful response
-          if (matchRes.status && matchRes.data) {
-             console.log(`✅ [SECURITY] BVN match API called for ${user.email}`);
-          } else {
-             console.log(`❌ [SECURITY] BVN match failed for ${user.email}`);
-             return res.status(400).json({ msg: 'Identity verification failed. BVN does not match the provided bank account.' });
-          }
-        } catch (error) {
-          // If Paystack returns an error (e.g. invalid BVN, or feature not enabled), we MUST block the transaction
-          console.error('❌ [SECURITY] BVN verification error:', error?.data?.message || error.message);
-          
-          const errorMessage = error?.data?.message || 'BVN verification failed';
-          return res.status(400).json({ 
-            msg: `Security Check Failed: ${errorMessage}. Please ensure your BVN matches your bank account.` 
-          });
-        }
+          const matchData = matchRes?.data || {};
+          const isBlacklisted = Boolean(matchData.is_blacklisted);
+          const hasMatch = Boolean(matchData.account_number) || Boolean(matchData.account_name);
 
-        // Store BVN for the user if not already stored
-        if (!user.bvn) {
-          await prisma.user.update({
-            where: { id: req.user.id },
-            data: { bvn }
+          if (!matchRes?.status || isBlacklisted || !hasMatch) {
+            console.log(`❌ [SECURITY] BVN check failed for ${user.email}: blacklisted=${isBlacklisted}, hasMatch=${hasMatch}`);
+            return res.status(400).json({ msg: 'Identity verification failed. BVN does not match the provided bank account or is blacklisted.' });
+          }
+
+          console.log(`✅ [SECURITY] BVN match verified for ${user.email}`);
+        } catch (error) {
+          console.error('❌ [SECURITY] BVN verification error:', error?.data?.message || error.message);
+          const errorMessage = error?.data?.message || 'BVN verification failed';
+          return res.status(400).json({
+            msg: `Security Check Failed: ${errorMessage}. Please ensure your BVN matches your bank account.`
           });
         }
       }
 
-      // Verify OTP
       if (!otp) {
         return res.status(400).json({ msg: 'OTP is required' });
       }
@@ -251,129 +322,189 @@ module.exports = () => {
         return res.status(400).json({ msg: 'Invalid or expired OTP' });
       }
 
-      // Clear OTP after successful verification start
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          verificationToken: null,
-          verificationTokenExpires: null
-        }
+      const pendingWithdrawal = await prisma.withdrawal.findFirst({
+        where: { userId: req.user.id, status: 'pending' },
+        orderBy: { createdAt: 'desc' },
       });
 
-      // No fee on withdrawal
+      if (!pendingWithdrawal) {
+        return res.status(400).json({ msg: 'No pending withdrawal request found. Please request a new OTP.' });
+      }
+
+      const expectedHash = crypto
+        .createHash('sha256')
+        .update(JSON.stringify({
+          amount: withdrawAmount,
+          bank_code,
+          account_number,
+          bvn: bvn || '',
+        }))
+        .digest('hex');
+
+      if (pendingWithdrawal.otpHash !== expectedHash) {
+        return res.status(400).json({ msg: 'Withdrawal details do not match the OTP request. Please start over.' });
+      }
+
+      if (pendingWithdrawal.otpExpires && pendingWithdrawal.otpExpires < new Date()) {
+        return res.status(400).json({ msg: 'OTP has expired. Please request a new one.' });
+      }
+
+      const otpAttempts = (pendingWithdrawal.otpAttempts || 0) + 1;
+      if (otpAttempts > 5) {
+        await prisma.withdrawal.update({
+          where: { id: pendingWithdrawal.id },
+          data: { status: 'expired', reversed: true, reversalReason: 'Too many OTP attempts' },
+        });
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: { verificationToken: null, verificationTokenExpires: null },
+        });
+        return res.status(429).json({ msg: 'Too many failed attempts. Please request a new OTP.' });
+      }
+
+      await prisma.withdrawal.update({
+        where: { id: pendingWithdrawal.id },
+        data: { otpAttempts },
+      });
+
+      if (pendingWithdrawal.otpHash !== expectedHash || pendingWithdrawal.otpExpires < new Date()) {
+        return res.status(400).json({ msg: 'Invalid or expired OTP context' });
+      }
+
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          verificationToken: null,
+          verificationTokenExpires: null,
+        },
+      });
+
       const fee = 0;
       const totalToReceive = withdrawAmount;
-      if (totalToReceive <= 0) {
-        return res.status(400).json({ msg: 'Withdrawal amount too low after fee deduction.' });
-      }
 
-      // Use Number() for safe comparison with Decimal
-      if (Number(user.wallet) < withdrawAmount) {
-        return res.status(400).json({ msg: 'Insufficient balance' });
-      }
-
-      // Get bank name from code (assuming we have it)
       const banksRes = await getBanks();
       const bank = banksRes.data ? banksRes.data.find(b => b.code === bank_code) : null;
       const bankName = bank ? bank.name : bank_code;
 
-      // Resolve account name
       const resolveRes = await resolveAccount({
         account_bank: bank_code,
         account_number,
       });
       const accountName = resolveRes.status && resolveRes.data ? resolveRes.data.account_name : null;
 
-      // Deduct from wallet with an extra safety check
+      let updatedUser;
       try {
-        await prisma.user.update({
-          where: { 
-            id: req.user.id,
-            wallet: { gte: withdrawAmount }
-          },
-          data: { wallet: { decrement: withdrawAmount } }
+        updatedUser = await prisma.user.update({
+          where: { id: req.user.id },
+          data: { wallet: { decrement: withdrawAmount } },
         });
       } catch (err) {
-        // If the update fails (likely due to balance changing), return error
         return res.status(400).json({ msg: 'Insufficient balance or balance updated' });
       }
 
-      // 1. Create transfer recipient
+      try {
+        await prisma.withdrawal.update({
+          where: { id: pendingWithdrawal.id },
+          data: { status: 'processing' },
+        });
+      } catch (err) {
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: { wallet: { increment: withdrawAmount } },
+        });
+        return res.status(500).json({ msg: 'Failed to update withdrawal status' });
+      }
+
       const recipientRes = await createTransferRecipient({
         account_number,
         account_bank: bank_code,
         name: accountName || user.name || 'Recipient',
       });
+
       if (!recipientRes.status || !recipientRes.data || !recipientRes.data.recipient_code) {
-        // Refund wallet if recipient creation fails
-        await prisma.user.update({
-          where: { id: req.user.id },
-          data: { wallet: { increment: withdrawAmount } }
-        });
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: req.user.id },
+            data: { wallet: { increment: withdrawAmount } },
+          }),
+          prisma.withdrawal.update({
+            where: { id: pendingWithdrawal.id },
+            data: { status: 'failed', reversalReason: recipientRes.message || 'Failed to create transfer recipient' },
+          }),
+        ]);
         return res.status(500).json({ msg: 'Failed to create transfer recipient', error: recipientRes.message || 'Unknown error' });
       }
-      // 2. Initiate transfer using recipient_code
+
       const transferPayload = {
         amount: totalToReceive,
         recipient_code: recipientRes.data.recipient_code,
-        narration: `Withdrawal from Wallet (Fee: ₦${fee.toFixed(2)})`,
+        narration: `Withdrawal from Wallet`,
       };
-      
+
       let response;
       try {
         response = await initiateTransfer(transferPayload);
       } catch (transferError) {
         console.error('Paystack transfer failed:', transferError);
-        
-        // Refund wallet if transfer initiation fails
-        await prisma.user.update({
-          where: { id: req.user.id },
-          data: { wallet: { increment: withdrawAmount } }
-        });
+
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: req.user.id },
+            data: { wallet: { increment: withdrawAmount } },
+          }),
+          prisma.withdrawal.update({
+            where: { id: pendingWithdrawal.id },
+            data: { status: 'failed', reversalReason: transferError.data?.message || transferError.message || 'Transfer failed' },
+          }),
+        ]);
 
         const errorMsg = transferError.data?.message || transferError.message || 'Transfer failed';
         if (errorMsg.toLowerCase().includes('balance')) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             msg: 'Withdrawal currently unavailable. Please contact support.',
             error: 'Insufficient Paystack balance'
           });
         }
-        
+
         return res.status(500).json({ msg: 'Withdrawal failed', error: errorMsg });
       }
 
       if (!response?.status) {
-        // Refund wallet when transfer API did not confirm initiation.
-        await prisma.user.update({
-          where: { id: req.user.id },
-          data: { wallet: { increment: withdrawAmount } }
-        });
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: req.user.id },
+            data: { wallet: { increment: withdrawAmount } },
+          }),
+          prisma.withdrawal.update({
+            where: { id: pendingWithdrawal.id },
+            data: { status: 'failed', reversalReason: response?.message || 'Transfer was not initiated' },
+          }),
+        ]);
         return res.status(500).json({
           msg: 'Withdrawal failed',
           error: response?.message || 'Transfer was not initiated'
         });
       }
 
-      await prisma.withdrawal.create({
+      await prisma.withdrawal.update({
+        where: { id: pendingWithdrawal.id },
         data: {
-          userId: req.user.id,
-          amount: withdrawAmount,
-          bankCode: bank_code,
-          bankName: bankName,
-          accountNumber: account_number,
-          accountName: accountName,
+          status: 'completed',
           reference: response.data ? response.data.reference : null,
           transferId: response.data ? String(response.data.id) : null,
-          status: 'completed',
-          sourceType: sourceType || 'wallet',
+          fee,
+          amountReceived: totalToReceive,
+          bankName,
+          accountName: accountName || pendingWithdrawal.accountName,
         },
       });
 
       res.json({
         msg: 'Withdrawal initiated successfully',
         transfer: response,
-        fee: fee,
-        totalToReceive: totalToReceive
+        fee,
+        totalToReceive,
+        withdrawalId: pendingWithdrawal.id,
       });
     } catch (error) {
       console.error('Global withdrawal error:', error);

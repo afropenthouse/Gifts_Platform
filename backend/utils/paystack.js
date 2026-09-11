@@ -107,20 +107,13 @@ async function initializePayment(payload) {
     const reference = payload?.tx_ref || payload?.reference || payload?.ref;
     const email = payload?.email || payload?.customer?.email || payload?.metadata?.contributorEmail;
 
-    // Amount: convert NGN to kobo for Paystack
+    // Amount: convert NGN to kobo for Paystack.
+    // The application always works in NGN, so always multiply by 100.
     let amount = payload?.amount;
     if (amount == null) throw new Error('Missing amount in payment payload');
 
-    // Always convert to kobo since Paystack expects amounts in kobo
-    // Check if amount is already in kobo (large numbers) or in NGN (smaller numbers)
-    if (amount > 1000000) {
-      // Amount is likely already in kobo, use as-is
-      console.log('Amount appears to be in kobo:', amount);
-    } else {
-      // Amount is in NGN, convert to kobo
-      amount = Math.round(Number(amount) * 100);
-      console.log('Converted NGN to kobo:', amount);
-    }
+    amount = Math.round(Number(amount) * 100);
+    console.log('Converted NGN to kobo:', amount);
 
     const callback_url = payload?.callback_url || payload?.redirect_url || payload?.callbackUrl;
     const metadata = payload?.metadata || payload?.meta || {};
@@ -130,6 +123,7 @@ async function initializePayment(payload) {
       amount, // already in kobo
       reference,
       callback_url,
+      currency: payload?.currency || 'NGN',
       metadata,
       channels: ['bank_transfer', 'card', 'ussd', 'qr', 'mobile_money', 'bank'],
     };
@@ -267,7 +261,10 @@ async function getBanks(country = 'ng') {
 function verifyWebhookSignature(rawBody, signature, secret) {
   if (!signature || !secret) return false;
   const expectedSignature = crypto.createHmac('sha512', secret).update(rawBody).digest('hex');
-  return signature === expectedSignature;
+  const expectedBuf = Buffer.from(expectedSignature, 'hex');
+  const signatureBuf = Buffer.from(signature, 'hex');
+  if (expectedBuf.length !== signatureBuf.length) return false;
+  return crypto.timingSafeEqual(expectedBuf, signatureBuf);
 }
 
 module.exports = { initializePayment, verifyTransaction, initiateTransfer, resolveAccount, getBanks, verifyWebhookSignature, createTransferRecipient, verifyBVNMatch };

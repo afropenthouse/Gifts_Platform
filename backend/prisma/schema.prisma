@@ -327,23 +327,45 @@ model Guest {
   @@index([checkInToken])
 }
 
+enum WithdrawalStatus {
+  pending
+  processing
+  completed
+  failed
+  reversed
+}
+
 model Withdrawal {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  amount        Decimal  @db.Decimal(10, 2)
-  bankCode      String
-  bankName      String?
-  accountNumber String
-  accountName   String?
-  reference     String?  @unique
-  status        String   @default("pending")
-  transferId    String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  sourceType    String?  @default("gift")
-  user          User     @relation(fields: [userId], references: [id])
+  id                Int             @id @default(autoincrement())
+  userId            Int
+  amount            Decimal         @db.Decimal(10, 2)
+  currency          String?         @default("NGN")
+  bankCode          String
+  bankName          String?
+  accountNumber     String
+  accountName       String?
+  bvn               String?
+  reference         String?         @unique
+  transferId        String?
+  status            WithdrawalStatus @default(pending)
+  fee               Decimal?        @db.Decimal(10, 2)
+  amountReceived    Decimal?        @db.Decimal(10, 2)
+  narration         String?
+  otpHash           String?
+  otpExpires        DateTime?
+  otpAttempts       Int             @default(0)
+  lastOtpSentAt     DateTime?
+  reversed          Boolean         @default(false)
+  reversedAt        DateTime?
+  reversalReason    String?
+  sourceType        String?         @default("gift")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  user              User            @relation(fields: [userId], references: [id])
 
   @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Moment {

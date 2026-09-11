@@ -648,12 +648,14 @@ module.exports = () => {
 
   // Get All Withdrawals (outflows)
   router.get('/withdrawals', adminAuth, async (req, res) => {
-    const { type, time, eventId } = req.query;
+    const { type, time, eventId, status } = req.query;
 
     try {
-      const where = {
-        status: 'completed'
-      };
+      const where = {};
+
+      if (status && status !== 'all') {
+        where.status = status;
+      }
 
       if (time && time !== 'all') {
         const now = new Date();

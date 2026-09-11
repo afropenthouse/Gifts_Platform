@@ -993,54 +993,6 @@ module.exports = () => {
     }
   });
 
-  // Contribute to gift (without payment - optional)
-  router.post('/:link(*)', async (req, res) => {
-    const { contributorName, contributorEmail, amount, message } = req.body;
-
-    try {
-      const gift = await prisma.gift.findUnique({ where: { shareLink: req.params.link }, include: { user: true } });
-      if (!gift) return res.status(404).json({ msg: 'Gift not found' });
-
-      await prisma.contribution.create({
-        data: {
-          giftId: gift.id,
-          contributorName,
-          contributorEmail,
-          amount,
-          currency: 'NGN',
-          message,
-        },
-      });
-
-      // Deduct 15% commission
-      const commission = amount * 0.15;
-      const amountReceived = amount * 0.85;
-
-      // Update user's wallet atomically
-      await prisma.user.update({
-        where: { id: gift.userId },
-        data: { wallet: { increment: amountReceived } },
-      });
-      
-      // Send thank you email to contributor if email provided in background
-      if (contributorEmail) {
-        sendContributorThankYouEmail({
-          recipientEmail: contributorEmail,
-          contributorName: contributorName || 'Anonymous',
-          amount,
-          gift: gift,
-          currency: 'NGN',
-          baseAmount: amount,
-        }).catch(err => console.error('Background contributor thank you email failed:', err));
-      }
-
-      res.json({ msg: 'Contribution successful' });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: 'Server error' });
-    }
-  });
-
   // Get contributions for gift
   router.get('/:link(*)', async (req, res) => {
     try {

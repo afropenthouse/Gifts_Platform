@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Button } from './ui/button';
 import { CheckCircle, CreditCard, Crown, X } from 'lucide-react';
 import {
@@ -10,7 +10,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { cn } from '@/lib/utils';
 
-const STORAGE_KEY = 'upgrade_picture_modal_dismissed';
+const SESSION_KEY = 'upgrade_picture_modal_seen_session';
 
 // @ts-expect-error kept for reference
 const IMAGES = ['/upload1.jpeg', '/upload2.jpeg'];
@@ -42,20 +42,26 @@ const UpgradePictureModal: React.FC<UpgradePictureModalProps> = ({
   onUpgrade,
 }: UpgradePictureModalProps) => {
   const [open, setOpen] = useState(false);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   // @ts-expect-error carousel kept for reference
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
-  // @ts-expect-error kept for reference
+  // @ts-expect-error carousel kept for reference
   const [currentSlide, setCurrentSlide] = useState(0);
-  // @ts-expect-error kept for reference
+  // @ts-expect-error carousel kept for reference
   const [slideCount, setSlideCount] = useState(0);
-  // @ts-expect-error kept for reference
+  // @ts-expect-error carousel kept for reference
   const [isLarge, setIsLarge] = useState(false);
 
+  const hasShownRef = useRef(false);
+
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY) === 'true') return;
+    if (hasShownRef.current) return;
+    if (sessionStorage.getItem(SESSION_KEY) === 'true') {
+      hasShownRef.current = true;
+      return;
+    }
     if (!events || events.length === 0) return;
+    hasShownRef.current = true;
     const timer = setTimeout(() => setOpen(true), OPEN_DELAY_MS);
     return () => clearTimeout(timer);
   }, [events]);
@@ -107,14 +113,18 @@ const UpgradePictureModal: React.FC<UpgradePictureModalProps> = ({
     };
   }, [carouselApi]);
 
+  const markSeen = () => {
+    sessionStorage.setItem(SESSION_KEY, 'true');
+  };
+
   const close = () => {
-    if (dontShowAgain) localStorage.setItem(STORAGE_KEY, 'true');
+    markSeen();
     setOpen(false);
   };
 
   const handleUpgrade = () => {
     if (!selectedEventId) return;
-    if (dontShowAgain) localStorage.setItem(STORAGE_KEY, 'true');
+    markSeen();
     setOpen(false);
     onUpgrade?.(selectedEventId);
   };
@@ -261,20 +271,8 @@ const UpgradePictureModal: React.FC<UpgradePictureModalProps> = ({
         </div>
 
         <div className="px-5 py-4 flex-shrink-0 border-t border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <input
-                id="upgrade-modal-dont-show"
-                type="checkbox"
-                checked={dontShowAgain}
-                onChange={(e) => setDontShowAgain(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-gray-300 text-[#2E235C] focus:ring-[#2E235C]"
-              />
-              <label htmlFor="upgrade-modal-dont-show" className="text-xs text-gray-600">
-                Don&apos;t show again
-              </label>
-            </div>
-            <p className="text-base font-bold text-gray-900">₦50,000</p>
+          <div className="flex items-center justify-end">
+            <p className="text-lg font-bold text-gray-900">₦50,000</p>
           </div>
 
           <div className="mt-3.5 flex flex-col sm:flex-row gap-2.5">
