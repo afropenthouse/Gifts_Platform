@@ -233,30 +233,39 @@ module.exports = () => {
         }
       }
 
-      // Create contribution record
-      const contribution = await prisma.contribution.create({
-        data: {
-          giftId,
-          wishlistItemId: wishlistItemId ? parseInt(wishlistItemId, 10) : null,
-          contributorName: contributorName || 'Anonymous',
-          contributorEmail: contributorEmail || '',
-          amount,
-          currency: txCurrency,
-          commission,
-          isAsoebi: !!isAsoebi,
-          asoebiQuantity: isAsoebi ? asoebiTotalQty : (asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0),
-          asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0,
-          asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0,
-          asoebiBrideMenQty: asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0,
-          asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
-          asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
-          asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
-          asoebiItemsDetails: isAsoebi ? (asoebiItemsDetails || undefined) : undefined,
-          message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
-          transactionId: transactionIdCandidates[0] || undefined,
-          status: 'completed',
-        },
-      });
+      // Create contribution record AND credit the owner's wallet atomically.
+      // Both writes run inside a single transaction so that a wallet-credit
+      // failure cannot persist an orphaned contribution (this was the original
+      // cause of wallet=0: contribution saved, but the wallet increment failed).
+      const [contribution, walletUpdateResult] = await prisma.$transaction([
+        prisma.contribution.create({
+          data: {
+            giftId,
+            wishlistItemId: wishlistItemId ? parseInt(wishlistItemId, 10) : null,
+            contributorName: contributorName || 'Anonymous',
+            contributorEmail: contributorEmail || '',
+            amount,
+            currency: txCurrency,
+            commission,
+            isAsoebi: !!isAsoebi,
+            asoebiQuantity: isAsoebi ? asoebiTotalQty : (asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0),
+            asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0,
+            asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0,
+            asoebiBrideMenQty: asoebiBrideMenQty ? parseInt(asoebiBrideMenQty, 10) : 0,
+            asoebiBrideWomenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
+            asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
+            asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
+            asoebiItemsDetails: isAsoebi ? (asoebiItemsDetails || undefined) : undefined,
+            message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
+            transactionId: transactionIdCandidates[0] || undefined,
+            status: 'completed',
+          },
+        }),
+        prisma.user.update({
+          where: { id: gift.userId },
+          data: { wallet: { increment: amountReceived } },
+        }),
+      ]);
 
       console.log('💾 Contribution created:', { id: contribution.id, amount, commission, giftId });
 
@@ -399,12 +408,7 @@ module.exports = () => {
         }
       }
       // -----------------------------
-
-      // Update user's wallet
-      const walletUpdateResult = await prisma.user.update({
-        where: { id: gift.userId },
-        data: { wallet: { increment: amountReceived } },
-      });
+      // (Wallet was already credited atomically with the contribution creation above.)
 
       console.log('✅ CONTRIBUTION SAVED:', { id: contribution.id, amount, wallet: walletUpdateResult.wallet });
       console.log('💰 Wallet Update Details:', { userId: gift.userId, walletBefore: gift.user.wallet, walletAfter: walletUpdateResult.wallet, amountAdded: amount });
@@ -508,7 +512,7 @@ module.exports = () => {
           return res.status(200).send('OK');
         }
 
-        const isPremiumRef = String(reference || '').startsWith('premium-');
+        const isPremiumRef = String(reference || '').startsWith('premium-') || String(reference || '').startsWith('vip-upgrade-');
         const isTemplateRef = String(reference || '').startsWith('template-premium-');
 
         if (isPremiumRef || isTemplateRef) {
@@ -616,11 +620,11 @@ module.exports = () => {
             }),
             prisma.gift.update({
               where: { id: giftId },
-              data: { tier: 'royal' }
+              data: { tier: 'vip' }
             })
           ]);
 
-          console.log('✅ Royal payment verified via webhook:', updatedPayment.id);
+          console.log('✅ VIP payment verified via webhook:', updatedPayment.id);
 
           sendGiftReceivedEmail({
             recipientEmail: gift.user.email,
@@ -628,11 +632,11 @@ module.exports = () => {
             contributorName: gift.user.name || 'Event Owner',
             amount: 50000,
             gift: gift,
-            message: 'Royal Upgrade activated',
+            message: 'VIP Upgrade activated',
             isAsoebi: false,
             currency: 'NGN',
             baseAmount: 50000,
-          }).catch(err => console.error('Background royal gift received email failed:', err));
+          }).catch(err => console.error('Background VIP gift received email failed:', err));
 
           return res.status(200).send('OK');
         }
@@ -728,28 +732,36 @@ module.exports = () => {
         }
 
         console.log('Creating contribution...');
-        // Create contribution
-        const contribution = await prisma.contribution.create({
-          data: {
-            giftId,
-            contributorName: contributorName || 'Anonymous',
-            contributorEmail: contributorEmail || '',
-            amount: amountInNaira,
-            currency: 'NGN',
-            commission,
-            isAsoebi: !!isAsoebi,
-            asoebiQuantity: asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0,
-            asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0,
-            asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0,
-            asoebiBrideMenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
-            asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
-            asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
-            asoebiItemsDetails: asoebiItemsDetails || undefined,
-            message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
-            transactionId: transactionId.toString(),
-            status: 'completed',
-          },
-        });
+        // Create contribution AND credit the owner's wallet atomically.
+        // Both writes run in a single transaction so a wallet-credit failure
+        // cannot persist an orphaned contribution (original cause of wallet=0).
+        const [contribution, updateResult] = await prisma.$transaction([
+          prisma.contribution.create({
+            data: {
+              giftId,
+              contributorName: contributorName || 'Anonymous',
+              contributorEmail: contributorEmail || '',
+              amount: amountInNaira,
+              currency: 'NGN',
+              commission,
+              isAsoebi: !!isAsoebi,
+              asoebiQuantity: asoebiQuantity ? parseInt(asoebiQuantity, 10) : 0,
+              asoebiQtyMen: asoebiQtyMen ? parseInt(asoebiQtyMen, 10) : 0,
+              asoebiQtyWomen: asoebiQtyWomen ? parseInt(asoebiQtyWomen, 10) : 0,
+              asoebiBrideMenQty: asoebiBrideWomenQty ? parseInt(asoebiBrideWomenQty, 10) : 0,
+              asoebiGroomMenQty: asoebiGroomMenQty ? parseInt(asoebiGroomMenQty, 10) : 0,
+              asoebiGroomWomenQty: asoebiGroomWomenQty ? parseInt(asoebiGroomWomenQty, 10) : 0,
+              asoebiItemsDetails: asoebiItemsDetails || undefined,
+              message: contributorMessage || (isAsoebi ? `Asoebi Payment${asoebiType ? ` (${asoebiType})` : ''}` : ''),
+              transactionId: transactionId.toString(),
+              status: 'completed',
+            },
+          }),
+          prisma.user.update({
+            where: { id: gift.userId },
+            data: { wallet: { increment: amountReceived } },
+          }),
+        ]);
 
         console.log('✓ Contribution created:', contribution.id, 'Amount:', amountInNaira);
 
@@ -877,12 +889,7 @@ module.exports = () => {
         }
       }
       // -----------------------------
-
-      // Update user's wallet
-      const updateResult = await prisma.user.update({
-          where: { id: gift.userId },
-          data: { wallet: { increment: amountReceived } },
-        });
+      // (Wallet was already credited atomically with the contribution creation above.)
 
         console.log('✓ Wallet updated for user:', gift.userId, 'New balance should be:', updateResult.wallet);
         

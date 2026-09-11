@@ -1693,11 +1693,12 @@ const Dashboard: React.FC = () => {
   };
 
   // Upgrade Picture Modal handler
-  const handlePictureModalUpgrade = () => {
-    const freeGift = gifts.find((g) => g.tier !== 'vip' && g.tier !== 'royal');
-    const target = freeGift || gifts[0];
+  const handlePictureModalUpgrade = (eventId: number) => {
+    const target = gifts.find((g) => g.id === eventId);
     if (target) {
-      handleUpgradeToPremium(target, 'vip');
+      setSelectedGiftForUpgrade(target);
+      setUpgradeTier('vip');
+      void processPremiumUpgrade();
     } else {
       openLoginModal();
     }
@@ -6931,7 +6932,11 @@ const Dashboard: React.FC = () => {
          onSkip={skipTour}
        />
 
-        <UpgradePictureModal onUpgrade={handlePictureModalUpgrade} />
+        <UpgradePictureModal
+          events={upgradeableEvents.map((g) => ({ id: g.id, title: g.title }))}
+          isProcessingPayment={isProcessingPayment}
+          onUpgrade={handlePictureModalUpgrade}
+        />
      </div>
    );
  };
