@@ -394,25 +394,20 @@ module.exports = () => {
 
       let updatedUser;
       try {
-        updatedUser = await prisma.user.update({
-          where: { id: req.user.id },
-          data: { wallet: { decrement: withdrawAmount } },
-        });
+        const txnRes = await prisma.$transaction([
+          prisma.user.update({
+            where: { id: req.user.id },
+            data: { wallet: { decrement: withdrawAmount } },
+          }),
+          prisma.withdrawal.update({
+            where: { id: pendingWithdrawal.id },
+            data: { status: 'processing' },
+          }),
+        ]);
+        updatedUser = txnRes[0];
       } catch (err) {
-        return res.status(400).json({ msg: 'Insufficient balance or balance updated' });
-      }
-
-      try {
-        await prisma.withdrawal.update({
-          where: { id: pendingWithdrawal.id },
-          data: { status: 'processing' },
-        });
-      } catch (err) {
-        await prisma.user.update({
-          where: { id: req.user.id },
-          data: { wallet: { increment: withdrawAmount } },
-        });
-        return res.status(500).json({ msg: 'Failed to update withdrawal status' });
+        console.error('Atomic wallet deduction + processing update failed:', err.message);
+        return res.status(400).json({ msg: 'Insufficient balance or failed to lock withdrawal. No funds were deducted.' });
       }
 
       const recipientRes = await createTransferRecipient({

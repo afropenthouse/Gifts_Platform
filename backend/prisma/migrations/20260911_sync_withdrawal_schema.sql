@@ -8,7 +8,16 @@
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'WithdrawalStatus') THEN
-        CREATE TYPE "WithdrawalStatus" AS ENUM ('pending', 'processing', 'completed', 'failed', 'reversed');
+        CREATE TYPE "WithdrawalStatus" AS ENUM ('pending', 'processing', 'completed', 'failed', 'reversed', 'expired');
+    ELSE
+        -- Ensure 'expired' value is present if enum already existed without it
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_enum
+            WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'WithdrawalStatus')
+              AND enumlabel = 'expired'
+        ) THEN
+            ALTER TYPE "WithdrawalStatus" ADD VALUE IF NOT EXISTS 'expired';
+        END IF;
     END IF;
 END
 $$;
