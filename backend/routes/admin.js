@@ -1233,6 +1233,76 @@ module.exports = () => {
     }
   });
 
+  router.post('/send-external-emails', adminAuth, async (req, res) => {
+    const { emails, templateId } = req.body;
+    const { sendWelcomeEmail, sendTemplatedEmail } = require('../utils/emailService');
+
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ msg: 'No emails provided' });
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const validEmails = emails.filter((e) => typeof e === 'string' && emailRegex.test(e.trim()));
+
+    if (validEmails.length === 0) {
+      return res.status(400).json({ msg: 'No valid email addresses provided' });
+    }
+
+    try {
+      try {
+        await ensureEmailTemplatesTable();
+      } catch (ensureError) {
+        console.error('EmailTemplate ensure failed (fallback to default welcome):', ensureError);
+      }
+
+      const chosenTemplate = templateId
+        ? await prisma.emailTemplate.findUnique({ where: { id: Number(templateId) } })
+        : await prisma.emailTemplate.findUnique({ where: { key: defaultWelcomeTemplate.key } });
+
+      const results = await Promise.all(
+        validEmails.map(async (email) => {
+          try {
+            const trimmedEmail = email.trim().toLowerCase();
+            const user = await prisma.user.findUnique({ where: { email: trimmedEmail } });
+            const guest = !user ? await prisma.guest.findFirst({ where: { email: trimmedEmail } }) : null;
+            const name = user?.name || guest?.firstName || 'there';
+
+            if (chosenTemplate) {
+              return await sendTemplatedEmail({
+                recipientEmail: trimmedEmail,
+                template: chosenTemplate,
+                vars: { name },
+              });
+            }
+
+            return await sendWelcomeEmail({ recipientEmail: trimmedEmail, recipientName: name });
+          } catch (err) {
+            return { delivered: false, error: err.message, email };
+          }
+        })
+      );
+
+      const successful = results.filter((r) => r.delivered).length;
+      const failed = results.filter((r) => !r.delivered).length;
+      const skippedDueToInvalid = emails.length - validEmails.length;
+
+      let msg = `Sent ${successful} emails successfully, ${failed} failed.`;
+      if (skippedDueToInvalid > 0) {
+        msg += ` ${skippedDueToInvalid} invalid email(s) skipped.`;
+      }
+
+      res.json({
+        msg,
+        successful,
+        failed,
+        skipped: skippedDueToInvalid,
+      });
+    } catch (error) {
+      console.error('External email error:', error);
+      res.status(500).json({ msg: 'Failed to send external emails' });
+    }
+  });
+
   // Get Country Statistics
   router.get('/country-stats', adminAuth, async (req, res) => {
     try {

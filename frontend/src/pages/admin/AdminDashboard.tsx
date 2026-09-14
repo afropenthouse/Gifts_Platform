@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail, TrendingUp, TrendingDown, Globe, Camera, Crown } from "lucide-react";
+import { Users, Gift, Banknote, LogOut, ShoppingBag, LayoutDashboard, Trash2, Wallet, CalendarDays, Menu, BarChart3, MoreHorizontal, UserCheck, UserMinus, Eye, Mail, TrendingUp, TrendingDown, Globe, Camera, Crown, Send, Plus, X } from "lucide-react";
 import CountryFlag from "@/components/CountryFlag";
 import {
   DropdownMenu,
@@ -144,7 +144,7 @@ interface Moment {
   } | null;
 }
 
-type AdminTab = 'overview' | 'transactions' | 'premium' | 'events' | 'guests' | 'emails' | 'users' | 'moments';
+type AdminTab = 'overview' | 'transactions' | 'premium' | 'events' | 'guests' | 'emails' | 'external-emails' | 'users' | 'moments';
 type TimeFilter = 'all' | '7days' | '14days' | '30days' | '3months' | 'year';
 
 const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
@@ -156,6 +156,7 @@ const adminTabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: 'events', label: 'Events', icon: CalendarDays },
   { id: 'moments', label: 'Photobook', icon: Camera },
   { id: 'emails', label: 'Bulk Emails', icon: Mail },
+  { id: 'external-emails', label: 'External Emails', icon: Send },
 ];
 
 const AdminDashboard = () => {
@@ -242,6 +243,12 @@ const AdminDashboard = () => {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deletingUser, setDeletingUser] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [externalEmailsPasted, setExternalEmailsPasted] = useState('');
+  const [parsedExternalEmails, setParsedExternalEmails] = useState<string[]>([]);
+  const [selectedExternalEmails, setSelectedExternalEmails] = useState<string[]>([]);
+  const [sendingExternalEmails, setSendingExternalEmails] = useState(false);
+  const [externalEmailSearch, setExternalEmailSearch] = useState('');
+  const [externalSelectedTemplateId, setExternalSelectedTemplateId] = useState<number | null>(null);
   const navigate = useNavigate();
 
   const fetchDashboardData = useCallback(async () => {
@@ -840,7 +847,7 @@ const AdminDashboard = () => {
   }, [activeTab, fetchGuests]);
 
   useEffect(() => {
-    if (activeTab === 'emails') {
+    if (activeTab === 'emails' || activeTab === 'external-emails') {
       fetchEmailTemplates();
     }
   }, [activeTab, fetchEmailTemplates]);
@@ -959,6 +966,121 @@ const AdminDashboard = () => {
       setSendingBulk(false);
     }
   };
+
+  const parseEmailsFromText = (text: string): string[] => {
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const matches = text.match(emailRegex) || [];
+    const unique = Array.from(new Set(matches.map((e) => e.toLowerCase().trim())));
+    return unique.sort();
+  };
+
+  const handleParseExternalEmails = () => {
+    if (!externalEmailsPasted.trim()) {
+      setParsedExternalEmails([]);
+      setSelectedExternalEmails([]);
+      return;
+    }
+    const parsed = parseEmailsFromText(externalEmailsPasted);
+    setParsedExternalEmails(parsed);
+    setSelectedExternalEmails([]);
+    toast.success(`Parsed ${parsed.length} unique email(s)`);
+  };
+
+  const handleAddSingleExternalEmail = () => {
+    const trimmed = externalEmailsPasted.trim().toLowerCase();
+    if (!trimmed) return;
+    const parsed = parseEmailsFromText(trimmed);
+    if (parsed.length === 0) {
+      toast.error('No valid email found');
+      return;
+    }
+    const email = parsed[0];
+    if (parsedExternalEmails.includes(email)) {
+      toast.error('Email already added');
+      return;
+    }
+    const newList = [...parsedExternalEmails, email].sort();
+    setParsedExternalEmails(newList);
+    setExternalEmailsPasted('');
+    toast.success(`Added ${email}`);
+  };
+
+  const handleRemoveExternalEmail = (email: string) => {
+    setParsedExternalEmails((prev) => prev.filter((e) => e !== email));
+    setSelectedExternalEmails((prev) => prev.filter((e) => e !== email));
+  };
+
+  const handleClearExternalEmails = () => {
+    setParsedExternalEmails([]);
+    setSelectedExternalEmails([]);
+    setExternalEmailsPasted('');
+  };
+
+  const toggleExternalEmailSelection = (email: string) => {
+    setSelectedExternalEmails((prev) =>
+      prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
+    );
+  };
+
+  const selectAllExternalEmails = (emails: string[]) => {
+    if (selectedExternalEmails.length === emails.length) {
+      setSelectedExternalEmails([]);
+    } else {
+      setSelectedExternalEmails(emails);
+    }
+  };
+
+  const handleSendExternalEmails = async () => {
+    if (selectedExternalEmails.length === 0) {
+      toast.error('Please select at least one email');
+      return;
+    }
+
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    try {
+      setSendingExternalEmails(true);
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/admin/send-external-emails`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          emails: selectedExternalEmails,
+          templateId: externalSelectedTemplateId,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        toast.success(data.msg);
+        setSelectedExternalEmails([]);
+      } else {
+        toast.error(data.msg || 'Failed to send emails');
+      }
+    } catch (error) {
+      toast.error('Failed to send emails');
+    } finally {
+      setSendingExternalEmails(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'external-emails' && emailTemplates.length > 0 && !externalSelectedTemplateId) {
+      const remembered = localStorage.getItem('adminExternalEmailTemplateId');
+      const rememberedId = remembered ? parseInt(remembered, 10) : null;
+      const isRememberedValid = rememberedId ? emailTemplates.some((t) => t.id === rememberedId) : false;
+      const defaultTemplate = emailTemplates.find((t) => t.key === 'welcome_default') || emailTemplates[0] || null;
+      const nextId = isRememberedValid && rememberedId ? rememberedId : defaultTemplate ? defaultTemplate.id : null;
+      if (nextId) {
+        setExternalSelectedTemplateId(nextId);
+        localStorage.setItem('adminExternalEmailTemplateId', String(nextId));
+      }
+    }
+  }, [activeTab, emailTemplates, externalSelectedTemplateId]);
 
   const selectedEmailTemplate = selectedEmailTemplateId
     ? emailTemplates.find((t) => t.id === selectedEmailTemplateId) || null
@@ -1767,6 +1889,282 @@ const AdminDashboard = () => {
           </div>
         </CardContent>
       </Card>
+    );
+  };
+
+  const selectedExternalEmailTemplate = externalSelectedTemplateId
+    ? emailTemplates.find((t) => t.id === externalSelectedTemplateId) || null
+    : null;
+
+  const renderExternalEmails = () => {
+    const filteredEmails = parsedExternalEmails.sort().filter((email) =>
+      email.toLowerCase().includes(externalEmailSearch.toLowerCase())
+    );
+
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <CardTitle>External Campaign Emails</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Paste or type email addresses outside your active users to send campaign emails.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => selectAllExternalEmails(filteredEmails)}
+                className="w-full sm:w-auto"
+              >
+                {selectedExternalEmails.length === filteredEmails.length && filteredEmails.length > 0
+                  ? 'Deselect All'
+                  : 'Select All Filtered'}
+              </Button>
+              <Button
+                disabled={selectedExternalEmails.length === 0 || sendingExternalEmails}
+                onClick={handleSendExternalEmails}
+                className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto"
+              >
+                {sendingExternalEmails
+                  ? 'Sending...'
+                  : `Send to ${selectedExternalEmails.length} selected`}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="mb-6 rounded-xl border bg-gradient-to-r from-purple-50 to-white p-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="space-y-1 w-full sm:w-auto">
+                    <Label className="text-sm font-medium">Email Template</Label>
+                    <Select
+                      disabled={loadingEmailTemplates || emailTemplates.length === 0}
+                      value={externalSelectedTemplateId ? String(externalSelectedTemplateId) : ''}
+                      onValueChange={(value) => {
+                        const id = parseInt(value, 10);
+                        setExternalSelectedTemplateId(id);
+                        localStorage.setItem('adminExternalEmailTemplateId', String(id));
+                      }}
+                    >
+                      <SelectTrigger className="w-full sm:w-[260px] bg-white">
+                        <SelectValue
+                          placeholder={loadingEmailTemplates ? 'Loading templates...' : 'Select a template'}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {emailTemplates.length === 0 ? (
+                          <SelectItem value="__none__" disabled>
+                            No templates yet
+                          </SelectItem>
+                        ) : null}
+                        {emailTemplates.map((t) => (
+                          <SelectItem key={t.id} value={String(t.id)}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Use {'{name}'} to personalize (falls back to "there" for external recipients).
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={openNewEmailTemplate}
+                    >
+                      New Template
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (!selectedExternalEmailTemplate) {
+                          toast.error('Select a template first');
+                          return;
+                        }
+                        setTemplateDraft({
+                          id: selectedExternalEmailTemplate.id,
+                          key: selectedExternalEmailTemplate.key,
+                          name: selectedExternalEmailTemplate.name || '',
+                          subject: selectedExternalEmailTemplate.subject || '',
+                          heading: selectedExternalEmailTemplate.heading || '',
+                          greeting: selectedExternalEmailTemplate.greeting || '',
+                          body: selectedExternalEmailTemplate.body || '',
+                          ctaLabel: selectedExternalEmailTemplate.ctaLabel || '',
+                          ctaUrl: selectedExternalEmailTemplate.ctaUrl || '',
+                          footer: selectedExternalEmailTemplate.footer || '',
+                        });
+                        setTemplateDialogOpen(true);
+                      }}
+                      disabled={!externalSelectedTemplateId || loadingEmailTemplates || emailTemplates.length === 0}
+                    >
+                      Edit Template
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  {selectedExternalEmailTemplate ? (
+                    <span>
+                      Subject:{' '}
+                      <span className="font-medium text-foreground">
+                        {selectedExternalEmailTemplate.subject}
+                      </span>
+                    </span>
+                  ) : (
+                    <span>Select a template to see the subject.</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="external-emails-input" className="text-sm font-semibold">
+                  Add Email Addresses
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Tip: paste comma-, space-, or newline-separated emails.
+                </span>
+              </div>
+              <Textarea
+                id="external-emails-input"
+                placeholder={`Paste emails here, e.g.:\nmarketing@company.com, sales@company.com\njohn.doe@example.com\njane@example.org`}
+                value={externalEmailsPasted}
+                onChange={(e) => setExternalEmailsPasted(e.target.value)}
+                rows={5}
+                className="w-full font-mono text-sm"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  onClick={handleParseExternalEmails}
+                  disabled={!externalEmailsPasted.trim()}
+                  className="bg-black text-white hover:bg-gray-800"
+                >
+                  Parse & Add All
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddSingleExternalEmail}
+                  disabled={!externalEmailsPasted.trim()}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Single Email
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleClearExternalEmails}
+                  disabled={parsedExternalEmails.length === 0 && !externalEmailsPasted.trim()}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Clear All
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="relative w-full md:flex-1">
+                <Input
+                  placeholder="Search pasted emails..."
+                  value={externalEmailSearch}
+                  onChange={(e) => setExternalEmailSearch(e.target.value)}
+                  className="w-full md:max-w-sm"
+                />
+              </div>
+
+              <div className="text-sm text-muted-foreground bg-gray-100 px-3 py-1 rounded-full w-fit">
+                Total Added:{' '}
+                <span className="font-semibold text-gray-900">{parsedExternalEmails.length}</span>
+              </div>
+              <div className="text-sm text-muted-foreground bg-gray-100 px-3 py-1 rounded-full w-fit">
+                Filtered:{' '}
+                <span className="font-semibold text-gray-900">{filteredEmails.length}</span>
+              </div>
+              <div className="text-sm text-muted-foreground bg-purple-50 px-3 py-1 rounded-full border border-purple-100 w-fit">
+                Selected:{' '}
+                <span className="font-semibold text-purple-700">{selectedExternalEmails.length}</span>
+              </div>
+            </div>
+
+            <div className="rounded-md border overflow-x-auto">
+              <Table className="min-w-[720px]">
+                <TableHeader className="bg-gray-50">
+                  <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={
+                          filteredEmails.length > 0 &&
+                          selectedExternalEmails.length === filteredEmails.length
+                        }
+                        onCheckedChange={() => selectAllExternalEmails(filteredEmails)}
+                      />
+                    </TableHead>
+                    <TableHead>Email Address</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEmails.map((email) => (
+                    <TableRow
+                      key={email}
+                      className={selectedExternalEmails.includes(email) ? 'bg-purple-50/30' : ''}
+                    >
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedExternalEmails.includes(email)}
+                          onCheckedChange={() => toggleExternalEmailSelection(email)}
+                        />
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">{email}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(email);
+                              toast.success('Copied!');
+                            }}
+                          >
+                            Copy
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveExternalEmail(email)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredEmails.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={3}
+                        className="text-center py-12 text-muted-foreground"
+                      >
+                        {parsedExternalEmails.length === 0
+                          ? 'No emails added yet. Paste some emails above and click "Parse & Add All".'
+                          : 'No emails match your search.'}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   };
 
@@ -3483,6 +3881,7 @@ const AdminDashboard = () => {
           {activeTab === 'events' && renderEvents()}
           {activeTab === 'moments' && renderMoments()}
           {activeTab === 'emails' && renderEmails()}
+          {activeTab === 'external-emails' && renderExternalEmails()}
         </div>
       </main>
 
