@@ -254,6 +254,7 @@ const Dashboard: React.FC = () => {
   
   // Premium Upgrade State
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const [isQualifyModalOpen, setIsQualifyModalOpen] = useState(false);
   const [selectedGiftForUpgrade, setSelectedGiftForUpgrade] = useState<Gift | null>(null);
   // const [upgradeTier, setUpgradeTier] = useState<'vip' | 'royal'>('vip'); // royal @deprecated
   const [upgradeTier, setUpgradeTier] = useState<'vip' /* | 'royal' */>('vip');
@@ -300,6 +301,14 @@ const Dashboard: React.FC = () => {
       setIsPhonePromptOpen(true);
     }
   }, [user, loading]);
+
+  const [qualifyModalShownThisMount, setQualifyModalShownThisMount] = useState(false);
+  useEffect(() => {
+    if (!loading && user && !qualifyModalShownThisMount) {
+      setIsQualifyModalOpen(true);
+      setQualifyModalShownThisMount(true);
+    }
+  }, [user, loading, qualifyModalShownThisMount]);
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -6700,7 +6709,83 @@ const Dashboard: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Premium Upgrade Modal */}
+      <Dialog
+        open={isQualifyModalOpen}
+        onOpenChange={setIsQualifyModalOpen}
+      >
+        <DialogContent className="w-[92vw] sm:w-full sm:max-w-[520px] h-[80vh] max-h-[80vh] p-0 border-0 shadow-2xl rounded-3xl bg-white overflow-hidden">
+          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-white h-[80vh] max-h-[80vh] px-6 pt-6 pb-5 flex flex-col overflow-hidden">
+            <DialogHeader className="px-0 pt-0 pb-0 shrink-0">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-[hsl(265,46%,35%)] flex items-center justify-center shadow-lg shadow-primary/20">
+                  <Crown className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 pt-1">
+                  <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
+                    Get up to ₦5 million for your wedding
+                  </DialogTitle>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="flex-1 flex flex-col justify-center min-h-0 my-2">
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary/80 mb-3 pl-1">
+                how to qualify
+              </p>
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl border border-primary/10 bg-primary/[0.03] hover:bg-primary/[0.06] transition-colors">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-sm shadow-md shadow-primary/20">
+                    1
+                  </div>
+                  <div className="flex-1 pt-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-900 text-sm">Create An Event</p>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Set up your wedding event with all the details</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl border border-primary/10 bg-primary/[0.03] hover:bg-primary/[0.06] transition-colors">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-sm shadow-md shadow-primary/20">
+                    2
+                  </div>
+                  <div className="flex-1 pt-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-900 text-sm">Upgrade Event</p>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Upgrade to VIP to keep 100% of your cash gifts and asoebi sales</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl border border-primary/10 bg-primary/[0.03] hover:bg-primary/[0.06] transition-colors">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-sm shadow-md shadow-primary/20">
+                    3
+                  </div>
+                  <div className="flex-1 pt-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-900 text-sm">Start Receiving Reservations (RSVPs)</p>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Share your event and allow guests to RSVP</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 m-0 p-0 shrink-0 mt-auto">
+              <Button
+                onClick={() => setIsQualifyModalOpen(false)}
+                className="w-full sm:w-auto text-white h-11 font-semibold rounded-xl bg-gradient-to-r from-primary to-[hsl(265,46%,35%)] hover:from-[hsl(265,46%,22%)] hover:to-[hsl(265,46%,32%)] shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              >
+                Got it
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Premium Upgrade Modal (opens on upgrade click) */}
       <Dialog open={isPremiumModalOpen} onOpenChange={setIsPremiumModalOpen}>
         <DialogContent className="w-[90vw] sm:w-full sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl bg-white overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-2 sticky top-0 bg-white z-10">
@@ -6714,10 +6799,10 @@ const Dashboard: React.FC = () => {
               </DialogTitle>
             </div>
             <DialogDescription className="text-gray-600 mt-2">
-              {/* {upgradeTier === 'royal' 
-                ? 'Unlock premium templates and keep 100% of all cash gifts' 
+              {/* {upgradeTier === 'royal'
+                ? 'Unlock premium templates and keep 100% of all cash gifts'
                 : 'Keep 100% of all Cash gifts and Asoebi sales'} // royal @deprecated */}
-              Unlock premium templates and keep 100% of all cash gifts and Asoebi sales
+              Keep 100% of all cash gifts and Asoebi sales
             </DialogDescription>
             <div className={`px-4 py-2 rounded-xl border mt-4 bg-yellow-50 border-yellow-200`}>
               {/* <h4 className="font-semibold text-gray-900 mb-1">{upgradeTier === 'royal' ? 'Royal Benefits' : 'VIP Benefits'}</h4> // royal @deprecated */}
