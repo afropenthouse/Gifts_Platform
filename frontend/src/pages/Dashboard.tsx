@@ -6709,7 +6709,7 @@ const Dashboard: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      {/* <Dialog
         open={isQualifyModalOpen}
         onOpenChange={setIsQualifyModalOpen}
       >
@@ -6783,7 +6783,7 @@ const Dashboard: React.FC = () => {
             </DialogFooter>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       {/* Premium Upgrade Modal (opens on upgrade click) */}
       <Dialog open={isPremiumModalOpen} onOpenChange={setIsPremiumModalOpen}>
