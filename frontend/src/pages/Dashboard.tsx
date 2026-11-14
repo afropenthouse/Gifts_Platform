@@ -56,7 +56,7 @@ import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Toaster } from '../components/ui/toaster';
 import GuidedTour from '../components/ui/guided-tour';
-import UpgradePictureModal from '../components/UpgradePictureModal';
+import ForcedUpgradeGate from '../components/ForcedUpgradeGate';
 import { useGuidedTour } from '../hooks/use-guided-tour';
 
 declare global {
@@ -132,12 +132,14 @@ interface Contribution {
 const Dashboard: React.FC = () => {
   // Success Modal State for withdrawal
   const [showWithdrawSuccess, setShowWithdrawSuccess] = useState(false);
-  const { user, loading, updateUser, openLoginModal } = useAuth();
+  const { user, loading, updateUser, openLoginModal, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [giftsLoaded, setGiftsLoaded] = useState(false);
+  const [forceUpgradeBypass, setForceUpgradeBypass] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingGift, setEditingGift] = useState<Gift | null>(null);
   const [type, setType] = useState('wedding');
@@ -400,6 +402,7 @@ const Dashboard: React.FC = () => {
   }, {} as Record<number, any[]>);
 
   const hasPremiumEvent = activeSubscriptionEvents.length > 0;
+  const showForcedUpgrade = giftsLoaded && !hasPremiumEvent && !forceUpgradeBypass;
 
   const sidebarItems = [
     { id: 'todo', label: 'Todo', icon: ListTodo, color: 'text-[#2E235C]', badge: null, action: undefined },
@@ -846,6 +849,7 @@ const Dashboard: React.FC = () => {
           const data = await res.json();
           const safeGifts = Array.isArray(data) ? data : [];
           setGifts(safeGifts);
+          setGiftsLoaded(true);
 
           const allContributions: Contribution[] = [];
           for (const gift of safeGifts) {
@@ -1707,18 +1711,30 @@ const Dashboard: React.FC = () => {
     if (target) {
       setSelectedGiftForUpgrade(target);
       setUpgradeTier('vip');
-      void processPremiumUpgrade();
+      void processPremiumUpgrade(target);
     } else {
       openLoginModal();
     }
   };
 
-  const processPremiumUpgrade = async () => {
-    if (!selectedGiftForUpgrade) return;
+  // Forced upgrade gate handlers
+  const handleForcedUpgradeCreateEvent = () => {
+    setForceUpgradeBypass(true);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleForcedUpgradeLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const processPremiumUpgrade = async (gift?: Gift) => {
+    const target = gift ?? selectedGiftForUpgrade;
+    if (!target) return;
     setIsProcessingPayment(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${selectedGiftForUpgrade.id}/premium/initialize`, {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/gifts/${target.id}/premium/initialize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -3627,6 +3643,7 @@ const Dashboard: React.FC = () => {
       <Dialog open={isCreateModalOpen} onOpenChange={(open) => {
         setIsCreateModalOpen(open);
         if (!open) {
+           setForceUpgradeBypass(false);
            setType('');
            setTitle('');
            setDate('');
@@ -5072,7 +5089,10 @@ const Dashboard: React.FC = () => {
       </Dialog>
 
       {/* Share Link Modal */}
-      <Dialog open={isShareLinkModalOpen} onOpenChange={setIsShareLinkModalOpen}>
+      <Dialog open={isShareLinkModalOpen} onOpenChange={(open) => {
+        setIsShareLinkModalOpen(open);
+        if (!open) setForceUpgradeBypass(false);
+      }}>
         <DialogContent className="w-[80vw] sm:w-full sm:max-w-lg max-h-[80vh] flex flex-col rounded-2xl border-0 shadow-2xl p-0 overflow-hidden bg-white">
           <div className="bg-gradient-to-r from-[#2E235C]/10 to-[#2E235C]/10 p-6 shrink-0">
             <DialogHeader>
@@ -6856,7 +6876,7 @@ const Dashboard: React.FC = () => {
                 Cancel
               </Button>
               <Button
-                onClick={processPremiumUpgrade}
+                onClick={() => void processPremiumUpgrade()}
                 disabled={isProcessingPayment}
                 className="w-full sm:w-auto text-white bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
               >
@@ -7017,11 +7037,15 @@ const Dashboard: React.FC = () => {
          onSkip={skipTour}
        />
 
-        <UpgradePictureModal
-          events={upgradeableEvents.map((g) => ({ id: g.id, title: g.title }))}
-          isProcessingPayment={isProcessingPayment}
-          onUpgrade={handlePictureModalUpgrade}
-        />
+        {showForcedUpgrade && (
+          <ForcedUpgradeGate
+            events={upgradeableEvents.map((g) => ({ id: g.id, title: g.title }))}
+            isProcessingPayment={isProcessingPayment}
+            onUpgrade={handlePictureModalUpgrade}
+            onCreateEvent={handleForcedUpgradeCreateEvent}
+            onLogout={handleForcedUpgradeLogout}
+          />
+        )}
      </div>
    );
  };
