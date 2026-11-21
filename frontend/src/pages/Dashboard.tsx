@@ -140,6 +140,7 @@ const Dashboard: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [giftsLoaded, setGiftsLoaded] = useState(false);
   const [forceUpgradeBypass, setForceUpgradeBypass] = useState(false);
+  const [upgradeModalDismissed, setUpgradeModalDismissed] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingGift, setEditingGift] = useState<Gift | null>(null);
   const [type, setType] = useState('wedding');
@@ -402,7 +403,7 @@ const Dashboard: React.FC = () => {
   }, {} as Record<number, any[]>);
 
   const hasPremiumEvent = activeSubscriptionEvents.length > 0;
-  const showForcedUpgrade = giftsLoaded && !hasPremiumEvent && !forceUpgradeBypass;
+  const showForcedUpgrade = giftsLoaded && !hasPremiumEvent && !forceUpgradeBypass && !upgradeModalDismissed;
 
   const sidebarItems = [
     { id: 'todo', label: 'Todo', icon: ListTodo, color: 'text-[#2E235C]', badge: null, action: undefined },
@@ -1728,6 +1729,19 @@ const Dashboard: React.FC = () => {
     navigate('/');
   };
 
+  const handleUpgradeModalClose = () => {
+    setUpgradeModalDismissed(true);
+  };
+
+  // Gate event creation until the user has upgraded
+  const requestCreateEvent = () => {
+    if (!hasPremiumEvent) {
+      setUpgradeModalDismissed(false);
+      return;
+    }
+    setIsCreateModalOpen(true);
+  };
+
   const processPremiumUpgrade = async (gift?: Gift) => {
     const target = gift ?? selectedGiftForUpgrade;
     if (!target) return;
@@ -1931,7 +1945,7 @@ const Dashboard: React.FC = () => {
             <div className="p-6 border-b border-gray-100">
               <Button 
                 data-testid="create-event-button"
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={requestCreateEvent}
                 className="w-full bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90
                 shadow-lg hover:shadow-xl transition-all duration-300 h-12"
               >
@@ -2143,7 +2157,7 @@ const Dashboard: React.FC = () => {
                            variant="outline"
                            size="sm"
                            className="bg-white/20 hover:bg-white/30 border-white/30 text-white flex-1"
-                           onClick={() => setIsCreateModalOpen(true)}
+                           onClick={requestCreateEvent}
                          >
                            <Gift className="w-4 h-4 mr-1" />
                            Create Link
@@ -2197,7 +2211,7 @@ const Dashboard: React.FC = () => {
                 {/* Quick Stats Grid */}
                 <div data-testid="events-container" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Create Gift Card */}
-                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer" onClick={() => setIsCreateModalOpen(true)}>
+                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer" onClick={requestCreateEvent}>
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
@@ -2216,7 +2230,7 @@ const Dashboard: React.FC = () => {
                         className="w-full mt-12 bg-gradient-to-r from-[#2E235C] to-[#2E235C] hover:from-[#2E235C]/90 hover:to-[#2E235C]/90"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setIsCreateModalOpen(true);
+                          requestCreateEvent();
                         }}
                       >
                         <Gift className="w-4 h-4 mr-2" />
@@ -2305,7 +2319,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex space-x-3">
                     
                     <Button 
-                      onClick={() => setIsCreateModalOpen(true)}
+                      onClick={requestCreateEvent}
                       className="bg-gradient-to-r from-[#2E235C] to-[#2E235C]"
                     >
                       {/* <Gift className="w-4 h-4 mr-2" /> */}
@@ -2317,7 +2331,7 @@ const Dashboard: React.FC = () => {
 <GiftLinks
   gifts={gifts}
   contributions={contributions}
-  onCreateGift={() => setIsCreateModalOpen(true)}
+  onCreateGift={requestCreateEvent}
   onEditGift={handleEditGift}
   onDeleteGift={handleDeleteGift}
   onRSVP={() => setActiveTab('rsvp')}
@@ -7044,6 +7058,7 @@ const Dashboard: React.FC = () => {
             onUpgrade={handlePictureModalUpgrade}
             onCreateEvent={handleForcedUpgradeCreateEvent}
             onLogout={handleForcedUpgradeLogout}
+            onClose={handleUpgradeModalClose}
           />
         )}
      </div>

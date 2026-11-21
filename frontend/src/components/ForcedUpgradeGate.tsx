@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { CheckCircle, Crown, CreditCard, LogOut, CalendarPlus } from 'lucide-react';
+import { CheckCircle, Crown, CreditCard, LogOut, CalendarPlus, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface UpgradeEventOption {
@@ -14,6 +14,7 @@ interface ForcedUpgradeGateProps {
   onUpgrade: (eventId: number) => void;
   onCreateEvent: () => void;
   onLogout: () => void;
+  onClose: () => void;
 }
 
 const VIP_BENEFITS = [
@@ -32,6 +33,7 @@ const ForcedUpgradeGate: React.FC<ForcedUpgradeGateProps> = ({
   onUpgrade,
   onCreateEvent,
   onLogout,
+  onClose,
 }) => {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
@@ -51,6 +53,15 @@ const ForcedUpgradeGate: React.FC<ForcedUpgradeGateProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-3 sm:p-4">
       <div className="relative w-full max-w-lg max-h-[90vh] rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-3 top-3 z-20 rounded-full bg-white/80 backdrop-blur-sm p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white transition-all shadow-sm"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
         <div className="px-5 pt-6 pb-1 flex-1 overflow-y-auto min-h-0">
           <div className="flex items-center space-x-2">
             <div className="p-1.5 rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600">
