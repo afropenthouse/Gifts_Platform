@@ -140,7 +140,6 @@ const Dashboard: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [giftsLoaded, setGiftsLoaded] = useState(false);
   const [forceUpgradeBypass, setForceUpgradeBypass] = useState(false);
-  const [upgradeModalDismissed, setUpgradeModalDismissed] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingGift, setEditingGift] = useState<Gift | null>(null);
   const [type, setType] = useState('wedding');
@@ -403,7 +402,7 @@ const Dashboard: React.FC = () => {
   }, {} as Record<number, any[]>);
 
   const hasPremiumEvent = activeSubscriptionEvents.length > 0;
-  const showForcedUpgrade = giftsLoaded && !hasPremiumEvent && !forceUpgradeBypass && !upgradeModalDismissed;
+  const showForcedUpgrade = giftsLoaded && !hasPremiumEvent && !forceUpgradeBypass && activeTab !== 'withdraw';
 
   const sidebarItems = [
     { id: 'todo', label: 'Todo', icon: ListTodo, color: 'text-[#2E235C]', badge: null, action: undefined },
@@ -1729,14 +1728,15 @@ const Dashboard: React.FC = () => {
     navigate('/');
   };
 
-  const handleUpgradeModalClose = () => {
-    setUpgradeModalDismissed(true);
+  const handleForcedUpgradeWithdraw = () => {
+    setActiveTab('withdraw');
   };
 
   // Gate event creation until the user has upgraded
   const requestCreateEvent = () => {
     if (!hasPremiumEvent) {
-      setUpgradeModalDismissed(false);
+      // Make sure the upgrade modal is visible (it is hidden on the Withdraw tab)
+      if (activeTab === 'withdraw') setActiveTab('gifts');
       return;
     }
     setIsCreateModalOpen(true);
@@ -7057,8 +7057,8 @@ const Dashboard: React.FC = () => {
             isProcessingPayment={isProcessingPayment}
             onUpgrade={handlePictureModalUpgrade}
             onCreateEvent={handleForcedUpgradeCreateEvent}
+            onWithdraw={handleForcedUpgradeWithdraw}
             onLogout={handleForcedUpgradeLogout}
-            onClose={handleUpgradeModalClose}
           />
         )}
      </div>

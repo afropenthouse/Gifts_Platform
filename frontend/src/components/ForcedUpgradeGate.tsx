@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { CheckCircle, Crown, CreditCard, LogOut, CalendarPlus, X } from 'lucide-react';
+import { CheckCircle, Crown, CreditCard, LogOut, CalendarPlus, ArrowDownToLine } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface UpgradeEventOption {
@@ -13,8 +13,8 @@ interface ForcedUpgradeGateProps {
   isProcessingPayment?: boolean;
   onUpgrade: (eventId: number) => void;
   onCreateEvent: () => void;
+  onWithdraw: () => void;
   onLogout: () => void;
-  onClose: () => void;
 }
 
 const VIP_BENEFITS = [
@@ -32,8 +32,8 @@ const ForcedUpgradeGate: React.FC<ForcedUpgradeGateProps> = ({
   isProcessingPayment = false,
   onUpgrade,
   onCreateEvent,
+  onWithdraw,
   onLogout,
-  onClose,
 }) => {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
@@ -53,15 +53,6 @@ const ForcedUpgradeGate: React.FC<ForcedUpgradeGateProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-3 sm:p-4">
       <div className="relative w-full max-w-lg max-h-[90vh] rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-3 top-3 z-20 rounded-full bg-white/80 backdrop-blur-sm p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white transition-all shadow-sm"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
         <div className="px-5 pt-6 pb-1 flex-1 overflow-y-auto min-h-0">
           <div className="flex items-center space-x-2">
             <div className="p-1.5 rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600">
@@ -134,23 +125,13 @@ const ForcedUpgradeGate: React.FC<ForcedUpgradeGateProps> = ({
             </div>
           )}
 
-          <div className="mt-3.5 flex flex-col sm:flex-row gap-2.5">
-            <Button
-              variant="outline"
-              onClick={onLogout}
-              disabled={isProcessingPayment}
-              size="sm"
-              className="w-full sm:w-auto sm:flex-1 h-9 order-2 sm:order-1"
-            >
-              <LogOut className="w-3.5 h-3.5 mr-1.5" />
-              Log out
-            </Button>
+          <div className="mt-3.5 flex flex-col gap-2.5">
             {hasEvents ? (
               <Button
                 onClick={handleUpgrade}
                 disabled={isProcessingPayment || !selectedEventId}
                 size="sm"
-                className="w-full sm:w-auto sm:flex-1 h-9 text-white bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 order-1 sm:order-2"
+                className="w-full h-9 text-white bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
               >
                 {isProcessingPayment ? (
                   <div className="flex items-center gap-2">
@@ -168,12 +149,34 @@ const ForcedUpgradeGate: React.FC<ForcedUpgradeGateProps> = ({
               <Button
                 onClick={onCreateEvent}
                 size="sm"
-                className="w-full sm:w-auto sm:flex-1 h-9 text-white bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 order-1 sm:order-2"
+                className="w-full h-9 text-white bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
               >
                 <CalendarPlus className="w-3.5 h-3.5 mr-1.5" />
                 Create an event
               </Button>
             )}
+
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <Button
+                variant="outline"
+                onClick={onWithdraw}
+                size="sm"
+                className="w-full sm:flex-1 h-9"
+              >
+                <ArrowDownToLine className="w-3.5 h-3.5 mr-1.5" />
+                Withdraw funds
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onLogout}
+                disabled={isProcessingPayment}
+                size="sm"
+                className="w-full sm:flex-1 h-9"
+              >
+                <LogOut className="w-3.5 h-3.5 mr-1.5" />
+                Log out
+              </Button>
+            </div>
           </div>
         </div>
       </div>
