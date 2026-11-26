@@ -1,10 +1,10 @@
 const { sendEmail, mailFrom } = require('./email');
 const { generateCalendarLinks } = require('./calendarLinks');
 
-const emailEnabled = Boolean(process.env.POSTMARK_SERVER_TOKEN);
+const emailEnabled = Boolean(process.env.ZOHO_ENCZAPI_KEY);
 
 if (!emailEnabled) {
-  console.warn('📧 Email Service disabled: POSTMARK_SERVER_TOKEN not set in .env');
+  console.warn('📧 Email Service disabled: ZOHO_ENCZAPI_KEY not set in .env');
 }
 
 const sendRequired = async (mailOptions) => {

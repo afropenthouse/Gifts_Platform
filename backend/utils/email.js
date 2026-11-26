@@ -1,8 +1,8 @@
 const axios = require('axios');
 
-// Email provider: Postmark. Nodemailer/SMTP is intentionally parked for now.
-const POSTMARK_SERVER_TOKEN = process.env.POSTMARK_SERVER_TOKEN;
-const POSTMARK_MESSAGE_STREAM = process.env.POSTMARK_MESSAGE_STREAM || 'outbound';
+// Email provider: Zoho ZeptoMail (transactional email). Nodemailer/SMTP is intentionally parked for now.
+const ZOHO_ENCZAPI_KEY = process.env.ZOHO_ENCZAPI_KEY;
+const ZOHO_API_URL = process.env.ZOHO_API_URL || 'https://api.zeptomail.com/v1.1/email';
 const mailFromRaw = process.env.MAIL_FROM || 'BeThere <support@bethereexperience.com>';
 
 // Parse "Name <email@example.com>" into { name, email }
@@ -14,9 +14,19 @@ const parseFrom = (fromStr) => {
   return { name: 'BeThere', email: fromStr.trim() };
 };
 
+// Parse a single address into a ZeptoMail email_address object
+const parseAddress = (addr) => {
+  const match = String(addr).match(/^(.*?)\s*<([^>]+)>$/);
+  if (match) {
+    const name = match[1].trim();
+    return name ? { address: match[2].trim(), name } : { address: match[2].trim() };
+  }
+  return { address: String(addr).trim() };
+};
+
 const mailFrom = parseFrom(mailFromRaw);
 
-console.log(`📧 Email Provider: Postmark`);
+console.log(`📧 Email Provider: Zoho ZeptoMail`);
 console.log(`   From: ${mailFrom.name} <${mailFrom.email}>`);
 
 function extractEmail(fromValue) {
@@ -25,9 +35,9 @@ function extractEmail(fromValue) {
   return parsed?.email || null;
 }
 
-async function sendEmailPostmark(mailOptions) {
-  if (!POSTMARK_SERVER_TOKEN) {
-    return { delivered: false, error: 'POSTMARK_SERVER_TOKEN missing' };
+async function sendEmailZoho(mailOptions) {
+  if (!ZOHO_ENCZAPI_KEY) {
+    return { delivered: false, error: 'ZOHO_ENCZAPI_KEY missing' };
   }
 
   const parsedFrom = parseFrom(mailOptions.from || mailFromRaw);
@@ -36,23 +46,28 @@ async function sendEmailPostmark(mailOptions) {
   if (!fromEmail) return { delivered: false, error: 'Invalid from address' };
   if (!mailOptions?.to) return { delivered: false, error: 'Missing recipient' };
 
+  const toList = String(mailOptions.to)
+    .split(',')
+    .map((addr) => addr.trim())
+    .filter(Boolean)
+    .map((addr) => ({ email_address: parseAddress(addr) }));
+
   try {
-    console.log(`\n📨 Attempting to send email via Postmark to: ${mailOptions.to}`);
+    console.log(`\n📨 Attempting to send email via Zoho ZeptoMail to: ${mailOptions.to}`);
     console.log(`   Subject: ${mailOptions.subject}`);
 
     const response = await axios.post(
-      'https://api.postmarkapp.com/email',
+      ZOHO_API_URL,
       {
-        From: `${fromName} <${fromEmail}>`,
-        To: mailOptions.to,
-        Subject: mailOptions.subject,
-        HtmlBody: mailOptions.html,
-        TextBody: mailOptions.text || '',
-        MessageStream: POSTMARK_MESSAGE_STREAM,
+        from: { address: fromEmail, name: fromName },
+        to: toList,
+        subject: mailOptions.subject,
+        htmlbody: mailOptions.html,
+        textbody: mailOptions.text || undefined,
       },
       {
         headers: {
-          'X-Postmark-Server-Token': POSTMARK_SERVER_TOKEN,
+          'Authorization': `Zoho-enczapikey ${ZOHO_ENCZAPI_KEY}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
@@ -62,14 +77,14 @@ async function sendEmailPostmark(mailOptions) {
 
     return { delivered: true, data: response.data };
   } catch (error) {
-    const message = error?.response?.data || error?.message || 'Postmark error';
-    console.error('❌ Email send failed via Postmark:', message);
+    const message = error?.response?.data || error?.message || 'Zoho ZeptoMail error';
+    console.error('❌ Email send failed via Zoho ZeptoMail:', message);
     return { delivered: false, error: message };
   }
 }
 
 async function sendEmail(mailOptions) {
-  return sendEmailPostmark(mailOptions);
+  return sendEmailZoho(mailOptions);
 }
 
 module.exports = { sendEmail, mailFrom: mailFromRaw };
